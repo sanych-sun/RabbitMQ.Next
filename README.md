@@ -1,1 +1,1 @@
-# RabbitMQ.Client
+# RabbitMQ.Next
