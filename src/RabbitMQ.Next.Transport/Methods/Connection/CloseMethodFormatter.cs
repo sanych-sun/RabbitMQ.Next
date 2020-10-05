@@ -3,7 +3,7 @@ using System.IO;
 
 namespace RabbitMQ.Next.Transport.Methods.Connection
 {
-    public class CloseMethodFormatter : IMethodFormatter<CloseMethod>
+    internal class CloseMethodFormatter : IMethodFormatter<CloseMethod>
     {
         public Span<byte> Write(Span<byte> destination, CloseMethod method) =>
             destination.Write((ushort) method.StatusCode)
