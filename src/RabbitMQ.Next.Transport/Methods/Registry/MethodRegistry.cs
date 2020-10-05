@@ -34,11 +34,11 @@ namespace RabbitMQ.Next.Transport.Methods.Registry
 
         public uint GetMethodId<TMethod>() where TMethod : struct, IMethod => this.GetMethod(typeof(TMethod)).MethodId;
 
-        public IMethodFrameParser<TMethod> GetParser<TMethod>()
+        public IMethodParser<TMethod> GetParser<TMethod>()
             where TMethod : struct, IIncomingMethod
         {
             var registration = this.GetMethod(typeof(TMethod));
-            if (registration.Parser is IMethodFrameParser<TMethod> item)
+            if (registration.Parser is IMethodParser<TMethod> item)
             {
                 return item;
             }
@@ -46,13 +46,13 @@ namespace RabbitMQ.Next.Transport.Methods.Registry
             throw new IndexOutOfRangeException();
         }
 
-        public IMethodFrameParser GetParser(uint methodId) => (IMethodFrameParser)this.GetMethod(methodId).Parser;
+        public IMethodParser GetParser(uint methodId) => (IMethodParser)this.GetMethod(methodId).Parser;
 
-        public IMethodFrameFormatter<TMethod> GetFormatter<TMethod>()
+        public IMethodFormatter<TMethod> GetFormatter<TMethod>()
             where TMethod : struct, IOutgoingMethod
         {
             var registration = this.GetMethod(typeof(TMethod));
-            if (registration.Formatter is IMethodFrameFormatter<TMethod> item)
+            if (registration.Formatter is IMethodFormatter<TMethod> item)
             {
                 return item;
             }

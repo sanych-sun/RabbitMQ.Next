@@ -27,13 +27,13 @@ namespace RabbitMQ.Next.Transport.Methods.Registry
             return this;
         }
 
-        IMethodRegistrationBuilder<TMethod> IMethodRegistrationBuilder<TMethod>.Use(IMethodFrameParser<TMethod> parser)
+        IMethodRegistrationBuilder<TMethod> IMethodRegistrationBuilder<TMethod>.Use(IMethodParser<TMethod> parser)
         {
             this.Parser = parser;
             return this;
         }
 
-        IMethodRegistrationBuilder<TMethod> IMethodRegistrationBuilder<TMethod>.Use(IMethodFrameFormatter<TMethod> formatter)
+        IMethodRegistrationBuilder<TMethod> IMethodRegistrationBuilder<TMethod>.Use(IMethodFormatter<TMethod> formatter)
         {
             this.Formatter = formatter;
             return this;

@@ -25,7 +25,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Connection
         public void TuneMethodFrameParser()
         {
             var payload = Helpers.GetFileContent("RabbitMQ.Next.Tests.Transport.Methods.Connection.TuneMethodPayload.dat");
-            var parser = new TuneMethodFrameParser();
+            var parser = new TuneMethodParser();
             var data = parser.Parse(payload);
             var dataBoxed = parser.ParseMethod(payload);
 

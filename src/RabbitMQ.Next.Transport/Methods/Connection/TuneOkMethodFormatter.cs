@@ -2,7 +2,7 @@ using System;
 
 namespace RabbitMQ.Next.Transport.Methods.Connection
 {
-    internal class TuneOkMethodFrameFormatter : IMethodFrameFormatter<TuneOkMethod>
+    internal class TuneOkMethodFormatter : IMethodFormatter<TuneOkMethod>
     {
         public Span<byte> Write(Span<byte> destination, TuneOkMethod method) =>
             destination

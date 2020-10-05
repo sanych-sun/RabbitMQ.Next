@@ -18,7 +18,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Connection
         public void OpenOkMethodFrameParser()
         {
             var payload = Helpers.GetFileContent("RabbitMQ.Next.Tests.Transport.Methods.Connection.OpenOkMethodPayload.dat");
-            var parser = new OpenOkMethodFrameParser();
+            var parser = new OpenOkMethodParser();
             var data = parser.Parse(payload);
             var dataBoxed = parser.ParseMethod(payload);
 

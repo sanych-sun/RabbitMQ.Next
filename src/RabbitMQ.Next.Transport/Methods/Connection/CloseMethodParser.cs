@@ -2,7 +2,7 @@ using System;
 
 namespace RabbitMQ.Next.Transport.Methods.Connection
 {
-    public class CloseMethodFrameParser : IMethodFrameParser<CloseMethod>
+    public class CloseMethodParser : IMethodParser<CloseMethod>
     {
         public CloseMethod Parse(ReadOnlySpan<byte> payload)
         {

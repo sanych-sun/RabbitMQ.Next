@@ -3,7 +3,7 @@ using System.IO;
 
 namespace RabbitMQ.Next.Transport.Methods.Connection
 {
-    internal class StartOkMethodFrameFormatter : IMethodFrameFormatter<StartOkMethod>
+    internal class StartOkMethodFormatter : IMethodFormatter<StartOkMethod>
     {
         public Span<byte> Write(Span<byte> destination, StartOkMethod method)
         {

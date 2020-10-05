@@ -22,7 +22,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Connection
 
             var data = new CloseOkMethod();
             Span<byte> payload = stackalloc byte[expected.Length];
-            new CloseOkMethodFrameFormatter().Write(payload, data);
+            new CloseOkMethodFormatter().Write(payload, data);
 
             Assert.Equal(expected, payload.ToArray());
         }
@@ -31,7 +31,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Connection
         public void CloseOkMethodFrameParser()
         {
             var payload = Helpers.GetFileContent("RabbitMQ.Next.Tests.Transport.Methods.Connection.CloseOkMethodPayload.dat");
-            var parser = new CloseOkMethodFrameParser();
+            var parser = new CloseOkMethodParser();
             var data = parser.Parse(payload);
             var dataBoxed = parser.ParseMethod(payload);
 

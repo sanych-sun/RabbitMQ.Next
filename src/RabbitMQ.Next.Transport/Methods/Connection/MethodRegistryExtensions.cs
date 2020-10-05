@@ -6,21 +6,21 @@ namespace RabbitMQ.Next.Transport.Methods.Connection
     {
         public static IMethodRegistryBuilder AddConnectionMethods(this IMethodRegistryBuilder builder)
         {
-            builder.Register<StartMethod>((uint)MethodId.ConnectionStart, registration => registration.Use(new StartMethodFrameParser()));
-            builder.Register<StartOkMethod>((uint)MethodId.ConnectionStartOk, registration => registration.Use(new StartOkMethodFrameFormatter()));
-            builder.Register<TuneMethod>((uint)MethodId.ConnectionTune, registration => registration.Use(new TuneMethodFrameParser()));
-            builder.Register<TuneOkMethod>((uint)MethodId.ConnectionTuneOk, registration => registration.Use(new TuneOkMethodFrameFormatter()));
-            builder.Register<OpenMethod>((uint)MethodId.ConnectionOpen, registration => registration.Use(new OpenMethodFrameFormatter()));
-            builder.Register<OpenOkMethod>((uint)MethodId.ConnectionOpenOk, registration => registration.Use(new OpenOkMethodFrameParser()));
+            builder.Register<StartMethod>((uint)MethodId.ConnectionStart, registration => registration.Use(new StartMethodParser()));
+            builder.Register<StartOkMethod>((uint)MethodId.ConnectionStartOk, registration => registration.Use(new StartOkMethodFormatter()));
+            builder.Register<TuneMethod>((uint)MethodId.ConnectionTune, registration => registration.Use(new TuneMethodParser()));
+            builder.Register<TuneOkMethod>((uint)MethodId.ConnectionTuneOk, registration => registration.Use(new TuneOkMethodFormatter()));
+            builder.Register<OpenMethod>((uint)MethodId.ConnectionOpen, registration => registration.Use(new OpenMethodFormatter()));
+            builder.Register<OpenOkMethod>((uint)MethodId.ConnectionOpenOk, registration => registration.Use(new OpenOkMethodParser()));
             builder.Register<CloseMethod>((uint) MethodId.ConnectionClose,
                 registration => registration
-                    .Use(new CloseMethodFrameFormatter())
-                    .Use(new CloseMethodFrameParser()));
+                    .Use(new CloseMethodFormatter())
+                    .Use(new CloseMethodParser()));
 
             builder.Register<CloseOkMethod>((uint) MethodId.ConnectionCloseOk,
                 registration => registration
-                    .Use(new CloseOkMethodFrameFormatter())
-                    .Use(new CloseOkMethodFrameParser()));
+                    .Use(new CloseOkMethodFormatter())
+                    .Use(new CloseOkMethodParser()));
 
             return builder;
         }

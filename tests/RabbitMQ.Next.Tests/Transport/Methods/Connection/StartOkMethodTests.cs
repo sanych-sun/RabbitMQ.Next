@@ -45,7 +45,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Connection
 
             var data = new StartOkMethod("PLAIN", "\0test1\0test1", "en_US", clientProperties);
             Span<byte> payload = stackalloc byte[expected.Length];
-            new StartOkMethodFrameFormatter().Write(payload, data);
+            new StartOkMethodFormatter().Write(payload, data);
 
             Assert.Equal(expected, payload.ToArray());
         }

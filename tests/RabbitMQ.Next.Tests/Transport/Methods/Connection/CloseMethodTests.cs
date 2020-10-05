@@ -25,7 +25,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Connection
 
             var data = new CloseMethod(ReplyCode.Success, "Goodbye", 0);
             Span<byte> payload = stackalloc byte[expected.Length];
-            new CloseMethodFrameFormatter().Write(payload, data);
+            new CloseMethodFormatter().Write(payload, data);
 
             Assert.Equal(expected, payload.ToArray());
         }
@@ -34,7 +34,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Connection
         public void CloseMethodFrameParser()
         {
             var payload = Helpers.GetFileContent("RabbitMQ.Next.Tests.Transport.Methods.Connection.CloseMethodPayload.dat");
-            var parser = new CloseMethodFrameParser();
+            var parser = new CloseMethodParser();
             var data = parser.Parse(payload);
             var dataBoxed = parser.ParseMethod(payload);
 

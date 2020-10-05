@@ -11,12 +11,12 @@ namespace RabbitMQ.Next.Transport.Methods.Registry
         uint GetMethodId<TMethod>()
             where TMethod : struct, IMethod;
 
-        IMethodFrameParser<TMethod> GetParser<TMethod>()
+        IMethodParser<TMethod> GetParser<TMethod>()
             where TMethod : struct, IIncomingMethod;
 
-        IMethodFrameParser GetParser(uint methodId);
+        IMethodParser GetParser(uint methodId);
 
-        IMethodFrameFormatter<TMethod> GetFormatter<TMethod>()
+        IMethodFormatter<TMethod> GetFormatter<TMethod>()
             where TMethod : struct, IOutgoingMethod;
     }
 }

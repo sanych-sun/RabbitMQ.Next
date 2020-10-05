@@ -25,7 +25,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Connection
 
             var data = new OpenMethod("/");
             Span<byte> payload = stackalloc byte[expected.Length];
-            new OpenMethodFrameFormatter().Write(payload, data);
+            new OpenMethodFormatter().Write(payload, data);
 
             Assert.Equal(expected, payload.ToArray());
         }

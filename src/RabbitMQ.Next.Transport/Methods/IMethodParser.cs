@@ -2,12 +2,12 @@ using System;
 
 namespace RabbitMQ.Next.Transport.Methods
 {
-    public interface IMethodFrameParser
+    public interface IMethodParser
     {
         IMethod ParseMethod(ReadOnlySpan<byte> payload);
     }
 
-    public interface IMethodFrameParser<out TMethod> : IMethodFrameParser
+    public interface IMethodParser<out TMethod> : IMethodParser
         where TMethod : struct, IMethod
     {
         TMethod Parse(ReadOnlySpan<byte> payload);

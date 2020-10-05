@@ -34,7 +34,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Connection
         public void StartMethodFrameParser()
         {
             var payload = Helpers.GetFileContent("RabbitMQ.Next.Tests.Transport.Methods.Connection.StartMethodPayload.dat");
-            var parser = new StartMethodFrameParser();
+            var parser = new StartMethodParser();
             var data = parser.Parse(payload);
             var dataBoxed = parser.ParseMethod(payload);
 

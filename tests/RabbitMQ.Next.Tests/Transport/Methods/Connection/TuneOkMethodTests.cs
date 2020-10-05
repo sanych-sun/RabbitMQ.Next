@@ -29,7 +29,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Connection
 
             var data = new TuneOkMethod(2047, 131072, 60);
             Span<byte> payload = stackalloc byte[expected.Length];
-            new TuneOkMethodFrameFormatter().Write(payload, data);
+            new TuneOkMethodFormatter().Write(payload, data);
 
             Assert.Equal(expected, payload.ToArray());
         }

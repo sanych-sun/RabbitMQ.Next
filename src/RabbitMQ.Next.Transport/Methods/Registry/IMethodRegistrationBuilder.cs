@@ -5,8 +5,8 @@ namespace RabbitMQ.Next.Transport.Methods.Registry
     {
         IMethodRegistrationBuilder<TMethod> HasContent();
 
-        IMethodRegistrationBuilder<TMethod> Use(IMethodFrameParser<TMethod> parser);
+        IMethodRegistrationBuilder<TMethod> Use(IMethodParser<TMethod> parser);
 
-        IMethodRegistrationBuilder<TMethod> Use(IMethodFrameFormatter<TMethod> formatter);
+        IMethodRegistrationBuilder<TMethod> Use(IMethodFormatter<TMethod> formatter);
     }
 }

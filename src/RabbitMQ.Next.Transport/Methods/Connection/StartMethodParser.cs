@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace RabbitMQ.Next.Transport.Methods.Connection
 {
-    internal class StartMethodFrameParser : IMethodFrameParser<StartMethod>
+    internal class StartMethodParser : IMethodParser<StartMethod>
     {
         public StartMethod Parse(ReadOnlySpan<byte> payload)
         {
