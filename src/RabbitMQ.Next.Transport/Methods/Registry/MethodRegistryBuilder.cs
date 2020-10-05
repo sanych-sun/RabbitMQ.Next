@@ -22,9 +22,6 @@ namespace RabbitMQ.Next.Transport.Methods.Registry
             return this;
         }
 
-        public IMethodRegistry Build()
-        {
-            return new MethodRegistry(this.items);
-        }
+        public IMethodRegistry Build() => new MethodRegistry(this.items);
     }
 }

@@ -10,8 +10,8 @@ namespace RabbitMQ.Next.Transport.Methods.Connection
             payload.Read(out byte major)
                 .Read(out byte minor)
                 .Read(out IReadOnlyDictionary<string, object> properties)
-                .Read(out string mechanisms, true)
-                .Read(out string locales, true);
+                .Read(out var mechanisms, true)
+                .Read(out var locales, true);
 
             return new StartMethod(major, minor, mechanisms, locales, properties);
         }

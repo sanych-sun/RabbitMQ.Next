@@ -1,6 +1,6 @@
 using System;
 
-namespace RabbitMQ.Next.Transport.Methods.Connection
+namespace RabbitMQ.Next.Transport.Methods.Channel
 {
     internal class CloseMethodFormatter : IMethodFormatter<CloseMethod>
     {

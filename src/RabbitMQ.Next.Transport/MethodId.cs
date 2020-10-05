@@ -20,7 +20,12 @@ namespace RabbitMQ.Next.Transport
         UpdateSecretOk      = (ClassId.Connection << 16) | 71,
 
         // Channel class methods:
-
+        ChannelOpen         = (ClassId.Channel << 16) | 10,
+        ChannelOpenOk       = (ClassId.Channel << 16) | 11,
+        ChannelFlow         = (ClassId.Channel << 16) | 20,
+        ChannelFlowOk       = (ClassId.Channel << 16) | 21,
+        ChannelClose        = (ClassId.Channel << 16) | 40,
+        ChannelCloseOk      = (ClassId.Channel << 16) | 41,
 
         // @formatter:on
     }

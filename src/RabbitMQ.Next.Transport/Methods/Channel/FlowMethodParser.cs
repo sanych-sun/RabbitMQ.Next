@@ -1,0 +1,16 @@
+using System;
+
+namespace RabbitMQ.Next.Transport.Methods.Channel
+{
+    internal class FlowMethodParser : IMethodParser<FlowMethod>
+    {
+        public FlowMethod Parse(ReadOnlySpan<byte> payload)
+        {
+            payload.Read(out bool active);
+
+            return new FlowMethod(active);
+        }
+
+        public IMethod ParseMethod(ReadOnlySpan<byte> payload) => this.Parse(payload);
+    }
+}

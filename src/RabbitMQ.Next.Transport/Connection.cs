@@ -9,6 +9,7 @@ using RabbitMQ.Next.Transport.Channels;
 using RabbitMQ.Next.Transport.Methods.Connection;
 using RabbitMQ.Next.Transport.Methods.Registry;
 using RabbitMQ.Next.Transport.Sockets;
+using RabbitMQ.Next.Transport.Methods;
 
 namespace RabbitMQ.Next.Transport
 {
@@ -25,6 +26,8 @@ namespace RabbitMQ.Next.Transport
         {
             var registryBuilder = new MethodRegistryBuilder();
             registryBuilder.AddConnectionMethods();
+            registryBuilder.AddChannelMethods();
+
             var methodRegistry = registryBuilder.Build();
 
             Func<int, Channel> channelFactory = (channelNumber) =>
