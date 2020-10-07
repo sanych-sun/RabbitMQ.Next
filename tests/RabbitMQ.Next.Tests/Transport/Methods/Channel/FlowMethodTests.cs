@@ -13,7 +13,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Channel
             var method = new FlowMethod(true);
 
             Assert.Equal((uint)MethodId.ChannelFlow, method.Method);
-            Assert.Equal(true, method.Active);
+            Assert.True(method.Active);
         }
 
         [Fact]

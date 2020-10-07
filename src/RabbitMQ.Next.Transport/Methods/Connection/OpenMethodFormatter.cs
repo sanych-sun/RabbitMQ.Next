@@ -7,7 +7,7 @@ namespace RabbitMQ.Next.Transport.Methods.Connection
         public Span<byte> Write(Span<byte> destination, OpenMethod method) =>
             destination
                 .Write(method.VirtualHost)
-                .Write(ProtocolConstants.ObsoleteFieldByte)
-                .Write(ProtocolConstants.ObsoleteFieldByte);
+                .Write(ProtocolConstants.ObsoleteField)
+                .Write(ProtocolConstants.ObsoleteField);
     }
 }

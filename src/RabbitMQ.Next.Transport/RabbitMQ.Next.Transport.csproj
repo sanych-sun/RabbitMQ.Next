@@ -18,11 +18,7 @@
   </ItemGroup>
   
   <ItemGroup>
-    <Compile Update="Transport\rrr.cs">
-      <DependentUpon>rrr.tt</DependentUpon>
-    </Compile>
-    <Compile Remove="Transport\ProtocolException.cs" />
-    <Compile Remove="Transport\ReadOnlySequenceExtensions.cs" />
+    <ProjectReference Include="..\RabbitMQ.Next.Abstractions\RabbitMQ.Next.Abstractions.csproj" />
   </ItemGroup>
 
 </Project>
