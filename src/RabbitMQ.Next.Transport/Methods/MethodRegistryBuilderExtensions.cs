@@ -1,4 +1,5 @@
-using System;
+using RabbitMQ.Next.Transport.Methods.Channel;
+using RabbitMQ.Next.Transport.Methods.Exchange;
 using RabbitMQ.Next.Transport.Methods.Registry;
 
 namespace RabbitMQ.Next.Transport.Methods
@@ -20,7 +21,7 @@ namespace RabbitMQ.Next.Transport.Methods
             builder.Register<Connection.OpenMethod>((uint)MethodId.ConnectionOpen,
                 registration => registration.Use(new Connection.OpenMethodFormatter()));
             builder.Register<Connection.OpenOkMethod>((uint)MethodId.ConnectionOpenOk,
-                registration => registration.Use(new Connection.OpenOkMethodParser()));
+                registration => registration.Use(new EmptyArgsParser<Connection.OpenOkMethod>()));
 
             builder.Register<Connection.CloseMethod>((uint) MethodId.ConnectionClose,
                 registration => registration
@@ -28,8 +29,8 @@ namespace RabbitMQ.Next.Transport.Methods
                     .Use(new Connection.CloseMethodParser()));
             builder.Register<Connection.CloseOkMethod>((uint) MethodId.ConnectionCloseOk,
                 registration => registration
-                    .Use(new Connection.CloseOkMethodFormatter())
-                    .Use(new Connection.CloseOkMethodParser()));
+                    .Use(new EmptyArgsFormatter<Connection.CloseOkMethod>())
+                    .Use(new EmptyArgsParser<Connection.CloseOkMethod>()));
 
             return builder;
         }
@@ -39,7 +40,7 @@ namespace RabbitMQ.Next.Transport.Methods
             builder.Register<Channel.OpenMethod>((uint) MethodId.ChannelOpen,
                 registration => registration.Use(new Channel.OpenMethodFormatter()));
             builder.Register<Channel.OpenOkMethod>((uint) MethodId.ChannelOpenOk,
-                registration => registration.Use(new Channel.OpenOkMethodParser()));
+                registration => registration.Use(new EmptyArgsParser<OpenOkMethod>()));
 
             builder.Register<Channel.FlowMethod>((uint) MethodId.ChannelFlow,
                 registration => registration
@@ -56,8 +57,8 @@ namespace RabbitMQ.Next.Transport.Methods
                     .Use(new Channel.CloseMethodParser()));
             builder.Register<Channel.CloseOkMethod>((uint) MethodId.ChannelCloseOk,
                 registration => registration
-                    .Use(new Channel.CloseOkMethodFormatter())
-                    .Use(new Channel.CloseOkMethodParser()));
+                    .Use(new EmptyArgsFormatter<CloseOkMethod>())
+                    .Use(new EmptyArgsParser<CloseOkMethod>()));
 
             return builder;
         }
@@ -67,22 +68,22 @@ namespace RabbitMQ.Next.Transport.Methods
             builder.Register<Exchange.DeclareMethod>((uint) MethodId.ExchangeDeclare,
                 registration => registration.Use(new Exchange.DeclareMethodFormatter()));
             builder.Register<Exchange.DeclareOkMethod>((uint) MethodId.ExchangeDeclareOk,
-                registration => registration.Use(new Exchange.DeclareOkMethodParser()));
+                registration => registration.Use(new EmptyArgsParser<DeclareOkMethod>()));
 
             builder.Register<Exchange.BindMethod>((uint) MethodId.ExchangeBind,
                 registration => registration.Use(new Exchange.BindMethodFormatter()));
             builder.Register<Exchange.BindOkMethod>((uint) MethodId.ExchangeBindOk,
-                registration => registration.Use(new Exchange.BindOkMethodParser()));
+                registration => registration.Use(new EmptyArgsParser<BindOkMethod>()));
             
             builder.Register<Exchange.UnbindMethod>((uint) MethodId.ExchangeUnbind,
                 registration => registration.Use(new Exchange.UnbindMethodFormatter()));
             builder.Register<Exchange.UnbindOkMethod>((uint) MethodId.ExchangeUnbindOk,
-                registration => registration.Use(new Exchange.UnbindOkMethodParser()));
+                registration => registration.Use(new EmptyArgsParser<UnbindOkMethod>()));
             
             builder.Register<Exchange.DeleteMethod>((uint) MethodId.ExchangeDelete,
                 registration => registration.Use(new Exchange.DeleteMethodFormatter()));
             builder.Register<Exchange.DeleteOkMethod>((uint) MethodId.ExchangeDeleteOk,
-                registration => registration.Use(new Exchange.DeleteOkMethodParser()));
+                registration => registration.Use(new EmptyArgsParser<DeleteOkMethod>()));
             
             return builder;
         }
