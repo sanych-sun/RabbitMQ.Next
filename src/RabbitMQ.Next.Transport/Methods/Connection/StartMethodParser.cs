@@ -16,6 +16,6 @@ namespace RabbitMQ.Next.Transport.Methods.Connection
             return new StartMethod(major, minor, mechanisms, locales, properties);
         }
 
-        public IMethod ParseMethod(ReadOnlySpan<byte> payload) => this.Parse(payload);
+        public IIncomingMethod ParseMethod(ReadOnlySpan<byte> payload) => this.Parse(payload);
     }
 }

@@ -6,6 +6,6 @@ namespace RabbitMQ.Next.Transport.Methods.Channel
     {
         public OpenOkMethod Parse(ReadOnlySpan<byte> payload) => new OpenOkMethod();
 
-        public IMethod ParseMethod(ReadOnlySpan<byte> payload) => this.Parse(payload);
+        public IIncomingMethod ParseMethod(ReadOnlySpan<byte> payload) => this.Parse(payload);
     }
 }

@@ -1,44 +1,23 @@
 using System;
 using System.Collections.Generic;
 using RabbitMQ.Next.Transport;
+using RabbitMQ.Next.Transport.Methods;
 using RabbitMQ.Next.Transport.Methods.Connection;
 using Xunit;
 
 namespace RabbitMQ.Next.Tests.Transport.Methods.Connection
 {
-    public class StartMethodTests
+    public class SerializationTests : SerializationTestBase
     {
-        [Fact]
-        public void StartMethodCtor()
+        public SerializationTests()
+            : base(builder => builder.AddConnectionMethods())
         {
-            var versionMajor = (byte)0;
-            var versionMinor = (byte)9;
-            var mechanisms = "test";
-            var locales = "en_US";
-            var props = new Dictionary<string,object>
-            {
-                ["key"] = "value",
-            };
-
-            var startMethod = new StartMethod(versionMajor, versionMinor, mechanisms, locales, props);
-
-            Assert.Equal((uint)MethodId.ConnectionStart, startMethod.Method);
-            Assert.Equal(versionMajor, startMethod.VersionMajor);
-            Assert.Equal(versionMinor, startMethod.VersionMinor);
-            Assert.Equal(mechanisms, startMethod.Mechanisms);
-            Assert.Equal(locales, startMethod.Locales);
-            Assert.Equal(props, startMethod.ServerProperties);
         }
 
         [Fact]
-        public void StartMethodFrameParser()
+        public void StartMethodParser()
         {
-            var payload = Helpers.GetFileContent("RabbitMQ.Next.Tests.Transport.Methods.Connection.StartMethodPayload.dat");
-            var parser = new StartMethodParser();
-            var data = parser.Parse(payload);
-            var dataBoxed = parser.ParseMethod(payload);
-
-            var expected = new StartMethod(0, 9, "PLAIN AMQPLAIN", "en_US",
+            var method = new StartMethod(0, 9, "PLAIN AMQPLAIN", "en_US",
                 new Dictionary<string, object>
                 {
                     ["capabilities"] = new Dictionary<string, object>
@@ -61,10 +40,59 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Connection
                     ["version"] = "3.8.2"
                 });
 
-            Assert.Equal(expected, data, new StartMethodComparer());
-            Assert.Equal(expected, (StartMethod)dataBoxed, new StartMethodComparer());
+            this.TestParser(method, new StartMethodComparer());
         }
 
+        [Fact]
+        public void StartOkMethodFormatter()
+        {
+            var clientProperties = new Dictionary<string, object>()
+            {
+                ["product"] = "RabbitMQ.Next",
+                ["version"] = "0.1.0",
+                ["capabilities"] = new Dictionary<string, object>()
+                {
+                    ["exchange_exchange_bindings"] = true
+                }
+            };
+            var method = new StartOkMethod("PLAIN", "\0test1\0test1", "en_US", clientProperties);
+
+            this.TestFormatter(method);
+        }
+
+        [Fact]
+        public void TuneMethodParser()
+            => this.TestParser(new TuneMethod(2047, 131072, 60));
+
+        [Fact]
+        public void TuneOkMethodFormatter()
+            => this.TestFormatter(new TuneOkMethod(2047, 131072, 60));
+
+        [Fact]
+        public void OpenMethodFormatter()
+            => this.TestFormatter(new OpenMethod("/"));
+
+        [Fact]
+        public void OpenOkMethodParser()
+            => this.TestParser(new OpenOkMethod());
+
+        [Fact]
+        public void CloseMethodFormatter()
+            => this.TestFormatter(new CloseMethod(ReplyCode.Success, "Goodbye", 0));
+
+        [Fact]
+        public void CloseMethodParser()
+            => this.TestParser(new CloseMethod(ReplyCode.Success, "Goodbye", 0));
+
+        [Fact]
+        public void CloseOkMethodFormatter()
+            => this.TestFormatter(new CloseOkMethod());
+
+        [Fact]
+        public void CloseOkMethodParser()
+            => this.TestParser(new CloseOkMethod());
+
+        // todo: move this to some aux namespace
         private class StartMethodComparer : IEqualityComparer<StartMethod>
         {
             public bool Equals(StartMethod x, StartMethod y)

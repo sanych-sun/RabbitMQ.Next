@@ -7,6 +7,6 @@ namespace RabbitMQ.Next.Transport.Methods.Exchange
         public UnbindOkMethod Parse(ReadOnlySpan<byte> payload)
             => new UnbindOkMethod();
 
-        public IMethod ParseMethod(ReadOnlySpan<byte> payload) => this.Parse(payload);
+        public IIncomingMethod ParseMethod(ReadOnlySpan<byte> payload) => this.Parse(payload);
     }
 }

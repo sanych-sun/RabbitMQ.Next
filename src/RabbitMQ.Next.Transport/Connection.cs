@@ -27,6 +27,7 @@ namespace RabbitMQ.Next.Transport
             var registryBuilder = new MethodRegistryBuilder();
             registryBuilder.AddConnectionMethods();
             registryBuilder.AddChannelMethods();
+            registryBuilder.AddExchangeMethods();
 
             var methodRegistry = registryBuilder.Build();
 
@@ -66,7 +67,7 @@ namespace RabbitMQ.Next.Transport
             var tuneMethod = await connectionChannel.SendAsync<StartOkMethod, TuneMethod>(new StartOkMethod("PLAIN", $"\0{this.connectionString.UserName}\0{this.connectionString.Password}", "en-US", clientProperties));
 
             await connectionChannel.SendAsync(new TuneOkMethod(tuneMethod.ChannelMax, tuneMethod.MaxFrameSize, tuneMethod.HeartbeatInterval));
-            await connectionChannel.SendAsync<OpenMethod, OpenOkMethod>(new OpenMethod("/"));
+            await connectionChannel.SendAsync<OpenMethod, OpenOkMethod>(new OpenMethod(this.connectionString.VirtualHost));
         }
 
         public async Task CloseAsync()

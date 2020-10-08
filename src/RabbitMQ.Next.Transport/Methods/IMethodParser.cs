@@ -4,7 +4,7 @@ namespace RabbitMQ.Next.Transport.Methods
 {
     public interface IMethodParser
     {
-        IMethod ParseMethod(ReadOnlySpan<byte> payload);
+        IIncomingMethod ParseMethod(ReadOnlySpan<byte> payload);
     }
 
     public interface IMethodParser<out TMethod> : IMethodParser

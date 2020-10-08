@@ -1,5 +1,5 @@
-using System;
 using System.Threading.Tasks;
+using RabbitMQ.Next.Transport;
 using Xunit;
 
 namespace RabbitMQ.Next.Tests

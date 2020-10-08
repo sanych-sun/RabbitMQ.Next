@@ -13,6 +13,6 @@ namespace RabbitMQ.Next.Transport.Methods.Connection
             return new CloseMethod((ReplyCode)status, description, methodId);
         }
 
-        public IMethod ParseMethod(ReadOnlySpan<byte> payload) => this.Parse(payload);
+        public IIncomingMethod ParseMethod(ReadOnlySpan<byte> payload) => this.Parse(payload);
     }
 }

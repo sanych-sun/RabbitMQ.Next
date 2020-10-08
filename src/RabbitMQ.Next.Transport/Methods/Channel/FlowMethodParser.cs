@@ -11,6 +11,6 @@ namespace RabbitMQ.Next.Transport.Methods.Channel
             return new FlowMethod(active);
         }
 
-        public IMethod ParseMethod(ReadOnlySpan<byte> payload) => this.Parse(payload);
+        public IIncomingMethod ParseMethod(ReadOnlySpan<byte> payload) => this.Parse(payload);
     }
 }

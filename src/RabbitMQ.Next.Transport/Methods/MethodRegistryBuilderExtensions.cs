@@ -1,8 +1,9 @@
+using System;
 using RabbitMQ.Next.Transport.Methods.Registry;
 
 namespace RabbitMQ.Next.Transport.Methods
 {
-    public static class MethodRegistryExtensions
+    public static class MethodRegistryBuilderExtensions
     {
         public static IMethodRegistryBuilder AddConnectionMethods(this IMethodRegistryBuilder builder)
         {
@@ -58,6 +59,31 @@ namespace RabbitMQ.Next.Transport.Methods
                     .Use(new Channel.CloseOkMethodFormatter())
                     .Use(new Channel.CloseOkMethodParser()));
 
+            return builder;
+        }
+
+        public static IMethodRegistryBuilder AddExchangeMethods(this IMethodRegistryBuilder builder)
+        {
+            builder.Register<Exchange.DeclareMethod>((uint) MethodId.ExchangeDeclare,
+                registration => registration.Use(new Exchange.DeclareMethodFormatter()));
+            builder.Register<Exchange.DeclareOkMethod>((uint) MethodId.ExchangeDeclareOk,
+                registration => registration.Use(new Exchange.DeclareOkMethodParser()));
+
+            builder.Register<Exchange.BindMethod>((uint) MethodId.ExchangeBind,
+                registration => registration.Use(new Exchange.BindMethodFormatter()));
+            builder.Register<Exchange.BindOkMethod>((uint) MethodId.ExchangeBindOk,
+                registration => registration.Use(new Exchange.BindOkMethodParser()));
+            
+            builder.Register<Exchange.UnbindMethod>((uint) MethodId.ExchangeUnbind,
+                registration => registration.Use(new Exchange.UnbindMethodFormatter()));
+            builder.Register<Exchange.UnbindOkMethod>((uint) MethodId.ExchangeUnbindOk,
+                registration => registration.Use(new Exchange.UnbindOkMethodParser()));
+            
+            builder.Register<Exchange.DeleteMethod>((uint) MethodId.ExchangeDelete,
+                registration => registration.Use(new Exchange.DeleteMethodFormatter()));
+            builder.Register<Exchange.DeleteOkMethod>((uint) MethodId.ExchangeDeleteOk,
+                registration => registration.Use(new Exchange.DeleteOkMethodParser()));
+            
             return builder;
         }
     }

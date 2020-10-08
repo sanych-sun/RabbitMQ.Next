@@ -79,7 +79,7 @@ namespace RabbitMQ.Next.Transport.Methods.Registry
                 return info;
             }
 
-            throw new IndexOutOfRangeException();
+            throw new NotSupportedException();
         }
     }
 }
