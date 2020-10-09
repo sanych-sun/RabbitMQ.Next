@@ -5,11 +5,13 @@ using System.IO.Pipelines;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Transport.Channels;
 using RabbitMQ.Next.Transport.Methods.Connection;
 using RabbitMQ.Next.Transport.Methods.Registry;
 using RabbitMQ.Next.Transport.Sockets;
 using RabbitMQ.Next.Transport.Methods;
+using RabbitMQ.Next.Transport.Methods.Queue;
 
 namespace RabbitMQ.Next.Transport
 {
@@ -28,6 +30,7 @@ namespace RabbitMQ.Next.Transport
             registryBuilder.AddConnectionMethods();
             registryBuilder.AddChannelMethods();
             registryBuilder.AddExchangeMethods();
+            registryBuilder.AddQueueMethods();
 
             var methodRegistry = registryBuilder.Build();
 
@@ -68,6 +71,12 @@ namespace RabbitMQ.Next.Transport
 
             await connectionChannel.SendAsync(new TuneOkMethod(tuneMethod.ChannelMax, tuneMethod.MaxFrameSize, tuneMethod.HeartbeatInterval));
             await connectionChannel.SendAsync<OpenMethod, OpenOkMethod>(new OpenMethod(this.connectionString.VirtualHost));
+
+            var ch = this.channelPool.Next();
+            await ch.SendAsync<Methods.Channel.OpenMethod, Methods.Channel.OpenOkMethod>(new Methods.Channel.OpenMethod());
+            await ch.SendAsync<DeleteMethod, DeleteOkMethod>(new DeleteMethod("my-queue", true, false));
+
+            var a = 12;
         }
 
         public async Task CloseAsync()
