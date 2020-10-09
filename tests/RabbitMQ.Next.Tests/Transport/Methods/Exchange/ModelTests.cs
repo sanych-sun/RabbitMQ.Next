@@ -22,7 +22,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Exchange
             var method = new DeclareMethod(name, type, flags, arguments);
 
             Assert.Equal((uint)MethodId.ExchangeDeclare, method.Method);
-            Assert.Equal(name, method.Name);
+            Assert.Equal(name, method.Exchange);
             Assert.Equal(type, method.Type);
             Assert.Equal(flags, method.Flags);
             Assert.Equal(arguments, method.Arguments);
@@ -101,7 +101,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Exchange
             var method = new DeleteMethod(name, unusedOnly);
 
             Assert.Equal((uint)MethodId.ExchangeDelete, method.Method);
-            Assert.Equal(name, method.Name);
+            Assert.Equal(name, method.Exchange);
             Assert.Equal(unusedOnly, method.UnusedOnly);
         }
 
