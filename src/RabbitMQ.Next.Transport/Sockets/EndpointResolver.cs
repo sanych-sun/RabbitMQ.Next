@@ -9,7 +9,7 @@ namespace RabbitMQ.Next.Transport.Sockets
 {
     internal static class EndpointResolver
     {
-        public static async Task<ISocket> OpenSocketAsync(IReadOnlyList<AmqpEndpoint> endpoints)
+        public static async Task<ISocket> OpenSocketAsync(IReadOnlyList<Endpoint> endpoints)
         {
             IPAddress FindAddress(IReadOnlyList<IPAddress> addresses, AddressFamily family)
                 => addresses.FirstOrDefault(a => a.AddressFamily == family);
