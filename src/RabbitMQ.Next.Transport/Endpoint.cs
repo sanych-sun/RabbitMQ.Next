@@ -1,8 +1,8 @@
 namespace RabbitMQ.Next.Transport
 {
-    public readonly struct AmqpEndpoint
+    public readonly struct Endpoint
     {
-        public AmqpEndpoint(string host, int port)
+        public Endpoint(string host, int port)
         {
             this.Host = host;
             this.Port = port;

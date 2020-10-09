@@ -13,7 +13,7 @@ namespace RabbitMQ.Next.Transport
         private const string DefaultPassword = "guest";
         private const string DefaultVHost = "/";
 
-        public ConnectionString(IReadOnlyList<AmqpEndpoint> endpoints, string userName, string password, string virtualHost = DefaultVHost)
+        public ConnectionString(IReadOnlyList<Endpoint> endpoints, string userName, string password, string virtualHost = DefaultVHost)
         {
             this.EndPoints = endpoints;
             this.UserName = userName;
@@ -32,7 +32,7 @@ namespace RabbitMQ.Next.Transport
 
             var endpoints = new[]
             {
-                new AmqpEndpoint(uri.Host, uri.IsDefaultPort ? DefaultPort : uri.Port)
+                new Endpoint(uri.Host, uri.IsDefaultPort ? DefaultPort : uri.Port)
             };
             var vHost = uri.GetComponents(UriComponents.Path, UriFormat.Unescaped);
             if (string.IsNullOrEmpty(vHost))
@@ -59,7 +59,7 @@ namespace RabbitMQ.Next.Transport
             return new ConnectionString(endpoints, userName, password, vHost);
         }
 
-        public IReadOnlyList<AmqpEndpoint> EndPoints { get; }
+        public IReadOnlyList<Endpoint> EndPoints { get; }
 
         public string UserName { get; }
 

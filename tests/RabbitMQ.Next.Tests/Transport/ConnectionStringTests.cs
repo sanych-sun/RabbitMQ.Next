@@ -8,12 +8,12 @@ namespace RabbitMQ.Next.Tests.Transport
     public class ConnectionStringTests
     {
         [Fact]
-        public void AmqpEndpointCtor()
+        public void EndpointCtor()
         {
             var host = "testhost";
             var port = 12345;
 
-            var endpoint = new AmqpEndpoint(host, port);
+            var endpoint = new Endpoint(host, port);
 
             Assert.Equal(host, endpoint.Host);
             Assert.Equal(port, endpoint.Port);
@@ -22,7 +22,7 @@ namespace RabbitMQ.Next.Tests.Transport
         [Fact]
         public void ConnectionStringCtor()
         {
-            var endpoints = new[] {new AmqpEndpoint("localhost", 1234)};
+            var endpoints = new[] {new Endpoint("localhost", 1234)};
             var userName = "test";
             var password = "password";
             var vHost = "/v";
@@ -57,16 +57,16 @@ namespace RabbitMQ.Next.Tests.Transport
         public static IEnumerable<object[]> CreateTestCases()
         {
             yield return new object[] {"amqp://user:pass@host:10000/vhost",
-                new ConnectionString(new[] {new AmqpEndpoint("host", 10000)}, "user", "pass", "vhost")};
+                new ConnectionString(new[] {new Endpoint("host", 10000)}, "user", "pass", "vhost")};
 
             yield return new object[] {"amqp://user%61:%61pass@ho%61st:10000/v%2fhost",
-                new ConnectionString(new[] {new AmqpEndpoint("hoast", 10000)}, "usera", "apass", "v/host")};
+                new ConnectionString(new[] {new Endpoint("hoast", 10000)}, "usera", "apass", "v/host")};
 
             yield return new object[] {"amqp://user@localhost",
-                new ConnectionString(new[] {new AmqpEndpoint("localhost", 5672)}, "user", "")};
+                new ConnectionString(new[] {new Endpoint("localhost", 5672)}, "user", "")};
 
             yield return new object[] {"amqp://[::1]",
-                new ConnectionString(new[] {new AmqpEndpoint("[::1]", 5672)}, "guest", "guest")};
+                new ConnectionString(new[] {new Endpoint("[::1]", 5672)}, "guest", "guest")};
         }
     }
 }
