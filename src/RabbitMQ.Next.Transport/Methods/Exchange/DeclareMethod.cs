@@ -5,10 +5,11 @@ namespace RabbitMQ.Next.Transport.Methods.Exchange
 {
     public readonly struct DeclareMethod : IOutgoingMethod
     {
-        public DeclareMethod(string exchange, string type, ExchangeFlags flags, IReadOnlyDictionary<string, object> arguments)
+        public DeclareMethod(string exchange, string type, bool passive, ExchangeFlags flags, IReadOnlyDictionary<string, object> arguments)
         {
             this.Exchange = exchange;
             this.Type = type;
+            this.Passive = passive;
             this.Flags = flags;
             this.Arguments = arguments;
         }
@@ -18,6 +19,8 @@ namespace RabbitMQ.Next.Transport.Methods.Exchange
         public string Exchange { get; }
 
         public string Type { get; }
+
+        public bool Passive { get; }
 
         public ExchangeFlags Flags { get; }
 

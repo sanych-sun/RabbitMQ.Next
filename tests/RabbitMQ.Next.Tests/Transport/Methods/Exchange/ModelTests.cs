@@ -13,17 +13,19 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Exchange
         {
             var name = "exchangeName";
             var type = "exchangeType";
+            var passive = true;
             var flags = ExchangeFlags.Durable;
             var arguments = new Dictionary<string, object>()
             {
                 ["a"] = "a",
             };
 
-            var method = new DeclareMethod(name, type, flags, arguments);
+            var method = new DeclareMethod(name, type, passive, flags, arguments);
 
             Assert.Equal((uint)MethodId.ExchangeDeclare, method.Method);
             Assert.Equal(name, method.Exchange);
             Assert.Equal(type, method.Type);
+            Assert.Equal(passive, method.Passive);
             Assert.Equal(flags, method.Flags);
             Assert.Equal(arguments, method.Arguments);
         }

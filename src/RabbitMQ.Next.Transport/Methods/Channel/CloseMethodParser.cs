@@ -10,7 +10,7 @@ namespace RabbitMQ.Next.Transport.Methods.Channel
                 .Read(out string description)
                 .Read(out uint methodId);
 
-            return new CloseMethod((ReplyCode)status, description, methodId);
+            return new CloseMethod(status, description, methodId);
         }
 
         public IIncomingMethod ParseMethod(ReadOnlySpan<byte> payload) => this.Parse(payload);

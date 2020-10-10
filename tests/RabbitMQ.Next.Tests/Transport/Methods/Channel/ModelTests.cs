@@ -43,12 +43,12 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Channel
         [Fact]
         public void CloseMethod()
         {
-            var method = new CloseMethod(ReplyCode.ChannelError, "SomeError", 42);
+            var method = new CloseMethod(504, "SomeError", 42);
 
             Assert.Equal((uint)MethodId.ChannelClose, method.Method);
-            Assert.Equal(ReplyCode.ChannelError, method.StatusCode);
+            Assert.Equal(504, method.StatusCode);
             Assert.Equal("SomeError", method.Description);
-            Assert.Equal((uint)42, method.FailedMethodUid);
+            Assert.Equal((uint)42, method.FailedMethodId);
         }
 
         [Fact]

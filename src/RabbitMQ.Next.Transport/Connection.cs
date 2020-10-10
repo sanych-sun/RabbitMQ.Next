@@ -11,7 +11,7 @@ using RabbitMQ.Next.Transport.Methods.Connection;
 using RabbitMQ.Next.Transport.Methods.Registry;
 using RabbitMQ.Next.Transport.Sockets;
 using RabbitMQ.Next.Transport.Methods;
-using RabbitMQ.Next.Transport.Methods.Queue;
+using RabbitMQ.Next.Transport.Methods.Exchange;
 
 namespace RabbitMQ.Next.Transport
 {
@@ -74,16 +74,23 @@ namespace RabbitMQ.Next.Transport
 
             var ch = this.channelPool.Next();
             await ch.SendAsync<Methods.Channel.OpenMethod, Methods.Channel.OpenOkMethod>(new Methods.Channel.OpenMethod());
-            await ch.SendAsync<DeleteMethod, DeleteOkMethod>(new DeleteMethod("my-queue", true, false));
-
-            var a = 12;
+            try
+            {
+                await ch.SendAsync<Methods.Exchange.DeclareMethod, Methods.Exchange.DeclareOkMethod>(
+                    new DeclareMethod("amq.exch", "fanout", false, ExchangeFlags.Durable, null));
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
         }
 
         public async Task CloseAsync()
         {
             // todo: validate state here
 
-            await this.channelPool[0].SendAsync<CloseMethod, CloseOkMethod>(new CloseMethod(ReplyCode.Success, "Goodbye", 0));
+            await this.channelPool[0].SendAsync<CloseMethod, CloseOkMethod>(new CloseMethod((ushort)ReplyCode.Success, "Goodbye", 0));
 
             this.CleanUpOnSocketClose();
         }

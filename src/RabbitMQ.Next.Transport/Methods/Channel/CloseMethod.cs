@@ -2,19 +2,19 @@ namespace RabbitMQ.Next.Transport.Methods.Channel
 {
     public readonly struct CloseMethod : IIncomingMethod, IOutgoingMethod
     {
-        public CloseMethod(ReplyCode statusCode, string description, uint failedMethod)
+        public CloseMethod(ushort statusCode, string description, uint failedMethod)
         {
             this.StatusCode = statusCode;
             this.Description = description;
-            this.FailedMethodUid = failedMethod;
+            this.FailedMethodId = failedMethod;
         }
 
         public uint Method => (uint) MethodId.ChannelClose;
 
-        public ReplyCode StatusCode { get; }
+        public ushort StatusCode { get; }
 
         public string Description { get; }
 
-        public uint FailedMethodUid { get; }
+        public uint FailedMethodId { get; }
     }
 }

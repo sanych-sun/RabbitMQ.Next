@@ -14,7 +14,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Queue
 
         [Fact]
         public void DeclareMethodFormatter()
-            => this.TestFormatter(new DeclareMethod("my-queue", QueueFlags.Durable, new Dictionary<string, object> {["a"] = "a"}));
+            => this.TestFormatter(new DeclareMethod("my-queue", false, QueueFlags.Durable, new Dictionary<string, object> {["a"] = "a"}));
 
         [Fact]
         public void DeclareOkMethodParser()

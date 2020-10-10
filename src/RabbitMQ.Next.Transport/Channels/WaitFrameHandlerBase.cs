@@ -2,6 +2,7 @@ using System;
 using System.Buffers;
 using System.Threading;
 using System.Threading.Tasks;
+using RabbitMQ.Next.Abstractions.Exceptions;
 using RabbitMQ.Next.Transport.Methods;
 using RabbitMQ.Next.Transport.Methods.Registry;
 
@@ -9,29 +10,28 @@ namespace RabbitMQ.Next.Transport.Channels
 {
     internal abstract class WaitFrameHandlerBase : FrameHandlerBase, IFrameHandler
     {
-        private readonly SemaphoreSlim responseSync;
-
+        private readonly Action cancellationHandler;
         private uint expectedMethodId;
-        private IMethod methodArgs;
+        private TaskCompletionSource<IIncomingMethod> waitingTask;
 
         protected WaitFrameHandlerBase(IMethodRegistry registry)
             : base(registry)
         {
-            this.responseSync = new SemaphoreSlim(0);
+            this.cancellationHandler = this.CancelCurrentWaiting;
         }
 
-        protected async Task<IMethod> WaitAsyncInternal(uint methodId, CancellationToken cancellation = default)
+        protected Task<IIncomingMethod> WaitAsyncInternal(uint methodId, CancellationToken cancellation = default)
         {
             // todo: validate state, should probably throw if in wait state already
             this.expectedMethodId = methodId;
 
-            await this.responseSync.WaitAsync(cancellation);
+            this.waitingTask = new TaskCompletionSource<IIncomingMethod>();
+            if (cancellation != default)
+            {
+                cancellation.Register(this.cancellationHandler);
+            }
 
-            var result = this.methodArgs;
-            this.methodArgs = null;
-            this.expectedMethodId = 0;
-
-            return result;
+            return this.waitingTask.Task;
         }
 
         bool IFrameHandler.Handle(FrameType frameType, ReadOnlySequence<byte> payload)
@@ -45,14 +45,31 @@ namespace RabbitMQ.Next.Transport.Channels
 
             if (methodId == this.expectedMethodId)
             {
-                this.methodArgs = this.ParseMethodArguments(methodId, payload);
-                this.responseSync.Release();
+                var task = this.waitingTask;
+                this.expectedMethodId = 0;
+                this.waitingTask = null;
+
+                task.SetResult(this.ParseMethodArguments(methodId, payload));
 
                 return true;
             }
 
-            // todo: throw connection exception here
-            throw new InvalidOperationException();
+            if (methodId == (uint) MethodId.ChannelClose)
+            {
+                var channelClose = this.ParseArguments<Methods.Channel.CloseMethod>(payload);
+
+                var task = this.waitingTask;
+                this.expectedMethodId = 0;
+                this.waitingTask = null;
+                task.SetException(new ChannelException(channelClose.StatusCode, channelClose.Description, channelClose.FailedMethodId));
+            }
+
+            return false;
+        }
+
+        private void CancelCurrentWaiting()
+        {
+            this.waitingTask?.SetCanceled();
         }
     }
 }

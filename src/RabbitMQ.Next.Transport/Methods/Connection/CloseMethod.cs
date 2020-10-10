@@ -4,14 +4,14 @@ namespace RabbitMQ.Next.Transport.Methods.Connection
     {
         public uint Method => (uint) MethodId.ConnectionClose;
 
-        public CloseMethod(ReplyCode statusCode, string description, uint failedMethod)
+        public CloseMethod(ushort statusCode, string description, uint failedMethod)
         {
             this.StatusCode = statusCode;
             this.Description = description;
             this.FailedMethodUid = failedMethod;
         }
 
-        public ReplyCode StatusCode { get; }
+        public ushort StatusCode { get; }
 
         public string Description { get; }
 

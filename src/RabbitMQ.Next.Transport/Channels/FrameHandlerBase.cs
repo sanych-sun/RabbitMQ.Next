@@ -30,7 +30,7 @@ namespace RabbitMQ.Next.Transport.Channels
             return payload.Slice(sizeof(uint));
         }
 
-        protected IMethod ParseMethodArguments(uint methodId, ReadOnlySequence<byte> payload)
+        protected IIncomingMethod ParseMethodArguments(uint methodId, ReadOnlySequence<byte> payload)
         {
             var parser = this.Registry.GetParser(methodId);
 
@@ -43,6 +43,22 @@ namespace RabbitMQ.Next.Transport.Channels
             Span<byte> data = stackalloc byte[(int) payload.Length];
             payload.CopyTo(data);
             return parser.ParseMethod(data);
+        }
+
+        protected TMethod ParseArguments<TMethod>(ReadOnlySequence<byte> payload)
+            where TMethod: struct, IIncomingMethod
+        {
+            var parser = this.Registry.GetParser<TMethod>();
+
+            if (payload.IsSingleSegment)
+            {
+                return parser.Parse(payload.FirstSpan);
+            }
+
+            // todo: use memorypool here?
+            Span<byte> data = stackalloc byte[(int) payload.Length];
+            payload.CopyTo(data);
+            return parser.Parse(data);
         }
     }
 }

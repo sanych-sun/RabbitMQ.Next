@@ -12,16 +12,18 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Queue
         public void DeclareMethod()
         {
             var name = "queueName";
+            var passive = true;
             var flags = QueueFlags.Durable;
             var arguments = new Dictionary<string, object>()
             {
                 ["a"] = "a",
             };
 
-            var method = new DeclareMethod(name, flags, arguments);
+            var method = new DeclareMethod(name, passive, flags, arguments);
 
             Assert.Equal((uint)MethodId.QueueDeclare, method.Method);
             Assert.Equal(name, method.Queue);
+            Assert.Equal(passive, method.Passive);
             Assert.Equal(flags, method.Flags);
             Assert.Equal(arguments, method.Arguments);
         }

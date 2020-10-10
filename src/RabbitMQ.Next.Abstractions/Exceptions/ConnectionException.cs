@@ -1,6 +1,6 @@
 using System;
 
-namespace RabbitMQ.Next.Transport.Exceptions
+namespace RabbitMQ.Next.Abstractions.Exceptions
 {
     public class ConnectionException : Exception
     {

@@ -1,6 +1,6 @@
 namespace RabbitMQ.Next.Transport
 {
-    public enum ReplyCode : ushort
+    internal enum ReplyCode : ushort
     {
         Success = 200,
         ContentTooLarge = 311,

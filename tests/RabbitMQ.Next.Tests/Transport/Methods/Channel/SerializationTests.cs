@@ -37,11 +37,11 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Channel
 
         [Fact]
         public void CloseMethodFormatter()
-            => this.TestFormatter(new CloseMethod(ReplyCode.Success, "Goodbye", 0));
+            => this.TestFormatter(new CloseMethod(200, "Goodbye", 0));
 
         [Fact]
         public void CloseMethodParser()
-            => this.TestParser(new CloseMethod(ReplyCode.Success, "Goodbye", 0));
+            => this.TestParser(new CloseMethod(200, "Goodbye", 0));
 
         [Fact]
         public void CloseOkMethodFormatter()
