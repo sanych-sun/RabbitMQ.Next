@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using RabbitMQ.Next.Abstractions.Methods;
 using RabbitMQ.Next.Transport.Methods;
 using RabbitMQ.Next.Transport.Methods.Registry;
 using Xunit;

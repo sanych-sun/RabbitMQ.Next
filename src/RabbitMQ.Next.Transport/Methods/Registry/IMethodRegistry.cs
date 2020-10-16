@@ -1,4 +1,5 @@
 using System;
+using RabbitMQ.Next.Abstractions.Methods;
 
 namespace RabbitMQ.Next.Transport.Methods.Registry
 {

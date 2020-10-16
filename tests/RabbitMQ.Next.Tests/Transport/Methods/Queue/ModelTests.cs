@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Methods.Queue;
 using Xunit;
@@ -13,19 +12,33 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Queue
         {
             var name = "queueName";
             var passive = true;
-            var flags = QueueFlags.Durable;
+            var flags = (byte)42;
             var arguments = new Dictionary<string, object>()
             {
                 ["a"] = "a",
             };
 
-            var method = new DeclareMethod(name, passive, flags, arguments);
+            var method = new DeclareMethod(name, flags, arguments);
 
             Assert.Equal((uint)MethodId.QueueDeclare, method.Method);
             Assert.Equal(name, method.Queue);
-            Assert.Equal(passive, method.Passive);
             Assert.Equal(flags, method.Flags);
             Assert.Equal(arguments, method.Arguments);
+        }
+
+        [Theory]
+        [InlineData(0b_00000000, false, false, false, false, false)]
+        [InlineData(0b_00000001, true, false, false, false, false)]
+        [InlineData(0b_00000010, false, true, false, false, false)]
+        [InlineData(0b_00000100, false, false, true, false, false)]
+        [InlineData(0b_00001000, false, false, false, true, false)]
+        [InlineData(0b_00010000, false, false, false, false, true)]
+        [InlineData(0b_00011111, true, true, true, true, true)]
+        public void DeclareMethodFlags(byte expected, bool passive, bool durable, bool exclusive, bool autoDelete, bool nowait)
+        {
+            var method = new DeclareMethod("queue", passive, durable, exclusive, autoDelete, nowait, null);
+
+            Assert.Equal(expected, method.Flags);
         }
 
         [Fact]

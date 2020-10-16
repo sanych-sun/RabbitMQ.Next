@@ -8,6 +8,6 @@ namespace RabbitMQ.Next.Transport.Methods.Queue
             => destination
                 .Write((short) ProtocolConstants.ObsoleteField)
                 .Write(method.Queue)
-                .WriteBits(method.UnusedOnly, method.EmptyOnly);
+                .Write(BitConverter.ComposeFlags(method.UnusedOnly, method.EmptyOnly));
     }
 }

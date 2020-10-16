@@ -6,6 +6,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
+using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Transport.Channels;
 using RabbitMQ.Next.Transport.Methods.Connection;
 using RabbitMQ.Next.Transport.Methods.Registry;
@@ -72,18 +73,27 @@ namespace RabbitMQ.Next.Transport
             await connectionChannel.SendAsync(new TuneOkMethod(tuneMethod.ChannelMax, tuneMethod.MaxFrameSize, tuneMethod.HeartbeatInterval));
             await connectionChannel.SendAsync<OpenMethod, OpenOkMethod>(new OpenMethod(this.connectionString.VirtualHost));
 
-            var ch = this.channelPool.Next();
-            await ch.SendAsync<Methods.Channel.OpenMethod, Methods.Channel.OpenOkMethod>(new Methods.Channel.OpenMethod());
+            var ch = await this.OpenChannelAsync();
             try
             {
                 await ch.SendAsync<Methods.Exchange.DeclareMethod, Methods.Exchange.DeclareOkMethod>(
-                    new DeclareMethod("amq.exch", "fanout", false, ExchangeFlags.Durable, null));
+                    new DeclareMethod("amq.exch", "fanout", false, true, false, false, false, null));
             }
             catch (Exception e)
             {
                 Console.WriteLine(e);
                 throw;
             }
+        }
+
+        public async Task<IChannel> OpenChannelAsync()
+        {
+            // TODO: validate state
+
+            var channel = this.channelPool.Next();
+            await channel.SendAsync<Methods.Channel.OpenMethod, Methods.Channel.OpenOkMethod>(new Methods.Channel.OpenMethod());
+
+            return channel;
         }
 
         public async Task CloseAsync()

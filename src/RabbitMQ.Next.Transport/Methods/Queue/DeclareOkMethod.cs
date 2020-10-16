@@ -1,3 +1,5 @@
+using RabbitMQ.Next.Abstractions.Methods;
+
 namespace RabbitMQ.Next.Transport.Methods.Queue
 {
     public readonly struct DeclareOkMethod : IIncomingMethod

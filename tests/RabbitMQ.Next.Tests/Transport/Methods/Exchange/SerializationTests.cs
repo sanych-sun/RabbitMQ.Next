@@ -14,7 +14,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Exchange
 
         [Fact]
         public void DeclareMethodFormatter()
-            => this.TestFormatter(new DeclareMethod("myexchange", "direct", false, ExchangeFlags.Durable, null));
+            => this.TestFormatter(new DeclareMethod("myexchange", "direct", false, true, false, false, false,null));
 
 
         [Fact]

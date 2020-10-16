@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using RabbitMQ.Next.Abstractions.Methods;
 
 namespace RabbitMQ.Next.Transport.Methods.Connection
 {

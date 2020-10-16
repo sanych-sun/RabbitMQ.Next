@@ -1,6 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
-using RabbitMQ.Next.Transport.Methods;
+using RabbitMQ.Next.Abstractions.Methods;
 using RabbitMQ.Next.Transport.Methods.Registry;
 
 namespace RabbitMQ.Next.Transport.Channels

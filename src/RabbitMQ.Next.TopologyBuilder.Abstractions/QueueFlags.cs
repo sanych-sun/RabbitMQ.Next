@@ -1,4 +1,4 @@
-namespace RabbitMQ.Next.Abstractions
+namespace RabbitMQ.Next.TopologyBuilder.Abstractions
 {
     public enum QueueFlags : byte
     {

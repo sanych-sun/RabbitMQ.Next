@@ -3,7 +3,7 @@ using System.Buffers;
 using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions.Exceptions;
-using RabbitMQ.Next.Transport.Methods;
+using RabbitMQ.Next.Abstractions.Methods;
 using RabbitMQ.Next.Transport.Methods.Registry;
 
 namespace RabbitMQ.Next.Transport.Channels
@@ -43,9 +43,9 @@ namespace RabbitMQ.Next.Transport.Channels
 
             payload = this.ReadMethodId(payload, out var methodId);
 
+            var task = this.waitingTask;
             if (methodId == this.expectedMethodId)
             {
-                var task = this.waitingTask;
                 this.expectedMethodId = 0;
                 this.waitingTask = null;
 
@@ -58,10 +58,14 @@ namespace RabbitMQ.Next.Transport.Channels
             {
                 var channelClose = this.ParseArguments<Methods.Channel.CloseMethod>(payload);
 
-                var task = this.waitingTask;
-                this.expectedMethodId = 0;
-                this.waitingTask = null;
-                task.SetException(new ChannelException(channelClose.StatusCode, channelClose.Description, channelClose.FailedMethodId));
+                if (this.expectedMethodId == channelClose.FailedMethodId)
+                {
+                    task.SetException(new ChannelException(channelClose.StatusCode, channelClose.Description, channelClose.FailedMethodId));
+                }
+                else
+                {
+                    task.SetCanceled();
+                }
             }
 
             return false;

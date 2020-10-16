@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Transport.Methods;
 using RabbitMQ.Next.Transport.Methods.Queue;
 using Xunit;
@@ -14,7 +13,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Queue
 
         [Fact]
         public void DeclareMethodFormatter()
-            => this.TestFormatter(new DeclareMethod("my-queue", false, QueueFlags.Durable, new Dictionary<string, object> {["a"] = "a"}));
+            => this.TestFormatter(new DeclareMethod("my-queue", false, true, false, false, false, new Dictionary<string, object> {["a"] = "a"}));
 
         [Fact]
         public void DeclareOkMethodParser()

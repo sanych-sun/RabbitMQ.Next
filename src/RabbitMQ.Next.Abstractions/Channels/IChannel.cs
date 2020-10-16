@@ -1,9 +1,9 @@
 using System.Buffers;
 using System.Threading;
 using System.Threading.Tasks;
-using RabbitMQ.Next.Transport.Methods;
+using RabbitMQ.Next.Abstractions.Methods;
 
-namespace RabbitMQ.Next.Transport.Channels
+namespace RabbitMQ.Next.Abstractions.Channels
 {
     public interface IChannel
     {

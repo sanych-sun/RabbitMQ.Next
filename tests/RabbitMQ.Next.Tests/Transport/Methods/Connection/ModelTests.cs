@@ -106,7 +106,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Connection
             Assert.Equal((uint)MethodId.ConnectionClose, method.Method);
             Assert.Equal(504, method.StatusCode);
             Assert.Equal("SomeError", method.Description);
-            Assert.Equal((uint)42, method.FailedMethodUid);
+            Assert.Equal((uint)42, method.FailedMethodId);
         }
 
         [Fact]

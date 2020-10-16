@@ -2,19 +2,10 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
-    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="InternalsVisibleTo.MSBuild" Version="1.0.3">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-    </PackageReference>
     <PackageReference Include="System.IO.Pipelines" Version="4.7.0" />
-  </ItemGroup>
-  
-  <ItemGroup>
-    <InternalsVisibleTo Include="RabbitMQ.Next.Tests" />
   </ItemGroup>
   
   <ItemGroup>

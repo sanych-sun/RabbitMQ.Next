@@ -1,3 +1,5 @@
+using RabbitMQ.Next.Abstractions.Methods;
+
 namespace RabbitMQ.Next.Transport.Methods.Connection
 {
     public readonly struct CloseMethod : IIncomingMethod, IOutgoingMethod
@@ -8,13 +10,13 @@ namespace RabbitMQ.Next.Transport.Methods.Connection
         {
             this.StatusCode = statusCode;
             this.Description = description;
-            this.FailedMethodUid = failedMethod;
+            this.FailedMethodId = failedMethod;
         }
 
         public ushort StatusCode { get; }
 
         public string Description { get; }
 
-        public uint FailedMethodUid { get; }
+        public uint FailedMethodId { get; }
     }
 }
