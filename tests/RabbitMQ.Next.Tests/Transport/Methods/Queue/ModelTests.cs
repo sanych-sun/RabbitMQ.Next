@@ -11,7 +11,6 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Queue
         public void DeclareMethod()
         {
             var name = "queueName";
-            var passive = true;
             var flags = (byte)42;
             var arguments = new Dictionary<string, object>()
             {

@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\RabbitMQ.Next.TopologyBuilder.Abstractions\RabbitMQ.Next.TopologyBuilder.Abstractions.csproj" />
     <ProjectReference Include="..\RabbitMQ.Next.Transport\RabbitMQ.Next.Transport.csproj" />
   </ItemGroup>
 

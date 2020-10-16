@@ -1,11 +1,14 @@
+using System;
+using System.Threading.Tasks;
+
 namespace RabbitMQ.Next.TopologyBuilder.Abstractions
 {
     public interface ITopologyBuilder
     {
-        IExchangeBuilder DeclareExchange(string name, string type);
+        Task DeclareExchangeAsync(string name, string type, Action<IExchangeBuilder> builder = null);
 
-        IQueueBuilder DeclareQueue(string name);
+        Task DeclareQueueAsync(string name, Action<IQueueBuilder> builder = null);
 
-        IBindingBuilder Bind(string source, BindingTarget type, string destination);
+        Task BindAsync(string source, BindingTarget type, string destination, Action<IBindingBuilder> builder = null);
     }
 }
