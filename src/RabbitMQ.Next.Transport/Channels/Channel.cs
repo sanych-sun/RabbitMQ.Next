@@ -12,19 +12,21 @@ namespace RabbitMQ.Next.Transport.Channels
 {
     internal sealed class Channel : IChannel, IDisposable
     {
-        private readonly IMethodSender methodSender;
+        private readonly IFrameSender frameSender;
+        private readonly IMethodRegistry methodRegistry;
         private readonly WaitMethodFrameHandler waitFrameHandler;
-        private readonly RpcMethodHandler rpcHandler;
+        private readonly SemaphoreSlim senderSync;
 
         private readonly IList<IFrameHandler> methodHandlers;
 
-        public Channel(Pipe pipe, IMethodRegistry methodRegistry, IMethodSender methodSender)
+        public Channel(Pipe pipe, IMethodRegistry methodRegistry, IFrameSender frameSender)
         {
             this.Pipe = pipe;
-            this.methodSender = methodSender;
+            this.frameSender = frameSender;
+            this.methodRegistry = methodRegistry;
             this.waitFrameHandler = new WaitMethodFrameHandler(methodRegistry);
-            this.rpcHandler = new RpcMethodHandler(methodRegistry, this.methodSender);
-            this.methodHandlers = new List<IFrameHandler> { this.waitFrameHandler, this.rpcHandler };
+            this.methodHandlers = new List<IFrameHandler> { this.waitFrameHandler };
+            this.senderSync = new SemaphoreSlim(1,1);
 
             Task.Run(() => this.LoopAsync(pipe.Reader));
         }
@@ -36,19 +38,48 @@ namespace RabbitMQ.Next.Transport.Channels
             // todo: implement proper resources cleanup
         }
 
-        public Task SendAsync<TMethod>(TMethod request, ReadOnlySequence<byte> content = default)
-            where TMethod : struct, IOutgoingMethod =>
-            this.methodSender.SendAsync(request, content);
+        public async Task SendAsync<TMethod>(TMethod request, ReadOnlySequence<byte> content = default)
+            where TMethod : struct, IOutgoingMethod
+        {
+            await this.senderSync.WaitAsync();
 
-        public Task<TMethod> WaitAsync<TMethod>(CancellationToken cancellation = default)
-            where TMethod : struct, IIncomingMethod =>
-            this.waitFrameHandler.WaitAsync<TMethod>(cancellation);
+            try
+            {
+                await this.frameSender.SendMethodAsync(request);
+            }
+            finally
+            {
+                this.senderSync.Release();
+            }
+        }
 
-        public Task<TResponse> SendAsync<TRequest, TResponse>(TRequest request, ReadOnlySequence<byte> content = default, CancellationToken cancellation = default)
+        public async Task<TMethod> WaitAsync<TMethod>(CancellationToken cancellation = default)
+            where TMethod : struct, IIncomingMethod
+        {
+            var expectedId = this.methodRegistry.GetMethodId<TMethod>();
+            var result = await this.waitFrameHandler.WaitAsync(expectedId, cancellation);
+            return (TMethod) result;
+        }
+
+        public async Task<TResponse> SendAsync<TRequest, TResponse>(TRequest request, ReadOnlySequence<byte> content = default)
             where TRequest : struct, IOutgoingMethod
-            where TResponse : struct, IIncomingMethod =>
-            this.rpcHandler.SendAsync<TRequest, TResponse>(request, content, cancellation);
+            where TResponse : struct, IIncomingMethod
+        {
+            var expectedId = this.methodRegistry.GetMethodId<TResponse>();
+            await this.senderSync.WaitAsync();
 
+            try
+            {
+                await this.frameSender.SendMethodAsync(request);
+
+                var result = await this.waitFrameHandler.WaitAsync(expectedId);
+                return (TResponse) result;
+            }
+            finally
+            {
+                this.senderSync.Release();
+            }
+        }
 
         private async Task LoopAsync(PipeReader pipeReader)
         {

@@ -38,7 +38,7 @@ namespace RabbitMQ.Next.Transport
             Func<int, Channel> channelFactory = (channelNumber) =>
             {
                 var pipe = new Pipe();
-                var methodSender = new MethodSender(this, methodRegistry, (ushort) channelNumber);
+                var methodSender = new FrameSender(this, methodRegistry, (ushort) channelNumber);
                 return new Channel(pipe, methodRegistry, methodSender);
             };
 
@@ -68,8 +68,9 @@ namespace RabbitMQ.Next.Transport
                 ["platform"] = Environment.OSVersion.ToString(),
             };
 
-            var tuneMethod = await connectionChannel.SendAsync<StartOkMethod, TuneMethod>(new StartOkMethod("PLAIN", $"\0{this.connectionString.UserName}\0{this.connectionString.Password}", "en-US", clientProperties));
+            await connectionChannel.SendAsync(new StartOkMethod("PLAIN", $"\0{this.connectionString.UserName}\0{this.connectionString.Password}", "en-US", clientProperties));
 
+            var tuneMethod = await connectionChannel.WaitAsync<TuneMethod>();
             await connectionChannel.SendAsync(new TuneOkMethod(tuneMethod.ChannelMax, tuneMethod.MaxFrameSize, tuneMethod.HeartbeatInterval));
             await connectionChannel.SendAsync<OpenMethod, OpenOkMethod>(new OpenMethod(this.connectionString.VirtualHost));
 
@@ -77,7 +78,7 @@ namespace RabbitMQ.Next.Transport
             try
             {
                 await ch.SendAsync<Methods.Exchange.DeclareMethod, Methods.Exchange.DeclareOkMethod>(
-                    new DeclareMethod("amq.exch", "fanout", false, true, false, false, false, null));
+                    new DeclareMethod("MyExchange", "fanout", false, true, false, false, false, null));
             }
             catch (Exception e)
             {

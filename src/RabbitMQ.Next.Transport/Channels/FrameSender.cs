@@ -1,59 +1,29 @@
 using System;
-using System.Buffers;
-using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions.Methods;
 using RabbitMQ.Next.Transport.Methods.Registry;
 
 namespace RabbitMQ.Next.Transport.Channels
 {
-    internal class MethodSender : IMethodSender
+    internal class FrameSender : IFrameSender
     {
         private readonly ISocketWriter socketWriter;
         private readonly IMethodRegistry registry;
         private readonly ushort channelNumber;
-        private readonly SemaphoreSlim writerSync;
-        private Memory<byte> writerBuffer;
+        // TODO: use array pool instead
+        private readonly Memory<byte> writerBuffer;
 
-        public MethodSender(ISocketWriter socketWriter, IMethodRegistry registry, ushort channelNumber)
+        public FrameSender(ISocketWriter socketWriter, IMethodRegistry registry, ushort channelNumber, int maxFrameSize = ProtocolConstants.FrameMinSize)
         {
             this.socketWriter = socketWriter;
             this.registry = registry;
             this.channelNumber = channelNumber;
-            this.writerSync = new SemaphoreSlim(1);
-            this.writerBuffer = new byte[ProtocolConstants.FrameMinSize];
+            this.writerBuffer = new byte[maxFrameSize + ProtocolConstants.FrameHeaderSize];
         }
 
-        public async Task SendAsync<TMethod>(TMethod method)
-            where TMethod : struct, IOutgoingMethod
-        {
-            await this.writerSync.WaitAsync();
-
-            try
-            {
-                await this.SendMethodFrameInternalAsync(method);
-            }
-            finally
-            {
-                this.writerSync.Release();
-            }
-        }
-
-        public async Task SendAsync<TMethod>(TMethod method, ReadOnlySequence<byte> content)
-            where TMethod : struct, IOutgoingMethod
-        {
-            await this.writerSync.WaitAsync();
-
-            try
-            {
-                await this.SendMethodFrameInternalAsync(method);
-                // TODO: send content frame(s)
-            }
-            finally
-            {
-                this.writerSync.Release();
-            }
-        }
+        public Task SendMethodAsync<TMethod>(TMethod method)
+            where TMethod : struct, IOutgoingMethod =>
+            this.SendMethodFrameInternalAsync(method);
 
         private Task SendMethodFrameInternalAsync<TMethod>(TMethod method)
             where TMethod : struct, IOutgoingMethod

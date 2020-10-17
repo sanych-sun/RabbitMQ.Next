@@ -13,7 +13,7 @@ namespace RabbitMQ.Next.Abstractions.Channels
         Task<TMethod> WaitAsync<TMethod>(CancellationToken cancellation = default)
             where TMethod : struct, IIncomingMethod;
 
-        Task<TResponse> SendAsync<TRequest, TResponse>(TRequest request, ReadOnlySequence<byte> content = default, CancellationToken cancellation = default)
+        Task<TResponse> SendAsync<TRequest, TResponse>(TRequest request, ReadOnlySequence<byte> content = default)
             where TRequest : struct, IOutgoingMethod
             where TResponse : struct, IIncomingMethod;
     }
