@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace RabbitMQ.Next.TopologyBuilder.Abstractions
@@ -8,6 +9,8 @@ namespace RabbitMQ.Next.TopologyBuilder.Abstractions
 
         QueueFlags Flags { get; set; }
 
-        IDictionary<string, object> Arguments { get; }
+        void SetArgument(string key, object value);
+
+        void BindTo(string exchange, Action<IQueueBindingBuilder> builder = null);
     }
 }

@@ -7,6 +7,8 @@ namespace RabbitMQ.Next.Abstractions.Channels
 {
     public interface IChannel
     {
+        bool IsClosed { get; }
+
         Task SendAsync<TMethod>(TMethod request, ReadOnlySequence<byte> content = default)
             where TMethod : struct, IOutgoingMethod;
 

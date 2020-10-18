@@ -38,6 +38,8 @@ namespace RabbitMQ.Next.Transport.Channels
             // todo: implement proper resources cleanup
         }
 
+        public bool IsClosed { get; }
+
         public async Task SendAsync<TMethod>(TMethod request, ReadOnlySequence<byte> content = default)
             where TMethod : struct, IOutgoingMethod
         {

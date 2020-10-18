@@ -5,6 +5,10 @@ namespace RabbitMQ.Next.Abstractions
 {
     public interface IConnection
     {
-        Task<IChannel> OpenChannelAsync();
+        Task<IChannel> CreateChannelAsync();
+
+        Task CloseAsync();
+
+        ConnectionState State { get; }
     }
 }

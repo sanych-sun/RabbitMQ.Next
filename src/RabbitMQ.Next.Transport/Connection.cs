@@ -12,11 +12,10 @@ using RabbitMQ.Next.Transport.Methods.Connection;
 using RabbitMQ.Next.Transport.Methods.Registry;
 using RabbitMQ.Next.Transport.Sockets;
 using RabbitMQ.Next.Transport.Methods;
-using RabbitMQ.Next.Transport.Methods.Exchange;
 
 namespace RabbitMQ.Next.Transport
 {
-    internal class Connection : ISocketWriter
+    internal class Connection : IConnection, ISocketWriter
     {
         private readonly SemaphoreSlim writerSemaphore;
         private readonly ChannelPool channelPool;
@@ -27,6 +26,7 @@ namespace RabbitMQ.Next.Transport
 
         public Connection(ConnectionString connectionString)
         {
+            this.State = ConnectionState.Pending;
             var registryBuilder = new MethodRegistryBuilder();
             registryBuilder.AddConnectionMethods();
             registryBuilder.AddChannelMethods();
@@ -49,7 +49,10 @@ namespace RabbitMQ.Next.Transport
 
         public async Task ConnectAsync()
         {
+            this.State = ConnectionState.Connecting;
             this.socket = await EndpointResolver.OpenSocketAsync(this.connectionString.EndPoints);
+
+            this.State = ConnectionState.Negotiating;
             var connectionChannel = this.channelPool.Next();
 
             var socketReadThread = new Thread(this.ReceiveLoop);
@@ -74,20 +77,12 @@ namespace RabbitMQ.Next.Transport
             await connectionChannel.SendAsync(new TuneOkMethod(tuneMethod.ChannelMax, tuneMethod.MaxFrameSize, tuneMethod.HeartbeatInterval));
             await connectionChannel.SendAsync<OpenMethod, OpenOkMethod>(new OpenMethod(this.connectionString.VirtualHost));
 
-            var ch = await this.OpenChannelAsync();
-            try
-            {
-                await ch.SendAsync<Methods.Exchange.DeclareMethod, Methods.Exchange.DeclareOkMethod>(
-                    new DeclareMethod("MyExchange", "fanout", false, true, false, false, false, null));
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-                throw;
-            }
+            this.State = ConnectionState.Open;
         }
 
-        public async Task<IChannel> OpenChannelAsync()
+        public ConnectionState State { get; private set; }
+
+        public async Task<IChannel> CreateChannelAsync()
         {
             // TODO: validate state
 
@@ -104,6 +99,8 @@ namespace RabbitMQ.Next.Transport
             await this.channelPool[0].SendAsync<CloseMethod, CloseOkMethod>(new CloseMethod((ushort)ReplyCode.Success, "Goodbye", 0));
 
             this.CleanUpOnSocketClose();
+
+            this.State = ConnectionState.Closed;
         }
 
 
