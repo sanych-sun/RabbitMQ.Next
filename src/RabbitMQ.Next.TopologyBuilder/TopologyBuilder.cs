@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
@@ -8,6 +9,7 @@ namespace RabbitMQ.Next.TopologyBuilder
 {
     internal class TopologyBuilder : ITopologyBuilder
     {
+        private readonly SemaphoreSlim sync = new SemaphoreSlim(1,1);
         private IChannel channel;
 
         public TopologyBuilder(IConnection connection)
@@ -71,10 +73,17 @@ namespace RabbitMQ.Next.TopologyBuilder
                 throw new InvalidOperationException("Connection should be in Open state to use the API");
             }
 
-            var ch = await this.Connection.CreateChannelAsync();
-            this.channel = ch;
+            await this.sync.WaitAsync();
 
-            return ch;
+            try
+            {
+                this.channel ??= await this.Connection.CreateChannelAsync();
+                return this.channel;
+            }
+            finally
+            {
+                this.sync.Release();
+            }
         }
     }
 }
