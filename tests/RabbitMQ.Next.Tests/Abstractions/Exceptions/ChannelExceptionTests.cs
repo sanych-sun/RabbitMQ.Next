@@ -8,7 +8,7 @@ namespace RabbitMQ.Next.Tests.Abstractions.Exceptions
         [Fact]
         public void ChannelExceptionCtor()
         {
-            var errorCode = 404;
+            var errorCode = (ushort)404;
             var description = "not found";
             var failedMethodId = (uint)42;
 

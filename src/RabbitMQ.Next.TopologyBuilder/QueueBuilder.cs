@@ -1,6 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using RabbitMQ.Next.Abstractions.Channels;
+using RabbitMQ.Next.Abstractions.Exceptions;
 using RabbitMQ.Next.TopologyBuilder.Abstractions;
+using RabbitMQ.Next.TopologyBuilder.Abstractions.Exceptions;
+using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Methods.Queue;
 
 namespace RabbitMQ.Next.TopologyBuilder
@@ -8,7 +13,6 @@ namespace RabbitMQ.Next.TopologyBuilder
     internal class QueueBuilder : IQueueBuilder
     {
         private Dictionary<string, object> arguments;
-        private List<QueueBindingBuilder> bindings;
 
         public QueueBuilder(string name)
         {
@@ -25,18 +29,27 @@ namespace RabbitMQ.Next.TopologyBuilder
             this.arguments[key] = value;
         }
 
-        public IReadOnlyList<QueueBindingBuilder> Bindings => this.bindings;
-
-        public void BindTo(string exchange, Action<IQueueBindingBuilder> builder = null)
-        {
-            var binding = new QueueBindingBuilder(exchange, this.Name);
-            builder?.Invoke(binding);
-
-            this.bindings ??= new List<QueueBindingBuilder>();
-            this.bindings.Add(binding);
-        }
-
         public DeclareMethod ToMethod()
             => new DeclareMethod(this.Name, (byte)this.Flags, this.arguments);
+
+        public async Task ApplyAsync(IChannel channel)
+        {
+            try
+            {
+                await channel.SendAsync<DeclareMethod, DeclareOkMethod>(this.ToMethod());
+            }
+            catch (ChannelException ex)
+            {
+                switch (ex.ErrorCode)
+                {
+                    case (ushort)ReplyCode.AccessRefused:
+                    case (ushort)ReplyCode.PreconditionFailed:
+                        throw new ArgumentOutOfRangeException("Illegal queue name.", ex);
+                    case (ushort)ReplyCode.ResourceLocked:
+                        throw new ConflictException("Cannot redeclare existing queue as exclusive.", ex);
+                }
+                throw;
+            }
+        }
     }
 }

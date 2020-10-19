@@ -12,7 +12,5 @@ namespace RabbitMQ.Next.TopologyBuilder.Abstractions
         ExchangeFlags Flags { get; set; }
 
         void SetArgument(string key, object value);
-
-        void BindTo(string exchange, Action<IExchangeBindingBuilder> builder = null);
     }
 }

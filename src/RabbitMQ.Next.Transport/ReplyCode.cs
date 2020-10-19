@@ -1,4 +1,4 @@
-namespace RabbitMQ.Next.Abstractions
+namespace RabbitMQ.Next.Transport
 {
     public enum ReplyCode : ushort
     {

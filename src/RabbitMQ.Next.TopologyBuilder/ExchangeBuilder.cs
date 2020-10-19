@@ -1,6 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using RabbitMQ.Next.Abstractions.Channels;
+using RabbitMQ.Next.Abstractions.Exceptions;
 using RabbitMQ.Next.TopologyBuilder.Abstractions;
+using RabbitMQ.Next.TopologyBuilder.Abstractions.Exceptions;
+using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Methods.Exchange;
 
 namespace RabbitMQ.Next.TopologyBuilder
@@ -8,7 +13,6 @@ namespace RabbitMQ.Next.TopologyBuilder
     internal class ExchangeBuilder : IExchangeBuilder
     {
         private Dictionary<string, object> arguments;
-        private List<ExchangeBindingBuilder> bindings;
 
         public ExchangeBuilder(string name, string type)
         {
@@ -28,18 +32,29 @@ namespace RabbitMQ.Next.TopologyBuilder
             this.arguments[key] = value;
         }
 
-        public IReadOnlyList<ExchangeBindingBuilder> Bindings => this.bindings;
-
-        public void BindTo(string exchange, Action<IExchangeBindingBuilder> builder = null)
-        {
-            var binding = new ExchangeBindingBuilder(exchange, this.Name);
-            builder?.Invoke(binding);
-
-            this.bindings ??= new List<ExchangeBindingBuilder>();
-            this.bindings.Add(binding);
-        }
-
         public DeclareMethod ToMethod()
             => new DeclareMethod(this.Name, this.Type, (byte)this.Flags, this.arguments);
+
+        public async Task ApplyAsync(IChannel channel)
+        {
+            try
+            {
+                await channel.SendAsync<DeclareMethod, DeclareOkMethod>(this.ToMethod());
+            }
+            catch (ChannelException ex)
+            {
+                switch (ex.ErrorCode)
+                {
+                    case (ushort)ReplyCode.AccessRefused:
+                    case (ushort)ReplyCode.PreconditionFailed:
+                        throw new ArgumentOutOfRangeException("Illegal exchange name", ex);
+                    case (ushort)ReplyCode.NotAllowed:
+                        throw new ConflictException("Exchange cannot be redeclared with different type", ex);
+                    case (ushort)ReplyCode.CommandInvalid:
+                        throw new NotSupportedException("Specified exchange type does not supported", ex);
+                }
+                throw;
+            }
+        }
     }
 }

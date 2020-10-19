@@ -26,6 +26,15 @@ namespace RabbitMQ.Next.TopologyBuilder
             await exchangeBuilder.ApplyAsync(ch);
         }
 
+        public async Task BindExchangeAsync(string destination, string source, Action<IExchangeBindingBuilder> builder = null)
+        {
+            var exchangeBindingBuilder = new ExchangeBindingBuilder(destination, source);
+            builder?.Invoke(exchangeBindingBuilder);
+
+            var ch = await this.GetChannelAsync();
+            await exchangeBindingBuilder.ApplyAsync(ch);
+        }
+
         public async Task DeclareQueueAsync(string name, Action<IQueueBuilder> builder = null)
         {
             var queueBuilder = new QueueBuilder(name);
@@ -33,6 +42,15 @@ namespace RabbitMQ.Next.TopologyBuilder
 
             var ch = await this.GetChannelAsync();
             await queueBuilder.ApplyAsync(ch);
+        }
+
+        public async Task BindQueueAsync(string queue, string exchange, Action<IQueueBindingBuilder> builder = null)
+        {
+            var queueBindingBuilder = new QueueBindingBuilder(queue, exchange);
+            builder?.Invoke(queueBindingBuilder);
+
+            var ch = await this.GetChannelAsync();
+            await queueBindingBuilder.ApplyAsync(ch);
         }
 
         private ValueTask<IChannel> GetChannelAsync()

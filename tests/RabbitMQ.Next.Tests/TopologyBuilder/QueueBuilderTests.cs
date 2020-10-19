@@ -1,7 +1,13 @@
+using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Threading.Tasks;
+using NSubstitute;
+using RabbitMQ.Next.Abstractions.Channels;
+using RabbitMQ.Next.Abstractions.Exceptions;
 using RabbitMQ.Next.TopologyBuilder;
 using RabbitMQ.Next.TopologyBuilder.Abstractions;
+using RabbitMQ.Next.TopologyBuilder.Abstractions.Exceptions;
+using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Methods.Queue;
 using Xunit;
 
@@ -34,36 +40,30 @@ namespace RabbitMQ.Next.Tests.TopologyBuilder
         }
 
         [Fact]
-        public void BindWithoutCustomization()
+        public async Task ApplySendsMethod()
         {
-            var queue = "queue";
-            var exchange = "exchange";
+            var channel = Substitute.For<IChannel>();
+            var builder = new QueueBuilder("queue");
+            var method = builder.ToMethod();
 
-            var builder = new QueueBuilder(queue);
+            await builder.ApplyAsync(channel);
 
-            builder.BindTo(exchange);
-
-            var item = builder.Bindings.Single();
-            Assert.Equal(queue, item.Queue);
-            Assert.Equal(exchange, item.Exchange);
-            Assert.Equal(null, item.RoutingKey);
+            await channel.Received().SendAsync<DeclareMethod, DeclareOkMethod>(method);
         }
 
-        [Fact]
-        public void BindWithCustomization()
+        [Theory]
+        [InlineData(ReplyCode.AccessRefused, typeof(ArgumentOutOfRangeException))]
+        [InlineData(ReplyCode.PreconditionFailed, typeof(ArgumentOutOfRangeException))]
+        [InlineData(ReplyCode.ResourceLocked, typeof(ConflictException))]
+        [InlineData(ReplyCode.ChannelError, typeof(ChannelException))]
+        public async Task ApplyProcessExceptions(ReplyCode replyCode, Type exceptionType)
         {
-            var queue = "queue";
-            var exchange = "exchange";
-            var routingKey = "test";
+            var channel = Substitute.For<IChannel>();
+            channel.SendAsync<DeclareMethod, DeclareOkMethod>(default)
+                .ReturnsForAnyArgs(Task.FromException<DeclareOkMethod>(new ChannelException((ushort)replyCode, "error message", (uint) MethodId.QueueBind)));
+            var builder = new QueueBuilder("queue");
 
-            var builder = new QueueBuilder(queue);
-
-            builder.BindTo(exchange, binding => binding.RoutingKey = routingKey);
-
-            var item = builder.Bindings.Single();
-            Assert.Equal(queue, item.Queue);
-            Assert.Equal(exchange, item.Exchange);
-            Assert.Equal(routingKey, item.RoutingKey);
+            await Assert.ThrowsAsync(exceptionType,async ()=> await builder.ApplyAsync(channel));
         }
 
         public static IEnumerable<object[]> TestCases()

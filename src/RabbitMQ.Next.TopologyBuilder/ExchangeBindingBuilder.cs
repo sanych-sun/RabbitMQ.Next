@@ -1,5 +1,10 @@
+using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using RabbitMQ.Next.Abstractions.Channels;
+using RabbitMQ.Next.Abstractions.Exceptions;
 using RabbitMQ.Next.TopologyBuilder.Abstractions;
+using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Methods.Exchange;
 
 namespace RabbitMQ.Next.TopologyBuilder
@@ -8,7 +13,7 @@ namespace RabbitMQ.Next.TopologyBuilder
     {
         private Dictionary<string, object> arguments;
 
-        public ExchangeBindingBuilder(string source, string destination)
+        public ExchangeBindingBuilder(string destination, string source)
         {
             this.Source = source;
             this.Destination = destination;
@@ -28,5 +33,22 @@ namespace RabbitMQ.Next.TopologyBuilder
 
         public BindMethod ToMethod()
             => new BindMethod(this.Destination, this.Source, this.RoutingKey, this.arguments);
+
+        public async Task ApplyAsync(IChannel channel)
+        {
+            try
+            {
+                await channel.SendAsync<BindMethod, BindOkMethod>(this.ToMethod());
+            }
+            catch (ChannelException ex)
+            {
+                switch (ex.ErrorCode)
+                {
+                    case (ushort)ReplyCode.NotFound:
+                        throw new ArgumentOutOfRangeException("Source or destination exchange does not exists", ex);
+                }
+                throw;
+            }
+        }
     }
 }

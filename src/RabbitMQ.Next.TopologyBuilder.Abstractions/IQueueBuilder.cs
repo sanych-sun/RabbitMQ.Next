@@ -10,7 +10,5 @@ namespace RabbitMQ.Next.TopologyBuilder.Abstractions
         QueueFlags Flags { get; set; }
 
         void SetArgument(string key, object value);
-
-        void BindTo(string exchange, Action<IQueueBindingBuilder> builder = null);
     }
 }
