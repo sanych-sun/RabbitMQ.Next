@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-
 namespace RabbitMQ.Next.TopologyBuilder.Abstractions
 {
     public interface IExchangeBuilder
