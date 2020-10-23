@@ -6,23 +6,23 @@ namespace RabbitMQ.Next.Transport.Sockets
 {
     internal static class SocketExtensions
     {
-        public static void FillBuffer(this ISocket socket, Span<byte> buffer, out SocketError responseCode)
+        public static SocketError FillBuffer(this ISocket socket, Span<byte> buffer)
         {
             while (buffer.Length > 0)
             {
-                var received = socket.Receive(buffer, out responseCode);
+                var received = socket.Receive(buffer, out var responseCode);
                 if (responseCode != SocketError.Success)
                 {
-                    return;
+                    return responseCode;
                 }
 
                 buffer = buffer.Slice(received);
             }
 
-            responseCode = SocketError.Success;
+            return SocketError.Success;
         }
 
-        public static void Receive(this ISocket socket, PipeWriter target, int size, out SocketError responseCode)
+        public static SocketError Receive(this ISocket socket, PipeWriter target, int size)
         {
             while (size > 0)
             {
@@ -32,18 +32,18 @@ namespace RabbitMQ.Next.Transport.Sockets
                     buffer = buffer.Slice(0, size);
                 }
 
-                var received = socket.Receive(buffer, out responseCode);
+                var received = socket.Receive(buffer, out var responseCode);
                 if (responseCode != SocketError.Success)
                 {
                     target.Complete();
-                    return;
+                    return responseCode;
                 }
 
                 target.Advance(received);
                 size -= received;
             }
 
-            responseCode = SocketError.Success;
+            return SocketError.Success;
         }
     }
 }

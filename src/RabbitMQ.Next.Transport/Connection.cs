@@ -3,6 +3,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
@@ -21,6 +22,9 @@ namespace RabbitMQ.Next.Transport
         private readonly ChannelPool channelPool;
         private readonly ConnectionString connectionString;
         private ISocket socket;
+
+        private int heartbeatInterval;
+        private DateTimeOffset heartbeatTimeout = DateTimeOffset.MaxValue;
 
         private static readonly byte[] FrameEndPayload = { ProtocolConstants.FrameEndByte };
 
@@ -74,10 +78,13 @@ namespace RabbitMQ.Next.Transport
             await connectionChannel.SendAsync(new StartOkMethod("PLAIN", $"\0{this.connectionString.UserName}\0{this.connectionString.Password}", "en-US", clientProperties));
 
             var tuneMethod = await connectionChannel.WaitAsync<TuneMethod>();
+            this.heartbeatInterval = tuneMethod.HeartbeatInterval / 2;
+
             await connectionChannel.SendAsync(new TuneOkMethod(tuneMethod.ChannelMax, tuneMethod.MaxFrameSize, tuneMethod.HeartbeatInterval));
             await connectionChannel.SendAsync<OpenMethod, OpenOkMethod>(new OpenMethod(this.connectionString.VirtualHost));
 
             this.State = ConnectionState.Open;
+            this.ScheduleHeartBeat();
         }
 
         public ConnectionState State { get; private set; }
@@ -111,11 +118,20 @@ namespace RabbitMQ.Next.Transport
             {
                 await this.socket.SendAsync(payload);
                 await this.socket.SendAsync(FrameEndPayload);
+                this.ScheduleHeartBeat();
             }
             finally
             {
                 this.writerSemaphore.Release();
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void ScheduleHeartBeat()
+        {
+            this.heartbeatTimeout = (this.State != ConnectionState.Open)
+                ? DateTimeOffset.MaxValue
+                : DateTimeOffset.UtcNow.AddSeconds(this.heartbeatInterval);
         }
 
         private async Task SendProtocolHeaderAsync()
@@ -130,11 +146,14 @@ namespace RabbitMQ.Next.Transport
 
             while (true)
             {
-                SocketError responseCode;
+                // 0. Check if need to sent heartbeat
+                if (this.heartbeatTimeout < DateTimeOffset.UtcNow)
+                {
+                    Task.Run(() => this.SendAsync(ProtocolConstants.HeartbeatFrame, default));
+                }
 
                 // 1. Read frame header
-                this.socket.FillBuffer(headerBuffer, out responseCode);
-                if (responseCode != SocketError.Success)
+                if (this.socket.FillBuffer(headerBuffer) != SocketError.Success)
                 {
                     this.CleanUpOnSocketClose();
                     return;
@@ -147,16 +166,14 @@ namespace RabbitMQ.Next.Transport
                 targetPipe.Write(headerBuffer);
 
                 // 3. Read frame payload into the channel
-                this.socket.Receive(targetPipe, header.PayloadSize, out responseCode);
-                if (responseCode != SocketError.Success)
+                if (this.socket.Receive(targetPipe, header.PayloadSize) != SocketError.Success)
                 {
                     this.CleanUpOnSocketClose();
                     return;
                 }
 
                 // 4. Ensure there is FrameEnd
-                this.socket.FillBuffer(endFrameBuffer, out responseCode);
-                if (responseCode != SocketError.Success)
+                if (this.socket.FillBuffer(endFrameBuffer) != SocketError.Success)
                 {
                     this.CleanUpOnSocketClose();
                     return;
