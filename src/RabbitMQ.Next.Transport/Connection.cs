@@ -63,27 +63,34 @@ namespace RabbitMQ.Next.Transport
             socketReadThread.Name = "RabbitMQ socket reader";
             socketReadThread.Start();
 
-            var startMethod = connectionChannel.WaitAsync<StartMethod>();
+
             await this.SendProtocolHeaderAsync();
 
-            await startMethod;
-
-            // TODO: make it dynamic based on assembly version and allow add extra properties
-            var clientProperties = new Dictionary<string, object>()
+            var negotiationResults = await connectionChannel.UseSyncChannel(async (ch, connection) =>
             {
-                ["product"] = "RabbitMQ.Next.Transport",
-                ["version"] = "0.1.0",
-                ["platform"] = Environment.OSVersion.ToString(),
-            };
+                var startMethod = ch.WaitAsync<StartMethod>();
+                // TODO: make it dynamic based on assembly version and allow add extra properties
+                var clientProperties = new Dictionary<string, object>()
+                {
+                    ["product"] = "RabbitMQ.Next.Transport",
+                    ["version"] = "0.1.0",
+                    ["platform"] = Environment.OSVersion.ToString(),
+                };
 
-            var tuneMethodTask = connectionChannel.WaitAsync<TuneMethod>();
-            await connectionChannel.SendAsync(new StartOkMethod("PLAIN", $"\0{this.connectionString.UserName}\0{this.connectionString.Password}", "en-US", clientProperties));
+                var tuneMethodTask = ch.WaitAsync<TuneMethod>();
+                await ch.SendAsync(new StartOkMethod("PLAIN", $"\0{connection.UserName}\0{connection.Password}", "en-US", clientProperties));
 
-            var tuneMethod = await tuneMethodTask;
-            this.heartbeatInterval = tuneMethod.HeartbeatInterval / 2;
+                var tuneMethod = await tuneMethodTask;
 
-            await connectionChannel.SendAsync(new TuneOkMethod(tuneMethod.ChannelMax, tuneMethod.MaxFrameSize, tuneMethod.HeartbeatInterval));
-            await connectionChannel.SendAsync<OpenMethod, OpenOkMethod>(new OpenMethod(this.connectionString.VirtualHost));
+                await ch.SendAsync(new TuneOkMethod(tuneMethod.ChannelMax, tuneMethod.MaxFrameSize, tuneMethod.HeartbeatInterval));
+                var openOkTask = ch.WaitAsync<OpenOkMethod>();
+                await ch.SendAsync<OpenMethod>(new OpenMethod(connection.VirtualHost));
+                await openOkTask;
+
+                return new ConnectionNegotiationResults(tuneMethod.ChannelMax, tuneMethod.MaxFrameSize, tuneMethod.HeartbeatInterval);
+            }, this.connectionString);
+
+            this.heartbeatInterval = negotiationResults.HeartbeatInterval / 2;
 
             this.State = ConnectionState.Open;
             this.ScheduleHeartBeat();

@@ -70,9 +70,20 @@ namespace RabbitMQ.Next.Transport.Channels
             }
         }
 
-        public Task<TMethod> WaitAsync<TMethod>(CancellationToken cancellation = default)
-            where TMethod : struct, IIncomingMethod =>
-            this.syncChannel.WaitAsync<TMethod>(cancellation);
+        public async Task<TMethod> WaitAsync<TMethod>(CancellationToken cancellation = default)
+            where TMethod : struct, IIncomingMethod
+        {
+            await this.senderSync.WaitAsync(cancellation);
+
+            try
+            {
+                return await this.syncChannel.WaitAsync<TMethod>(cancellation);
+            }
+            finally
+            {
+                this.senderSync.Release();
+            }
+        }
 
         public async Task<TResult> UseSyncChannel<TResult, TState>(Func<ISynchronizedChannel, TState, Task<TResult>> fn, TState state)
         {
