@@ -19,10 +19,11 @@ namespace RabbitMQ.Next.Transport.Methods.Registry
 
             var methodMap = new Dictionary<uint, IMethodRegistration>();
             var typeMap = new Dictionary<Type, IMethodRegistration>();
-            foreach (var item in items)
+            for (var i = 0; i < items.Count; i++)
             {
+                var item = items[i];
                 methodMap[item.MethodId] = item;
-                typeMap[item.ImplementationType] = item;
+                typeMap[item.Type] = item;
             }
 
             this.methods = methodMap;
@@ -31,7 +32,7 @@ namespace RabbitMQ.Next.Transport.Methods.Registry
 
         public bool HasContent(uint methodId) => this.GetMethod(methodId).HasContent;
 
-        public Type GetMethodType(uint methodId) => this.GetMethod(methodId).ImplementationType;
+        public Type GetMethodType(uint methodId) => this.GetMethod(methodId).Type;
 
         public uint GetMethodId<TMethod>() where TMethod : struct, IMethod => this.GetMethod(typeof(TMethod)).MethodId;
 

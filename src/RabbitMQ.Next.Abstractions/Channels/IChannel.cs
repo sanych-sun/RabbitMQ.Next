@@ -1,22 +1,13 @@
-using System.Buffers;
-using System.Threading;
+using System;
 using System.Threading.Tasks;
-using RabbitMQ.Next.Abstractions.Methods;
 
 namespace RabbitMQ.Next.Abstractions.Channels
 {
-    public interface IChannel
+    // TODO: need better name
+    public interface IChannel : ISynchronizedChannel
     {
         bool IsClosed { get; }
 
-        Task SendAsync<TMethod>(TMethod request, ReadOnlySequence<byte> content = default)
-            where TMethod : struct, IOutgoingMethod;
-
-        Task<TMethod> WaitAsync<TMethod>(CancellationToken cancellation = default)
-            where TMethod : struct, IIncomingMethod;
-
-        Task<TResponse> SendAsync<TRequest, TResponse>(TRequest request, ReadOnlySequence<byte> content = default)
-            where TRequest : struct, IOutgoingMethod
-            where TResponse : struct, IIncomingMethod;
+        Task<TResult> UseSyncChannel<TResult, TState>(Func<ISynchronizedChannel, TState, Task<TResult>> fn, TState state);
     }
 }

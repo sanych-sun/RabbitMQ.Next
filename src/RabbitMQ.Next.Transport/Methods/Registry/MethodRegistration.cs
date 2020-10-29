@@ -9,12 +9,12 @@ namespace RabbitMQ.Next.Transport.Methods.Registry
         public MethodRegistration(uint methodId)
         {
             this.MethodId = methodId;
-            this.ImplementationType = typeof(TMethod);
+            this.Type = typeof(TMethod);
         }
 
         public uint MethodId { get; }
 
-        public Type ImplementationType { get; }
+        public Type Type { get; }
 
         public bool HasContent { get; private set; }
 

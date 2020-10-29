@@ -5,6 +5,7 @@ using System.IO.Pipelines;
 using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions.Channels;
+using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Abstractions.Methods;
 using RabbitMQ.Next.Transport.Methods.Registry;
 
@@ -12,9 +13,8 @@ namespace RabbitMQ.Next.Transport.Channels
 {
     internal sealed class Channel : IChannel, IDisposable
     {
-        private readonly IFrameSender frameSender;
+        private readonly SynchronizedChannel syncChannel;
         private readonly IMethodRegistry methodRegistry;
-        private readonly WaitMethodFrameHandler waitFrameHandler;
         private readonly SemaphoreSlim senderSync;
 
         private readonly IList<IFrameHandler> methodHandlers;
@@ -22,10 +22,10 @@ namespace RabbitMQ.Next.Transport.Channels
         public Channel(Pipe pipe, IMethodRegistry methodRegistry, IFrameSender frameSender)
         {
             this.Pipe = pipe;
-            this.frameSender = frameSender;
+            var waitFrameHandler = new WaitMethodFrameHandler(methodRegistry);
+            this.syncChannel = new SynchronizedChannel(frameSender, waitFrameHandler);
             this.methodRegistry = methodRegistry;
-            this.waitFrameHandler = new WaitMethodFrameHandler(methodRegistry);
-            this.methodHandlers = new List<IFrameHandler> { this.waitFrameHandler };
+            this.methodHandlers = new List<IFrameHandler> { waitFrameHandler };
             this.senderSync = new SemaphoreSlim(1,1);
 
             Task.Run(() => this.LoopAsync(pipe.Reader));
@@ -40,14 +40,14 @@ namespace RabbitMQ.Next.Transport.Channels
 
         public bool IsClosed { get; }
 
-        public async Task SendAsync<TMethod>(TMethod request, ReadOnlySequence<byte> content = default)
+        public async Task SendAsync<TMethod>(TMethod request)
             where TMethod : struct, IOutgoingMethod
         {
             await this.senderSync.WaitAsync();
 
             try
             {
-                await this.frameSender.SendMethodAsync(request);
+                await this.syncChannel.SendAsync(request);
             }
             finally
             {
@@ -55,27 +55,32 @@ namespace RabbitMQ.Next.Transport.Channels
             }
         }
 
-        public async Task<TMethod> WaitAsync<TMethod>(CancellationToken cancellation = default)
-            where TMethod : struct, IIncomingMethod
+        public async Task SendAsync<TMethod>(TMethod request, MessageProperties properties, ReadOnlySequence<byte> content)
+            where TMethod : struct, IOutgoingMethod
         {
-            var expectedId = this.methodRegistry.GetMethodId<TMethod>();
-            var result = await this.waitFrameHandler.WaitAsync(expectedId, cancellation);
-            return (TMethod) result;
-        }
-
-        public async Task<TResponse> SendAsync<TRequest, TResponse>(TRequest request, ReadOnlySequence<byte> content = default)
-            where TRequest : struct, IOutgoingMethod
-            where TResponse : struct, IIncomingMethod
-        {
-            var expectedId = this.methodRegistry.GetMethodId<TResponse>();
             await this.senderSync.WaitAsync();
 
             try
             {
-                await this.frameSender.SendMethodAsync(request);
+                await this.syncChannel.SendAsync(request, properties, content);
+            }
+            finally
+            {
+                this.senderSync.Release();
+            }
+        }
 
-                var result = await this.waitFrameHandler.WaitAsync(expectedId);
-                return (TResponse) result;
+        public Task<TMethod> WaitAsync<TMethod>(CancellationToken cancellation = default)
+            where TMethod : struct, IIncomingMethod =>
+            this.syncChannel.WaitAsync<TMethod>(cancellation);
+
+        public async Task<TResult> UseSyncChannel<TResult, TState>(Func<ISynchronizedChannel, TState, Task<TResult>> fn, TState state)
+        {
+            await this.senderSync.WaitAsync();
+
+            try
+            {
+                return await fn(this.syncChannel, state);
             }
             finally
             {

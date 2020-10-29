@@ -6,7 +6,7 @@ namespace RabbitMQ.Next.Transport.Methods.Registry
     {
         uint MethodId { get; }
 
-        Type ImplementationType { get; }
+        Type Type { get; }
 
         bool HasContent { get; }
 

@@ -17,7 +17,7 @@ namespace RabbitMQ.Next.Transport.Methods.Registry
             where TMethod : struct, IMethod
         {
             var info = new MethodRegistration<TMethod>(methodId);
-            registration(info);
+            registration?.Invoke(info);
             this.items.Add(info);
 
             return this;

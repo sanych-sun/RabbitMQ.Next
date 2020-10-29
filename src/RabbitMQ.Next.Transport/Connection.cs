@@ -63,9 +63,10 @@ namespace RabbitMQ.Next.Transport
             socketReadThread.Name = "RabbitMQ socket reader";
             socketReadThread.Start();
 
+            var startMethod = connectionChannel.WaitAsync<StartMethod>();
             await this.SendProtocolHeaderAsync();
 
-            var startMethod = await connectionChannel.WaitAsync<StartMethod>();
+            await startMethod;
 
             // TODO: make it dynamic based on assembly version and allow add extra properties
             var clientProperties = new Dictionary<string, object>()
@@ -75,9 +76,10 @@ namespace RabbitMQ.Next.Transport
                 ["platform"] = Environment.OSVersion.ToString(),
             };
 
+            var tuneMethodTask = connectionChannel.WaitAsync<TuneMethod>();
             await connectionChannel.SendAsync(new StartOkMethod("PLAIN", $"\0{this.connectionString.UserName}\0{this.connectionString.Password}", "en-US", clientProperties));
 
-            var tuneMethod = await connectionChannel.WaitAsync<TuneMethod>();
+            var tuneMethod = await tuneMethodTask;
             this.heartbeatInterval = tuneMethod.HeartbeatInterval / 2;
 
             await connectionChannel.SendAsync(new TuneOkMethod(tuneMethod.ChannelMax, tuneMethod.MaxFrameSize, tuneMethod.HeartbeatInterval));

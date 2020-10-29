@@ -23,9 +23,11 @@ namespace RabbitMQ.Next.Transport.Channels
             };
         }
 
-        public Task<IIncomingMethod> WaitAsync(uint methodId, CancellationToken cancellation = default)
+        public Task<IIncomingMethod> WaitAsync<TMethod>(CancellationToken cancellation = default)
+            where TMethod : struct, IIncomingMethod
         {
             // todo: validate state, should probably throw if in wait state already
+            var methodId = this.Registry.GetMethodId<TMethod>();
             this.waitingTask = new TaskCompletionSource<IIncomingMethod>();
             this.expectedMethodId = methodId;
             if (cancellation != default)
