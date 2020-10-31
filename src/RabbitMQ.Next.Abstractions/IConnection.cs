@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions.Channels;
 
@@ -10,5 +11,7 @@ namespace RabbitMQ.Next.Abstractions
         Task CloseAsync();
 
         ConnectionState State { get; }
+
+        event EventHandler<ConnectionStateEventArgs> StateChanged;
     }
 }

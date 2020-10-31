@@ -22,6 +22,7 @@ namespace RabbitMQ.Next.Transport
         private readonly ChannelPool channelPool;
         private readonly ConnectionString connectionString;
         private ISocket socket;
+        private ConnectionState state = ConnectionState.Pending;
 
         private int heartbeatInterval;
         private DateTimeOffset heartbeatTimeout = DateTimeOffset.MaxValue;
@@ -96,7 +97,21 @@ namespace RabbitMQ.Next.Transport
             this.ScheduleHeartBeat();
         }
 
-        public ConnectionState State { get; private set; }
+        public ConnectionState State
+        {
+            get => this.state;
+            private set
+            {
+                if (this.state == value)
+                {
+                    return;
+                }
+
+                this.state = value;
+                this.StateChanged?.Invoke(this, new ConnectionStateEventArgs(value));
+            }
+        }
+        public event EventHandler<ConnectionStateEventArgs> StateChanged;
 
         public async Task<IChannel> CreateChannelAsync()
         {
