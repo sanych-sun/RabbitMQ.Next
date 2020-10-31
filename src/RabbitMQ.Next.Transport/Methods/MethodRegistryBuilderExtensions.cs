@@ -115,5 +115,15 @@ namespace RabbitMQ.Next.Transport.Methods
             
             return builder;
         }
+
+        public static IMethodRegistryBuilder AddBasicMethods(this IMethodRegistryBuilder builder)
+        {
+            builder.Register<Basic.PublishMethod>((uint) MethodId.BasicPublish,
+                registration => registration
+                    .HasContent()
+                    .Use(new Basic.PublishMethodFormatter()));
+
+            return builder;
+        }
     }
 }
