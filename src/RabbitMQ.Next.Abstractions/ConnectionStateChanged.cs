@@ -1,10 +1,8 @@
-using System;
-
 namespace RabbitMQ.Next.Abstractions
 {
-    public class ConnectionStateEventArgs : EventArgs
+    public readonly struct ConnectionStateChanged
     {
-        public ConnectionStateEventArgs(ConnectionState state)
+        public ConnectionStateChanged(ConnectionState state)
         {
             this.State = state;
         }

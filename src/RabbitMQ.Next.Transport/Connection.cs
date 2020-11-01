@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Transport.Channels;
+using RabbitMQ.Next.Transport.Events;
 using RabbitMQ.Next.Transport.Methods.Connection;
 using RabbitMQ.Next.Transport.Methods.Registry;
 using RabbitMQ.Next.Transport.Sockets;
@@ -21,8 +22,9 @@ namespace RabbitMQ.Next.Transport
         private readonly SemaphoreSlim writerSemaphore;
         private readonly ChannelPool channelPool;
         private readonly ConnectionString connectionString;
+        private readonly EventSource<ConnectionStateChanged> stateChanged;
+
         private ISocket socket;
-        private ConnectionState state = ConnectionState.Pending;
 
         private int heartbeatInterval;
         private DateTimeOffset heartbeatTimeout = DateTimeOffset.MaxValue;
@@ -32,6 +34,7 @@ namespace RabbitMQ.Next.Transport
         public Connection(ConnectionString connectionString)
         {
             this.State = ConnectionState.Pending;
+            this.stateChanged = new EventSource<ConnectionStateChanged>();
             var registryBuilder = new MethodRegistryBuilder();
             registryBuilder.AddConnectionMethods();
             registryBuilder.AddChannelMethods();
@@ -54,10 +57,10 @@ namespace RabbitMQ.Next.Transport
 
         public async Task ConnectAsync()
         {
-            this.State = ConnectionState.Connecting;
+            await this.ChangeStateAsync(ConnectionState.Connecting);
             this.socket = await EndpointResolver.OpenSocketAsync(this.connectionString.EndPoints);
 
-            this.State = ConnectionState.Negotiating;
+            await this.ChangeStateAsync(ConnectionState.Negotiating);
             var connectionChannel = this.channelPool.Next();
 
             var socketReadThread = new Thread(this.ReceiveLoop);
@@ -93,25 +96,14 @@ namespace RabbitMQ.Next.Transport
 
             this.heartbeatInterval = negotiationResults.HeartbeatInterval / 2;
 
-            this.State = ConnectionState.Open;
             this.ScheduleHeartBeat();
+            await this.ChangeStateAsync(ConnectionState.Configuring);
+            await this.ChangeStateAsync(ConnectionState.Open);
         }
 
-        public ConnectionState State
-        {
-            get => this.state;
-            private set
-            {
-                if (this.state == value)
-                {
-                    return;
-                }
+        public ConnectionState State { get; private set; }
 
-                this.state = value;
-                this.StateChanged?.Invoke(this, new ConnectionStateEventArgs(value));
-            }
-        }
-        public event EventHandler<ConnectionStateEventArgs> StateChanged;
+        public IEventSource<ConnectionStateChanged> StateChanged => this.stateChanged;
 
         public async Task<IChannel> CreateChannelAsync()
         {
@@ -131,7 +123,7 @@ namespace RabbitMQ.Next.Transport
 
             this.CleanUpOnSocketClose();
 
-            this.State = ConnectionState.Closed;
+            await this.ChangeStateAsync(ConnectionState.Closed);
         }
 
 
@@ -148,6 +140,17 @@ namespace RabbitMQ.Next.Transport
             {
                 this.writerSemaphore.Release();
             }
+        }
+
+        private async ValueTask ChangeStateAsync(ConnectionState newState)
+        {
+            if (this.State == newState)
+            {
+                return;
+            }
+
+            this.State = newState;
+            await this.stateChanged.InvokeAsync(new ConnectionStateChanged(newState));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
