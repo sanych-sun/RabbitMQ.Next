@@ -12,7 +12,7 @@ namespace RabbitMQ.Next.Transport.Methods.Registry
 
         public MethodRegistry(IReadOnlyList<IMethodRegistration> items)
         {
-            if (items == null)
+            if (items == null || items.Count == 0)
             {
                 throw new ArgumentNullException(nameof(items));
             }
@@ -45,7 +45,7 @@ namespace RabbitMQ.Next.Transport.Methods.Registry
                 return item;
             }
 
-            throw new IndexOutOfRangeException();
+            return null;
         }
 
         public IMethodParser GetParser(uint methodId) => (IMethodParser)this.GetMethod(methodId).Parser;
@@ -59,7 +59,7 @@ namespace RabbitMQ.Next.Transport.Methods.Registry
                 return item;
             }
 
-            throw new IndexOutOfRangeException();
+            return null;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -70,7 +70,7 @@ namespace RabbitMQ.Next.Transport.Methods.Registry
                 return info;
             }
 
-            throw new IndexOutOfRangeException();
+            throw new NotSupportedException();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
