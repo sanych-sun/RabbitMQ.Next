@@ -35,14 +35,7 @@ namespace RabbitMQ.Next.Transport.Events
                 return true;
             }
 
-            try
-            {
-                await handler(eventArgs);
-            }
-            catch (Exception)
-            {
-                // TODO: report failed subscriber to diagnostic source
-            }
+            await handler(eventArgs);
             return true;
         }
     }

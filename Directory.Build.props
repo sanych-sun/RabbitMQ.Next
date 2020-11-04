@@ -13,5 +13,6 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="RabbitMQ.Next.Tests" />
+    <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
   </ItemGroup>
 </Project>
