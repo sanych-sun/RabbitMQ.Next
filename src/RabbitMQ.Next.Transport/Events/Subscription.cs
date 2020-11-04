@@ -27,9 +27,22 @@ namespace RabbitMQ.Next.Transport.Events
                 return false;
             }
 
-            // TODO: report null handler and failed handlers to diagnostic source
             var handler = this.handlerSelector(target);
-            await handler(eventArgs);
+            // TODO: report null handler to diagnostic source
+            if (handler == null)
+            {
+                // TODO: should it be false instead?
+                return true;
+            }
+
+            try
+            {
+                await handler(eventArgs);
+            }
+            catch (Exception)
+            {
+                // TODO: report failed subscriber to diagnostic source
+            }
             return true;
         }
     }
