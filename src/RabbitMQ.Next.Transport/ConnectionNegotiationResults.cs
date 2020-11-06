@@ -1,6 +1,6 @@
 namespace RabbitMQ.Next.Transport
 {
-    internal readonly struct ConnectionNegotiationResults
+    internal class ConnectionNegotiationResults
     {
         public ConnectionNegotiationResults(ushort channelMax, uint maxFrameSize, ushort heartbeatInterval)
         {

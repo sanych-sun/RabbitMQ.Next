@@ -7,7 +7,8 @@ using RabbitMQ.Next.Transport.Methods.Registry;
 
 namespace RabbitMQ.Next.Transport.Channels
 {
-    internal class FrameSender : IFrameSender
+    internal class
+        FrameSender : IFrameSender
     {
         private readonly ISocketWriter socketWriter;
         private readonly IMethodRegistry registry;
