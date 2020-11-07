@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <RootNamespace>RabbitMQ.Next.MessagePublisher.Abstractions</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RabbitMQ.Next.Abstractions\RabbitMQ.Next.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

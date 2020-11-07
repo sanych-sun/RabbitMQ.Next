@@ -8,6 +8,7 @@ namespace RabbitMQ.Next.Transport.Buffers
 {
     internal class BufferWriter : IBufferWriter
     {
+        private const int MinChunkSize = 128;
         private readonly BufferManager manager;
         private List<ArraySegment<byte>> chunks;
         private byte[] buffer;
@@ -104,6 +105,11 @@ namespace RabbitMQ.Next.Transport.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ExpandIfRequired(int requestedSize)
         {
+            if (requestedSize == 0)
+            {
+                requestedSize = MinChunkSize;
+            }
+
             if (this.offset + requestedSize <= this.buffer.Length)
             {
                 return;

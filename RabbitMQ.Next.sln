@@ -14,6 +14,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMQ.Next.TopologyBuild
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMQ.Next.TopologyBuilder.Abstractions", "src\RabbitMQ.Next.TopologyBuilder.Abstractions\RabbitMQ.Next.TopologyBuilder.Abstractions.csproj", "{16D8563D-A086-4C8C-8315-FC129A198C12}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMQ.Next.Messaging.Publisher.Abstractions", "src\RabbitMQ.Next.Messaging.Publisher.Abstractions\RabbitMQ.Next.Messaging.Publisher.Abstractions.csproj", "{C80C0328-165D-444C-A025-D4A910A4C4C0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMQ.Next.Messaging.Common", "src\RabbitMQ.Next.Messaging.Common\RabbitMQ.Next.Messaging.Common.csproj", "{298266D6-B977-4431-8CF2-2E16D37B1454}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMQ.Next.Messaging.Publisher", "src\RabbitMQ.Next.Messaging.Publisher\RabbitMQ.Next.Messaging.Publisher.csproj", "{00F4D07C-AA12-498E-9BCA-89EB29688DD0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -40,6 +46,18 @@ Global
 		{16D8563D-A086-4C8C-8315-FC129A198C12}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{16D8563D-A086-4C8C-8315-FC129A198C12}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{16D8563D-A086-4C8C-8315-FC129A198C12}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C80C0328-165D-444C-A025-D4A910A4C4C0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C80C0328-165D-444C-A025-D4A910A4C4C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C80C0328-165D-444C-A025-D4A910A4C4C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C80C0328-165D-444C-A025-D4A910A4C4C0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{298266D6-B977-4431-8CF2-2E16D37B1454}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{298266D6-B977-4431-8CF2-2E16D37B1454}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{298266D6-B977-4431-8CF2-2E16D37B1454}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{298266D6-B977-4431-8CF2-2E16D37B1454}.Release|Any CPU.Build.0 = Release|Any CPU
+		{00F4D07C-AA12-498E-9BCA-89EB29688DD0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{00F4D07C-AA12-498E-9BCA-89EB29688DD0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{00F4D07C-AA12-498E-9BCA-89EB29688DD0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{00F4D07C-AA12-498E-9BCA-89EB29688DD0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{AB00A6F3-C3E0-4E61-B302-F9CF0288819E} = {C895EE24-13DF-45C3-AF1D-B6B6EE4A10A9}
@@ -47,5 +65,8 @@ Global
 		{3CA6ADD5-C2ED-4EB8-A226-785C30D4CAE5} = {C895EE24-13DF-45C3-AF1D-B6B6EE4A10A9}
 		{A8D63B8A-39A7-4214-AE69-61EC852464DC} = {C895EE24-13DF-45C3-AF1D-B6B6EE4A10A9}
 		{16D8563D-A086-4C8C-8315-FC129A198C12} = {C895EE24-13DF-45C3-AF1D-B6B6EE4A10A9}
+		{C80C0328-165D-444C-A025-D4A910A4C4C0} = {C895EE24-13DF-45C3-AF1D-B6B6EE4A10A9}
+		{298266D6-B977-4431-8CF2-2E16D37B1454} = {C895EE24-13DF-45C3-AF1D-B6B6EE4A10A9}
+		{00F4D07C-AA12-498E-9BCA-89EB29688DD0} = {C895EE24-13DF-45C3-AF1D-B6B6EE4A10A9}
 	EndGlobalSection
 EndGlobal
