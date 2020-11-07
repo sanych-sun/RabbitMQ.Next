@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using RabbitMQ.Next.Abstractions.Messaging;
 
 namespace RabbitMQ.Next.Transport
 {
@@ -275,6 +276,82 @@ namespace RabbitMQ.Next.Transport
             lenPosition.Write(tableLen);
 
             return target;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Span<byte> WriteMessageProperties(this Span<byte> target, MessageProperties properties)
+        {
+            var flagsSpan = target;
+            target = target.Slice(sizeof(ushort));
+
+            var flags = (ushort)0;
+
+            target = target
+                .WriteProperty(properties.ContentType, ref flags, 15)
+                .WriteProperty(properties.ContentEncoding, ref flags, 14)
+                .WriteProperty(properties.Headers, ref flags, 13)
+                .WriteProperty((byte) properties.DeliveryMode, ref flags, 12)
+                .WriteProperty(properties.Priority, ref flags, 11)
+                .WriteProperty(properties.CorrelationId, ref flags, 10)
+                .WriteProperty(properties.ReplyTo, ref flags, 9)
+                .WriteProperty(properties.Expiration, ref flags, 8)
+                .WriteProperty(properties.MessageId, ref flags, 7)
+                .WriteProperty(properties.Timestamp, ref flags, 6)
+                .WriteProperty(properties.Type, ref flags, 5)
+                .WriteProperty(properties.UserId, ref flags, 4)
+                .WriteProperty(properties.ApplicationId, ref flags, 3);
+
+            flagsSpan.Write(flags);
+
+            return target;
+        }
+
+        private static Span<byte> WriteProperty(this Span<byte> target, string value, ref ushort flags, byte bitNumber)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return target;
+            }
+
+            flags = (ushort)(flags | (1 << bitNumber));
+
+            return target.Write(value);
+        }
+
+        private static Span<byte> WriteProperty(this Span<byte> target, IReadOnlyDictionary<string, object> value, ref ushort flags, byte bitNumber)
+        {
+            if (value == null)
+            {
+                return target;
+            }
+
+            flags = (ushort)(flags | (1 << bitNumber));
+
+            return target.Write(value);
+        }
+
+        private static Span<byte> WriteProperty(this Span<byte> target, byte value, ref ushort flags, byte bitNumber)
+        {
+            if (value == 0)
+            {
+                return target;
+            }
+
+            flags = (ushort)(flags | (1 << bitNumber));
+
+            return target.Write(value);
+        }
+
+        private static Span<byte> WriteProperty(this Span<byte> target, DateTimeOffset value, ref ushort flags, byte bitNumber)
+        {
+            if (value == default)
+            {
+                return target;
+            }
+
+            flags = (ushort)(flags | (1 << bitNumber));
+
+            return target.Write(value);
         }
     }
 }

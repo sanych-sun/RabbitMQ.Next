@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
+using RabbitMQ.Next.Transport.Buffers;
 using RabbitMQ.Next.Transport.Channels;
 using RabbitMQ.Next.Transport.Events;
 using RabbitMQ.Next.Transport.Methods.Connection;
@@ -34,6 +35,7 @@ namespace RabbitMQ.Next.Transport
         public Connection(ConnectionString connectionString)
         {
             this.State = ConnectionState.Pending;
+            this.BufferPool = new BufferPool(ProtocolConstants.FrameMinSize);
             this.stateChanged = new EventSource<ConnectionStateChanged>();
             var registryBuilder = new MethodRegistryBuilder();
             registryBuilder.AddConnectionMethods();
@@ -46,7 +48,7 @@ namespace RabbitMQ.Next.Transport
             Func<int, Channel> channelFactory = (channelNumber) =>
             {
                 var pipe = new Pipe();
-                var methodSender = new FrameSender(this, methodRegistry, (ushort) channelNumber);
+                var methodSender = new FrameSender(this, methodRegistry, (ushort) channelNumber, this.BufferPool);
                 return new Channel(pipe, methodRegistry, methodSender);
             };
 
@@ -95,6 +97,7 @@ namespace RabbitMQ.Next.Transport
             }, this.connectionString);
 
             this.heartbeatInterval = negotiationResults.HeartbeatInterval / 2;
+            this.BufferPool.SetChunkSize((int)negotiationResults.MaxFrameSize);
 
             this.ScheduleHeartBeat();
             await this.ChangeStateAsync(ConnectionState.Configuring);
@@ -102,6 +105,8 @@ namespace RabbitMQ.Next.Transport
         }
 
         public ConnectionState State { get; private set; }
+
+        public BufferPool BufferPool { get; }
 
         public IEventSource<ConnectionStateChanged> StateChanged => this.stateChanged;
 
@@ -127,12 +132,12 @@ namespace RabbitMQ.Next.Transport
         }
 
 
-        public async Task SendAsync(ReadOnlyMemory<byte> payload, CancellationToken cancellation)
+        public async Task SendAsync<TState>(TState state, Func<Func<ReadOnlyMemory<byte>, ValueTask>, TState, ValueTask> writer, CancellationToken cancellation = default)
         {
             await this.writerSemaphore.WaitAsync(cancellation);
             try
             {
-                await this.socket.SendAsync(payload);
+                await writer(this.socket.SendAsync, state);
                 await this.socket.SendAsync(FrameEndPayload);
                 this.ScheduleHeartBeat();
             }

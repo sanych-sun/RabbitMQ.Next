@@ -13,9 +13,13 @@ namespace RabbitMQ.Next.Transport.Sockets
             this.socket = socket;
         }
 
-        public ValueTask<int> SendAsync(ReadOnlyMemory<byte> payload) => this.socket.SendAsync(payload, SocketFlags.None);
+        public async ValueTask SendAsync(ReadOnlyMemory<byte> payload)
+        {
+            await this.socket.SendAsync(payload, SocketFlags.None);
+        }
 
-        public int Receive(Span<byte> buffer, out SocketError responseCode) => this.socket.Receive(buffer, SocketFlags.None, out responseCode);
+        public int Receive(Span<byte> buffer, out SocketError responseCode)
+            => this.socket.Receive(buffer, SocketFlags.None, out responseCode);
 
         public void Dispose()
         {
