@@ -1,6 +1,6 @@
 using System;
 using System.Buffers;
-using RabbitMQ.Next.Abstractions.Channels;
+using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Messaging;
 
 namespace RabbitMQ.Next.Messaging.Common.Serializers

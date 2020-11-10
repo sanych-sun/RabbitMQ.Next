@@ -126,7 +126,7 @@ namespace RabbitMQ.Next.Transport
             }
             else
             {
-                if (data.Length > 255)
+                if (data?.Length > 255)
                 {
                     throw new ArgumentException("Short string should be less then 256 characters", nameof(data));
                 }

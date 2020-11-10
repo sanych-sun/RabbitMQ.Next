@@ -149,8 +149,10 @@ namespace RabbitMQ.Next.Tests.Transport
         }
 
         [Theory]
+        [InlineData(null, false, new byte[] { 0 })]
         [InlineData("", false, new byte[] { 0 })]
         [InlineData("Hello", false, new byte[] { 5, 72, 101, 108, 108, 111 })]
+        [InlineData(null, true, new byte[] { 0, 0, 0, 0 })]
         [InlineData("", true, new byte[] { 0, 0, 0, 0 })]
         [InlineData("Hello", true, new byte[] { 0, 0, 0, 5, 72, 101, 108, 108, 111 })]
         public void WriteString(string data, bool isLong, byte[] expected)

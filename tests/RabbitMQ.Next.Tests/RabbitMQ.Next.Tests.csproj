@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\RabbitMQ.Next.Messaging.Publisher\RabbitMQ.Next.Messaging.Publisher.csproj" />
     <ProjectReference Include="..\..\src\RabbitMQ.Next.TopologyBuilder\RabbitMQ.Next.TopologyBuilder.csproj" />
     <ProjectReference Include="..\..\src\RabbitMQ.Next.Transport\RabbitMQ.Next.Transport.csproj" />
   </ItemGroup>

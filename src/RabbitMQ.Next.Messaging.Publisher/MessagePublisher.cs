@@ -1,8 +1,12 @@
 using System;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
+using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.MessagePublisher.Abstractions;
+using RabbitMQ.Next.Transport;
+using RabbitMQ.Next.Transport.Methods.Basic;
+using RabbitMQ.Next.Transport.Methods.Channel;
 
 namespace RabbitMQ.Next.MessagePublisher
 {
@@ -20,24 +24,37 @@ namespace RabbitMQ.Next.MessagePublisher
             
             this.connection.StateChanged.Subscribe(this, s => s.ConnectionOnStateChanged);
         }
-        public bool IsReady => this.connection.State == ConnectionState.Open;
 
-        public Task PublishAsync<TMessage>(string exchange, TMessage message, MessageProperties properties = default)
+        public async Task PublishAsync<TMessage>(string exchange, TMessage message, string routingKey = null, MessageProperties properties = default)
             where TMessage : TLimit
         {
-            throw new System.NotImplementedException();
+            await this.WhenReadyAsync();
+
+            using var bufferWriter = this.connection.BufferPool.Create();
+            this.serializer.Serialize(bufferWriter, message);
+
+            var channel = await this.connection.CreateChannelAsync();
+            await channel.SendAsync(
+                new PublishMethod(exchange, routingKey, false, false),
+                properties, bufferWriter.ToSequence());
+
+            await channel.SendAsync<CloseMethod, CloseOkMethod>(new CloseMethod((ushort) ReplyCode.Success, string.Empty, default));
         }
-        
-        public ValueTask WaitForReadyAsync()
+
+        public void Dispose()
         {
-            if (this.IsReady)
+        }
+
+        private ValueTask WhenReadyAsync()
+        {
+            if (this.connection.State == ConnectionState.Open)
             {
                 return default;
             }
 
             lock (this.sync)
             {
-                if (this.IsReady)
+                if (this.connection.State == ConnectionState.Open)
                 {
                     return default;
                 }
@@ -46,10 +63,6 @@ namespace RabbitMQ.Next.MessagePublisher
 
                 return new ValueTask(this.connectionReady.Task);
             }
-        }
-
-        public void Dispose()
-        {
         }
 
         private ValueTask ConnectionOnStateChanged(ConnectionStateChanged e)

@@ -12,5 +12,7 @@ namespace RabbitMQ.Next.Abstractions
         Task CloseAsync();
 
         ConnectionState State { get; }
+
+        IBufferPool BufferPool { get; }
     }
 }

@@ -1,4 +1,4 @@
-namespace RabbitMQ.Next.Abstractions.Channels
+namespace RabbitMQ.Next.Abstractions
 {
     public interface IBufferPool
     {

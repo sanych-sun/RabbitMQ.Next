@@ -24,6 +24,7 @@ namespace RabbitMQ.Next.Transport
         private readonly ChannelPool channelPool;
         private readonly ConnectionString connectionString;
         private readonly EventSource<ConnectionStateChanged> stateChanged;
+        private readonly IBufferPoolInternal bufferPool;
 
         private ISocket socket;
 
@@ -35,7 +36,7 @@ namespace RabbitMQ.Next.Transport
         public Connection(ConnectionString connectionString)
         {
             this.State = ConnectionState.Pending;
-            this.BufferPool = new BufferPool(ProtocolConstants.FrameMinSize);
+            this.bufferPool = new BufferPool(ProtocolConstants.FrameMinSize);
             this.stateChanged = new EventSource<ConnectionStateChanged>();
             var registryBuilder = new MethodRegistryBuilder();
             registryBuilder.AddConnectionMethods();
@@ -49,7 +50,7 @@ namespace RabbitMQ.Next.Transport
             Func<int, Channel> channelFactory = (channelNumber) =>
             {
                 var pipe = new Pipe();
-                var methodSender = new FrameSender(this, methodRegistry, (ushort) channelNumber, this.BufferPool);
+                var methodSender = new FrameSender(this, methodRegistry, (ushort) channelNumber, this.bufferPool);
                 return new Channel(pipe, methodRegistry, methodSender);
             };
 
@@ -98,7 +99,7 @@ namespace RabbitMQ.Next.Transport
             }, this.connectionString);
 
             this.heartbeatInterval = negotiationResults.HeartbeatInterval / 2;
-            this.BufferPool.SetMaxFrameSize((int)negotiationResults.MaxFrameSize);
+            this.bufferPool.MaxFrameSize = (int)negotiationResults.MaxFrameSize;
 
             this.ScheduleHeartBeat();
             await this.ChangeStateAsync(ConnectionState.Configuring);
@@ -107,7 +108,7 @@ namespace RabbitMQ.Next.Transport
 
         public ConnectionState State { get; private set; }
 
-        public BufferPool BufferPool { get; }
+        public IBufferPool BufferPool => this.bufferPool;
 
         public IEventSource<ConnectionStateChanged> StateChanged => this.stateChanged;
 

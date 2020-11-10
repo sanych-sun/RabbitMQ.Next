@@ -3,13 +3,9 @@ using RabbitMQ.Next.Abstractions.Messaging;
 
 namespace RabbitMQ.Next.MessagePublisher.Abstractions
 {
-    public interface IMessagePublisher<in T>
+    public interface IMessagePublisher<in TLimit>
     {
-        bool IsReady { get; }
-
-        ValueTask WaitForReadyAsync();
-
-        Task PublishAsync<TMessage>(string exchange, TMessage message, MessageProperties properties = default)
-            where TMessage : T;
+        Task PublishAsync<TMessage>(string exchange, TMessage message, string routingKey, MessageProperties properties = default)
+            where TMessage : TLimit;
     }
 }

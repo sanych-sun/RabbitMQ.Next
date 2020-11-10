@@ -1,4 +1,4 @@
-using RabbitMQ.Next.Abstractions.Channels;
+using RabbitMQ.Next.Abstractions;
 
 namespace RabbitMQ.Next.Transport.Buffers
 {
@@ -15,8 +15,10 @@ namespace RabbitMQ.Next.Transport.Buffers
 
         public MemoryOwner CreateMemory() => new MemoryOwner(this.bufferManager);
 
-        public int MaxFrameSize => this.bufferManager.BufferSize;
-
-        public void SetMaxFrameSize(int chunkSize) => this.bufferManager.SetBufferSize(chunkSize);
+        public int MaxFrameSize
+        {
+            get => this.bufferManager.BufferSize;
+            set => this.bufferManager.SetBufferSize(value);
+        }
     }
 }
