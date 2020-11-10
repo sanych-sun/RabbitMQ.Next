@@ -42,6 +42,7 @@ namespace RabbitMQ.Next.Transport
             registryBuilder.AddChannelMethods();
             registryBuilder.AddExchangeMethods();
             registryBuilder.AddQueueMethods();
+            registryBuilder.AddBasicMethods();
 
             var methodRegistry = registryBuilder.Build();
 
@@ -90,14 +91,14 @@ namespace RabbitMQ.Next.Transport
 
                 await ch.SendAsync(new TuneOkMethod(tuneMethod.ChannelMax, tuneMethod.MaxFrameSize, tuneMethod.HeartbeatInterval));
                 var openOkTask = ch.WaitAsync<OpenOkMethod>();
-                await ch.SendAsync<OpenMethod>(new OpenMethod(connection.VirtualHost));
+                await ch.SendAsync(new OpenMethod(connection.VirtualHost));
                 await openOkTask;
 
                 return new ConnectionNegotiationResults(tuneMethod.ChannelMax, tuneMethod.MaxFrameSize, tuneMethod.HeartbeatInterval);
             }, this.connectionString);
 
             this.heartbeatInterval = negotiationResults.HeartbeatInterval / 2;
-            this.BufferPool.SetChunkSize((int)negotiationResults.MaxFrameSize);
+            this.BufferPool.SetMaxFrameSize((int)negotiationResults.MaxFrameSize);
 
             this.ScheduleHeartBeat();
             await this.ChangeStateAsync(ConnectionState.Configuring);

@@ -16,7 +16,10 @@ namespace RabbitMQ.Next.Transport.Methods
                 throw new InvalidOperationException();
             }
 
-            var resultSpan = formatter.Write(buffer.Span, method);
+            var resultSpan = buffer.Span
+                .Write(method.Method);
+
+            resultSpan = formatter.Write(resultSpan, method);
 
             return (buffer.Length - resultSpan.Length);
         }

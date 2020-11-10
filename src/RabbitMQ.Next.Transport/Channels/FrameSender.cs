@@ -1,4 +1,6 @@
+using System;
 using System.Buffers;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Abstractions.Methods;
@@ -32,7 +34,8 @@ namespace RabbitMQ.Next.Transport.Channels
             var written = this.registry.FormatMessage(method, memory.Slice(ProtocolConstants.FrameHeaderSize));
             memory.Span.WriteFrameHeader(new FrameHeader(FrameType.Method, this.channelNumber, written));
 
-            await this.socketWriter.SendAsync(memory.Slice(0, ProtocolConstants.FrameHeaderSize + written));
+            var result = memory.Slice(0, ProtocolConstants.FrameHeaderSize + written);
+            await this.socketWriter.SendAsync(result);
         }
 
         public async Task SendContentHeaderAsync(MessageProperties properties, ulong contentSize)
@@ -40,7 +43,7 @@ namespace RabbitMQ.Next.Transport.Channels
             using var buffer = this.bufferPool.CreateMemory();
             var memory = buffer.Memory;
 
-            var written = memory.Span.WriteContentHeader(properties, contentSize);
+            var written = memory.Span.Slice(ProtocolConstants.FrameHeaderSize).WriteContentHeader(properties, contentSize);
             memory.Span.WriteFrameHeader(new FrameHeader(FrameType.ContentHeader, this.channelNumber, written));
 
             await this.socketWriter.SendAsync(memory.Slice(0, ProtocolConstants.FrameHeaderSize + written));
@@ -48,7 +51,69 @@ namespace RabbitMQ.Next.Transport.Channels
 
         public Task SendContentAsync(ReadOnlySequence<byte> contentBytes)
         {
-            return Task.CompletedTask;
+            if (contentBytes.IsSingleSegment)
+            {
+                return this.SendContentSingleChunkAsync(contentBytes.First);
+            }
+
+            return this.SendContentMultiChunksAsync(contentBytes);
+        }
+
+        private async Task SendContentSingleChunkAsync(ReadOnlyMemory<byte> content)
+        {
+            using var headerBuffer = this.bufferPool.CreateMemory();
+            var frameHeader = headerBuffer.Memory.Slice(0, ProtocolConstants.FrameHeaderSize);
+            frameHeader.Span.WriteFrameHeader(new FrameHeader(FrameType.ContentBody, this.channelNumber, content.Length));
+
+            await this.socketWriter.SendAsync((frameHeader, content), async (sender, state) =>
+            {
+                await sender(state.frameHeader);
+                await sender(state.content);
+            });
+        }
+
+        private async Task SendContentMultiChunksAsync(ReadOnlySequence<byte> contentBytes)
+        {
+            async Task SendChunksAsync(Memory<byte> headerBuffer, int size, List<ReadOnlyMemory<byte>> chunks)
+            {
+                headerBuffer.Span.WriteFrameHeader(new FrameHeader(FrameType.ContentBody, this.channelNumber, size));
+
+                await this.socketWriter.SendAsync((headerBuffer, chunks), async (sender, state) =>
+                {
+                    await sender(headerBuffer);
+                    for (var i = 0; i < state.chunks.Count; i++)
+                    {
+                        await sender(state.chunks[i]);
+                    }
+                });
+            }
+
+            using var frameHeaderBuffer = this.bufferPool.CreateMemory();
+            var frameHeader = frameHeaderBuffer.Memory.Slice(0, ProtocolConstants.FrameHeaderSize);
+
+            var enumerator = new SequenceEnumerator<byte>(contentBytes);
+            enumerator.MoveNext();
+            var currentFrameChunks = new List<ReadOnlyMemory<byte>>();
+            var currentFrameSize = 0;
+
+            do
+            {
+                if (currentFrameSize + enumerator.Current.Length > this.bufferPool.MaxFrameSize)
+                {
+                    await SendChunksAsync(frameHeader, currentFrameSize, currentFrameChunks);
+
+                    currentFrameChunks.Clear();
+                    currentFrameSize = 0;
+                }
+
+                currentFrameChunks.Add(enumerator.Current);
+                currentFrameSize += enumerator.Current.Length;
+            } while (enumerator.MoveNext());
+
+            if (currentFrameSize > 0)
+            {
+                await SendChunksAsync(frameHeader, currentFrameSize, currentFrameChunks);
+            }
         }
     }
 }

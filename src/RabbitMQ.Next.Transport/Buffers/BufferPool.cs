@@ -15,6 +15,8 @@ namespace RabbitMQ.Next.Transport.Buffers
 
         public MemoryOwner CreateMemory() => new MemoryOwner(this.bufferManager);
 
-        public void SetChunkSize(int chunkSize) => this.bufferManager.SetBufferSize(chunkSize);
+        public int MaxFrameSize => this.bufferManager.BufferSize;
+
+        public void SetMaxFrameSize(int chunkSize) => this.bufferManager.SetBufferSize(chunkSize);
     }
 }
