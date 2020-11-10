@@ -1,4 +1,3 @@
-using System.Buffers;
 using RabbitMQ.Next.Abstractions.Channels;
 
 namespace RabbitMQ.Next.Transport.Buffers

@@ -33,14 +33,14 @@ namespace RabbitMQ.Next.Transport.Buffers
             this.releasedItems.Add(buffer);
         }
 
-        public void SetBufferSize(int bufferSize)
+        public void SetBufferSize(int size)
         {
-            if (this.bufferSize == bufferSize)
+            if (this.bufferSize == size)
             {
                 return;
             }
 
-            this.bufferSize = bufferSize;
+            this.bufferSize = size;
             this.releasedItems.Clear();
         }
 

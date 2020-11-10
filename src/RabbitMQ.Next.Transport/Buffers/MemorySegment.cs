@@ -5,12 +5,15 @@ namespace RabbitMQ.Next.Transport.Buffers
 {
     public class MemorySegment<T>: ReadOnlySequenceSegment<T>
     {
-        public MemorySegment(ArraySegment<T> segment)
+        public MemorySegment(Memory<T> memory)
         {
-            this.Memory = segment.AsMemory();
+            this.Memory = memory;
         }
 
         public MemorySegment<T> Append(ArraySegment<T> segment)
+            => this.Append(segment.AsMemory());
+
+        public MemorySegment<T> Append(Memory<T> segment)
         {
             var chunk = new MemorySegment<T>(segment)
             {

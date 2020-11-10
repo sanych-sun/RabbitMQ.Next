@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
+using RabbitMQ.Next.Transport.Buffers;
 
 namespace RabbitMQ.Next.Messaging.Common.Serializers
 {
@@ -51,32 +52,29 @@ namespace RabbitMQ.Next.Messaging.Common.Serializers
             }
 
             var decoder = Encoding.UTF8.GetDecoder();
-            var chunks = new List<(char[] chunk, int actualsize)>();
+            var chunks = new List<ArraySegment<char>>();
             var totalChars = 0;
-
-            var remaining = bytes;
 
             try
             {
-                do
+                using var enumerator = new SequenceEnumerator<byte>(bytes);
+                while (enumerator.MoveNext())
                 {
-                    var segment = remaining.FirstSpan;
-                    var maxChars = Encoding.UTF8.GetMaxCharCount(segment.Length);
+                    var maxChars = Encoding.UTF8.GetMaxCharCount(enumerator.Current.Length);
 
                     var chunk = ArrayPool<char>.Shared.Rent(maxChars);
-                    var actualSize = decoder.GetChars(segment, chunk, remaining.IsSingleSegment);
-                    chunks.Add((chunk, actualSize));
+                    var actualSize = decoder.GetChars(enumerator.Current.Span, chunk, enumerator.IsLast);
+                    chunks.Add(new ArraySegment<char>(chunk, 0, actualSize));
                     totalChars += actualSize;
-                    remaining = remaining.Slice(0, segment.Length);
-                } while (!remaining.IsEmpty);
+                }
 
                 return string.Create(totalChars, chunks, (span, items) =>
                 {
                     for (var i = 0; i < items.Count; i++)
                     {
-                        var (chunk, size) = items[i];
-                        chunk.AsSpan(0, size).CopyTo(span);
-                        span = span.Slice(size);
+                        var chunk = items[i];
+                        chunk.AsSpan().CopyTo(span);
+                        span = span.Slice(chunk.Count);
                     }
                 });
             }
@@ -84,7 +82,7 @@ namespace RabbitMQ.Next.Messaging.Common.Serializers
             {
                 for (var i = 0; i < chunks.Count; i++)
                 {
-                    ArrayPool<char>.Shared.Return(chunks[i].chunk);
+                    ArrayPool<char>.Shared.Return(chunks[i].Array);
                 }
             }
         }

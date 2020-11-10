@@ -64,7 +64,7 @@ namespace RabbitMQ.Next.Transport.Buffers
                 return new ReadOnlySequence<byte>(this.buffer, 0, this.offset);
             }
 
-            var first = new MemorySegment<byte>(new ArraySegment<byte>(this.buffer, 0, this.offset));
+            var first = new MemorySegment<byte>(new Memory<byte>(this.buffer, 0, this.offset));
             var last = first;
 
             foreach (var chunk in this.chunks)

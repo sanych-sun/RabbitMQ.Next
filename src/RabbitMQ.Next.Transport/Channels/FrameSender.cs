@@ -1,4 +1,3 @@
-using System;
 using System.Buffers;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions.Messaging;
@@ -49,7 +48,7 @@ namespace RabbitMQ.Next.Transport.Channels
 
         public Task SendContentAsync(ReadOnlySequence<byte> contentBytes)
         {
-            throw new NotImplementedException();
+            return Task.CompletedTask;
         }
     }
 }
