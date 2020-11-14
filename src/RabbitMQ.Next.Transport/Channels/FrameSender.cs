@@ -74,20 +74,6 @@ namespace RabbitMQ.Next.Transport.Channels
 
         private async Task SendContentMultiChunksAsync(ReadOnlySequence<byte> contentBytes)
         {
-            async Task SendChunksAsync(Memory<byte> headerBuffer, int size, List<ReadOnlyMemory<byte>> chunks)
-            {
-                headerBuffer.Span.WriteFrameHeader(new FrameHeader(FrameType.ContentBody, this.channelNumber, size));
-
-                await this.socketWriter.SendAsync((headerBuffer, chunks), async (sender, state) =>
-                {
-                    await sender(headerBuffer);
-                    for (var i = 0; i < state.chunks.Count; i++)
-                    {
-                        await sender(state.chunks[i]);
-                    }
-                });
-            }
-
             using var frameHeaderBuffer = this.bufferPool.CreateMemory();
             var frameHeader = frameHeaderBuffer.Memory.Slice(0, ProtocolConstants.FrameHeaderSize);
 
@@ -100,7 +86,7 @@ namespace RabbitMQ.Next.Transport.Channels
             {
                 if (currentFrameSize + enumerator.Current.Length > this.bufferPool.MaxFrameSize)
                 {
-                    await SendChunksAsync(frameHeader, currentFrameSize, currentFrameChunks);
+                    await this.SendChunksAsync(frameHeader, currentFrameSize, currentFrameChunks);
 
                     currentFrameChunks.Clear();
                     currentFrameSize = 0;
@@ -112,8 +98,22 @@ namespace RabbitMQ.Next.Transport.Channels
 
             if (currentFrameSize > 0)
             {
-                await SendChunksAsync(frameHeader, currentFrameSize, currentFrameChunks);
+                await this.SendChunksAsync(frameHeader, currentFrameSize, currentFrameChunks);
             }
+        }
+
+        private async Task SendChunksAsync(Memory<byte> headerBuffer, int size, IReadOnlyList<ReadOnlyMemory<byte>> chunks)
+        {
+            headerBuffer.Span.WriteFrameHeader(new FrameHeader(FrameType.ContentBody, this.channelNumber, size));
+
+            await this.socketWriter.SendAsync((headerBuffer, chunks), async (sender, state) =>
+            {
+                await sender(state.headerBuffer);
+                for (var i = 0; i < state.chunks.Count; i++)
+                {
+                    await sender(state.chunks[i]);
+                }
+            });
         }
     }
 }
