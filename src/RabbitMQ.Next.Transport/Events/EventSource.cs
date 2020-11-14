@@ -19,6 +19,8 @@ namespace RabbitMQ.Next.Transport.Events
             return subscription;
         }
 
+        public bool HasSubscribers() => this.subscriptions.Count > 0;
+
         public async ValueTask InvokeAsync(TEventArgs eventArgs)
         {
             if (this.subscriptions.Count == 0)

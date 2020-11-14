@@ -77,12 +77,14 @@ namespace RabbitMQ.Next.MessagePublisher
                 return default;
             }
 
+            TaskCompletionSource<bool> tcs;
             lock (this.sync)
             {
-                this.connectionReady.SetResult(true);
+                tcs = this.connectionReady;
                 this.connectionReady = null;
             }
-            
+
+            tcs?.SetResult(true);
             return default;
         }
     }
