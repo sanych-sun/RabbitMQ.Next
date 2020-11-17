@@ -10,14 +10,14 @@ using RabbitMQ.Next.Transport.Methods.Channel;
 
 namespace RabbitMQ.Next.MessagePublisher
 {
-    internal class MessagePublisher<TLimit> : IMessagePublisher<TLimit>, IDisposable
+    internal class Publisher<TContent> : IPublisher<TContent>, IDisposable
     {
         private readonly IConnection connection;
-        private readonly IMessageSerializer<TLimit> serializer;
+        private readonly IMessageSerializer<TContent> serializer;
         private TaskCompletionSource<bool> connectionReady;
         private readonly object sync = new object();
         
-        public MessagePublisher(IConnection connection, IMessageSerializer<TLimit> serializer)
+        public Publisher(IConnection connection, IMessageSerializer<TContent> serializer)
         {
             this.connection = connection;
             this.serializer = serializer;
@@ -25,8 +25,7 @@ namespace RabbitMQ.Next.MessagePublisher
             this.connection.StateChanged.Subscribe(this, s => s.ConnectionOnStateChanged);
         }
 
-        public async Task PublishAsync<TMessage>(string exchange, TMessage message, string routingKey = null, MessageProperties properties = default)
-            where TMessage : TLimit
+        public async Task PublishAsync(string exchange, TContent message, string routingKey = null, MessageProperties properties = default)
         {
             await this.WhenReadyAsync();
 
