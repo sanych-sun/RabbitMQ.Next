@@ -8,7 +8,6 @@ using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.MessagePublisher.Abstractions;
 using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Methods.Basic;
-using RabbitMQ.Next.Transport.Methods.Channel;
 
 namespace RabbitMQ.Next.MessagePublisher
 {
@@ -81,9 +80,8 @@ namespace RabbitMQ.Next.MessagePublisher
                 }
             }
 
-            var ch = await this.OpenChannelAsync();
-            // todo: move CloseMethod into IChannel
-            await ch.SendAsync<CloseMethod, CloseOkMethod>(new CloseMethod((ushort) ReplyCode.Success, string.Empty, default));
+            var ch = await this.GetChannelAsync();
+            await ch.CloseAsync();
 
             this.channelCloseTcs.SetResult(true);
         }
@@ -93,24 +91,24 @@ namespace RabbitMQ.Next.MessagePublisher
             using var buffer = this.connection.BufferPool.Create();
             this.serializer.Serialize(buffer, message.Content);
 
-            var ch = await this.OpenChannelAsync();
+            var ch = await this.GetChannelAsync();
             await ch.SendAsync(
                 new PublishMethod(this.options.Exchange, message.RoutingKey, mandatory, immediate),
                 message.Properties, buffer.ToSequence());
         }
 
-        private ValueTask<IChannel> OpenChannelAsync()
+        private ValueTask<IChannel> GetChannelAsync()
         {
             var ch = this.channel;
             if (ch == null || ch.IsClosed)
             {
-                return this.DoOpenChannelAsync();
+                return this.DoGetChannelAsync();
             }
 
             return new ValueTask<IChannel>(ch);
         }
 
-        private async ValueTask<IChannel> DoOpenChannelAsync()
+        private async ValueTask<IChannel> DoGetChannelAsync()
         {
             if (this.connection.State != ConnectionState.Open)
             {

@@ -4,9 +4,11 @@ using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Threading;
 using System.Threading.Tasks;
+using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Abstractions.Methods;
+using RabbitMQ.Next.Transport.Methods.Channel;
 using RabbitMQ.Next.Transport.Methods.Registry;
 
 namespace RabbitMQ.Next.Transport.Channels
@@ -97,6 +99,19 @@ namespace RabbitMQ.Next.Transport.Channels
             {
                 this.senderSync.Release();
             }
+        }
+
+        public Task CloseAsync()
+            => this.CloseAsync((ushort)ReplyCode.Success, string.Empty, 0);
+
+        public async Task CloseAsync(ushort statusCode, string description, uint failedMethodId)
+        {
+            if (this.IsClosed)
+            {
+                return;
+            }
+
+            await this.SendAsync<CloseMethod, CloseOkMethod>(new CloseMethod((ushort)statusCode, description, failedMethodId));
         }
 
         private async Task LoopAsync(PipeReader pipeReader)

@@ -1,12 +1,9 @@
 using System;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
-using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.MessagePublisher.Abstractions;
-using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Methods.Basic;
-using RabbitMQ.Next.Transport.Methods.Channel;
 
 namespace RabbitMQ.Next.MessagePublisher
 {
@@ -37,7 +34,7 @@ namespace RabbitMQ.Next.MessagePublisher
                 new PublishMethod(exchange, routingKey, false, false),
                 properties, bufferWriter.ToSequence());
 
-            await channel.SendAsync<CloseMethod, CloseOkMethod>(new CloseMethod((ushort) ReplyCode.Success, string.Empty, default));
+            await channel.CloseAsync();
         }
 
         public void Dispose()
