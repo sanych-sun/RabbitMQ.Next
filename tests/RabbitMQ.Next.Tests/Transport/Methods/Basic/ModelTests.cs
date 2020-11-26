@@ -32,5 +32,22 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Basic
 
             Assert.Equal(expected, method.Flags);
         }
+
+        [Fact]
+        public void ReturnMethod()
+        {
+            var exchange = "exchange";
+            var routingKey = "routing";
+            var replyCode = (ushort)400;
+            var replyText = "some error";
+
+            var method = new ReturnMethod(exchange, routingKey, replyCode, replyText);
+
+            Assert.Equal((uint)MethodId.BasicReturn, method.Method);
+            Assert.Equal(exchange, method.Exchange);
+            Assert.Equal(routingKey, method.RoutingKey);
+            Assert.Equal(replyCode, method.ReplyCode);
+            Assert.Equal(replyText, method.ReplyText);
+        }
     }
 }

@@ -15,5 +15,8 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Basic
         public void PublishMethodFormatter()
             => this.TestFormatter(new PublishMethod("exchange", "routingKey", false, false));
 
+        [Fact]
+        public void ReturnMethodParser()
+            => this.TestParser(new ReturnMethod("exchange", "routingKey", 400, "some error"));
     }
 }

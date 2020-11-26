@@ -123,6 +123,11 @@ namespace RabbitMQ.Next.Transport.Methods
                     .HasContent()
                     .Use(new Basic.PublishMethodFormatter()));
 
+            builder.Register<Basic.ReturnMethod>((uint) MethodId.BasicReturn,
+                registration => registration
+                    .HasContent()
+                    .Use(new Basic.ReturnMethodParser()));
+
             return builder;
         }
     }
