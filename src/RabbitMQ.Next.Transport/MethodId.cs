@@ -69,18 +69,6 @@ namespace RabbitMQ.Next.Transport
         BasicRecoverOk           = (ClassId.Basic<< 16) | 111,
         BasicNack                = (ClassId.Basic<< 16) | 120,
 
-        // Confirm class methods:
-        ConfirmSelect            = (ClassId.Confirm << 16) | 10,
-        ConfirmSelectOk          = (ClassId.Confirm << 16) | 11,
-
-        // Tx class methods:
-        TxSelect                 = (ClassId.Tx << 16) | 10,
-        TxSelectOk               = (ClassId.Tx << 16) | 11,
-        TxCommit                 = (ClassId.Tx << 16) | 20,
-        TxCommitOk               = (ClassId.Tx << 16) | 21,
-        TxRollback               = (ClassId.Tx << 16) | 30,
-        TxRollbackOk             = (ClassId.Tx << 16) | 31
-        
         // @formatter:on
     }
 }

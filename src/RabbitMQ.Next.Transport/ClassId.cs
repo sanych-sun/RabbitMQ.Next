@@ -7,7 +7,5 @@ namespace RabbitMQ.Next.Transport
         Exchange = 40,
         Queue = 50,
         Basic = 60,
-        Confirm = 85,
-        Tx = 90,
     }
 }

@@ -111,7 +111,7 @@ namespace RabbitMQ.Next.Transport.Channels
                 return;
             }
 
-            await this.SendAsync<CloseMethod, CloseOkMethod>(new CloseMethod((ushort)statusCode, description, failedMethodId));
+            await this.SendAsync<CloseMethod, CloseOkMethod>(new CloseMethod(statusCode, description, failedMethodId));
         }
 
         private async Task LoopAsync(PipeReader pipeReader)
