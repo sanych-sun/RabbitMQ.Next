@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Methods;
 using RabbitMQ.Next.Transport.Methods.Connection;
 using Xunit;
@@ -91,6 +90,14 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Connection
         [Fact]
         public void CloseOkMethodParser()
             => this.TestParser(new CloseOkMethod());
+
+        [Fact]
+        public void BlockedMethodParser()
+            => this.TestParser(new BlockedMethod("just because"));
+
+        [Fact]
+        public void UnblockedMethodParser()
+            => this.TestParser(new UnblockedMethod());
 
         // todo: move this to some aux namespace
         private class StartMethodComparer : IEqualityComparer<StartMethod>

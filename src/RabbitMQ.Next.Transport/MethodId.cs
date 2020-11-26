@@ -64,7 +64,6 @@ namespace RabbitMQ.Next.Transport
         BasicGetEmpty            = (ClassId.Basic<< 16) | 72,
         BasicAck                 = (ClassId.Basic<< 16) | 80,
         BasicReject              = (ClassId.Basic<< 16) | 90,
-        BasicRecoverAsync        = (ClassId.Basic<< 16) | 100,
         BasicRecover             = (ClassId.Basic<< 16) | 110,
         BasicRecoverOk           = (ClassId.Basic<< 16) | 111,
         BasicNack                = (ClassId.Basic<< 16) | 120,

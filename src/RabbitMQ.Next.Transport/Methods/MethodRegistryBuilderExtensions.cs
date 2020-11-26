@@ -30,6 +30,12 @@ namespace RabbitMQ.Next.Transport.Methods
                     .Use(new EmptyArgsFormatter<Connection.CloseOkMethod>())
                     .Use(new EmptyArgsParser<Connection.CloseOkMethod>()));
 
+            builder.Register<Connection.BlockedMethod>((uint) MethodId.ConnectionBlocked,
+                registration => registration.Use(new Connection.BlockedMethodParser()));
+
+            builder.Register<Connection.UnblockedMethod>((uint) MethodId.ConnectionUnblocked,
+                registration => registration.Use(new EmptyArgsParser<Connection.UnblockedMethod>()));
+
             return builder;
         }
 

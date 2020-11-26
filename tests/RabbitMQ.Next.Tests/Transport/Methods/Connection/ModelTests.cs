@@ -116,5 +116,23 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Connection
 
             Assert.Equal((uint)MethodId.ConnectionCloseOk, method.Method);
         }
+
+        [Fact]
+        public void BlockedMethod()
+        {
+            var reason = "just because";
+            var method = new BlockedMethod(reason);
+
+            Assert.Equal((uint)MethodId.ConnectionBlocked, method.Method);
+            Assert.Equal(reason, method.Reason);
+        }
+
+        [Fact]
+        public void UnblockedMethod()
+        {
+            var method = new UnblockedMethod();
+
+            Assert.Equal((uint)MethodId.ConnectionUnblocked, method.Method);
+        }
     }
 }
