@@ -9,12 +9,12 @@ namespace RabbitMQ.Next.Transport.Buffers
     internal class BufferWriter : IBufferWriter
     {
         private const int MinChunkSize = 128;
-        private readonly BufferManager manager;
+        private readonly IBufferManager manager;
         private List<ArraySegment<byte>> chunks;
         private byte[] buffer;
         private int offset;
 
-        public BufferWriter(BufferManager manager)
+        public BufferWriter(IBufferManager manager)
         {
             this.manager = manager;
 
@@ -69,7 +69,7 @@ namespace RabbitMQ.Next.Transport.Buffers
 
             foreach (var chunk in this.chunks)
             {
-                last = last.Append(chunk);
+                last = last.Append(chunk.AsMemory());
             }
 
             return new ReadOnlySequence<byte>(first, 0, last, last.Memory.Length);
@@ -82,12 +82,12 @@ namespace RabbitMQ.Next.Transport.Buffers
                 return;
             }
 
-            this.manager.Return(this.buffer);
+            this.manager.Release(this.buffer);
             if (this.chunks != null)
             {
                 foreach (var chunk in this.chunks)
                 {
-                    this.manager.Return(chunk.Array);
+                    this.manager.Release(chunk.Array);
                 }
             }
             this.buffer = null;

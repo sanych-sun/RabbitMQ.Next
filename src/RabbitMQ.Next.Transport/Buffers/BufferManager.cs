@@ -1,14 +1,20 @@
+using System;
 using System.Collections.Concurrent;
 
 namespace RabbitMQ.Next.Transport.Buffers
 {
-    internal class BufferManager
+    internal class BufferManager : IBufferManager
     {
         private readonly ConcurrentBag<byte[]> releasedItems;
         private int bufferSize;
 
         public BufferManager(int bufferSize)
         {
+            if (bufferSize <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(bufferSize));
+            }
+
             this.releasedItems = new ConcurrentBag<byte[]>();
             this.bufferSize = bufferSize;
         }
@@ -23,7 +29,7 @@ namespace RabbitMQ.Next.Transport.Buffers
             return new byte[this.bufferSize];
         }
 
-        public void Return(byte[] buffer)
+        public void Release(byte[] buffer)
         {
             if (buffer.Length != this.bufferSize)
             {
@@ -45,5 +51,7 @@ namespace RabbitMQ.Next.Transport.Buffers
         }
 
         public int BufferSize => this.bufferSize;
+
+        internal int ReleasedItemsCount() => this.releasedItems.Count;
     }
 }

@@ -5,13 +5,13 @@ namespace RabbitMQ.Next.Transport.Buffers
 {
     internal struct MemoryOwner : IMemoryOwner<byte>
     {
-        private readonly BufferManager manager;
+        private readonly IBufferManager manager;
         private byte[] memory;
 
-        public MemoryOwner(BufferManager manager)
+        public MemoryOwner(IBufferManager manager)
         {
             this.manager = manager;
-            this.memory = manager.Rent();
+            this.memory = this.manager.Rent();
         }
 
         public void Dispose()
@@ -21,10 +21,21 @@ namespace RabbitMQ.Next.Transport.Buffers
                 return;
             }
 
-            this.manager.Return(this.memory);
+            this.manager.Release(this.memory);
             this.memory = null;
         }
 
-        public Memory<byte> Memory => this.memory;
+        public Memory<byte> Memory
+        {
+            get
+            {
+                if (this.memory == null)
+                {
+                    throw new ObjectDisposedException(nameof(MemoryOwner));
+                }
+
+                return this.memory;
+            }
+        }
     }
 }
