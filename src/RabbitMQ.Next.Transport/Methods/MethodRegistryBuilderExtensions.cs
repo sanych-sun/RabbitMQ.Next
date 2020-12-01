@@ -124,6 +124,24 @@ namespace RabbitMQ.Next.Transport.Methods
 
         public static IMethodRegistryBuilder AddBasicMethods(this IMethodRegistryBuilder builder)
         {
+            builder.Register<Basic.QosMethod>((uint) MethodId.BasicQos,
+                registration => registration.Use(new Basic.QosMethodFormatter()));
+
+            builder.Register<Basic.QosOkMethod>((uint) MethodId.BasicQosOk,
+                registration => registration.Use(new EmptyArgsParser<Basic.QosOkMethod>()));
+
+            builder.Register<Basic.ConsumeMethod>((uint) MethodId.BasicConsume,
+                registration => registration.Use(new Basic.ConsumeMethodFormatter()));
+            
+            builder.Register<Basic.ConsumeOkMethod>((uint) MethodId.BasicConsumeOk,
+                registration => registration.Use(new Basic.ConsumeOkMethodParser()));
+            
+            builder.Register<Basic.CancelMethod>((uint) MethodId.BasicCancel,
+                registration => registration.Use(new Basic.CancelMethodFormatter()));
+            
+            builder.Register<Basic.CancelOkMethod>((uint) MethodId.BasicCancelOk,
+                registration => registration.Use(new Basic.CancelOkMethodParser()));
+
             builder.Register<Basic.PublishMethod>((uint) MethodId.BasicPublish,
                 registration => registration
                     .HasContent()
@@ -133,6 +151,32 @@ namespace RabbitMQ.Next.Transport.Methods
                 registration => registration
                     .HasContent()
                     .Use(new Basic.ReturnMethodParser()));
+
+            builder.Register<Basic.DeliverMethod>((uint) MethodId.BasicDeliver,
+                registration => registration
+                    .HasContent()
+                    .Use(new Basic.DeliverMethodParser()));
+            
+            builder.Register<Basic.GetMethod>((uint) MethodId.BasicGet,
+                registration => registration.Use(new Basic.GetMethodFormatter()));
+            
+            builder.Register<Basic.GetOkMethod>((uint) MethodId.BasicGetOk,
+                registration => registration.Use(new Basic.GetOkMethodParser()));
+            
+            builder.Register<Basic.GetEmptyMethod>((uint) MethodId.BasicGetEmpty,
+                registration => registration.Use(new EmptyArgsParser<Basic.GetEmptyMethod>()));
+            
+            builder.Register<Basic.AckMethod>((uint) MethodId.BasicAck,
+                registration => registration.Use(new Basic.AckMethodFormatter()));
+            
+            builder.Register<Basic.RecoverMethod>((uint) MethodId.BasicRecover,
+                registration => registration.Use(new Basic.RecoverMethodFormatter()));
+
+            builder.Register<Basic.RecoverOkMethod>((uint) MethodId.BasicRecoverOk,
+                registration => registration.Use(new EmptyArgsParser<Basic.RecoverOkMethod>()));
+
+            builder.Register<Basic.NackMethod>((uint) MethodId.BasicNack,
+                registration => registration.Use(new Basic.NackMethodFormatter()));
 
             return builder;
         }
