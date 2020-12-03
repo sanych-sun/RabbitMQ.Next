@@ -33,7 +33,7 @@ namespace RabbitMQ.Next.Transport.Buffers
 
             if (this.offset + count > this.buffer.Length)
             {
-                throw new InvalidOperationException("Cannot advance past the end of the buffer.");
+                throw new ArgumentException("Cannot advance past the end of the buffer.");
             }
 
             this.offset += count;
@@ -59,18 +59,20 @@ namespace RabbitMQ.Next.Transport.Buffers
         {
             this.CheckDisposed();
 
-            if (this.chunks == null)
+            if (this.chunks == null || this.chunks.Count == 0)
             {
                 return new ReadOnlySequence<byte>(this.buffer, 0, this.offset);
             }
 
-            var first = new MemorySegment<byte>(new Memory<byte>(this.buffer, 0, this.offset));
+            var first = new MemorySegment<byte>(this.chunks[0].AsMemory());
             var last = first;
 
-            foreach (var chunk in this.chunks)
+            for(var i = 1; i < this.chunks.Count; i++)
             {
-                last = last.Append(chunk.AsMemory());
+                last = last.Append(this.chunks[i].AsMemory());
             }
+
+            last = last.Append(new Memory<byte>(this.buffer, 0, this.offset));
 
             return new ReadOnlySequence<byte>(first, 0, last, last.Memory.Length);
         }
