@@ -123,6 +123,11 @@ namespace RabbitMQ.Next.Transport.Channels
             {
                 var header = await pipeReader.ReadAsync(ProtocolConstants.FrameHeaderSize, headerParser);
 
+                if (header.Type == FrameType.Malformed)
+                {
+                    return;
+                }
+
                 Func<ReadOnlySequence<byte>, bool> payloadHandler;
                 switch (header.Type)
                 {
