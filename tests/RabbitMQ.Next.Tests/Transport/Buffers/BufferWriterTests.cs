@@ -154,7 +154,9 @@ namespace RabbitMQ.Next.Tests.Transport.Buffers
             yield return new object[] { 200, new [] { 100, 100 }};
             yield return new object[] { 200, new [] { 200 }};
             yield return new object[] { 250, new [] { 150, 100 }};
+            yield return new object[] { 300, new [] { 150, 150 }};
             yield return new object[] { 500, new [] { 100, 100, 100, 100, 100 }};
+            yield return new object[] { 600, new [] { 100, 150, 100, 150, 100 }};
         }
 
         private IBufferManager MakeBufferManager(int bufferSize = 150)
