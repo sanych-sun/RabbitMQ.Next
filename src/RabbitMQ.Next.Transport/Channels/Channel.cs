@@ -116,16 +116,12 @@ namespace RabbitMQ.Next.Transport.Channels
 
         private async Task LoopAsync(PipeReader pipeReader)
         {
-            Func<ReadOnlySequence<byte>, FrameHeader> headerParser = this.ParseFrameHeader;
+            Func<ReadOnlySequence<byte>, (FrameType Type, ushort channel, uint Size)> headerParser = this.ParseFrameHeader;
             Func<ReadOnlySequence<byte>, bool> methodFrameHandler = this.ParseMethodFramePayload;
 
             while (true)
             {
                 var header = await pipeReader.ReadAsync(ProtocolConstants.FrameHeaderSize, headerParser);
-                if (header.IsEmpty())
-                {
-                    return;
-                }
 
                 Func<ReadOnlySequence<byte>, bool> payloadHandler;
                 switch (header.Type)
@@ -138,7 +134,7 @@ namespace RabbitMQ.Next.Transport.Channels
                         throw new InvalidOperationException();
                 }
 
-                await pipeReader.ReadAsync(header.PayloadSize, payloadHandler);
+                await pipeReader.ReadAsync(header.Size, payloadHandler);
             }
         }
 
@@ -157,16 +153,24 @@ namespace RabbitMQ.Next.Transport.Channels
             return false;
         }
 
-        private FrameHeader ParseFrameHeader(ReadOnlySequence<byte> sequence)
+        private (FrameType, ushort, uint) ParseFrameHeader(ReadOnlySequence<byte> sequence)
         {
+            FrameType type;
+            ushort channel;
+            uint size;
+
             if (sequence.IsSingleSegment)
             {
-                return sequence.FirstSpan.ReadFrameHeader();
+                sequence.FirstSpan.ReadFrameHeader(out type, out channel, out size);
+            }
+            else
+            {
+                Span<byte> headerBuffer = stackalloc byte[ProtocolConstants.FrameHeaderSize];
+                sequence.Slice(0, ProtocolConstants.FrameHeaderSize).CopyTo(headerBuffer);
+                ((ReadOnlySpan<byte>) headerBuffer).ReadFrameHeader(out type, out channel, out size);
             }
 
-            Span<byte> headerBuffer = stackalloc byte[ProtocolConstants.FrameHeaderSize];
-            sequence.Slice(0, ProtocolConstants.FrameHeaderSize).CopyTo(headerBuffer);
-            return ((ReadOnlySpan<byte>) headerBuffer).ReadFrameHeader();
+            return (type, channel, size);
         }
     }
 }

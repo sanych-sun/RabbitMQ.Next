@@ -7,7 +7,7 @@ namespace RabbitMQ.Next.Transport
     internal static class Framing
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static FrameHeader ReadFrameHeader(this ReadOnlySpan<byte> data)
+        public static void ReadFrameHeader(this ReadOnlySpan<byte> data, out FrameType type, out ushort channel, out uint payloadSize)
         {
             data = data.Read(out byte typeRaw);
 
@@ -16,23 +16,25 @@ namespace RabbitMQ.Next.Transport
                 && typeRaw != (byte)FrameType.ContentBody
                 && typeRaw != (byte)FrameType.Heartbeat)
             {
-                return new FrameHeader(FrameType.Malformed, 0, 0);
+                type = FrameType.Malformed;
+                channel = 0;
+                payloadSize = 0;
+
+                return;
             }
 
-            var type = (FrameType) typeRaw;
+            type = (FrameType)typeRaw;
 
-            data.Read(out ushort channel)
-                .Read(out uint size);
-
-            return new FrameHeader(type, channel, (int) size);
+            data.Read(out channel)
+                .Read(out payloadSize);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int WriteFrameHeader(this Span<byte> target, FrameHeader header)
+        public static int WriteFrameHeader(this Span<byte> target, FrameType type, ushort channel, uint payloadSize)
         {
-            var result = target.Write((byte)header.Type)
-                .Write(header.Channel)
-                .Write((uint)header.PayloadSize);
+            var result = target.Write((byte)type)
+                .Write(channel)
+                .Write(payloadSize);
 
             return target.Length - result.Length;
         }

@@ -193,14 +193,14 @@ namespace RabbitMQ.Next.Transport
                     return;
                 }
 
-                var header = ((ReadOnlySpan<byte>)headerBuffer).ReadFrameHeader();
+                ((ReadOnlySpan<byte>)headerBuffer).ReadFrameHeader(out FrameType _, out ushort channel, out uint payloadSize);
 
                 // 2. Choose appropriate channel to forward the data
-                var targetPipe = this.channelPool[header.Channel].Pipe.Writer;
+                var targetPipe = this.channelPool[channel].Pipe.Writer;
                 targetPipe.Write(headerBuffer);
 
                 // 3. Read frame payload into the channel
-                if (this.socket.Receive(targetPipe, header.PayloadSize) != SocketError.Success)
+                if (this.socket.Receive(targetPipe, (int)payloadSize) != SocketError.Success)
                 {
                     this.CleanUpOnSocketClose();
                     return;

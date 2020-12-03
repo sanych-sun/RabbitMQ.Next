@@ -32,7 +32,7 @@ namespace RabbitMQ.Next.Transport.Channels
             var memory = buffer.Memory;
 
             var written = this.registry.FormatMessage(method, memory.Slice(ProtocolConstants.FrameHeaderSize));
-            memory.Span.WriteFrameHeader(new FrameHeader(FrameType.Method, this.channelNumber, written));
+            memory.Span.WriteFrameHeader(FrameType.Method, this.channelNumber, (uint)written);
 
             var result = memory.Slice(0, ProtocolConstants.FrameHeaderSize + written);
             await this.socketWriter.SendAsync(result);
@@ -44,7 +44,7 @@ namespace RabbitMQ.Next.Transport.Channels
             var memory = buffer.Memory;
 
             var written = memory.Span.Slice(ProtocolConstants.FrameHeaderSize).WriteContentHeader(properties, contentSize);
-            memory.Span.WriteFrameHeader(new FrameHeader(FrameType.ContentHeader, this.channelNumber, written));
+            memory.Span.WriteFrameHeader(FrameType.ContentHeader, this.channelNumber, (uint)written);
 
             await this.socketWriter.SendAsync(memory.Slice(0, ProtocolConstants.FrameHeaderSize + written));
         }
@@ -63,7 +63,7 @@ namespace RabbitMQ.Next.Transport.Channels
         {
             using var headerBuffer = this.bufferPool.CreateMemory();
             var frameHeader = headerBuffer.Memory.Slice(0, ProtocolConstants.FrameHeaderSize);
-            frameHeader.Span.WriteFrameHeader(new FrameHeader(FrameType.ContentBody, this.channelNumber, content.Length));
+            frameHeader.Span.WriteFrameHeader(FrameType.ContentBody, this.channelNumber, (uint)content.Length);
 
             await this.socketWriter.SendAsync((frameHeader, content), async (sender, state) =>
             {
@@ -104,7 +104,7 @@ namespace RabbitMQ.Next.Transport.Channels
 
         private async Task SendChunksAsync(Memory<byte> headerBuffer, int size, IReadOnlyList<ReadOnlyMemory<byte>> chunks)
         {
-            headerBuffer.Span.WriteFrameHeader(new FrameHeader(FrameType.ContentBody, this.channelNumber, size));
+            headerBuffer.Span.WriteFrameHeader(FrameType.ContentBody, this.channelNumber, (uint)size);
 
             await this.socketWriter.SendAsync((headerBuffer, chunks), async (sender, state) =>
             {
