@@ -1,5 +1,5 @@
 using System;
-using System.IO.Pipelines;
+using System.Buffers;
 using System.Net.Sockets;
 
 namespace RabbitMQ.Next.Transport.Sockets
@@ -22,7 +22,7 @@ namespace RabbitMQ.Next.Transport.Sockets
             return SocketError.Success;
         }
 
-        public static SocketError Receive(this ISocket socket, PipeWriter target, int size)
+        public static SocketError Receive(this ISocket socket, IBufferWriter<byte> target, int size)
         {
             while (size > 0)
             {
@@ -35,7 +35,6 @@ namespace RabbitMQ.Next.Transport.Sockets
                 var received = socket.Receive(buffer, out var responseCode);
                 if (responseCode != SocketError.Success)
                 {
-                    target.Complete();
                     return responseCode;
                 }
 
