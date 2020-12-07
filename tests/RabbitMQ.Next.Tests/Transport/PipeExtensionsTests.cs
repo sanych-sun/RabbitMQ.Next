@@ -22,14 +22,14 @@ namespace RabbitMQ.Next.Tests.Transport
 
             cancellationSource.Cancel();
 
-            Assert.Throws<OperationCanceledException>(() => readerTask.GetAwaiter().GetResult());
+            await Assert.ThrowsAsync<OperationCanceledException>(async () => await readerTask);
         }
 
         [Theory]
         [InlineData(new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 0)]
         [InlineData(new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 2)]
         [InlineData(new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 10)]
-        public async Task ReadAsync(byte[] payload, uint length)
+        public async Task ReadAsync(byte[] payload, int length)
         {
             var expected = new byte[length];
             Array.Copy(payload, 0, expected, 0, length);

@@ -22,7 +22,7 @@ namespace RabbitMQ.Next.Transport.Sockets
             return SocketError.Success;
         }
 
-        public static SocketError Receive(this ISocket socket, IBufferWriter<byte> target, int size)
+        public static SocketError FillBuffer(this ISocket socket, IBufferWriter<byte> target, int size)
         {
             while (size > 0)
             {

@@ -193,14 +193,27 @@ namespace RabbitMQ.Next.Transport
                     return;
                 }
 
-                ((ReadOnlySpan<byte>)headerBuffer).ReadFrameHeader(out FrameType _, out ushort channel, out uint payloadSize);
+                ((ReadOnlySpan<byte>)headerBuffer).ReadFrameHeader(out FrameType frameType, out ushort channel, out uint payloadSize);
 
                 // 2. Choose appropriate channel to forward the data
-                var targetPipe = this.channelPool[channel].Pipe.Writer;
-                targetPipe.Write(headerBuffer);
+                var targetPipe = this.channelPool[channel].Pipe;
 
                 // 3. Read frame payload into the channel
-                if (this.socket.Receive(targetPipe, (int)payloadSize) != SocketError.Success)
+                var returnCode = SocketError.Success;
+                switch (frameType)
+                {
+                    case FrameType.Method:
+                        returnCode = ReceiveMethodFrame(this.socket, targetPipe, (int)payloadSize);
+                        break;
+                    case FrameType.ContentHeader:
+                        returnCode = ReceiveContentHeaderFrame(this.socket, targetPipe, (int)payloadSize);
+                        break;
+                    case FrameType.ContentBody:
+                        returnCode = ReceiveContentBodyFrame(this.socket, targetPipe, (int)payloadSize);
+                        break;
+                }
+
+                if (returnCode != SocketError.Success)
                 {
                     this.CleanUpOnSocketClose();
                     return;
@@ -217,10 +230,49 @@ namespace RabbitMQ.Next.Transport
                     // TODO: throw connection exception here
                     throw new InvalidOperationException();
                 }
-
-                // 5. Make data available for consumers
-                targetPipe.FlushAsync().GetAwaiter().GetResult();
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static SocketError ReceiveMethodFrame(ISocket sourceSocket, PipeWrapper target, int payloadSize)
+        {
+            target.BeginLogicalFrame(FrameType.Method, payloadSize);
+            return sourceSocket.FillBuffer(target, payloadSize);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static SocketError ReceiveContentHeaderFrame(ISocket sourceSocket, PipeWrapper target, int payloadSize)
+        {
+            const int customHeaderSize = 12;
+            Span<byte> contentHeaderCustomHeader = stackalloc byte[customHeaderSize];
+
+            var returnCode = sourceSocket.FillBuffer(contentHeaderCustomHeader);
+            if (returnCode != SocketError.Success)
+            {
+                return returnCode;
+            }
+
+            ((ReadOnlySpan<byte>)contentHeaderCustomHeader)
+                .Slice(4) // skip 2 obsolete shorts
+                .Read(out ulong contentSide);
+
+            target.BeginLogicalFrame(FrameType.ContentHeader, payloadSize - customHeaderSize);
+            returnCode = sourceSocket.FillBuffer(target, payloadSize);
+
+            if (returnCode != SocketError.Success)
+            {
+                return returnCode;
+            }
+
+            target.BeginLogicalFrame(FrameType.ContentBody, (int)contentSide);
+
+            return SocketError.Success;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static SocketError ReceiveContentBodyFrame(ISocket sourceSocket, PipeWrapper target, int payloadSize)
+        {
+            return sourceSocket.FillBuffer(target, payloadSize);
         }
 
         private void CleanUpOnSocketClose()

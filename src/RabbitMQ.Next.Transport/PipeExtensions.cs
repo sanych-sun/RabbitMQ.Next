@@ -8,7 +8,7 @@ namespace RabbitMQ.Next.Transport
 {
     internal static class PipeExtensions
     {
-        public static async ValueTask<TResult> ReadAsync<TResult>(this PipeReader reader, uint length, Func<ReadOnlySequence<byte>, TResult> parser, CancellationToken cancellation = default)
+        public static async ValueTask<TResult> ReadAsync<TResult>(this PipeReader reader, int length, Func<ReadOnlySequence<byte>, TResult> parser, CancellationToken cancellation = default)
         {
             while (true)
             {

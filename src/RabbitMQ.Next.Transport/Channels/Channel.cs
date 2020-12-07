@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Threading;
 using System.Threading.Tasks;
-using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Abstractions.Methods;
@@ -16,24 +15,22 @@ namespace RabbitMQ.Next.Transport.Channels
     internal sealed class Channel : IChannel, IDisposable
     {
         private readonly SynchronizedChannel syncChannel;
-        private readonly IMethodRegistry methodRegistry;
         private readonly SemaphoreSlim senderSync;
 
         private readonly IList<IFrameHandler> methodHandlers;
 
         public Channel(Pipe pipe, IMethodRegistry methodRegistry, IFrameSender frameSender)
         {
-            this.Pipe = pipe;
+            this.Pipe =  new PipeWrapper(pipe.Writer);
             var waitFrameHandler = new WaitMethodFrameHandler(methodRegistry);
             this.syncChannel = new SynchronizedChannel(frameSender, waitFrameHandler);
-            this.methodRegistry = methodRegistry;
             this.methodHandlers = new List<IFrameHandler> { waitFrameHandler };
             this.senderSync = new SemaphoreSlim(1,1);
 
             Task.Run(() => this.LoopAsync(pipe.Reader));
         }
 
-        public Pipe Pipe { get; }
+        public PipeWrapper Pipe { get; }
 
         public void Dispose()
         {
@@ -116,12 +113,12 @@ namespace RabbitMQ.Next.Transport.Channels
 
         private async Task LoopAsync(PipeReader pipeReader)
         {
-            Func<ReadOnlySequence<byte>, (FrameType Type, ushort channel, uint Size)> headerParser = this.ParseFrameHeader;
+            Func<ReadOnlySequence<byte>, (FrameType Type, int Size)> headerParser = this.ParseFrameHeader;
             Func<ReadOnlySequence<byte>, bool> methodFrameHandler = this.ParseMethodFramePayload;
 
             while (true)
             {
-                var header = await pipeReader.ReadAsync(ProtocolConstants.FrameHeaderSize, headerParser);
+                var header = await pipeReader.ReadAsync(ChannelFrame.FrameHeaderSize, headerParser);
 
                 if (header.Type == FrameType.Malformed)
                 {
@@ -158,24 +155,16 @@ namespace RabbitMQ.Next.Transport.Channels
             return false;
         }
 
-        private (FrameType, ushort, uint) ParseFrameHeader(ReadOnlySequence<byte> sequence)
+        private (FrameType, int) ParseFrameHeader(ReadOnlySequence<byte> sequence)
         {
-            FrameType type;
-            ushort channel;
-            uint size;
-
             if (sequence.IsSingleSegment)
             {
-                sequence.FirstSpan.ReadFrameHeader(out type, out channel, out size);
-            }
-            else
-            {
-                Span<byte> headerBuffer = stackalloc byte[ProtocolConstants.FrameHeaderSize];
-                sequence.Slice(0, ProtocolConstants.FrameHeaderSize).CopyTo(headerBuffer);
-                ((ReadOnlySpan<byte>) headerBuffer).ReadFrameHeader(out type, out channel, out size);
+                return sequence.FirstSpan.ReadChannelHeader();
             }
 
-            return (type, channel, size);
+            Span<byte> headerBuffer = stackalloc byte[ProtocolConstants.FrameHeaderSize];
+            sequence.Slice(0, ProtocolConstants.FrameHeaderSize).CopyTo(headerBuffer);
+            return ((ReadOnlySpan<byte>) headerBuffer).ReadChannelHeader();
         }
     }
 }
