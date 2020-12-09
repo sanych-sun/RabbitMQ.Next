@@ -21,5 +21,9 @@ namespace RabbitMQ.Next.Transport
 
             return bits;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsFlagSet(long flags, byte bitPosition)
+            => (flags & (1 << bitPosition)) != 0;
     }
 }

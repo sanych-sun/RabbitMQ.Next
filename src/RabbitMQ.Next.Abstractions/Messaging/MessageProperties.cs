@@ -9,7 +9,7 @@ namespace RabbitMQ.Next.Abstractions.Messaging
 
         public string ContentEncoding { get; set; }
 
-        public Dictionary<string, object> Headers { get; set; }
+        public IReadOnlyDictionary<string, object> Headers { get; set; }
 
         public DeliveryMode DeliveryMode { get; set; }
 
