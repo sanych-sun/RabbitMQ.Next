@@ -5,36 +5,41 @@ namespace RabbitMQ.Next.Transport
 {
     public class AsyncManualResetEvent
     {
-        private volatile TaskCompletionSource<bool> completionSource = new TaskCompletionSource<bool>();
+        private volatile TaskCompletionSource<bool> completionSource;
 
         public AsyncManualResetEvent(bool initialState = false)
         {
-            if (initialState)
+            if (!initialState)
             {
-                this.completionSource.SetResult(true);
+                this.completionSource = new TaskCompletionSource<bool>();
             }
         }
 
         public void Set()
         {
-            this.completionSource.TrySetResult(true);
+            this.completionSource?.TrySetResult(true);
         }
 
-        public Task WaitAsync(CancellationToken cancellationToken = default)
+        public ValueTask WaitAsync(CancellationToken cancellationToken = default)
         {
-            if (!cancellationToken.CanBeCanceled)
+            if (this.completionSource == null)
             {
-                return this.completionSource.Task;
+                return default;
             }
 
-            return this.completionSource.Task.WithCancellation(cancellationToken);
+            if (!cancellationToken.CanBeCanceled)
+            {
+                return new ValueTask(this.completionSource.Task);
+            }
+
+            return new ValueTask(this.completionSource.Task.WithCancellation(cancellationToken));
         }
 
         public void Reset()
         {
             var currentCompletionSource = this.completionSource;
 
-            if (!currentCompletionSource.Task.IsCompleted)
+            if (currentCompletionSource != null && !currentCompletionSource.Task.IsCompleted)
             {
                 return;
             }

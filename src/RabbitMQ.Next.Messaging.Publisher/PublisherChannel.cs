@@ -19,7 +19,7 @@ namespace RabbitMQ.Next.MessagePublisher
         private readonly TaskCompletionSource<bool> channelCloseTcs;
         private readonly IConnection connection;
         private readonly IMessageSerializer<TContent> serializer;
-        private readonly ConcurrentQueue<(Message<TContent> Message, bool mandatory, bool immediate)> localQueue;
+        private readonly ConcurrentQueue<(TContent Payload, MessageHeader header)> localQueue;
         private readonly PublisherChannelOptions options;
         private IChannel channel;
         private volatile bool isCompleted;
@@ -35,15 +35,13 @@ namespace RabbitMQ.Next.MessagePublisher
 
             this.channelCloseTcs = new TaskCompletionSource<bool>();
             this.waitToRead = new AsyncManualResetEvent(true);
-            this.localQueue = new ConcurrentQueue<(Message<TContent>, bool, bool)>();
+            this.localQueue = new ConcurrentQueue<(TContent, MessageHeader)>();
             this.isCompleted = false;
 
             Task.Run(this.MessageSendLoop);
         }
 
-        public async ValueTask WriteAsync(
-            TContent content, string routingKey, MessageProperties properties = default,
-            bool mandatory = false, bool immediate = false, CancellationToken cancellation = default)
+        public async ValueTask PublishAsync(TContent message, MessageHeader header = null, CancellationToken cancellation = default)
         {
             if (this.isCompleted)
             {
@@ -51,7 +49,7 @@ namespace RabbitMQ.Next.MessagePublisher
             }
 
             await this.publishQueueSync.WaitAsync(cancellation);
-            this.localQueue.Enqueue((new Message<TContent>(content, routingKey, properties), mandatory, immediate));
+            this.localQueue.Enqueue((message, header));
             this.waitToRead.Set();
         }
 
@@ -75,7 +73,9 @@ namespace RabbitMQ.Next.MessagePublisher
 
                 while (this.localQueue.TryDequeue(out var item))
                 {
-                    await this.SendMessageAsync(item.Message, item.mandatory, item.immediate);
+                    await this.SendMessageAsync(
+                        new Message<TContent>(item.header.Exchange, item.Payload, item.header.RoutingKey, item.header.Properties),
+                        item.header.Mandatory.GetValueOrDefault(), item.header.Immediate.GetValueOrDefault());
                     this.publishQueueSync.Release();
                 }
             }
@@ -93,7 +93,7 @@ namespace RabbitMQ.Next.MessagePublisher
 
             var ch = await this.GetChannelAsync();
             await ch.SendAsync(
-                new PublishMethod(this.options.Exchange, message.RoutingKey, mandatory, immediate),
+                new PublishMethod(message.Exchange, message.RoutingKey, mandatory, immediate),
                 message.Properties, buffer.ToSequence());
         }
 
