@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Transport;
 using Xunit;
 
@@ -151,7 +150,10 @@ namespace RabbitMQ.Next.Tests.Transport
         [Theory]
         [InlineData(null, false, new byte[] { 0 })]
         [InlineData("", false, new byte[] { 0 })]
-        [InlineData("Hello", false, new byte[] { 5, 72, 101, 108, 108, 111 })]
+        [InlineData("Lorem ipsu", false, new byte[] { 10, 076, 111, 114, 101, 109, 032, 105, 112, 115, 117 })]
+        [InlineData("Лорем", false, new byte[] { 10, 208, 155, 208, 190, 209, 128, 208, 181, 208, 188 })]
+        [InlineData("ლოaე", false, new byte[] { 10, 225, 131, 154, 225, 131, 157, 097, 225, 131, 148 })]
+        [InlineData("片+目表", false, new byte[] { 10, 231, 137, 135, 043, 231, 155, 174, 232, 161, 168 })]
         [InlineData(null, true, new byte[] { 0, 0, 0, 0 })]
         [InlineData("", true, new byte[] { 0, 0, 0, 0 })]
         [InlineData("Hello", true, new byte[] { 0, 0, 0, 5, 72, 101, 108, 108, 111 })]
@@ -218,15 +220,13 @@ namespace RabbitMQ.Next.Tests.Transport
         }
 
         [Theory]
-        [InlineData(256)]
-        public void WriteThrowOnTooLongString(int length)
+        [MemberData(nameof(WriteShortStringTooLongTestCases))]
+        public void WriteThrowOnTooLongString(string text)
         {
-            var data = Helpers.GetDummyText(length);
-
             Assert.Throws<ArgumentException>(() =>
             {
                 Span<byte> buffer = stackalloc byte[1000];
-                buffer.Write(data, false);
+                buffer.Write(text, false);
             });
         }
 
@@ -240,6 +240,14 @@ namespace RabbitMQ.Next.Tests.Transport
                 Span<byte> buffer = stackalloc byte[1000];
                 buffer.WriteField(value);
             });
+        }
+
+        public static IEnumerable<object[]> WriteShortStringTooLongTestCases()
+        {
+            foreach (var text in Helpers.GetDummyTexts(256))
+            {
+                yield return new[] { text.Text };
+            }
         }
 
         public static IEnumerable<object[]> WriteFieldTestCases()

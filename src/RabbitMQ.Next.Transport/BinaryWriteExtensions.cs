@@ -119,18 +119,7 @@ namespace RabbitMQ.Next.Transport
         {
             var lengthSpan = target;
 
-            if (isLongString)
-            {
-                target = target.Slice(sizeof(uint));
-            }
-            else
-            {
-                if (data?.Length > 255)
-                {
-                    throw new ArgumentException("Short string should be less then 256 characters", nameof(data));
-                }
-                target = target.Slice(sizeof(byte));
-            }
+            target = target.Slice(isLongString ? sizeof(uint) : sizeof(byte));
 
             var bytesWritten = Encoding.UTF8.GetBytes(data, target);
             target = target.Slice(bytesWritten);
@@ -141,6 +130,11 @@ namespace RabbitMQ.Next.Transport
             }
             else
             {
+                if (bytesWritten > 255)
+                {
+                    throw new ArgumentException("Short string should be less then 256 bytes", nameof(data));
+                }
+
                 lengthSpan.Write((byte) bytesWritten);
             }
 

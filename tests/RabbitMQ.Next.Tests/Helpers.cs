@@ -7,9 +7,35 @@ namespace RabbitMQ.Next.Tests
 {
     internal static class Helpers
     {
-        private const string DummyText = "What is Lorem Ipsum? Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.";
+        private static IReadOnlyList<(string Charset, int Size, string Text)> Texts = new []
+        {
+            ("Latin", 10, "Lorem ipsu"),
+            ("Latin", 128, "Lorem ipsum dolor sit amet, ne putent ornatus expetendis vix. Ea sed suas accusamus. Possim prodesset maiestatis sea te, graeci "),
+            ("Latin", 255, "Lorem ipsum dolor sit amet, ne putent ornatus expetendis vix. Ea sed suas accusamus. Possim prodesset maiestatis sea te, graeci tractatos evertitur ad vix, sit an sale regione facilisi. Vel cu suscipit perfecto voluptaria. Diam soleat eos ex, his liber ca"),
+            ("Latin", 256, "Lorem ipsum dolor sit amet, ne putent ornatus expetendis vix. Ea sed suas accusamus. Possim prodesset maiestatis sea te, graeci tractatos evertitur ad vix, sit an sale regione facilisi. Vel cu suscipit perfecto voluptaria. Diam soleat eos ex, his liber cau"),
+            ("Latin", 300, "Lorem ipsum dolor sit amet, ne putent ornatus expetendis vix. Ea sed suas accusamus. Possim prodesset maiestatis sea te, graeci tractatos evertitur ad vix, sit an sale regione facilisi. Vel cu suscipit perfecto voluptaria. Diam soleat eos ex, his liber causae saperet et. Ne ipsum congue graecis sed,"),
 
-        public static string GetDummyText(int lenght) => DummyText.Substring(0, lenght);
+            ("Cyrillic", 10, "Лорем"),
+            ("Cyrillic", 128, "Лорем ипсум долор сит амет санцтус фабеллас ан яуи, хас дицит инвенире"),
+            ("Cyrillic", 255, "Лорем ипсум долор сит амет санцтус фабеллас ан яуи, хас дицит инвенире сусципиантур еу аугуе проприае те нам. Сит модус еррем персиус ид. Ри!"),
+            ("Cyrillic", 256, "Лорем ипсум долор сит амет санцтус фабеллас ан яуи, хас дицит инвенире сусципиантур еу аугуе проприае те нам. Сит модус еррем персиус ид. Рид"),
+            ("Cyrillic", 300, "Лорем ипсум долор сит амет санцтус фабеллас ан яуи, хас дицит инвенире сусципиантур еу аугуе проприае те нам. Сит модус еррем персиус ид. Риденс вертерем инструцтио"),
+
+            ("Georgian", 10, "ლოaე"),
+            ("Georgian", 128, "ლოaემ იფსუმ დოლორ სით ამეთ ორათიო ფუისსეთ რეცუსა"),
+            ("Georgian", 255, "ლოaემ იფსუმ დოლორ სით ამეთ ორა. თიო ფუისსეთ რეცუსაბო ნეც ად. მოლლის ფრაესენთ ცუმ იდ, უსუ ასსუმ რეცთ"),
+            ("Georgian", 256, "ლოaემ იფსუმ დოლორ სით ამეთ ორათიო ფუისსეთ რეცუსაბო ნეც ად. მოლლის ფრაესენთ ცუმ იდ, უსუ ასსუმ რეცთე"),
+            ("Georgian", 300, "ლოaემ იფსუმ დოლორ სით ამეთ ორათიო ფუისსეთ რეცუსაბო ნეც ად. მოლლის ფრაესენთ ცუმ იდ, უსუ ასსუმ რეცთეყუე ათ. იდ სედ გრა"),
+
+            ("Chinese", 10, "片+目表"),
+            ("Chinese", 128, "片+目表合専逮放実郎提望月作。応索奈意給率-置億場活者調載撲記歳事動。言民敏演選無山対婚"),
+            ("Chinese", 255, "片+目表合専逮放実郎提望月作。応索奈意給率-置億場活者調載撲記歳事動。言民敏演選無山対婚認/芸会室太工負未可綺。争強格告集周条催中保度初質界。分窓禁却佐市蘇向周像車弁呼優質背"),
+            ("Chinese", 256, "片+目表合専逮放実郎提望月作。応索奈意給率-置億場活者調載撲記歳事動。言民敏演選-無山対婚認/芸会室太工負未可綺。争強格告集周条催中保度初質界。分窓禁却佐市蘇向周像車弁呼優質背"),
+            ("Chinese", 300, "片+目表合専逮放実郎提望月作。応索奈意給率-置億場活者調載撲記歳事動。言民敏演選無山対婚認/芸会室太工負未可綺。争強格告集周条催中保度初質界。分窓禁却佐市蘇向周像車弁呼優質背味区年式。米危歳夏画阪掲者番通"),
+        };
+
+        public static IEnumerable<(string Charset, int Size, string Text)> GetDummyTexts(int minBytes, int maxBytes = 0)
+            => Texts.Where(i => i.Size >= minBytes).Where(i => maxBytes == 0 || i.Size <= maxBytes);
 
         public static byte[] GetFileContent(string resourcePath)
         {

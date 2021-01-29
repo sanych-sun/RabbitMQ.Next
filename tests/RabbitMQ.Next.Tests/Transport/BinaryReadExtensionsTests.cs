@@ -164,8 +164,16 @@ namespace RabbitMQ.Next.Tests.Transport
         [Theory]
         [InlineData(new byte[] { 0 }, false, "", new byte[] { })]
         [InlineData(new byte[] { 0, 2 }, false, "", new byte[] { 2 })]
-        [InlineData(new byte[] { 5, 72, 101, 108, 108, 111 }, false, "Hello", new byte[] { })]
-        [InlineData(new byte[] { 5, 72, 101, 108, 108, 111, 2 }, false, "Hello", new byte[] { 2 })]
+
+
+        [InlineData(new byte[] { 10, 076, 111, 114, 101, 109, 032, 105, 112, 115, 117 }, false, "Lorem ipsu", new byte[] {} )]
+        [InlineData(new byte[] { 10, 076, 111, 114, 101, 109, 032, 105, 112, 115, 117, 3, 5 }, false, "Lorem ipsu", new byte[] { 3, 5 } )]
+        [InlineData(new byte[] { 10, 208, 155, 208, 190, 209, 128, 208, 181, 208, 188 }, false, "Лорем", new byte[] {} )]
+        [InlineData(new byte[] { 10, 208, 155, 208, 190, 209, 128, 208, 181, 208, 188, 102, 12 }, false, "Лорем", new byte[] { 102, 12 } )]
+        [InlineData(new byte[] { 10, 225, 131, 154, 225, 131, 157, 097, 225, 131, 148 }, false, "ლოaე", new byte[] {} )]
+        [InlineData(new byte[] { 10, 225, 131, 154, 225, 131, 157, 097, 225, 131, 148, 5, 98 }, false, "ლოaე", new byte[] { 5, 98 } )]
+        [InlineData(new byte[] { 10, 231, 137, 135, 043, 231, 155, 174, 232, 161, 168 }, false, "片+目表", new byte[] {} )]
+        [InlineData(new byte[] { 10, 231, 137, 135, 043, 231, 155, 174, 232, 161, 168, 42, 1 }, false, "片+目表", new byte[] { 42, 1 } )]
         [InlineData(new byte[] { 0, 0, 0, 0 }, true, "", new byte[] { })]
         [InlineData(new byte[] { 0, 0, 0, 0, 2 }, true, "", new byte[] { 2 })]
         [InlineData(new byte[] { 0, 0, 0, 5, 72, 101, 108, 108, 111 }, true, "Hello", new byte[] { })]
