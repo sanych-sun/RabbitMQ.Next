@@ -7,7 +7,7 @@ namespace RabbitMQ.Next.Abstractions.Messaging
             this.Exchange = exchange;
             this.Content = content;
             this.RoutingKey = routingKey;
-            this.Properties = properties;
+            this.Properties = properties ?? new MessageProperties();
         }
 
         public string Exchange { get; }

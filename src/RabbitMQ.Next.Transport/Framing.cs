@@ -94,7 +94,7 @@ namespace RabbitMQ.Next.Transport
                 .ReadProperty(out string replyTo, flags, 9)
                 .ReadProperty(out string expiration, flags, 8)
                 .ReadProperty(out string messageId, flags, 7)
-                .ReadProperty(out DateTimeOffset timestamp, flags, 6)
+                .ReadProperty(out DateTimeOffset? timestamp, flags, 6)
                 .ReadProperty(out string type, flags, 5)
                 .ReadProperty(out string userId, flags, 4)
                 .ReadProperty(out string applicationId, flags, 3);
@@ -155,15 +155,17 @@ namespace RabbitMQ.Next.Transport
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ReadOnlySpan<byte> ReadProperty(this ReadOnlySpan<byte> source, out DateTimeOffset value, ushort flags, byte bitNumber)
+        private static ReadOnlySpan<byte> ReadProperty(this ReadOnlySpan<byte> source, out DateTimeOffset? value, ushort flags, byte bitNumber)
         {
             if (!BitConverter.IsFlagSet(flags, bitNumber))
             {
-                value = default;
+                value = null;
                 return source;
             }
 
-            return source.Read(out value);
+            var result = source.Read(out DateTimeOffset val);
+            value = val;
+            return result;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -206,16 +208,16 @@ namespace RabbitMQ.Next.Transport
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Span<byte> WriteProperty(this Span<byte> target, DateTimeOffset value, ref ushort flags, byte bitNumber)
+        private static Span<byte> WriteProperty(this Span<byte> target, DateTimeOffset? value, ref ushort flags, byte bitNumber)
         {
-            if (value == default)
+            if (!value.HasValue)
             {
                 return target;
             }
 
             flags = (ushort)(flags | (1 << bitNumber));
 
-            return target.Write(value);
+            return target.Write(value.Value);
         }
 
 

@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.MessagePublisher.Abstractions;
+using RabbitMQ.Next.MessagePublisher.Transformers;
 using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Methods.Basic;
 
@@ -19,17 +21,19 @@ namespace RabbitMQ.Next.MessagePublisher
         private readonly TaskCompletionSource<bool> channelCloseTcs;
         private readonly IConnection connection;
         private readonly IMessageSerializer<TContent> serializer;
+        private readonly IReadOnlyList<IMessageTransformer> transformers;
         private readonly ConcurrentQueue<(TContent Payload, MessageHeader header)> localQueue;
         private readonly PublisherChannelOptions options;
         private IChannel channel;
         private volatile bool isCompleted;
 
 
-        public PublisherChannel(IConnection connection, PublisherChannelOptions options, IMessageSerializer<TContent> serializer)
+        public PublisherChannel(IConnection connection, PublisherChannelOptions options, IMessageSerializer<TContent> serializer, IReadOnlyList<IMessageTransformer> transformers)
         {
             this.connection = connection;
             this.serializer = serializer;
             this.options = options;
+            this.transformers = transformers;
             
             this.publishQueueSync = new SemaphoreSlim(this.options.localQueueLimit, this.options.localQueueLimit);
 
@@ -41,7 +45,7 @@ namespace RabbitMQ.Next.MessagePublisher
             Task.Run(this.MessageSendLoop);
         }
 
-        public async ValueTask PublishAsync(TContent message, MessageHeader header = null, CancellationToken cancellation = default)
+        public async ValueTask PublishAsync(TContent content, MessageHeader header = null, CancellationToken cancellation = default)
         {
             if (this.isCompleted)
             {
@@ -49,7 +53,9 @@ namespace RabbitMQ.Next.MessagePublisher
             }
 
             await this.publishQueueSync.WaitAsync(cancellation);
-            this.localQueue.Enqueue((message, header));
+            
+            this.transformers.Apply(content, header);
+            this.localQueue.Enqueue((content, header));
             this.waitToRead.Set();
         }
 

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace RabbitMQ.Next.Abstractions.Messaging
 {
-    public struct MessageProperties
+    public class MessageProperties
     {
         public string ContentType { get; set; }
 
@@ -23,7 +23,7 @@ namespace RabbitMQ.Next.Abstractions.Messaging
 
         public string MessageId { get; set; }
 
-        public DateTimeOffset Timestamp { get; set; }
+        public DateTimeOffset? Timestamp { get; set; }
 
         public string Type { get; set; }
 

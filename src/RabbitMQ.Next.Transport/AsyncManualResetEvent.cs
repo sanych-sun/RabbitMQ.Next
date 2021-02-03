@@ -27,6 +27,11 @@ namespace RabbitMQ.Next.Transport
                 return default;
             }
 
+            if (this.completionSource.Task.IsCompleted)
+            {
+                return default;
+            }
+
             if (!cancellationToken.CanBeCanceled)
             {
                 return new ValueTask(this.completionSource.Task);
