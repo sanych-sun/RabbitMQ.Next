@@ -121,7 +121,7 @@ namespace RabbitMQ.Next.Transport
 
             target = target.Slice(isLongString ? sizeof(uint) : sizeof(byte));
 
-            var bytesWritten = Encoding.UTF8.GetBytes(data, target);
+            var bytesWritten = TextEncoding.GetBytes(data, target);
             target = target.Slice(bytesWritten);
 
             if (isLongString)

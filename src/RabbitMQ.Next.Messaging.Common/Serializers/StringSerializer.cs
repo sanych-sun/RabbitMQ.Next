@@ -1,9 +1,9 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
-using System.Text;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Messaging;
+using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Buffers;
 
 namespace RabbitMQ.Next.Messaging.Common.Serializers
@@ -17,17 +17,17 @@ namespace RabbitMQ.Next.Messaging.Common.Serializers
                 return;
             }
 
-            var maxLength = Encoding.UTF8.GetMaxByteCount(message.Length);
+            var maxLength = TextEncoding.GetMaxByteCount(message.Length);
             var span = writer.GetSpan();
 
             if (span.Length > maxLength)
             {
-                var bytesWritten = Encoding.UTF8.GetBytes(message, span);
+                var bytesWritten = TextEncoding.GetBytes(message, span);
                 writer.Advance(bytesWritten);
             }
             else
             {
-                var encoder = Encoding.UTF8.GetEncoder();
+                var encoder = TextEncoding.GetEncoder();
                 var remaining = message.AsSpan();
                 do
                 {
@@ -48,10 +48,10 @@ namespace RabbitMQ.Next.Messaging.Common.Serializers
 
             if (bytes.IsSingleSegment)
             {
-                return Encoding.UTF8.GetString(bytes.FirstSpan);
+                return TextEncoding.GetString(bytes.FirstSpan);
             }
 
-            var decoder = Encoding.UTF8.GetDecoder();
+            var decoder = TextEncoding.GetDecoder();
             var chunks = new List<ArraySegment<char>>();
             var totalChars = 0;
 
@@ -60,7 +60,7 @@ namespace RabbitMQ.Next.Messaging.Common.Serializers
                 using var enumerator = new SequenceEnumerator<byte>(bytes);
                 while (enumerator.MoveNext())
                 {
-                    var maxChars = Encoding.UTF8.GetMaxCharCount(enumerator.Current.Length);
+                    var maxChars = TextEncoding.GetMaxCharCount(enumerator.Current.Length);
 
                     var chunk = ArrayPool<char>.Shared.Rent(maxChars);
                     var actualSize = decoder.GetChars(enumerator.Current.Span, chunk, enumerator.IsLast);

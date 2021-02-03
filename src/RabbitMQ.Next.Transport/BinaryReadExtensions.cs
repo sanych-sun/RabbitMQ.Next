@@ -128,7 +128,7 @@ namespace RabbitMQ.Next.Transport
             else
             {
                 var data = source.Slice(0, len);
-                result = Encoding.UTF8.GetString(data);
+                result = TextEncoding.GetString(data);
             }
 
             return source.Slice(len);
