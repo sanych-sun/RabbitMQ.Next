@@ -1,23 +1,23 @@
 using System;
 using System.Buffers;
 using RabbitMQ.Next.Abstractions;
-using RabbitMQ.Next.Abstractions.Messaging;
+using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.Transport;
 
-namespace RabbitMQ.Next.Messaging.Common.Serializers
+namespace RabbitMQ.Next.Serialization.Formatters
 {
-    public class IntSerializer : IMessageSerializer<int>
+    public class IntFormatter : IFormatter<int>
     {
-        public void Serialize(IBufferWriter writer, int message)
+        public void Format(int content, IBufferWriter writer)
         {
             var span = writer.GetSpan(sizeof(int));
-            span.Write(message);
+            span.Write(content);
             writer.Advance(sizeof(int));
         }
 
-        public int Deserialize(ReadOnlySequence<byte> bytes)
+        public int Parse(ReadOnlySequence<byte> bytes)
         {
-            int result = 0;
+            int result;
             if (bytes.IsSingleSegment)
             {
                 bytes.FirstSpan.Read(out result);

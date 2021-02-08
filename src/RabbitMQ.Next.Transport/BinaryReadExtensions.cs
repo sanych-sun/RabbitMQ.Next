@@ -210,7 +210,7 @@ namespace RabbitMQ.Next.Transport
                     result = arrayData;
                     break;
                 case FieldTypePrefix.Table:
-                    source = source.Read(out IReadOnlyDictionary<string, object> tableData);
+                    source = source.Read(out Dictionary<string, object> tableData);
                     result = tableData;
                     break;
                 case FieldTypePrefix.Binary:
@@ -228,7 +228,7 @@ namespace RabbitMQ.Next.Transport
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<byte> Read(this ReadOnlySpan<byte> source, out IReadOnlyDictionary<string, object> result)
+        public static ReadOnlySpan<byte> Read(this ReadOnlySpan<byte> source, out Dictionary<string, object> result)
         {
             source = source.Read(out uint tableLen);
             if (tableLen == 0)

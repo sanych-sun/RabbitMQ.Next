@@ -1,6 +1,5 @@
 using System.Threading.Tasks;
 using RabbitMQ.Next.MessagePublisher;
-using RabbitMQ.Next.Messaging.Common.Serializers;
 using RabbitMQ.Next.Transport;
 using Xunit;
 

@@ -10,7 +10,7 @@ namespace RabbitMQ.Next.Transport.Methods.Connection
         {
             payload.Read(out byte major)
                 .Read(out byte minor)
-                .Read(out IReadOnlyDictionary<string, object> properties)
+                .Read(out Dictionary<string, object> properties)
                 .Read(out var mechanisms, true)
                 .Read(out var locales, true);
 

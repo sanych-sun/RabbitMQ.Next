@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using RabbitMQ.Next.Abstractions;
-using RabbitMQ.Next.Abstractions.Messaging;
+using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.MessagePublisher.Abstractions;
 using RabbitMQ.Next.MessagePublisher.Transformers;
 
@@ -8,10 +8,10 @@ namespace RabbitMQ.Next.MessagePublisher
 {
     public static class ConnectionExtensions
     {
-        public static IPublisher<TContent> Publisher<TContent>(this IConnection connection, IMessageSerializer<TContent> serializer, IReadOnlyList<IMessageTransformer> transformers = null)
-            => new Publisher<TContent>(connection, serializer, transformers);
+        public static IPublisher Publisher(this IConnection connection, ISerializer serializer, IReadOnlyList<IMessageTransformer> transformers = null)
+            => new Publisher(connection, serializer, transformers);
 
-        public static IPublisherChannel<TContent> PublisherChannel<TContent>(this IConnection connection, PublisherChannelOptions options, IMessageSerializer<TContent> serializer, IReadOnlyList<IMessageTransformer> transformers = null)
-            => new PublisherChannel<TContent>(connection, options, serializer, transformers);
+        public static IPublisherChannel PublisherChannel(this IConnection connection, PublisherChannelOptions options, ISerializer serializer, IReadOnlyList<IMessageTransformer> transformers = null)
+            => new PublisherChannel(connection, options, serializer, transformers);
     }
 }

@@ -6,8 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\RabbitMQ.Next.Messaging.Common\RabbitMQ.Next.Messaging.Common.csproj" />
     <ProjectReference Include="..\RabbitMQ.Next.Messaging.Publisher.Abstractions\RabbitMQ.Next.Messaging.Publisher.Abstractions.csproj" />
+    <ProjectReference Include="..\RabbitMQ.Next.Serialization\RabbitMQ.Next.Serialization.csproj" />
     <ProjectReference Include="..\RabbitMQ.Next.Transport\RabbitMQ.Next.Transport.csproj" />
   </ItemGroup>
 

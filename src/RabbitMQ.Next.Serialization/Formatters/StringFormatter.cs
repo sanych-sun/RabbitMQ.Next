@@ -2,33 +2,33 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using RabbitMQ.Next.Abstractions;
-using RabbitMQ.Next.Abstractions.Messaging;
+using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Buffers;
 
-namespace RabbitMQ.Next.Messaging.Common.Serializers
+namespace RabbitMQ.Next.Serialization.Formatters
 {
-    public class StringSerializer : IMessageSerializer<string>
+    public class StringFormatter : IFormatter<string>
     {
-        public void Serialize(IBufferWriter writer, string message)
+        public void Format(string content, IBufferWriter writer)
         {
-            if (string.IsNullOrEmpty(message))
+            if (string.IsNullOrEmpty(content))
             {
                 return;
             }
 
-            var maxLength = TextEncoding.GetMaxByteCount(message.Length);
+            var maxLength = TextEncoding.GetMaxByteCount(content.Length);
             var span = writer.GetSpan();
 
             if (span.Length > maxLength)
             {
-                var bytesWritten = TextEncoding.GetBytes(message, span);
+                var bytesWritten = TextEncoding.GetBytes(content, span);
                 writer.Advance(bytesWritten);
             }
             else
             {
                 var encoder = TextEncoding.GetEncoder();
-                var remaining = message.AsSpan();
+                var remaining = content.AsSpan();
                 do
                 {
                     var buffer = writer.GetSpan();
@@ -39,7 +39,7 @@ namespace RabbitMQ.Next.Messaging.Common.Serializers
             }
         }
 
-        public string Deserialize(ReadOnlySequence<byte> bytes)
+        public string Parse(ReadOnlySequence<byte> bytes)
         {
             if (bytes.IsEmpty)
             {

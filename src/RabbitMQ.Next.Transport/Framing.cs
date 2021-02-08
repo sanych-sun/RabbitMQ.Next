@@ -87,7 +87,7 @@ namespace RabbitMQ.Next.Transport
                 .Read(out ushort flags)
                 .ReadProperty(out string contentType, flags, 15)
                 .ReadProperty(out string contentEncoding, flags, 14)
-                .ReadProperty(out IReadOnlyDictionary<string, object> headers, flags, 13)
+                .ReadProperty(out Dictionary<string, object> headers, flags, 13)
                 .ReadProperty(out byte deliveryMode, flags, 12)
                 .ReadProperty(out byte priority, flags, 11)
                 .ReadProperty(out string correlationId, flags, 10)
@@ -131,7 +131,7 @@ namespace RabbitMQ.Next.Transport
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ReadOnlySpan<byte> ReadProperty(this ReadOnlySpan<byte> source, out IReadOnlyDictionary<string, object> value, ushort flags, byte bitNumber)
+        private static ReadOnlySpan<byte> ReadProperty(this ReadOnlySpan<byte> source, out Dictionary<string, object> value, ushort flags, byte bitNumber)
         {
             if (!BitConverter.IsFlagSet(flags, bitNumber))
             {

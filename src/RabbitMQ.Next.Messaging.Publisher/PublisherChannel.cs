@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
-using RabbitMQ.Next.Abstractions.Messaging;
+using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.MessagePublisher.Abstractions;
 using RabbitMQ.Next.MessagePublisher.Transformers;
 using RabbitMQ.Next.Transport;
@@ -13,22 +13,22 @@ using RabbitMQ.Next.Transport.Methods.Basic;
 
 namespace RabbitMQ.Next.MessagePublisher
 {
-    internal class PublisherChannel<TContent> : IPublisherChannel<TContent>
+    internal class PublisherChannel : IPublisherChannel
     {
         private readonly SemaphoreSlim channelOpenSync = new SemaphoreSlim(1,1);
         private readonly SemaphoreSlim publishQueueSync;
         private readonly AsyncManualResetEvent waitToRead;
         private readonly TaskCompletionSource<bool> channelCloseTcs;
         private readonly IConnection connection;
-        private readonly IMessageSerializer<TContent> serializer;
+        private readonly ISerializer serializer;
         private readonly IReadOnlyList<IMessageTransformer> transformers;
-        private readonly ConcurrentQueue<(TContent Payload, MessageHeader header)> localQueue;
+        private readonly ConcurrentQueue<(IBufferWriter Content, MessageHeader header)> localQueue;
         private readonly PublisherChannelOptions options;
         private IChannel channel;
         private volatile bool isCompleted;
 
 
-        public PublisherChannel(IConnection connection, PublisherChannelOptions options, IMessageSerializer<TContent> serializer, IReadOnlyList<IMessageTransformer> transformers)
+        public PublisherChannel(IConnection connection, PublisherChannelOptions options, ISerializer serializer, IReadOnlyList<IMessageTransformer> transformers)
         {
             this.connection = connection;
             this.serializer = serializer;
@@ -39,13 +39,13 @@ namespace RabbitMQ.Next.MessagePublisher
 
             this.channelCloseTcs = new TaskCompletionSource<bool>();
             this.waitToRead = new AsyncManualResetEvent(true);
-            this.localQueue = new ConcurrentQueue<(TContent, MessageHeader)>();
+            this.localQueue = new ConcurrentQueue<(IBufferWriter, MessageHeader)>();
             this.isCompleted = false;
 
             Task.Run(this.MessageSendLoop);
         }
 
-        public async ValueTask PublishAsync(TContent content, MessageHeader header = null, CancellationToken cancellation = default)
+        public async ValueTask PublishAsync<TContent>(TContent content, MessageHeader header = null, CancellationToken cancellation = default)
         {
             if (this.isCompleted)
             {
@@ -55,7 +55,9 @@ namespace RabbitMQ.Next.MessagePublisher
             await this.publishQueueSync.WaitAsync(cancellation);
             
             this.transformers.Apply(content, header);
-            this.localQueue.Enqueue((content, header));
+            var bufferWriter = this.connection.BufferPool.Create();
+            this.serializer.Serialize(content, bufferWriter);
+            this.localQueue.Enqueue((bufferWriter, header));
             this.waitToRead.Set();
         }
 
@@ -73,45 +75,39 @@ namespace RabbitMQ.Next.MessagePublisher
 
         private async Task MessageSendLoop()
         {
+
             while (!this.isCompleted)
             {
                 await this.waitToRead.WaitAsync();
 
-                while (this.localQueue.TryDequeue(out var item))
+                while (this.localQueue.TryDequeue(out var i))
                 {
-                    await this.SendMessageAsync(
-                        new Message<TContent>(item.header.Exchange, item.Payload, item.header.RoutingKey, item.header.Properties),
-                        item.header.Mandatory.GetValueOrDefault(), item.header.Immediate.GetValueOrDefault());
+                    await this.UseChannelAsync(i, (ch, item)
+                        => ch.SendAsync(
+                            new PublishMethod(
+                                item.header.Exchange, item.header.RoutingKey,
+                                item.header.Mandatory ?? false, item.header.Immediate ?? false),
+                                item.header.Properties, item.Content.ToSequence()));
+
+                    i.Content.Dispose();
                     this.publishQueueSync.Release();
                 }
             }
 
-            var ch = await this.GetChannelAsync();
-            await ch.CloseAsync();
+            await this.UseChannelAsync<object>(null, (ch, _) => ch.CloseAsync());
 
             this.channelCloseTcs.SetResult(true);
         }
 
-        private async Task SendMessageAsync(Message<TContent> message, bool mandatory, bool immediate)
-        {
-            using var buffer = this.connection.BufferPool.Create();
-            this.serializer.Serialize(buffer, message.Content);
-
-            var ch = await this.GetChannelAsync();
-            await ch.SendAsync(
-                new PublishMethod(message.Exchange, message.RoutingKey, mandatory, immediate),
-                message.Properties, buffer.ToSequence());
-        }
-
-        private ValueTask<IChannel> GetChannelAsync()
+        private async ValueTask UseChannelAsync<TState>(TState state, Func<IChannel, TState,Task> fn)
         {
             var ch = this.channel;
             if (ch == null || ch.IsClosed)
             {
-                return this.DoGetChannelAsync();
+                ch = await this.DoGetChannelAsync();
             }
 
-            return new ValueTask<IChannel>(ch);
+            await fn(ch, state);
         }
 
         private async ValueTask<IChannel> DoGetChannelAsync()

@@ -51,11 +51,10 @@ namespace RabbitMQ.Next.Tests.Publisher
         
         [Theory]
         [InlineData(42)]
-        public void ExpirationAttribute(int expirationMinutes)
+        public void ExpirationAttribute(int expirationSeconds)
         {
-            var expiration = TimeSpan.FromMinutes(expirationMinutes);
-            var attr = new ExpirationAttribute(expiration);
-            Assert.Equal(expiration, attr.Expiration);
+            var attr = new ExpirationAttribute(expirationSeconds);
+            Assert.Equal(TimeSpan.FromSeconds(expirationSeconds), attr.Expiration);
         }
 
         [Theory]

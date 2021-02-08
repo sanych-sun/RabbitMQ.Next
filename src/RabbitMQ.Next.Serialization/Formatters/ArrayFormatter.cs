@@ -1,15 +1,15 @@
 using System;
 using System.Buffers;
 using RabbitMQ.Next.Abstractions;
-using RabbitMQ.Next.Abstractions.Messaging;
+using RabbitMQ.Next.Serialization.Abstractions;
 
-namespace RabbitMQ.Next.Messaging.Common.Serializers
+namespace RabbitMQ.Next.Serialization.Formatters
 {
-    public class ArraySerializer : IMessageSerializer<byte[]>
+    public class ArrayFormatter : IFormatter<byte[]>
     {
-        public void Serialize(IBufferWriter writer, byte[] message)
+        public void Format(byte[] content, IBufferWriter writer)
         {
-            ReadOnlySpan<byte> source = message;
+            ReadOnlySpan<byte> source = content;
 
             do
             {
@@ -27,6 +27,6 @@ namespace RabbitMQ.Next.Messaging.Common.Serializers
             } while (source.Length > 0);
         }
 
-        public byte[] Deserialize(ReadOnlySequence<byte> bytes) => bytes.ToArray();
+        public byte[] Parse(ReadOnlySequence<byte> bytes) => bytes.ToArray();
     }
 }

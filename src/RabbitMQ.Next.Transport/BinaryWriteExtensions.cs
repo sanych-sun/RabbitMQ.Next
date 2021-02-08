@@ -224,7 +224,7 @@ namespace RabbitMQ.Next.Transport
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Span<byte> Write(this Span<byte> target, IReadOnlyDictionary<string, object> value)
+        public static Span<byte> Write(this Span<byte> target, IEnumerable<KeyValuePair<string, object>> value)
         {
             if (value == null)
             {

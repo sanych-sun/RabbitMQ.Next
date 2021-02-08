@@ -226,7 +226,7 @@ namespace RabbitMQ.Next.Tests.Transport
         [MemberData(nameof(ReadDictionaryTestCases))]
         public void ReadDictionary(byte[] source, IReadOnlyDictionary<string, object> expectedData, byte[] expected)
         {
-            var result = ((ReadOnlySpan<byte>)source).Read(out IReadOnlyDictionary<string,object> data);
+            var result = ((ReadOnlySpan<byte>)source).Read(out Dictionary<string,object> data);
 
             Assert.Equal(expectedData, data);
             Assert.Equal(expected, result.ToArray());
