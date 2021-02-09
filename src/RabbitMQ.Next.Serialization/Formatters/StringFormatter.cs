@@ -1,7 +1,6 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
-using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Buffers;
@@ -10,7 +9,7 @@ namespace RabbitMQ.Next.Serialization.Formatters
 {
     public class StringFormatter : IFormatter<string>
     {
-        public void Format(string content, IBufferWriter writer)
+        public void Format(string content, IBufferWriter<byte> writer)
         {
             if (string.IsNullOrEmpty(content))
             {

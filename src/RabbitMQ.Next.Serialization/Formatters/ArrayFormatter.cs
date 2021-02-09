@@ -1,13 +1,12 @@
 using System;
 using System.Buffers;
-using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Serialization.Abstractions;
 
 namespace RabbitMQ.Next.Serialization.Formatters
 {
     public class ArrayFormatter : IFormatter<byte[]>
     {
-        public void Format(byte[] content, IBufferWriter writer)
+        public void Format(byte[] content, IBufferWriter<byte> writer)
         {
             ReadOnlySpan<byte> source = content;
 
