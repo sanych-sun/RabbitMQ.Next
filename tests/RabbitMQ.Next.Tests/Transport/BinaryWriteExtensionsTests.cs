@@ -8,9 +8,10 @@ namespace RabbitMQ.Next.Tests.Transport
     public class BinaryWriteExtensionsTests
     {
         [Theory]
-        [InlineData(0, new byte[] { 0 })]
-        [InlineData(1, new byte[] { 1 })]
-        [InlineData(214, new byte[] { 214 })]
+        [InlineData(0, new byte[] { 0b_00000000 })]
+        [InlineData(1, new byte[] { 0b_00000001 })]
+        [InlineData(42, new byte[] { 0b_00101010 })]
+        [InlineData(byte.MaxValue, new byte[] { 0b_11111111 })]
         public void WriteByte(byte data, byte[] expected)
         {
             Span<byte> buffer = stackalloc byte[expected.Length];
@@ -20,9 +21,11 @@ namespace RabbitMQ.Next.Tests.Transport
         }
 
         [Theory]
-        [InlineData(0, new byte[] { 0 })]
-        [InlineData(1, new byte[] { 1 })]
-        [InlineData(-42, new byte[] { 214 })]
+        [InlineData(0, new byte[] { 0b_00000000 })]
+        [InlineData(1, new byte[] { 0b_00000001 })]
+        [InlineData(-1, new byte[] { 0b_11111111 })]
+        [InlineData(42, new byte[] { 0b_00101010 })]
+        [InlineData(-42, new byte[] { 0b_11010110 })]
         public void WriteSByte(sbyte data, byte[] expected)
         {
             Span<byte> buffer = stackalloc byte[expected.Length];
@@ -32,8 +35,8 @@ namespace RabbitMQ.Next.Tests.Transport
         }
 
         [Theory]
-        [InlineData(false, new byte[] { 0 })]
-        [InlineData(true, new byte[] { 1 })]
+        [InlineData(false, new byte[] { 0b_00000000 })]
+        [InlineData(true, new byte[] { 0b_00000001 })]
         public void WriteBool(bool data, byte[] expected)
         {
             Span<byte> buffer = stackalloc byte[expected.Length];
@@ -43,9 +46,11 @@ namespace RabbitMQ.Next.Tests.Transport
         }
 
         [Theory]
-        [InlineData(0, new byte[] { 0, 0 })]
-        [InlineData(256, new byte[] { 1, 0 })]
-        [InlineData(54786, new byte[] { 214, 2 })]
+        [InlineData(0, new byte[] { 0b_00000000, 0b_00000000 })]
+        [InlineData(42, new byte[] { 0b_00000000, 0b_00101010 })]
+        [InlineData(255, new byte[] { 0b_00000000, 0b_11111111 })]
+        [InlineData(256, new byte[] { 0b_00000001, 0b_00000000 })]
+        [InlineData(ushort.MaxValue, new byte[] { 0b_11111111, 0b_11111111 })]
         public void WriteUShort(ushort data, byte[] expected)
         {
             Span<byte> buffer = stackalloc byte[expected.Length];
@@ -55,9 +60,11 @@ namespace RabbitMQ.Next.Tests.Transport
         }
 
         [Theory]
-        [InlineData(0, new byte[] { 0, 0 })]
-        [InlineData(256, new byte[] { 1, 0 })]
-        [InlineData(-10750, new byte[] { 214, 2 })]
+        [InlineData(0, new byte[] { 0b_00000000, 0b_00000000 })]
+        [InlineData(1, new byte[] { 0b_00000000, 0b_00000001 })]
+        [InlineData(-1, new byte[] { 0b_11111111, 0b_11111111 })]
+        [InlineData(42, new byte[] { 0b_00000000, 0b_00101010 })]
+        [InlineData(-42, new byte[] { 0b_11111111, 0b_11010110 })]
         public void WriteShort(short data, byte[] expected)
         {
             Span<byte> buffer = stackalloc byte[expected.Length];
@@ -67,9 +74,10 @@ namespace RabbitMQ.Next.Tests.Transport
         }
 
         [Theory]
-        [InlineData(0, new byte[] { 0, 0, 0, 0 })]
-        [InlineData(16777216, new byte[] { 1, 0, 0, 0 })]
-        [InlineData(3590324224, new byte[] { 214, 0, 0, 0 })]
+        [InlineData(0, new byte[] { 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000 })]
+        [InlineData(1, new byte[] { 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000001 })]
+        [InlineData(42, new byte[] { 0b_00000000, 0b_00000000, 0b_00000000, 0b_00101010 })]
+        [InlineData(uint.MaxValue, new byte[] { 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111 })]
         public void WriteUInt(uint data, byte[] expected)
         {
             Span<byte> buffer = stackalloc byte[expected.Length];
@@ -79,9 +87,11 @@ namespace RabbitMQ.Next.Tests.Transport
         }
 
         [Theory]
-        [InlineData(0, new byte[] { 0, 0, 0, 0 })]
-        [InlineData(16777216, new byte[] { 1, 0, 0, 0 })]
-        [InlineData(-704643072, new byte[] { 214, 0, 0, 0 })]
+        [InlineData(0, new byte[] { 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000 })]
+        [InlineData(1, new byte[] { 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000001 })]
+        [InlineData(-1, new byte[] { 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111 })]
+        [InlineData(42, new byte[] { 0b_00000000, 0b_00000000, 0b_00000000, 0b_00101010 })]
+        [InlineData(-42, new byte[] { 0b_11111111, 0b_11111111, 0b_11111111, 0b_11010110 })]
         public void WriteInt(int data, byte[] expected)
         {
             Span<byte> buffer = stackalloc byte[expected.Length];
@@ -91,9 +101,11 @@ namespace RabbitMQ.Next.Tests.Transport
         }
 
         [Theory]
-        [InlineData(0, new byte[] { 0, 0, 0, 0, 0, 0, 0, 0 })]
-        [InlineData(72057594037927936, new byte[] { 1, 0, 0, 0, 0, 0, 0, 0 })]
-        [InlineData(15420325124116578304, new byte[] { 214, 0, 0, 0, 0, 0, 0, 0 })]
+        [InlineData(0, new byte[] { 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000 })]
+        [InlineData(1, new byte[] { 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000001 })]
+        [InlineData(42, new byte[] { 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00101010 })]
+        [InlineData(ulong.MaxValue, new byte[] { 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111 })]
+
         public void WriteULong(ulong data, byte[] expected)
         {
             Span<byte> buffer = stackalloc byte[expected.Length];
@@ -103,9 +115,11 @@ namespace RabbitMQ.Next.Tests.Transport
         }
 
         [Theory]
-        [InlineData(0, new byte[] { 0, 0, 0, 0, 0, 0, 0, 0 })]
-        [InlineData(72057594037927936, new byte[] { 1, 0, 0, 0, 0, 0, 0, 0 })]
-        [InlineData(-3026418949592973312, new byte[] { 214, 0, 0, 0, 0, 0, 0, 0 })]
+        [InlineData(0, new byte[] { 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000 })]
+        [InlineData(1, new byte[] { 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000001 })]
+        [InlineData(-1, new byte[] { 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111 })]
+        [InlineData(42, new byte[] { 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00101010 })]
+        [InlineData(-42, new byte[] { 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11010110 })]
         public void WriteLong(long data, byte[] expected)
         {
             Span<byte> buffer = stackalloc byte[expected.Length];

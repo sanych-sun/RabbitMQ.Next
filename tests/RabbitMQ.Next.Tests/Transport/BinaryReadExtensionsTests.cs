@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Transport;
 using Xunit;
 
@@ -9,11 +8,12 @@ namespace RabbitMQ.Next.Tests.Transport
     public class BinaryReadExtensionsTests
     {
         [Theory]
-        [InlineData(new byte[] { 0 }, 0, new byte[] { })]
-        [InlineData(new byte[] { 1 }, 1, new byte[] { })]
-        [InlineData(new byte[] { 214 }, 214, new byte[] { })]
-        [InlineData(new byte[] { 1, 2, 3 }, 1, new byte[] { 2, 3 })]
-        public void ReadByte(byte[] source, byte expectedData, byte[] expected)
+        [InlineData(0, new byte[] { 0b_00000000 }, new byte[] { })]
+        [InlineData(1, new byte[] { 0b_00000001 }, new byte[] { })]
+        [InlineData(42, new byte[] { 0b_00101010 }, new byte[] { })]
+        [InlineData(byte.MaxValue, new byte[] { 0b_11111111 }, new byte[] { })]
+        [InlineData(42, new byte[] { 0b_00101010, 2, 3 }, new byte[] { 2, 3 })]
+        public void ReadByte(byte expectedData, byte[] source, byte[] expected)
         {
             var result = ((ReadOnlySpan<byte>)source).Read(out byte data);
 
@@ -22,11 +22,13 @@ namespace RabbitMQ.Next.Tests.Transport
         }
 
         [Theory]
-        [InlineData(new byte[] { 0 }, 0, new byte[] { })]
-        [InlineData(new byte[] { 1 }, 1, new byte[] { })]
-        [InlineData(new byte[] { 214 }, -42, new byte[] { })]
-        [InlineData(new byte[] { 1, 2, 3 }, 1, new byte[] { 2, 3 })]
-        public void ReadSByte(byte[] source, sbyte expectedData, byte[] expected)
+        [InlineData(0, new byte[] { 0b_00000000 }, new byte[] { })]
+        [InlineData(1, new byte[] { 0b_00000001 }, new byte[] { })]
+        [InlineData(-1, new byte[] { 0b_11111111 }, new byte[] { })]
+        [InlineData(42, new byte[] { 0b_00101010 }, new byte[] { })]
+        [InlineData(-42, new byte[] { 0b_11010110 }, new byte[] { })]
+        [InlineData(42, new byte[] { 0b_00101010, 2, 3 }, new byte[] { 2, 3 })]
+        public void ReadSByte(sbyte expectedData, byte[] source, byte[] expected)
         {
             var result = ((ReadOnlySpan<byte>)source).Read(out sbyte data);
 
@@ -35,11 +37,11 @@ namespace RabbitMQ.Next.Tests.Transport
         }
 
         [Theory]
-        [InlineData(new byte[] { 0 }, false, new byte[] { })]
-        [InlineData(new byte[] { 1 }, true, new byte[] { })]
-        [InlineData(new byte[] { 214 }, true, new byte[] { })]
-        [InlineData(new byte[] { 1, 2, 3 }, true, new byte[] { 2, 3 })]
-        public void ReadBool(byte[] source, bool expectedData, byte[] expected)
+        [InlineData(false, new byte[] { 0b_00000000 }, new byte[] { })]
+        [InlineData(true, new byte[] { 0b_00000001 }, new byte[] { })]
+        [InlineData(true, new byte[] { 0b_11111111 }, new byte[] { })]
+        [InlineData(true, new byte[] { 0b_00000001, 2, 3 }, new byte[] { 2, 3 })]
+        public void ReadBool(bool expectedData, byte[] source, byte[] expected)
         {
             var result = ((ReadOnlySpan<byte>)source).Read(out bool data);
 
@@ -48,11 +50,13 @@ namespace RabbitMQ.Next.Tests.Transport
         }
 
         [Theory]
-        [InlineData(new byte[] { 0, 0 }, 0, new byte[] { })]
-        [InlineData(new byte[] { 1, 0 }, 256, new byte[] { })]
-        [InlineData(new byte[] { 214, 2 }, 54786, new byte[] { })]
-        [InlineData(new byte[] { 1, 2, 3 }, 258, new byte[] { 3 })]
-        public void ReadUShort(byte[] source, ushort expectedData, byte[] expected)
+        [InlineData(0, new byte[] { 0b_00000000, 0b_00000000 }, new byte[] { })]
+        [InlineData(42, new byte[] { 0b_00000000, 0b_00101010 }, new byte[] { })]
+        [InlineData(255, new byte[] { 0b_00000000, 0b_11111111 }, new byte[] { })]
+        [InlineData(256, new byte[] { 0b_00000001, 0b_00000000 }, new byte[] { })]
+        [InlineData(ushort.MaxValue, new byte[] { 0b_11111111, 0b_11111111 }, new byte[] { })]
+        [InlineData(256, new byte[] { 0b_00000001, 0b_00000000, 3 }, new byte[] { 3 })]
+        public void ReadUShort(ushort expectedData, byte[] source, byte[] expected)
         {
             var result = ((ReadOnlySpan<byte>)source).Read(out ushort data);
 
@@ -61,11 +65,13 @@ namespace RabbitMQ.Next.Tests.Transport
         }
 
         [Theory]
-        [InlineData(new byte[] { 0, 0 }, 0, new byte[] { })]
-        [InlineData(new byte[] { 1, 0 }, 256, new byte[] { })]
-        [InlineData(new byte[] { 214, 2 }, -10750, new byte[] { })]
-        [InlineData(new byte[] { 1, 2, 3 }, 258, new byte[] { 3 })]
-        public void ReadShort(byte[] source, short expectedData, byte[] expected)
+        [InlineData(0, new byte[] { 0b_00000000, 0b_00000000 }, new byte[] { })]
+        [InlineData(1, new byte[] { 0b_00000000, 0b_00000001 }, new byte[] { })]
+        [InlineData(-1, new byte[] { 0b_11111111, 0b_11111111 }, new byte[] { })]
+        [InlineData(42, new byte[] { 0b_00000000, 0b_00101010 }, new byte[] { })]
+        [InlineData(-42, new byte[] { 0b_11111111, 0b_11010110 }, new byte[] { })]
+        [InlineData(42, new byte[] { 0b_00000000, 0b_00101010, 2, 3 }, new byte[] { 2, 3 })]
+        public void ReadShort(short expectedData, byte[] source, byte[] expected)
         {
             var result = ((ReadOnlySpan<byte>)source).Read(out short data);
 
@@ -74,11 +80,12 @@ namespace RabbitMQ.Next.Tests.Transport
         }
 
         [Theory]
-        [InlineData(new byte[] { 0, 0, 0, 0 }, 0, new byte[] { })]
-        [InlineData(new byte[] { 1, 0, 0, 0 }, 16777216, new byte[] { })]
-        [InlineData(new byte[] { 214, 0, 0, 0 }, 3590324224, new byte[] { })]
-        [InlineData(new byte[] { 1, 0, 0, 0, 2 }, 16777216, new byte[] { 2 })]
-        public void ReadUInt(byte[] source, uint expectedData, byte[] expected)
+        [InlineData(0, new byte[] { 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000 }, new byte[] { })]
+        [InlineData(1, new byte[] { 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000001 }, new byte[] { })]
+        [InlineData(42, new byte[] { 0b_00000000, 0b_00000000, 0b_00000000, 0b_00101010 }, new byte[] { })]
+        [InlineData(uint.MaxValue, new byte[] { 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111 }, new byte[] { })]
+        [InlineData(42, new byte[] { 0b_00000000, 0b_00000000, 0b_00000000, 0b_00101010, 2, 3 }, new byte[] { 2, 3 })]
+        public void ReadUInt(uint expectedData, byte[] source, byte[] expected)
         {
             var result = ((ReadOnlySpan<byte>)source).Read(out uint data);
 
@@ -87,11 +94,13 @@ namespace RabbitMQ.Next.Tests.Transport
         }
 
         [Theory]
-        [InlineData(new byte[] { 0, 0, 0, 0 }, 0, new byte[] { })]
-        [InlineData(new byte[] { 1, 0, 0, 0 }, 16777216, new byte[] { })]
-        [InlineData(new byte[] { 214, 0, 0, 0 }, -704643072, new byte[] { })]
-        [InlineData(new byte[] { 1, 0, 0, 0, 2 }, 16777216, new byte[] { 2 })]
-        public void ReadInt(byte[] source, int expectedData, byte[] expected)
+        [InlineData(0, new byte[] { 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000 }, new byte[] { })]
+        [InlineData(1, new byte[] { 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000001 }, new byte[] { })]
+        [InlineData(-1, new byte[] { 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111 }, new byte[] { })]
+        [InlineData(42, new byte[] { 0b_00000000, 0b_00000000, 0b_00000000, 0b_00101010 }, new byte[] { })]
+        [InlineData(-42, new byte[] { 0b_11111111, 0b_11111111, 0b_11111111, 0b_11010110 }, new byte[] { })]
+        [InlineData(42, new byte[] { 0b_00000000, 0b_00000000, 0b_00000000, 0b_00101010, 2, 3 }, new byte[] { 2, 3 })]
+        public void ReadInt(int expectedData, byte[] source, byte[] expected)
         {
             var result = ((ReadOnlySpan<byte>)source).Read(out int data);
 
@@ -100,11 +109,12 @@ namespace RabbitMQ.Next.Tests.Transport
         }
 
         [Theory]
-        [InlineData(new byte[] { 0, 0, 0, 0, 0, 0, 0, 0 }, 0, new byte[] { })]
-        [InlineData(new byte[] { 1, 0, 0, 0, 0, 0, 0, 0 }, 72057594037927936, new byte[] { })]
-        [InlineData(new byte[] { 214, 0, 0, 0, 0, 0, 0, 0 }, 15420325124116578304, new byte[] { } )]
-        [InlineData(new byte[] { 1, 0, 0, 0, 0, 0, 0, 0, 2 }, 72057594037927936, new byte[] { 2 })]
-        public void ReadULong(byte[] source, ulong expectedData, byte[] expected)
+        [InlineData(0, new byte[] { 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000 }, new byte[] { })]
+        [InlineData(1, new byte[] { 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000001 }, new byte[] { })]
+        [InlineData(42, new byte[] { 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00101010 }, new byte[] { })]
+        [InlineData(ulong.MaxValue, new byte[] { 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111 }, new byte[] { })]
+        [InlineData(42, new byte[] { 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00101010, 2 }, new byte[] { 2 })]
+        public void ReadULong(ulong expectedData, byte[] source, byte[] expected)
         {
             var result = ((ReadOnlySpan<byte>)source).Read(out ulong data);
 
@@ -113,11 +123,13 @@ namespace RabbitMQ.Next.Tests.Transport
         }
 
         [Theory]
-        [InlineData(new byte[] { 0, 0, 0, 0, 0, 0, 0, 0 }, 0, new byte[] { })]
-        [InlineData(new byte[] { 1, 0, 0, 0, 0, 0, 0, 0 }, 72057594037927936, new byte[] { })]
-        [InlineData(new byte[] { 214, 0, 0, 0, 0, 0, 0, 0 }, -3026418949592973312, new byte[] { })]
-        [InlineData(new byte[] { 1, 0, 0, 0, 0, 0, 0, 0, 2 }, 72057594037927936, new byte[] { 2 })]
-        public void ReadLong(byte[] source, long expectedData, byte[] expected)
+        [InlineData(0, new byte[] { 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000 }, new byte[] { })]
+        [InlineData(1, new byte[] { 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000001 }, new byte[] { })]
+        [InlineData(-1, new byte[] { 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111 }, new byte[] { })]
+        [InlineData(42, new byte[] { 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00101010 }, new byte[] { })]
+        [InlineData(-42, new byte[] { 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11010110 }, new byte[] { })]
+        [InlineData(42, new byte[] { 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00101010, 2 }, new byte[] { 2 })]
+        public void ReadLong(long expectedData, byte[] source, byte[] expected)
         {
             var result = ((ReadOnlySpan<byte>)source).Read(out long data);
 
