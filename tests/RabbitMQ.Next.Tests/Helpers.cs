@@ -1,14 +1,17 @@
+using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using RabbitMQ.Next.Transport.Buffers;
 
 namespace RabbitMQ.Next.Tests
 {
     internal static class Helpers
     {
-        private static IReadOnlyList<(string Charset, string Text, byte[] Bytes)> Texts = new []
+        private static IReadOnlyList<(string Charset, string Text, ReadOnlyMemory<byte> Bytes)> Texts = new []
         {
             MakeText("Latin", "Lorem ipsu"),
             MakeText("Latin", "Lorem ipsum dolor sit amet, ne putent ornatus expetendis vix. Ea sed suas accusamus. Possim prodesset maiestatis sea te, graeci "),
@@ -35,11 +38,23 @@ namespace RabbitMQ.Next.Tests
             MakeText("Chinese", "片+目表合専逮放実郎提望月作。応索奈意給率-置億場活者調載撲記歳事動。言民敏演選無山対婚認/芸会室太工負未可綺。争強格告集周条催中保度初質界。分窓禁却佐市蘇向周像車弁呼優質背味区年式。米危歳夏画阪掲者番通"),
         };
 
-        private static (string Charset, string Text, byte[] Bytes) MakeText(string charset, string text)
+        private static (string Charset, string Text, ReadOnlyMemory<byte> Bytes) MakeText(string charset, string text)
             => (charset, text, Encoding.UTF8.GetBytes(text));
 
-        public static IEnumerable<(string Charset, string Text, byte[] Bytes)> GetDummyTexts(int minBytes, int maxBytes = 0)
+        public static IEnumerable<(string Charset, string Text, ReadOnlyMemory<byte> Bytes)> GetDummyTexts(int minBytes, int maxBytes = 0)
             => Texts.Where(i => i.Bytes.Length >= minBytes).Where(i => maxBytes == 0 || i.Bytes.Length <= maxBytes);
+
+        public static ReadOnlySequence<byte> MakeSequence(params byte[][] contentparts)
+        {
+            var segment = new MemorySegment<byte>(contentparts[0]);
+            var firstSegment = segment;
+            for (var i = 1; i < contentparts.Length; i++)
+            {
+                segment = segment.Append(contentparts[i]);
+            }
+
+            return new ReadOnlySequence<byte>(firstSegment, 0, segment, segment.Memory.Length);
+        }
 
         public static byte[] GetFileContent(string resourcePath)
         {

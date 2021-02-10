@@ -1,6 +1,6 @@
+using System;
 using System.Buffers;
 using RabbitMQ.Next.Serialization.Formatters;
-using RabbitMQ.Next.Transport.Buffers;
 using Xunit;
 
 namespace RabbitMQ.Next.Tests.Serialization.Formatters
@@ -27,14 +27,7 @@ namespace RabbitMQ.Next.Tests.Serialization.Formatters
         public void CanParse(byte[] expected, params byte[][] contentparts)
         {
             var formatter = new ArrayFormatter();
-            var segment = new MemorySegment<byte>(contentparts[0]);
-            var firstSegment = segment;
-            for (var i = 1; i < contentparts.Length; i++)
-            {
-                segment = segment.Append(contentparts[i]);
-            }
-
-            var sequence = new ReadOnlySequence<byte>(firstSegment, 0, segment, segment.Memory.Length);
+            var sequence = Helpers.MakeSequence(contentparts);
 
             var result = formatter.Parse(sequence);
 

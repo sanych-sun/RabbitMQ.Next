@@ -26,11 +26,12 @@ namespace RabbitMQ.Next.Serialization.Formatters
             }
             else
             {
+                var minBufferSize = TextEncoding.GetMaxByteCount(1);
                 var encoder = TextEncoding.GetEncoder();
                 var remaining = content.AsSpan();
                 do
                 {
-                    var buffer = writer.GetSpan();
+                    var buffer = writer.GetSpan(minBufferSize);
                     encoder.Convert(remaining, buffer, true, out var charsUsed, out var bytesUsed, out bool _);
                     writer.Advance(bytesUsed);
                     remaining = remaining.Slice(charsUsed);
