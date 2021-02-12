@@ -34,7 +34,7 @@ namespace RabbitMQ.Next.Tests.Serialization.Formatters
             var formatter = new Int64Formatter();
             var sequence = Helpers.MakeSequence(contentparts);
 
-            var result = formatter.Parse(sequence);
+            var result = formatter.Parse<long>(sequence);
 
             Assert.Equal(expected, result);
         }
@@ -50,7 +50,7 @@ namespace RabbitMQ.Next.Tests.Serialization.Formatters
             var formatter = new Int64Formatter();
             var sequence = new ReadOnlySequence<byte>(content);
 
-            Assert.Throws<ArgumentException>(() =>  formatter.Parse(sequence));
+            Assert.Throws<ArgumentException>(() =>  formatter.Parse<long>(sequence));
         }
     }
 }

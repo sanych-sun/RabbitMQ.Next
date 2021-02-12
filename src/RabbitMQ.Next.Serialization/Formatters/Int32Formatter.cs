@@ -1,21 +1,43 @@
 using System;
 using System.Buffers;
-using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.Transport;
 
 namespace RabbitMQ.Next.Serialization.Formatters
 {
-    public class Int32Formatter : IFormatter<int>
+    public class Int32Formatter : IFormatter
     {
-        public void Format(int content, IBufferWriter<byte> writer)
+        public bool CanHandle(Type type) => type == typeof(int);
+
+        public void Format<TContent>(TContent content, IBufferWriter<byte> writer)
+        {
+            if (content is int lng)
+            {
+                this.FormatInternal(lng, writer);
+                return;
+            }
+
+            throw new InvalidOperationException();
+        }
+
+        public TContent Parse<TContent>(ReadOnlySequence<byte> bytes)
+        {
+            if (this.ParseInternal(bytes) is TContent result)
+            {
+                return result;
+            }
+
+            throw new InvalidOperationException();
+        }
+
+        private void FormatInternal(int content, IBufferWriter<byte> writer)
         {
             var span = writer.GetSpan(sizeof(int));
             span.Write(content);
             writer.Advance(sizeof(int));
         }
 
-        public int Parse(ReadOnlySequence<byte> bytes)
+        private int ParseInternal(ReadOnlySequence<byte> bytes)
         {
             if (bytes.Length != sizeof(int))
             {

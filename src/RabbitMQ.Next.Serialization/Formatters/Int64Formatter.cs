@@ -5,16 +5,40 @@ using RabbitMQ.Next.Transport;
 
 namespace RabbitMQ.Next.Serialization.Formatters
 {
-    public class Int64Formatter : IFormatter<long>
+    public class Int64Formatter : IFormatter
     {
-        public void Format(long content, IBufferWriter<byte> writer)
+        public bool CanHandle(Type type) => type == typeof(long);
+
+        public void Format<TContent>(TContent content, IBufferWriter<byte> writer)
+        {
+            if (content is long lng)
+            {
+                this.FormatInternal(lng, writer);
+                return;
+            }
+
+            throw new InvalidOperationException();
+        }
+
+        public TContent Parse<TContent>(ReadOnlySequence<byte> bytes)
+        {
+            if (this.ParseInternal(bytes) is TContent result)
+            {
+                return result;
+            }
+
+            throw new InvalidOperationException();
+        }
+
+
+        private void FormatInternal(long content, IBufferWriter<byte> writer)
         {
             var span = writer.GetSpan(sizeof(long));
             span.Write(content);
             writer.Advance(sizeof(long));
         }
 
-        public long Parse(ReadOnlySequence<byte> bytes)
+        private long ParseInternal(ReadOnlySequence<byte> bytes)
         {
             if (bytes.Length != sizeof(long))
             {
@@ -35,5 +59,6 @@ namespace RabbitMQ.Next.Serialization.Formatters
 
             return result;
         }
+
     }
 }

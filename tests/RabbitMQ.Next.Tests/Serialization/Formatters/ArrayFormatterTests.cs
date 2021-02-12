@@ -29,7 +29,7 @@ namespace RabbitMQ.Next.Tests.Serialization.Formatters
             var formatter = new ArrayFormatter();
             var sequence = Helpers.MakeSequence(contentparts);
 
-            var result = formatter.Parse(sequence);
+            var result = formatter.Parse<byte[]>(sequence);
 
             Assert.Equal(expected, result);
         }

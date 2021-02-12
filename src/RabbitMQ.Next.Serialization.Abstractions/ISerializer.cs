@@ -1,11 +1,10 @@
 using System.Buffers;
-using RabbitMQ.Next.Abstractions;
 
 namespace RabbitMQ.Next.Serialization.Abstractions
 {
     public interface ISerializer
     {
-        void Serialize<TContent>(TContent content, IBufferWriter writer);
+        void Serialize<TContent>(TContent content, IBufferWriter<byte> writer);
 
         TContent Deserialize<TContent>(ReadOnlySequence<byte> bytes);
     }

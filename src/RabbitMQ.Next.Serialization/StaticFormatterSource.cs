@@ -1,21 +1,20 @@
-using System;
 using System.Collections.Generic;
 using System.Threading;
 using RabbitMQ.Next.Serialization.Abstractions;
 
 namespace RabbitMQ.Next.Serialization
 {
-    public class FormatterRegistry
+    public class StaticFormatterSource : IFormatterSource
     {
         private readonly ReaderWriterLockSlim sync = new ReaderWriterLockSlim();
-        private readonly Dictionary<Type, IFormatterWrapper> formatters = new Dictionary<Type, IFormatterWrapper>();
+        private readonly List<IFormatter> formatters = new List<IFormatter>();
 
-        public void Register<TType>(IFormatter<TType> formatter)
+        public void Register(IFormatter formatter)
         {
             this.sync.EnterWriteLock();
             try
             {
-                this.formatters.Add(typeof(TType), new FormatterWrapper<TType>(formatter));
+                this.formatters.Add(formatter);
             }
             finally
             {
@@ -23,22 +22,17 @@ namespace RabbitMQ.Next.Serialization
             }
         }
 
-        internal IFormatterWrapper GetFormatter<TContent>()
+        public IFormatter GetFormatter<TContent>()
         {
             this.sync.EnterReadLock();
 
             try
             {
-                if (this.formatters.TryGetValue(typeof(TContent), out var result))
+                foreach (var item in this.formatters)
                 {
-                    return result;
-                }
-
-                foreach (var formatter in this.formatters)
-                {
-                    if (formatter.Key.IsAssignableFrom(typeof(TContent)))
+                    if (item.CanHandle(typeof(TContent)))
                     {
-                        return formatter.Value;
+                        return item;
                     }
                 }
             }

@@ -4,9 +4,33 @@ using RabbitMQ.Next.Serialization.Abstractions;
 
 namespace RabbitMQ.Next.Serialization.Formatters
 {
-    public class ArrayFormatter : IFormatter<byte[]>
+    public class ArrayFormatter : IFormatter
     {
-        public void Format(byte[] content, IBufferWriter<byte> writer)
+        public bool CanHandle(Type type) => type == typeof(byte[]);
+
+        public void Format<TContent>(TContent content, IBufferWriter<byte> writer)
+        {
+            if (content is byte[] lng)
+            {
+                this.FormatInternal(lng, writer);
+                return;
+            }
+
+            throw new InvalidOperationException();
+        }
+
+        public TContent Parse<TContent>(ReadOnlySequence<byte> bytes)
+        {
+            if (typeof(TContent) != typeof(byte[]))
+            {
+                throw new InvalidOperationException();
+            }
+
+            object result = this.ParseInternal(bytes);
+            return (TContent)result;
+        }
+
+        private void FormatInternal(byte[] content, IBufferWriter<byte> writer)
         {
             ReadOnlySpan<byte> source = content;
 
@@ -26,6 +50,6 @@ namespace RabbitMQ.Next.Serialization.Formatters
             } while (source.Length > 0);
         }
 
-        public byte[] Parse(ReadOnlySequence<byte> bytes) => bytes.ToArray();
+        private byte[] ParseInternal(ReadOnlySequence<byte> bytes) => bytes.ToArray();
     }
 }

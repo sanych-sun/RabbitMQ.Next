@@ -1,11 +1,14 @@
+using System;
 using System.Buffers;
 
 namespace RabbitMQ.Next.Serialization.Abstractions
 {
-    public interface IFormatter<TContent>
+    public interface IFormatter
     {
-        void Format(TContent content, IBufferWriter<byte> writer);
+        bool CanHandle(Type type);
 
-        TContent Parse(ReadOnlySequence<byte> bytes);
+        void Format<TContent>(TContent content, IBufferWriter<byte> writer);
+
+        TContent Parse<TContent>(ReadOnlySequence<byte> bytes);
     }
 }

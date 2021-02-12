@@ -1,42 +1,36 @@
 using System;
 using System.Buffers;
-using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Serialization.Abstractions;
 
 namespace RabbitMQ.Next.Serialization
 {
-    public class Serializer<TContent> : ISerializer
+    public class Serializer : ISerializer
     {
-        private readonly IFormatter<TContent> formatter;
+        private readonly IFormatterSource formatterSource;
 
-        public Serializer(IFormatter<TContent> formatter)
+        public Serializer(IFormatterSource formatterSource)
         {
-            this.formatter = formatter;
+            this.formatterSource = formatterSource;
         }
 
-        public void Serialize<TContent1>(TContent1 content, IBufferWriter writer)
-        {
-            if (content is TContent c)
-            {
-                this.formatter.Format(c, writer);
-                return;
-            }
+        public void Serialize<TContent>(TContent content, IBufferWriter<byte> writer)
+            => this.GetFormatter<TContent>().Format(content, writer);
 
-            throw new NotSupportedException();
+        public TContent Deserialize<TContent>(ReadOnlySequence<byte> bytes)
+        {
+            var formatter = this.GetFormatter<TContent>();
+            return formatter.Parse<TContent>(bytes);
         }
 
-        public TContent1 Deserialize<TContent1>(ReadOnlySequence<byte> bytes)
+        private IFormatter GetFormatter<TContent>()
         {
-            if (typeof(TContent).IsAssignableFrom(typeof(TContent1)))
+            var formatter = this.formatterSource.GetFormatter<TContent>();
+            if (formatter == null)
             {
-                var c = this.formatter.Parse(bytes);
-                if(c is TContent1 result)
-                {
-                    return result;
-                }
+                throw new InvalidOperationException($"Cannot resolve formatter for the type: {typeof(TContent).FullName}");
             }
 
-            throw new NotSupportedException();
+            return formatter;
         }
     }
 }

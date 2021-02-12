@@ -2,7 +2,6 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using RabbitMQ.Next.Serialization.Formatters;
-using RabbitMQ.Next.Transport.Buffers;
 using Xunit;
 
 namespace RabbitMQ.Next.Tests.Serialization.Formatters
@@ -28,7 +27,7 @@ namespace RabbitMQ.Next.Tests.Serialization.Formatters
             var formatter = new StringFormatter();
             var sequence = Helpers.MakeSequence(contentparts);
 
-            var result = formatter.Parse(sequence);
+            var result = formatter.Parse<string>(sequence);
 
             Assert.Equal(expected, result);
         }

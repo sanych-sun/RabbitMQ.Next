@@ -7,9 +7,35 @@ using RabbitMQ.Next.Transport.Buffers;
 
 namespace RabbitMQ.Next.Serialization.Formatters
 {
-    public class StringFormatter : IFormatter<string>
+    public class StringFormatter : IFormatter
     {
-        public void Format(string content, IBufferWriter<byte> writer)
+        private static readonly int MinBufferSize = TextEncoding.GetMaxByteCount(1);
+
+        public bool CanHandle(Type type) => type == typeof(string);
+
+        public void Format<TContent>(TContent content, IBufferWriter<byte> writer)
+        {
+            if (content is string str)
+            {
+                this.FormatInternal(str, writer);
+                return;
+            }
+
+            throw new InvalidOperationException();
+        }
+
+        public TContent Parse<TContent>(ReadOnlySequence<byte> bytes)
+        {
+            if (this.ParseInternal(bytes) is TContent result)
+            {
+                return result;
+            }
+
+            throw new InvalidOperationException();
+        }
+
+
+        private void FormatInternal(string content, IBufferWriter<byte> writer)
         {
             if (string.IsNullOrEmpty(content))
             {
@@ -26,12 +52,11 @@ namespace RabbitMQ.Next.Serialization.Formatters
             }
             else
             {
-                var minBufferSize = TextEncoding.GetMaxByteCount(1);
                 var encoder = TextEncoding.GetEncoder();
                 var remaining = content.AsSpan();
                 do
                 {
-                    var buffer = writer.GetSpan(minBufferSize);
+                    var buffer = writer.GetSpan(MinBufferSize);
                     encoder.Convert(remaining, buffer, true, out var charsUsed, out var bytesUsed, out bool _);
                     writer.Advance(bytesUsed);
                     remaining = remaining.Slice(charsUsed);
@@ -39,7 +64,7 @@ namespace RabbitMQ.Next.Serialization.Formatters
             }
         }
 
-        public string Parse(ReadOnlySequence<byte> bytes)
+        private string ParseInternal(ReadOnlySequence<byte> bytes)
         {
             if (bytes.IsEmpty)
             {
