@@ -30,7 +30,7 @@
 //
 //             var serializer = new Serializer(new SingleFormatterSource(new StringFormatter()));
 //
-//             var publisher = connection.PublisherChannel(serializer, new IMessageTransformer[]
+//             var publisher = connection.Publisher(serializer, new IMessageTransformer[]
 //             {
 //                 new ApplicationIdTransformer("unittest"),
 //                 new ExchangeTransformer("amq.fanout"),
