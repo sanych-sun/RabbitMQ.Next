@@ -12,7 +12,7 @@ namespace RabbitMQ.Next.MessagePublisher.Transformers
                 return;
             }
 
-            for (var i = 0; i <= transformers.Count; i++)
+            for (var i = 0; i <= transformers.Count - 1; i++)
             {
                 transformers[i].Apply(content, header);
             }

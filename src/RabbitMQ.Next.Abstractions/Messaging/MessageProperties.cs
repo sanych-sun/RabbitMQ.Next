@@ -5,6 +5,11 @@ namespace RabbitMQ.Next.Abstractions.Messaging
 {
     public class MessageProperties
     {
+        public MessageProperties()
+        {
+            this.Headers = new Dictionary<string, object>();
+        }
+
         public string ContentType { get; set; }
 
         public string ContentEncoding { get; set; }

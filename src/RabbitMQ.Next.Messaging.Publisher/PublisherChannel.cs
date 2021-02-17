@@ -28,14 +28,14 @@ namespace RabbitMQ.Next.MessagePublisher
         private volatile bool isCompleted;
 
 
-        public PublisherChannel(IConnection connection, PublisherChannelOptions options, ISerializer serializer, IReadOnlyList<IMessageTransformer> transformers)
+        public PublisherChannel(IConnection connection, ISerializer serializer, IReadOnlyList<IMessageTransformer> transformers, PublisherChannelOptions options = null)
         {
             this.connection = connection;
             this.serializer = serializer;
-            this.options = options;
+            this.options = options ?? PublisherChannelOptions.Default;
             this.transformers = transformers;
             
-            this.publishQueueSync = new SemaphoreSlim(this.options.localQueueLimit, this.options.localQueueLimit);
+            this.publishQueueSync = new SemaphoreSlim(this.options.LocalQueueLimit, this.options.LocalQueueLimit);
 
             this.channelCloseTcs = new TaskCompletionSource<bool>();
             this.waitToRead = new AsyncManualResetEvent(true);
@@ -51,6 +51,8 @@ namespace RabbitMQ.Next.MessagePublisher
             {
                 throw new ChannelClosedException();
             }
+
+            header ??= new MessageHeader();
 
             await this.publishQueueSync.WaitAsync(cancellation);
             

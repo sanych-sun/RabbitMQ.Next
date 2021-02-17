@@ -30,7 +30,8 @@ namespace RabbitMQ.Next.MessagePublisher
         public async ValueTask PublishAsync<TContent>(TContent content, MessageHeader header = null, CancellationToken cancellation = default)
         {
             await this.WhenReadyAsync(cancellation);
-            
+
+            header ??= new MessageHeader();
             this.transformers.Apply(content, header);
             
             using var bufferWriter = this.connection.BufferPool.Create();

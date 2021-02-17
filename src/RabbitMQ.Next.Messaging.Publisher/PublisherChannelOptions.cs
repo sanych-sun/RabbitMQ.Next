@@ -1,7 +1,14 @@
 namespace RabbitMQ.Next.MessagePublisher
 {
-    public struct PublisherChannelOptions
+    public class PublisherChannelOptions
     {
-        public int localQueueLimit { get; set; }
+        public static readonly PublisherChannelOptions Default = new PublisherChannelOptions(10);
+
+        public PublisherChannelOptions(int localQueueLimit)
+        {
+            this.LocalQueueLimit = localQueueLimit;
+        }
+
+        public int LocalQueueLimit { get; }
     }
 }

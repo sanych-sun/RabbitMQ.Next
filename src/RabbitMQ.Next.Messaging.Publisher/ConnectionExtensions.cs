@@ -11,7 +11,10 @@ namespace RabbitMQ.Next.MessagePublisher
         public static IPublisher Publisher(this IConnection connection, ISerializer serializer, IReadOnlyList<IMessageTransformer> transformers = null)
             => new Publisher(connection, serializer, transformers);
 
-        public static IPublisherChannel PublisherChannel(this IConnection connection, PublisherChannelOptions options, ISerializer serializer, IReadOnlyList<IMessageTransformer> transformers = null)
-            => new PublisherChannel(connection, options, serializer, transformers);
+        public static IPublisherChannel PublisherChannel(this IConnection connection,
+            ISerializer serializer,
+            IReadOnlyList<IMessageTransformer> transformers = null,
+            PublisherChannelOptions options = null)
+            => new PublisherChannel(connection, serializer, transformers, options);
     }
 }
