@@ -63,6 +63,8 @@ namespace RabbitMQ.Next.MessagePublisher
             this.waitToRead.Set();
         }
 
+        public ValueTask DisposeAsync() => this.CompleteAsync();
+
         public ValueTask CompleteAsync()
         {
             if (this.isCompleted)
