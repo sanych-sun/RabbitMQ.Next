@@ -111,12 +111,12 @@ namespace RabbitMQ.Next.Transport
 
         public IEventSource<ConnectionStateChanged> StateChanged => this.stateChanged;
 
-        public async Task<IChannel> CreateChannelAsync()
+        public async Task<IChannel> CreateChannelAsync(CancellationToken cancellationToken = default)
         {
             // TODO: validate state
 
             var channel = this.channelPool.Next();
-            await channel.SendAsync<Methods.Channel.OpenMethod, Methods.Channel.OpenOkMethod>(new Methods.Channel.OpenMethod());
+            await channel.SendAsync<Methods.Channel.OpenMethod, Methods.Channel.OpenOkMethod>(new Methods.Channel.OpenMethod(), cancellationToken);
 
             return channel;
         }

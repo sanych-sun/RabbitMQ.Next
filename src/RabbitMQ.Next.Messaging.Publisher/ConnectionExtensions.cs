@@ -8,13 +8,17 @@ namespace RabbitMQ.Next.MessagePublisher
 {
     public static class ConnectionExtensions
     {
-        public static IPublisher Publisher(this IConnection connection, ISerializer serializer, IReadOnlyList<IMessageTransformer> transformers = null)
-            => new Publisher(connection, serializer, transformers);
-
-        public static IPublisherChannel PublisherChannel(this IConnection connection,
+        public static IPublisher Publisher(this IConnection connection,
             ISerializer serializer,
             IReadOnlyList<IMessageTransformer> transformers = null,
             PublisherChannelOptions options = null)
-            => new PublisherChannel(connection, serializer, transformers, options);
+        {
+            if (options == null || options.LocalQueueLimit <= 1)
+            {
+                return new Publisher(connection, serializer, transformers);
+            }
+
+            return new BufferedPublisher(connection, serializer, transformers, options);
+        }
     }
 }

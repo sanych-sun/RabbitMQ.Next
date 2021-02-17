@@ -1,3 +1,4 @@
+using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions.Channels;
 
@@ -7,7 +8,7 @@ namespace RabbitMQ.Next.Abstractions
     {
         IEventSource<ConnectionStateChanged> StateChanged { get; }
 
-        Task<IChannel> CreateChannelAsync();
+        Task<IChannel> CreateChannelAsync(CancellationToken cancellationToken = default);
 
         Task CloseAsync();
 
