@@ -2,8 +2,9 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
+using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.MessagePublisher.Abstractions;
-using RabbitMQ.Next.MessagePublisher.Transformers;
+using RabbitMQ.Next.MessagePublisher.Abstractions.Transformers;
 using RabbitMQ.Next.Serialization.Abstractions;
 
 namespace RabbitMQ.Next.MessagePublisher
@@ -15,12 +16,14 @@ namespace RabbitMQ.Next.MessagePublisher
         {
         }
 
-        public async ValueTask PublishAsync<TContent>(TContent content, MessageHeader header = null, CancellationToken cancellationToken = default)
+        public async ValueTask PublishAsync<TContent>(TContent content, string exchange = null, string routingKey = null, IMessageProperties properties = null, PublishFlags flags = PublishFlags.None, CancellationToken cancellationToken = default)
         {
-            using var bufferWriter = this.Connection.BufferPool.Create();
-            this.PrepareMessage(bufferWriter, content, ref header);
+            var message = this.ApplyTransformers(content, exchange, routingKey, properties, flags);
 
-            await this.SendPreparedMessageAsync(header, bufferWriter, cancellationToken);
+            using var bufferWriter = this.Connection.BufferPool.Create();
+            this.Serializer.Serialize(content, bufferWriter);
+
+            await this.SendMessageAsync(message, bufferWriter, cancellationToken);
         }
 
         public ValueTask CompleteAsync() => this.DisposeAsync();

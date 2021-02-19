@@ -1,4 +1,4 @@
-using RabbitMQ.Next.MessagePublisher.Abstractions;
+using RabbitMQ.Next.MessagePublisher.Abstractions.Transformers;
 
 namespace RabbitMQ.Next.MessagePublisher.Transformers
 {
@@ -11,11 +11,11 @@ namespace RabbitMQ.Next.MessagePublisher.Transformers
             this.contentType = contentType;
         }
 
-        public void Apply<TPayload>(TPayload payload, MessageHeader header)
+        public void Apply<TPayload>(TPayload payload, IMessageBuilder message)
         {
-            if (string.IsNullOrEmpty(header.Properties.ContentType))
+            if (string.IsNullOrEmpty(message.ContentType))
             {
-                header.Properties.ContentType = this.contentType;
+                message.SetContentType(this.contentType);
             }
         }
     }

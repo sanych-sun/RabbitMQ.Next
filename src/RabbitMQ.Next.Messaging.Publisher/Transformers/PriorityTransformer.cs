@@ -1,4 +1,4 @@
-using RabbitMQ.Next.MessagePublisher.Abstractions;
+using RabbitMQ.Next.MessagePublisher.Abstractions.Transformers;
 
 namespace RabbitMQ.Next.MessagePublisher.Transformers
 {
@@ -11,11 +11,11 @@ namespace RabbitMQ.Next.MessagePublisher.Transformers
             this.priority = priority;
         }
 
-        public void Apply<TPayload>(TPayload payload, MessageHeader header)
+        public void Apply<TPayload>(TPayload payload, IMessageBuilder message)
         {
-            if (header.Properties.Priority == default)
+            if (message.Priority == default)
             {
-                header.Properties.Priority = this.priority;
+                message.SetPriority(this.priority);
             }
         }
     }

@@ -6,6 +6,7 @@ using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Abstractions.Methods;
 using RabbitMQ.Next.Transport.Buffers;
 using RabbitMQ.Next.Transport.Methods;
+using RabbitMQ.Next.Transport.Methods.Basic;
 using RabbitMQ.Next.Transport.Methods.Registry;
 
 namespace RabbitMQ.Next.Transport.Channels
@@ -38,7 +39,7 @@ namespace RabbitMQ.Next.Transport.Channels
             await this.socketWriter.SendAsync(result);
         }
 
-        public async Task SendContentHeaderAsync(MessageProperties properties, ulong contentSize)
+        public async Task SendContentHeaderAsync(IMessageProperties properties, ulong contentSize)
         {
             using var buffer = this.bufferPool.CreateMemory();
             var memory = buffer.Memory;

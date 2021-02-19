@@ -1,4 +1,4 @@
-using RabbitMQ.Next.MessagePublisher.Abstractions;
+using RabbitMQ.Next.MessagePublisher.Abstractions.Transformers;
 
 namespace RabbitMQ.Next.MessagePublisher.Transformers
 {
@@ -13,11 +13,11 @@ namespace RabbitMQ.Next.MessagePublisher.Transformers
             this.value = value;
         }
 
-        public void Apply<TPayload>(TPayload payload, MessageHeader header)
+        public void Apply<TPayload>(TPayload payload, IMessageBuilder message)
         {
-            if (!header.Properties.Headers.ContainsKey(this.key))
+            if (!message.Headers.ContainsKey(this.key))
             {
-                header.Properties.Headers[this.key] = this.value;
+                message.SetHeader(this.key, this.value);
             }
         }
     }

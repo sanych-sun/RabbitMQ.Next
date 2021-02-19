@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
+using RabbitMQ.Next.Abstractions.Buffers;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Transport.Buffers;
 using RabbitMQ.Next.Transport.Channels;

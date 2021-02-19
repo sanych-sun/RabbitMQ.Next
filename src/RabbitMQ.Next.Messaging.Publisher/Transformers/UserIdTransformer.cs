@@ -1,4 +1,4 @@
-using RabbitMQ.Next.MessagePublisher.Abstractions;
+using RabbitMQ.Next.MessagePublisher.Abstractions.Transformers;
 
 namespace RabbitMQ.Next.MessagePublisher.Transformers
 {
@@ -11,11 +11,11 @@ namespace RabbitMQ.Next.MessagePublisher.Transformers
             this.userId = userId;
         }
 
-        public void Apply<TPayload>(TPayload payload, MessageHeader header)
+        public void Apply<TPayload>(TPayload payload, IMessageBuilder message)
         {
-            if (string.IsNullOrEmpty(header.Properties.UserId))
+            if (string.IsNullOrEmpty(message.UserId))
             {
-                header.Properties.UserId = this.userId;
+                message.SetUserId(this.userId);
             }
         }
     }

@@ -1,4 +1,4 @@
-using RabbitMQ.Next.MessagePublisher.Abstractions;
+using RabbitMQ.Next.MessagePublisher.Abstractions.Transformers;
 
 namespace RabbitMQ.Next.MessagePublisher.Transformers
 {
@@ -11,11 +11,11 @@ namespace RabbitMQ.Next.MessagePublisher.Transformers
             this.contentEncoding = contentEncoding;
         }
 
-        public void Apply<TPayload>(TPayload payload, MessageHeader header)
+        public void Apply<TPayload>(TPayload payload, IMessageBuilder message)
         {
-            if (string.IsNullOrEmpty(header.Properties.ContentEncoding))
+            if (string.IsNullOrEmpty(message.ContentEncoding))
             {
-                header.Properties.ContentEncoding = this.contentEncoding;
+                message.SetContentEncoding(this.contentEncoding);
             }
         }
     }

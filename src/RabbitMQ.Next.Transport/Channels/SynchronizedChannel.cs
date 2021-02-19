@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Abstractions.Methods;
+using RabbitMQ.Next.Transport.Methods.Basic;
 
 namespace RabbitMQ.Next.Transport.Channels
 {
@@ -22,7 +23,7 @@ namespace RabbitMQ.Next.Transport.Channels
             where TMethod : struct, IOutgoingMethod
             => this.frameSender.SendMethodAsync(request);
 
-        public async Task SendAsync<TMethod>(TMethod request, MessageProperties properties, ReadOnlySequence<byte> content)
+        public async Task SendAsync<TMethod>(TMethod request, IMessageProperties properties, ReadOnlySequence<byte> content)
             where TMethod : struct, IOutgoingMethod
         {
             await this.frameSender.SendMethodAsync(request);

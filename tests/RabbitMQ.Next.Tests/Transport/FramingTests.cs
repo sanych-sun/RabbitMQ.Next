@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Transport;
+using RabbitMQ.Next.Transport.Methods.Basic;
 using Xunit;
 
 namespace RabbitMQ.Next.Tests.Transport
@@ -45,7 +46,7 @@ namespace RabbitMQ.Next.Tests.Transport
         [MemberData(nameof(MessagePropertiesTestCases))]
         public void ReadMessageProperties(byte[] source, MessageProperties expectedData)
         {
-            var result = ((ReadOnlySpan<byte>)source).ReadMessageProperties(out MessageProperties data);
+            var result = ((ReadOnlySpan<byte>)source).ReadMessageProperties(out IMessageProperties data);
 
             Assert.Equal(expectedData.ContentType, data.ContentType);
             Assert.Equal(expectedData.ContentEncoding, data.ContentEncoding);

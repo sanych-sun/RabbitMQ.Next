@@ -1,6 +1,6 @@
 using System;
 using System.Globalization;
-using RabbitMQ.Next.MessagePublisher.Abstractions;
+using RabbitMQ.Next.MessagePublisher.Abstractions.Transformers;
 
 namespace RabbitMQ.Next.MessagePublisher.Transformers
 {
@@ -13,11 +13,11 @@ namespace RabbitMQ.Next.MessagePublisher.Transformers
             this.expiration = expiration;
         }
 
-        public void Apply<TPayload>(TPayload payload, MessageHeader header)
+        public void Apply<TPayload>(TPayload payload, IMessageBuilder message)
         {
-            if (string.IsNullOrEmpty(header.Properties.Expiration))
+            if (string.IsNullOrEmpty(message.Expiration))
             {
-                header.Properties.Expiration = this.expiration.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
+                message.SetExpiration(this.expiration.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
             }
         }
     }

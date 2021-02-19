@@ -1,19 +1,15 @@
 using System;
-using RabbitMQ.Next.MessagePublisher.Abstractions;
+using RabbitMQ.Next.MessagePublisher.Abstractions.Transformers;
 
 namespace RabbitMQ.Next.MessagePublisher.Transformers
 {
     public class TimestampTransformer : IMessageTransformer
     {
-        public TimestampTransformer()
+        public void Apply<TPayload>(TPayload payload, IMessageBuilder message)
         {
-        }
-
-        public void Apply<TPayload>(TPayload payload, MessageHeader header)
-        {
-            if (!header.Properties.Timestamp.HasValue)
+            if (!message.Timestamp.HasValue)
             {
-                header.Properties.Timestamp = DateTimeOffset.UtcNow;
+                message.SetTimestamp(DateTimeOffset.UtcNow);
             }
         }
     }

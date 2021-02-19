@@ -1,5 +1,5 @@
 using RabbitMQ.Next.Abstractions.Messaging;
-using RabbitMQ.Next.MessagePublisher.Abstractions;
+using RabbitMQ.Next.MessagePublisher.Abstractions.Transformers;
 
 namespace RabbitMQ.Next.MessagePublisher.Transformers
 {
@@ -12,11 +12,11 @@ namespace RabbitMQ.Next.MessagePublisher.Transformers
             this.deliveryMode = deliveryMode;
         }
 
-        public void Apply<TPayload>(TPayload payload, MessageHeader header)
+        public void Apply<TPayload>(TPayload payload, IMessageBuilder message)
         {
-            if (header.Properties.DeliveryMode == DeliveryMode.Unset)
+            if (message.DeliveryMode == DeliveryMode.Unset)
             {
-                header.Properties.DeliveryMode = this.deliveryMode;
+                message.SetDeliveryMode(this.deliveryMode);
             }
         }
     }

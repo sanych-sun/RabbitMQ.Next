@@ -4,10 +4,10 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
+using RabbitMQ.Next.Abstractions.Buffers;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
-using RabbitMQ.Next.MessagePublisher.Abstractions;
-using RabbitMQ.Next.MessagePublisher.Transformers;
+using RabbitMQ.Next.MessagePublisher.Abstractions.Transformers;
 using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.Transport.Methods.Basic;
 
@@ -52,22 +52,12 @@ namespace RabbitMQ.Next.MessagePublisher
             await ch.CloseAsync();
         }
 
-        protected void PrepareMessage<TContent>(IBufferWriter bufferWriter, TContent content, ref MessageHeader header)
+        protected ValueTask SendMessageAsync((string Exchange, string RoutingKey, IMessageProperties Properties, PublishFlags PublishFlags) message, IBufferWriter contentBuffer, CancellationToken cancellationToken = default)
         {
-            // todo: do something to avoid unnecessary object creation
-            header ??= new MessageHeader();
-            header.Properties.Headers ??= new Dictionary<string, object>();
-
-            this.ApplyTransformers(content, header);
-            this.Serializer.Serialize(content, bufferWriter);
-        }
-
-        protected ValueTask SendPreparedMessageAsync(MessageHeader header, IBufferWriter contentBuffer, CancellationToken cancellationToken = default)
-        {
-            return this.UseChannelAsync((header, contentBuffer), (ch, state)
-                    => ch.SendAsync(new PublishMethod(
-                        state.header.Exchange, state.header.RoutingKey, state.header.Mandatory.GetValueOrDefault(), state.header.Immediate.GetValueOrDefault()),
-                        state.header.Properties, state.contentBuffer.ToSequence())
+            return this.UseChannelAsync(
+                (message.Exchange, message.RoutingKey, message.PublishFlags, message.Properties, contentBuffer),
+                (ch, state) => ch.SendAsync(
+                    new PublishMethod(state.Exchange, state.RoutingKey, (byte)state.PublishFlags), state.Properties, state.contentBuffer.ToSequence())
                 , cancellationToken);
         }
 
@@ -87,18 +77,21 @@ namespace RabbitMQ.Next.MessagePublisher
             await fn(ch, state);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void ApplyTransformers<TContent>(TContent content, MessageHeader header)
+        protected (string Exchange, string RoutingKey, IMessageProperties Properties, PublishFlags PublishFlags) ApplyTransformers<TContent>(
+            TContent content, string exchange, string routingKey, IMessageProperties properties, PublishFlags publishFlags)
         {
             if (this.Transformers == null)
             {
-                return;
+                return (exchange, routingKey, properties, publishFlags);
             }
 
+            var messageBuilder = new MessageBuilder(exchange, routingKey, properties, publishFlags);
             for (var i = 0; i <= this.Transformers.Count - 1; i++)
             {
-                this.Transformers[i].Apply(content, header);
+                this.Transformers[i].Apply(content, messageBuilder);
             }
+
+            return (messageBuilder.Exchange, messageBuilder.RoutingKey, messageBuilder, messageBuilder.PublishFlags);
         }
 
         private async ValueTask<IChannel> DoGetChannelAsync(CancellationToken cancellationToken)

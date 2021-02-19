@@ -54,7 +54,7 @@ namespace RabbitMQ.Next.Transport.Channels
             }
         }
 
-        public async Task SendAsync<TMethod>(TMethod request, MessageProperties properties, ReadOnlySequence<byte> content)
+        public async Task SendAsync<TMethod>(TMethod request, IMessageProperties properties, ReadOnlySequence<byte> content)
             where TMethod : struct, IOutgoingMethod
         {
             await this.senderSync.WaitAsync();

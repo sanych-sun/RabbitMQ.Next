@@ -3,13 +3,13 @@ using System.Collections.Generic;
 
 namespace RabbitMQ.Next.Abstractions.Messaging
 {
-    public class MessageProperties
+    public class MessageProperties : IMessageProperties
     {
         public string ContentType { get; set; }
 
         public string ContentEncoding { get; set; }
 
-        public Dictionary<string, object> Headers { get; set; }
+        public IReadOnlyDictionary<string, object> Headers { get; set; }
 
         public DeliveryMode DeliveryMode { get; set; }
 

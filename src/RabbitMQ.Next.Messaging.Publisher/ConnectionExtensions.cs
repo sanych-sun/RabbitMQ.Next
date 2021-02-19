@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.MessagePublisher.Abstractions;
+using RabbitMQ.Next.MessagePublisher.Abstractions.Transformers;
 using RabbitMQ.Next.MessagePublisher.Transformers;
 
 namespace RabbitMQ.Next.MessagePublisher

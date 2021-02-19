@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
+using RabbitMQ.Next.Abstractions.Buffers;
+using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.MessagePublisher.Abstractions;
-using RabbitMQ.Next.MessagePublisher.Transformers;
+using RabbitMQ.Next.MessagePublisher.Abstractions.Transformers;
 using RabbitMQ.Next.Transport;
 
 namespace RabbitMQ.Next.MessagePublisher
@@ -16,7 +18,7 @@ namespace RabbitMQ.Next.MessagePublisher
         private readonly AsyncManualResetEvent waitToRead;
         private readonly TaskCompletionSource<bool> queueCompleteTcs;
 
-        private readonly ConcurrentQueue<(MessageHeader Header, IBufferWriter Content)> localQueue;
+        private readonly ConcurrentQueue<((string Exchange, string RoutingKey, IMessageProperties Properties, PublishFlags PublishFlags) Message, IBufferWriter Content)> localQueue;
         private readonly PublisherChannelOptions options;
         private volatile bool isCompleted;
 
@@ -24,30 +26,32 @@ namespace RabbitMQ.Next.MessagePublisher
         public BufferedPublisher(IConnection connection, ISerializer serializer, IReadOnlyList<IMessageTransformer> transformers, PublisherChannelOptions options = null)
             : base(connection, serializer, transformers)
         {
-            this.options = options;
+            this.options = options ?? new PublisherChannelOptions(50);
 
             this.publishQueueSync = new SemaphoreSlim(this.options.LocalQueueLimit, this.options.LocalQueueLimit);
 
             this.queueCompleteTcs = new TaskCompletionSource<bool>();
             this.waitToRead = new AsyncManualResetEvent(true);
-            this.localQueue = new ConcurrentQueue<(MessageHeader, IBufferWriter)>();
+            this.localQueue = new ConcurrentQueue<((string Exchange, string RoutingKey, IMessageProperties Properties, PublishFlags PublishFlags), IBufferWriter)>();
             this.isCompleted = false;
 
             Task.Run(this.MessageSendLoop);
         }
 
-        public async ValueTask PublishAsync<TContent>(TContent content, MessageHeader header = null, CancellationToken cancellation = default)
+        public async ValueTask PublishAsync<TContent>(TContent content, string exchange = null, string routingKey = null, IMessageProperties properties = null, PublishFlags flags = PublishFlags.None, CancellationToken cancellationToken = default)
         {
             if (this.isCompleted)
             {
                 throw new ChannelClosedException();
             }
 
-            await this.publishQueueSync.WaitAsync(cancellation);
+            await this.publishQueueSync.WaitAsync(cancellationToken);
 
+            var message = this.ApplyTransformers(content, exchange, routingKey, properties, flags);
             var bufferWriter = this.Connection.BufferPool.Create();
-            this.PrepareMessage(bufferWriter, content, ref header);
-            this.localQueue.Enqueue((header, bufferWriter));
+            this.Serializer.Serialize(content, bufferWriter);
+
+            this.localQueue.Enqueue((message, bufferWriter));
             this.waitToRead.Set();
         }
 
@@ -70,7 +74,7 @@ namespace RabbitMQ.Next.MessagePublisher
 
                 while (this.localQueue.TryDequeue(out var i))
                 {
-                    await this.SendPreparedMessageAsync(i.Header, i.Content);
+                    await this.SendMessageAsync(i.Message, i.Content);
                     i.Content.Dispose();
                     this.publishQueueSync.Release();
                 }

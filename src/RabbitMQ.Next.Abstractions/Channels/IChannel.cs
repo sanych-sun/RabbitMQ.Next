@@ -1,10 +1,8 @@
 using System;
-using System.Net.NetworkInformation;
 using System.Threading.Tasks;
 
 namespace RabbitMQ.Next.Abstractions.Channels
 {
-    // TODO: need better name
     public interface IChannel : ISynchronizedChannel
     {
         bool IsClosed { get; }

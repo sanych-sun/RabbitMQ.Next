@@ -1,4 +1,4 @@
-using RabbitMQ.Next.MessagePublisher.Abstractions;
+using RabbitMQ.Next.MessagePublisher.Abstractions.Transformers;
 
 namespace RabbitMQ.Next.MessagePublisher.Transformers
 {
@@ -11,11 +11,11 @@ namespace RabbitMQ.Next.MessagePublisher.Transformers
             this.routingKet = routingKey;
         }
 
-        public void Apply<TPayload>(TPayload payload, MessageHeader header)
+        public void Apply<TPayload>(TPayload payload, IMessageBuilder message)
         {
-            if (string.IsNullOrEmpty(header.RoutingKey))
+            if (string.IsNullOrEmpty(message.RoutingKey))
             {
-                header.RoutingKey = this.routingKet;
+                message.RoutingKey = this.routingKet;
             }
         }
     }

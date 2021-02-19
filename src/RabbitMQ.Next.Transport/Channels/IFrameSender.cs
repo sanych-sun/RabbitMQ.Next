@@ -10,7 +10,7 @@ namespace RabbitMQ.Next.Transport.Channels
         Task SendMethodAsync<TMethod>(TMethod method)
             where TMethod : struct, IOutgoingMethod;
 
-        Task SendContentHeaderAsync(MessageProperties properties, ulong contentSize);
+        Task SendContentHeaderAsync(IMessageProperties properties, ulong contentSize);
 
         Task SendContentAsync(ReadOnlySequence<byte> contentBytes);
     }

@@ -41,7 +41,7 @@ namespace RabbitMQ.Next.Transport
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int WriteContentHeader(this Span<byte> target, MessageProperties properties, ulong contentSize)
+        public static int WriteContentHeader(this Span<byte> target, IMessageProperties properties, ulong contentSize)
         {
             var result = target
                 .Write((ushort) ClassId.Basic)
@@ -53,7 +53,7 @@ namespace RabbitMQ.Next.Transport
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Span<byte> WriteMessageProperties(this Span<byte> target, MessageProperties properties)
+        public static Span<byte> WriteMessageProperties(this Span<byte> target, IMessageProperties properties)
         {
             var flagsSpan = target;
             target = target.Slice(sizeof(ushort));
@@ -81,7 +81,7 @@ namespace RabbitMQ.Next.Transport
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<byte> ReadMessageProperties(this ReadOnlySpan<byte> source, out MessageProperties properties)
+        public static ReadOnlySpan<byte> ReadMessageProperties(this ReadOnlySpan<byte> source, out IMessageProperties properties)
         {
             source = source
                 .Read(out ushort flags)
