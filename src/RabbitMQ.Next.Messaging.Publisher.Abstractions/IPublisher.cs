@@ -7,10 +7,13 @@ namespace RabbitMQ.Next.MessagePublisher.Abstractions
 {
     public interface IPublisher : IAsyncDisposable
     {
-        ValueTask PublishAsync<TContent>(TContent content, string exchange = null, string routingKey = null, IMessageProperties properties = null,  PublishFlags flags = PublishFlags.None, CancellationToken cancellationToken = default);
+        ValueTask PublishAsync<TContent>(TContent content, string exchange = null, string routingKey = null, IMessageProperties properties = null, PublishFlags flags = PublishFlags.None, CancellationToken cancellationToken = default);
 
-        //public IDisposable RegisterReturnMessageHandler();
+        IDisposable RegisterReturnedMessageHandler(ReturnedMessageDelegate returnedMessageHandler);
 
         ValueTask CompleteAsync();
     }
+
+    public delegate void ReturnedMessageDelegate(IReturnedMessage message, IContent content);
+
 }

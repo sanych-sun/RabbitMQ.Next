@@ -1,6 +1,6 @@
 namespace RabbitMQ.Next.Transport
 {
-    internal enum ClassId : ushort
+    public enum ClassId : ushort
     {
         Connection = 10,
         Channel = 20,

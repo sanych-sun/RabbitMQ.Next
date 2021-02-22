@@ -1,7 +1,6 @@
 using System;
-using RabbitMQ.Next.Abstractions.Methods;
 
-namespace RabbitMQ.Next.Transport.Methods
+namespace RabbitMQ.Next.Abstractions.Methods
 {
     public interface IMethodFormatter<in TMethod>
         where TMethod : struct, IMethod

@@ -8,7 +8,6 @@ using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Abstractions.Methods;
 using RabbitMQ.Next.Transport.Methods.Channel;
-using RabbitMQ.Next.Transport.Methods.Registry;
 
 namespace RabbitMQ.Next.Transport.Channels
 {
@@ -17,14 +16,16 @@ namespace RabbitMQ.Next.Transport.Channels
         private readonly SynchronizedChannel syncChannel;
         private readonly SemaphoreSlim senderSync;
 
-        private readonly IList<IFrameHandler> methodHandlers;
+        private readonly IReadOnlyList<IFrameHandler> frameHandlers;
 
-        public Channel(Pipe pipe, IMethodRegistry methodRegistry, IFrameSender frameSender)
+        public Channel(Pipe pipe, IMethodRegistry methodRegistry, IFrameSender frameSender, IEnumerable<IFrameHandler> handlers)
         {
+            this.MethodRegistry = methodRegistry;
             this.Pipe =  new PipeWrapper(pipe.Writer);
             var waitFrameHandler = new WaitMethodFrameHandler(methodRegistry);
             this.syncChannel = new SynchronizedChannel(frameSender, waitFrameHandler);
-            this.methodHandlers = new List<IFrameHandler> { waitFrameHandler };
+            handlers ??= Array.Empty<IFrameHandler>();
+            this.frameHandlers = new List<IFrameHandler>(handlers) { waitFrameHandler };
             this.senderSync = new SemaphoreSlim(1,1);
 
             Task.Run(() => this.LoopAsync(pipe.Reader));
@@ -38,6 +39,8 @@ namespace RabbitMQ.Next.Transport.Channels
         }
 
         public bool IsClosed { get; }
+
+        public IMethodRegistry MethodRegistry { get; }
 
         public async Task SendAsync<TMethod>(TMethod request)
             where TMethod : struct, IOutgoingMethod
@@ -114,22 +117,25 @@ namespace RabbitMQ.Next.Transport.Channels
         private async Task LoopAsync(PipeReader pipeReader)
         {
             Func<ReadOnlySequence<byte>, (FrameType Type, int Size)> headerParser = this.ParseFrameHeader;
-            Func<ReadOnlySequence<byte>, bool> methodFrameHandler = this.ParseMethodFramePayload;
+            Func<ReadOnlySequence<byte>, bool> methodFrameHandler = (sequence) => this.ParseFramePayload(FrameType.Method, sequence);
+            Func<ReadOnlySequence<byte>, bool> contentHeaderFrameHandler = (sequence) => this.ParseFramePayload(FrameType.ContentHeader, sequence);
+            Func<ReadOnlySequence<byte>, bool> contentBodyFrameHandler = (sequence) => this.ParseFramePayload(FrameType.ContentBody, sequence);
 
             while (true)
             {
                 var header = await pipeReader.ReadAsync(ChannelFrame.FrameHeaderSize, headerParser);
-
-                if (header.Type == FrameType.Malformed)
-                {
-                    return;
-                }
 
                 Func<ReadOnlySequence<byte>, bool> payloadHandler;
                 switch (header.Type)
                 {
                     case FrameType.Method:
                         payloadHandler = methodFrameHandler;
+                        break;
+                    case FrameType.ContentHeader:
+                        payloadHandler = contentHeaderFrameHandler;
+                        break;
+                    case FrameType.ContentBody:
+                        payloadHandler = contentBodyFrameHandler;
                         break;
                     default:
                         // todo: throw connection exception here for unexpected frame
@@ -140,13 +146,11 @@ namespace RabbitMQ.Next.Transport.Channels
             }
         }
 
-        private bool ParseMethodFramePayload(ReadOnlySequence<byte> sequence) => this.ParseFramePayload(FrameType.Method, sequence);
-
         private bool ParseFramePayload(FrameType type, ReadOnlySequence<byte> sequence)
         {
-            for (var i = 0; i < this.methodHandlers.Count; i++)
+            for (var i = 0; i < this.frameHandlers.Count; i++)
             {
-                if (this.methodHandlers[i].Handle(type, sequence))
+                if (this.frameHandlers[i].Handle((ChannelFrameType)type, sequence))
                 {
                     return true;
                 }

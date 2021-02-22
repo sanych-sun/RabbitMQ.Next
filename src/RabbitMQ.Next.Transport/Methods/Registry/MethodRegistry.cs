@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Methods;
 
 namespace RabbitMQ.Next.Transport.Methods.Registry

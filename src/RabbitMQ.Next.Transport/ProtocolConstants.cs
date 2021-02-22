@@ -1,4 +1,5 @@
 using System;
+using RabbitMQ.Next.Abstractions;
 
 namespace RabbitMQ.Next.Transport
 {

@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Buffers;
 using RabbitMQ.Next.Abstractions.Channels;
+using RabbitMQ.Next.Abstractions.Methods;
 using RabbitMQ.Next.Transport.Buffers;
 using RabbitMQ.Next.Transport.Channels;
 using RabbitMQ.Next.Transport.Events;
@@ -45,13 +46,13 @@ namespace RabbitMQ.Next.Transport
             registryBuilder.AddQueueMethods();
             registryBuilder.AddBasicMethods();
 
-            var methodRegistry = registryBuilder.Build();
+            this.MethodRegistry = registryBuilder.Build();
 
-            Func<int, Channel> channelFactory = (channelNumber) =>
+            Func<int, IEnumerable<IFrameHandler>, Channel> channelFactory = (channelNumber, handlers) =>
             {
                 var pipe = new Pipe();
-                var methodSender = new FrameSender(this, methodRegistry, (ushort) channelNumber, this.bufferPool);
-                return new Channel(pipe, methodRegistry, methodSender);
+                var methodSender = new FrameSender(this, this.MethodRegistry, (ushort) channelNumber, this.bufferPool);
+                return new Channel(pipe, this.MethodRegistry, methodSender, handlers);
             };
 
             this.channelPool = new ChannelPool(channelFactory);
@@ -108,15 +109,17 @@ namespace RabbitMQ.Next.Transport
 
         public ConnectionState State { get; private set; }
 
+        public IMethodRegistry MethodRegistry { get; }
+
         public IBufferPool BufferPool => this.bufferPool;
 
         public IEventSource<ConnectionStateChanged> StateChanged => this.stateChanged;
 
-        public async Task<IChannel> CreateChannelAsync(CancellationToken cancellationToken = default)
+        public async Task<IChannel> CreateChannelAsync(IEnumerable<IFrameHandler> handlers = null, CancellationToken cancellationToken = default)
         {
             // TODO: validate state
 
-            var channel = this.channelPool.Next();
+            var channel = this.channelPool.Next(handlers);
             await channel.SendAsync<Methods.Channel.OpenMethod, Methods.Channel.OpenOkMethod>(new Methods.Channel.OpenMethod(), cancellationToken);
 
             return channel;
@@ -256,8 +259,9 @@ namespace RabbitMQ.Next.Transport
                 .Slice(4) // skip 2 obsolete shorts
                 .Read(out ulong contentSide);
 
-            target.BeginLogicalFrame(FrameType.ContentHeader, payloadSize - customHeaderSize);
-            returnCode = sourceSocket.FillBuffer(target, payloadSize);
+            var headerSize = payloadSize - customHeaderSize;
+            target.BeginLogicalFrame(FrameType.ContentHeader, headerSize);
+            returnCode = sourceSocket.FillBuffer(target, headerSize);
 
             if (returnCode != SocketError.Success)
             {

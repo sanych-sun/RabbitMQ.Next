@@ -1,19 +1,21 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using RabbitMQ.Next.Abstractions.Channels;
 
 namespace RabbitMQ.Next.Transport.Channels
 {
     internal class ChannelPool
     {
-        private readonly Func<int, Channel> channelFactory;
+        private readonly Func<int, IEnumerable<IFrameHandler>, Channel> channelFactory;
         private readonly ReaderWriterLockSlim channelsLock;
         private readonly ConcurrentQueue<int> releasedItems;
         private Channel[] channels;
         private int lastId = -1;
 
-        public ChannelPool(Func<int, Channel> channelFactory, int initialPoolSize = 10)
+        public ChannelPool(Func<int, IEnumerable<IFrameHandler>, Channel> channelFactory, int initialPoolSize = 10)
         {
             this.channelFactory = channelFactory;
             this.channelsLock = new ReaderWriterLockSlim();
@@ -21,10 +23,10 @@ namespace RabbitMQ.Next.Transport.Channels
             this.channels = new Channel[initialPoolSize];
         }
 
-        public Channel Next()
+        public Channel Next(IEnumerable<IFrameHandler> handlers = null)
         {
             var nextIndex = this.GetNextIndex();
-            return this.Create(nextIndex);
+            return this.Create(nextIndex, handlers);
         }
 
         public void Release(int index)
@@ -82,9 +84,9 @@ namespace RabbitMQ.Next.Transport.Channels
             }
         }
 
-        private Channel Create(int index)
+        private Channel Create(int index, IEnumerable<IFrameHandler> handlers = null)
         {
-            var channel = this.channelFactory(index);
+            var channel = this.channelFactory(index, handlers);
             this.AssignChannel(index, channel);
             return channel;
         }

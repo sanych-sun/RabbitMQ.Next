@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Buffers;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
+using RabbitMQ.Next.MessagePublisher.Abstractions;
 using RabbitMQ.Next.MessagePublisher.Abstractions.Transformers;
 using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.Transport.Methods.Basic;
@@ -16,6 +16,7 @@ namespace RabbitMQ.Next.MessagePublisher
     internal abstract class PublisherBase : IAsyncDisposable
     {
         private readonly SemaphoreSlim channelOpenSync = new SemaphoreSlim(1,1);
+        private readonly ReturnedMessageDelegateCollection returnedMessageHandlers = new ReturnedMessageDelegateCollection();
 
         private IChannel channel;
         private bool disposed;
@@ -28,6 +29,9 @@ namespace RabbitMQ.Next.MessagePublisher
         }
 
         public ValueTask DisposeAsync() => this.DisposeAsyncCore();
+
+        public IDisposable RegisterReturnedMessageHandler(ReturnedMessageDelegate returnedMessageHandler)
+            => this.returnedMessageHandlers.Add(returnedMessageHandler);
 
         protected IConnection Connection { get; }
 
@@ -105,7 +109,10 @@ namespace RabbitMQ.Next.MessagePublisher
 
             try
             {
-                this.channel ??= await this.Connection.CreateChannelAsync(cancellationToken);
+                var returnMethodParser = this.Connection.MethodRegistry.GetParser<ReturnMethod>();
+                this.channel ??= await this.Connection.CreateChannelAsync(
+                    new IFrameHandler[] { new ReturnedMessagesFrameHandler(returnMethodParser, this.Serializer, this.returnedMessageHandlers) },
+                    cancellationToken);
                 return this.channel;
             }
             finally

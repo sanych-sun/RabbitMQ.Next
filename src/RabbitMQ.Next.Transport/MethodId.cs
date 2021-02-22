@@ -1,6 +1,6 @@
 namespace RabbitMQ.Next.Transport
 {
-    internal enum MethodId : uint
+    public enum MethodId : uint
     {
         // @formatter:off
         // Connection class methods:
