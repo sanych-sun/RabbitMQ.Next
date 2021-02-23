@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Abstractions.Methods;
-using RabbitMQ.Next.Transport.Methods.Basic;
 
 namespace RabbitMQ.Next.Transport.Channels
 {
@@ -28,7 +27,10 @@ namespace RabbitMQ.Next.Transport.Channels
         {
             await this.frameSender.SendMethodAsync(request);
             await this.frameSender.SendContentHeaderAsync(properties, (ulong) content.Length);
-            await this.frameSender.SendContentAsync(content);
+            if (!content.IsEmpty)
+            {
+                await this.frameSender.SendContentAsync(content);
+            }
         }
 
         public async Task<TMethod> WaitAsync<TMethod>(CancellationToken cancellation = default)

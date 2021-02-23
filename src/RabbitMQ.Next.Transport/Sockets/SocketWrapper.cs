@@ -15,6 +15,11 @@ namespace RabbitMQ.Next.Transport.Sockets
 
         public async ValueTask SendAsync(ReadOnlyMemory<byte> payload)
         {
+            if (payload.IsEmpty)
+            {
+                return;
+            }
+
             await this.socket.SendAsync(payload, SocketFlags.None);
         }
 
