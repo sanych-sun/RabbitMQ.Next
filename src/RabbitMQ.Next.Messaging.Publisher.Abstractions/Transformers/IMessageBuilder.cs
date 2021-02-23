@@ -11,7 +11,6 @@ namespace RabbitMQ.Next.MessagePublisher.Abstractions.Transformers
 
         public PublishFlags PublishFlags { get; set; }
 
-
         void SetHeader (string key, object value);
 
         void SetContentType (string value);

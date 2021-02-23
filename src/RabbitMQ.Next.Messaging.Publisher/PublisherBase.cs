@@ -8,6 +8,7 @@ using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.MessagePublisher.Abstractions;
 using RabbitMQ.Next.MessagePublisher.Abstractions.Transformers;
+using RabbitMQ.Next.MessagePublisher.Transformers;
 using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.Transport.Methods.Basic;
 
@@ -24,7 +25,7 @@ namespace RabbitMQ.Next.MessagePublisher
         {
             this.Connection = connection;
             this.Serializer = serializer;
-            this.Transformers = transformers;
+            this.Transformers = new List<IMessageTransformer>(transformers) { new AttributeTransformer() };
         }
 
         public ValueTask DisposeAsync() => this.DisposeAsyncCore();

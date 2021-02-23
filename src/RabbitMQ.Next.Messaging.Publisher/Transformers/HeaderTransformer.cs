@@ -15,7 +15,7 @@ namespace RabbitMQ.Next.MessagePublisher.Transformers
 
         public void Apply<TPayload>(TPayload payload, IMessageBuilder message)
         {
-            if (!message.Headers.ContainsKey(this.key))
+            if (message.Headers == null || !message.Headers.ContainsKey(this.key))
             {
                 message.SetHeader(this.key, this.value);
             }

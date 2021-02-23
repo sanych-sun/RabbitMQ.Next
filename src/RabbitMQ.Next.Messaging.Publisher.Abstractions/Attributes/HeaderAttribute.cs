@@ -18,7 +18,7 @@ namespace RabbitMQ.Next.MessagePublisher.Abstractions.Attributes
 
         public override void Apply(IMessageBuilder message)
         {
-            if (!message.Headers.TryGetValue(this.Name, out var _))
+            if (message.Headers == null || !message.Headers.TryGetValue(this.Name, out var _))
             {
                 message.SetHeader(this.Name, this.Value);
             }
