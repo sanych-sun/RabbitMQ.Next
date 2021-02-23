@@ -57,7 +57,7 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
                 .ReadProperty(out string contentEncoding, flags, 14)
                 .ReadProperty(out Dictionary<string, object> headers, flags, 13)
                 .ReadProperty(out byte deliveryMode, flags, 12)
-                .ReadProperty(out byte priority, flags, 11)
+                .ReadProperty(out byte? priority, flags, 11)
                 .ReadProperty(out string correlationId, flags, 10)
                 .ReadProperty(out string replyTo, flags, 9)
                 .ReadProperty(out string expiration, flags, 8)
@@ -123,6 +123,20 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ReadOnlySpan<byte> ReadProperty(this ReadOnlySpan<byte> source, out byte? value, ushort flags, byte bitNumber)
+        {
+            if (!BitConverter.IsFlagSet(flags, bitNumber))
+            {
+                value = default;
+                return source;
+            }
+
+            var result = source.Read(out byte data);
+            value = data;
+            return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ReadOnlySpan<byte> ReadProperty(this ReadOnlySpan<byte> source, out DateTimeOffset? value, ushort flags, byte bitNumber)
         {
             if (!BitConverter.IsFlagSet(flags, bitNumber))
@@ -163,9 +177,20 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Span<byte> WriteProperty(this Span<byte> target, byte? value, ref ushort flags, byte bitNumber)
+        {
+            if (!value.HasValue)
+            {
+                return target;
+            }
+
+            return target.WriteProperty(value.Value, ref flags, bitNumber);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Span<byte> WriteProperty(this Span<byte> target, byte value, ref ushort flags, byte bitNumber)
         {
-            if (value == 0)
+            if (value == default)
             {
                 return target;
             }

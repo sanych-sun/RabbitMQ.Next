@@ -39,7 +39,7 @@ namespace RabbitMQ.Next.MessagePublisher
 
         public DeliveryMode DeliveryMode => this.deliveryMode ?? this.baseProperties?.DeliveryMode ?? DeliveryMode.Unset;
 
-        public byte Priority => this.priority ?? this.baseProperties?.Priority ?? 0;
+        public byte? Priority => this.priority ?? this.baseProperties?.Priority ?? 0;
 
         public string CorrelationId => this.correlationId ?? this.baseProperties?.CorrelationId;
 

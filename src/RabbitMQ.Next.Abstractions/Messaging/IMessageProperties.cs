@@ -13,7 +13,7 @@ namespace RabbitMQ.Next.Abstractions.Messaging
 
         DeliveryMode DeliveryMode { get; }
 
-        byte Priority { get; }
+        byte? Priority { get; }
 
         string CorrelationId { get; }
 

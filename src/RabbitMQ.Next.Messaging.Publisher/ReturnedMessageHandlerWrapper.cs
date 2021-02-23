@@ -1,21 +1,20 @@
 using System;
-using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.MessagePublisher.Abstractions;
 
 namespace RabbitMQ.Next.MessagePublisher
 {
-    internal class ReturnedMessageDelegateWrapper : IDisposable
+    internal class ReturnedMessageHandlerWrapper : IDisposable
     {
-        private ReturnedMessageDelegate item;
+        private Action<IReturnedMessage, IContent> handler;
 
-        public ReturnedMessageDelegateWrapper(ReturnedMessageDelegate item)
+        public ReturnedMessageHandlerWrapper(Action<IReturnedMessage, IContent> handler)
         {
-            this.item = item;
+            this.handler = handler;
         }
 
         public bool Invoke(IReturnedMessage message, IContent content)
         {
-            var c = this.item;
+            var c = this.handler;
             if (c == null)
             {
                 return false;
@@ -25,6 +24,6 @@ namespace RabbitMQ.Next.MessagePublisher
             return true;
         }
 
-        public void Dispose() => this.item = null;
+        public void Dispose() => this.handler = null;
     }
 }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
@@ -40,9 +41,10 @@ namespace RabbitMQ.Next.MessagePublisher
 
         public async ValueTask PublishAsync<TContent>(TContent content, string exchange = null, string routingKey = null, IMessageProperties properties = null, PublishFlags flags = PublishFlags.None, CancellationToken cancellationToken = default)
         {
+            this.CheckDisposed();
             if (this.isCompleted)
             {
-                throw new ChannelClosedException();
+                throw new ObjectDisposedException(this.GetType().Name);
             }
 
             await this.publishQueueSync.WaitAsync(cancellationToken);

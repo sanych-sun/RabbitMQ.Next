@@ -4,14 +4,14 @@ using RabbitMQ.Next.MessagePublisher.Abstractions;
 
 namespace RabbitMQ.Next.MessagePublisher
 {
-    internal class ReturnedMessageDelegateCollection
+    internal class ReturnedMessageHandlerCollection
     {
         private readonly object sync = new object();
-        private readonly List<ReturnedMessageDelegateWrapper> items = new List<ReturnedMessageDelegateWrapper>();
+        private readonly List<ReturnedMessageHandlerWrapper> items = new List<ReturnedMessageHandlerWrapper>();
 
-        public IDisposable Add(ReturnedMessageDelegate @delegate)
+        public IDisposable Add(Action<IReturnedMessage, IContent> handler)
         {
-            var wrapped = new ReturnedMessageDelegateWrapper(@delegate);
+            var wrapped = new ReturnedMessageHandlerWrapper(handler);
 
             lock (this.sync)
             {

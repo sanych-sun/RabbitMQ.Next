@@ -18,6 +18,8 @@ namespace RabbitMQ.Next.MessagePublisher
 
         public async ValueTask PublishAsync<TContent>(TContent content, string exchange = null, string routingKey = null, IMessageProperties properties = null, PublishFlags flags = PublishFlags.None, CancellationToken cancellationToken = default)
         {
+            this.CheckDisposed();
+
             var message = this.ApplyTransformers(content, exchange, routingKey, properties, flags);
 
             using var bufferWriter = this.Connection.BufferPool.Create();

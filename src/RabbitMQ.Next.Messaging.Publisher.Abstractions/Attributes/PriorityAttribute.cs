@@ -1,9 +1,10 @@
 using System;
+using RabbitMQ.Next.MessagePublisher.Abstractions.Transformers;
 
 namespace RabbitMQ.Next.MessagePublisher.Abstractions.Attributes
 {
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Assembly, AllowMultiple = false)]
-    public class PriorityAttribute : Attribute
+    public class PriorityAttribute : MessageAttributeBase
     {
         public PriorityAttribute(byte priority)
         {
@@ -11,5 +12,13 @@ namespace RabbitMQ.Next.MessagePublisher.Abstractions.Attributes
         }
 
         public byte Priority { get; }
+
+        public override void Apply(IMessageBuilder message)
+        {
+            if (!message.Priority.HasValue)
+            {
+                message.SetPriority(this.Priority);
+            }
+        }
     }
 }

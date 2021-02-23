@@ -20,12 +20,12 @@ namespace RabbitMQ.Next.MessagePublisher
 
         private readonly IMethodParser<ReturnMethod> returnMethodParser;
         private readonly ISerializer serializer;
-        private readonly ReturnedMessageDelegateCollection handlers;
+        private readonly ReturnedMessageHandlerCollection handlers;
         private State state = State.None;
         private ReturnedMessage message;
 
 
-        public ReturnedMessagesFrameHandler(IMethodParser<ReturnMethod> returnMethodParser, ISerializer serializer, ReturnedMessageDelegateCollection handlers)
+        public ReturnedMessagesFrameHandler(IMethodParser<ReturnMethod> returnMethodParser, ISerializer serializer, ReturnedMessageHandlerCollection handlers)
         {
             this.returnMethodParser = returnMethodParser;
             this.serializer = serializer;

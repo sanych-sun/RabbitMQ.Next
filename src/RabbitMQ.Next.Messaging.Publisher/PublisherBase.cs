@@ -16,10 +16,9 @@ namespace RabbitMQ.Next.MessagePublisher
     internal abstract class PublisherBase : IAsyncDisposable
     {
         private readonly SemaphoreSlim channelOpenSync = new SemaphoreSlim(1,1);
-        private readonly ReturnedMessageDelegateCollection returnedMessageHandlers = new ReturnedMessageDelegateCollection();
+        private readonly ReturnedMessageHandlerCollection returnedMessageHandlers = new ReturnedMessageHandlerCollection();
 
         private IChannel channel;
-        private bool disposed;
 
         protected PublisherBase(IConnection connection, ISerializer serializer, IReadOnlyList<IMessageTransformer> transformers)
         {
@@ -30,7 +29,7 @@ namespace RabbitMQ.Next.MessagePublisher
 
         public ValueTask DisposeAsync() => this.DisposeAsyncCore();
 
-        public IDisposable RegisterReturnedMessageHandler(ReturnedMessageDelegate returnedMessageHandler)
+        public IDisposable RegisterReturnedMessageHandler(Action<IReturnedMessage, IContent> returnedMessageHandler)
             => this.returnedMessageHandlers.Add(returnedMessageHandler);
 
         protected IConnection Connection { get; }
@@ -39,9 +38,19 @@ namespace RabbitMQ.Next.MessagePublisher
 
         protected IReadOnlyList<IMessageTransformer> Transformers { get; }
 
+        protected bool IsDisposed { get; private set; }
+
+        protected void CheckDisposed()
+        {
+            if (this.IsDisposed)
+            {
+                throw new ObjectDisposedException(this.GetType().Name);
+            }
+        }
+
         protected virtual async ValueTask DisposeAsyncCore()
         {
-            if (this.disposed)
+            if (this.IsDisposed)
             {
                 return;
             }
@@ -52,7 +61,7 @@ namespace RabbitMQ.Next.MessagePublisher
                 return;
             }
 
-            this.disposed = true;
+            this.IsDisposed = true;
             await ch.CloseAsync();
         }
 
@@ -67,7 +76,7 @@ namespace RabbitMQ.Next.MessagePublisher
 
         protected async ValueTask UseChannelAsync<TState>(TState state, Func<IChannel, TState, Task> fn, CancellationToken cancellationToken = default)
         {
-            if (this.disposed)
+            if (this.IsDisposed)
             {
                 throw new ObjectDisposedException(this.GetType().Name);
             }
