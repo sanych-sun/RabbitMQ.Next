@@ -4,10 +4,15 @@ using RabbitMQ.Next.Serialization.Abstractions;
 
 namespace RabbitMQ.Next.Serialization
 {
-    public class StaticFormatterSource : IFormatterSource
+    public class FormatterSource : IFormatterSource
     {
         private readonly ReaderWriterLockSlim sync = new ReaderWriterLockSlim();
-        private readonly List<IFormatter> formatters = new List<IFormatter>();
+        private readonly List<IFormatter> formatters;
+
+        public FormatterSource(params IFormatter[] formatters)
+        {
+            this.formatters = new List<IFormatter>(formatters);
+        }
 
         public void Register(IFormatter formatter)
         {
