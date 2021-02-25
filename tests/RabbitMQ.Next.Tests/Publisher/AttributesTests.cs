@@ -1,6 +1,6 @@
 using System;
 using RabbitMQ.Next.Abstractions.Messaging;
-using RabbitMQ.Next.MessagePublisher.Abstractions.Attributes;
+using RabbitMQ.Next.Publisher.Attributes;
 using Xunit;
 
 namespace RabbitMQ.Next.Tests.Publisher
