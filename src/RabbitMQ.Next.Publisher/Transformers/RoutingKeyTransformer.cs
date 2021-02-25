@@ -4,18 +4,18 @@ namespace RabbitMQ.Next.Publisher.Transformers
 {
     public class RoutingKeyTransformer : IMessageTransformer
     {
-        private readonly string routingKet;
+        private readonly string routingKey;
 
         public RoutingKeyTransformer(string routingKey)
         {
-            this.routingKet = routingKey;
+            this.routingKey = routingKey;
         }
 
         public void Apply<TPayload>(TPayload payload, IMessageBuilder message)
         {
             if (string.IsNullOrEmpty(message.RoutingKey))
             {
-                message.RoutingKey = this.routingKet;
+                message.SetRoutingKey(this.routingKey);
             }
         }
     }

@@ -17,7 +17,7 @@ namespace RabbitMQ.Next.Publisher.Attributes
         {
             if (string.IsNullOrEmpty(message.RoutingKey))
             {
-                message.RoutingKey = this.RoutingKey;
+                message.SetRoutingKey(this.RoutingKey);
             }
         }
     }

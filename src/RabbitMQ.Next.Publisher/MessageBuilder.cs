@@ -57,11 +57,16 @@ namespace RabbitMQ.Next.Publisher
 
         public string ApplicationId => this.applicationId ?? this.baseProperties?.ApplicationId;
 
-        public string Exchange { get; set; }
+        public string Exchange { get; private set; }
 
-        public string RoutingKey { get; set; }
+        public string RoutingKey { get; private set; }
 
-        public PublishFlags PublishFlags { get; set; }
+        public PublishFlags PublishFlags { get; private set; }
+        public void SetExchange(string value) => this.Exchange = value;
+
+        public void SetRoutingKey(string value) => this.RoutingKey = value;
+
+        public void SetPublishFlags(PublishFlags value) => this.PublishFlags = value;
 
         public void SetHeader(string key, object value)
         {

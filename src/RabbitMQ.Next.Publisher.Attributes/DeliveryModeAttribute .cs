@@ -18,7 +18,7 @@ namespace RabbitMQ.Next.Publisher.Attributes
         {
             if (message.DeliveryMode == DeliveryMode.Unset)
             {
-                message.SetDeliveryMode(message.DeliveryMode);
+                message.SetDeliveryMode(this.DeliveryMode);
             }
         }
     }

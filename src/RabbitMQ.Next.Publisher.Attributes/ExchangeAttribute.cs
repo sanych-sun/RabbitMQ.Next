@@ -17,7 +17,7 @@ namespace RabbitMQ.Next.Publisher.Attributes
         {
             if (string.IsNullOrEmpty(message.Exchange))
             {
-                message.Exchange = this.Exchange;
+                message.SetExchange(this.Exchange);
             }
         }
     }

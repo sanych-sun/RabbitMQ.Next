@@ -8,8 +8,8 @@ namespace RabbitMQ.Next.Publisher.Attributes
 {
     internal sealed class AttributeTransformer : IMessageTransformer
     {
-        private static readonly ConcurrentDictionary<Assembly, IReadOnlyList<MessageAttributeBase>> AssemblyAttributesMap = new ConcurrentDictionary<Assembly, IReadOnlyList<MessageAttributeBase>>();
-        private static readonly ConcurrentDictionary<Type, IReadOnlyList<MessageAttributeBase>> TypeAttributesMap = new ConcurrentDictionary<Type, IReadOnlyList<MessageAttributeBase>>();
+        private readonly ConcurrentDictionary<Assembly, IReadOnlyList<MessageAttributeBase>> assemblyAttributesMap = new ConcurrentDictionary<Assembly, IReadOnlyList<MessageAttributeBase>>();
+        private readonly ConcurrentDictionary<Type, IReadOnlyList<MessageAttributeBase>> typeAttributesMap = new ConcurrentDictionary<Type, IReadOnlyList<MessageAttributeBase>>();
 
         private static readonly Func<Type, IReadOnlyList<MessageAttributeBase>> TypeAttributesFactory = type =>
         {
@@ -38,10 +38,10 @@ namespace RabbitMQ.Next.Publisher.Attributes
         {
             var type = typeof(TPayload);
 
-            var typeAttributes = TypeAttributesMap.GetOrAdd(type, TypeAttributesFactory);
+            var typeAttributes = this.typeAttributesMap.GetOrAdd(type, TypeAttributesFactory);
             this.ApplyAttributes(message, typeAttributes);
 
-            var assemblyAttributes = AssemblyAttributesMap.GetOrAdd(type.Assembly, AssemblyAttributesFactory);
+            var assemblyAttributes = this.assemblyAttributesMap.GetOrAdd(type.Assembly, AssemblyAttributesFactory);
             this.ApplyAttributes(message, assemblyAttributes);
         }
 
