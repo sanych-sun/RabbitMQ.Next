@@ -18,6 +18,5 @@ namespace RabbitMQ.Next.Publisher.Transformers
                 message.SetApplicationId(this.applicationId);
             }
         }
-
     }
 }

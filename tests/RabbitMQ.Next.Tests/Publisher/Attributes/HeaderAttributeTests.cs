@@ -19,7 +19,6 @@ namespace RabbitMQ.Next.Tests.Publisher.Attributes
 
         [Theory]
         [InlineData("header", "value")]
-        [InlineData("header", "value")]
         public void CanTransform(string header, string value)
         {
             var attr = new HeaderAttribute(header, value);
