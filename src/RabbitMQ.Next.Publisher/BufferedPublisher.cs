@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Buffers;
 using RabbitMQ.Next.Abstractions.Messaging;
-using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Abstractions.Transformers;
+using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Transport;
 
 namespace RabbitMQ.Next.Publisher
@@ -20,16 +20,13 @@ namespace RabbitMQ.Next.Publisher
         private readonly TaskCompletionSource<bool> queueCompleteTcs;
 
         private readonly ConcurrentQueue<((string Exchange, string RoutingKey, IMessageProperties Properties, PublishFlags PublishFlags) Message, IBufferWriter Content)> localQueue;
-        private readonly PublisherChannelOptions options;
         private volatile bool isCompleted;
 
 
-        public BufferedPublisher(IConnection connection, ISerializer serializer, IReadOnlyList<IMessageTransformer> transformers, PublisherChannelOptions options = null)
+        public BufferedPublisher(IConnection connection, ISerializer serializer, IReadOnlyList<IMessageTransformer> transformers, int bufferSize)
             : base(connection, serializer, transformers)
         {
-            this.options = options ?? new PublisherChannelOptions(50);
-
-            this.publishQueueSync = new SemaphoreSlim(this.options.LocalQueueLimit, this.options.LocalQueueLimit);
+            this.publishQueueSync = new SemaphoreSlim(bufferSize);
 
             this.queueCompleteTcs = new TaskCompletionSource<bool>();
             this.waitToRead = new AsyncManualResetEvent(true);

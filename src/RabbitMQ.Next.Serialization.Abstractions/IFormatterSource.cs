@@ -2,6 +2,6 @@ namespace RabbitMQ.Next.Serialization.Abstractions
 {
     public interface IFormatterSource
     {
-        IFormatter GetFormatter<TContent>();
+        bool TryGetFormatter<TContent>(out IFormatter formatter);
     }
 }

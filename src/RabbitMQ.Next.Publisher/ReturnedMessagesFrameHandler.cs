@@ -2,6 +2,7 @@ using System;
 using System.Buffers;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Methods;
+using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Methods;

@@ -1,5 +1,6 @@
 using System.Buffers;
 using RabbitMQ.Next.Publisher.Abstractions;
+using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Serialization.Abstractions;
 
 namespace RabbitMQ.Next.Publisher

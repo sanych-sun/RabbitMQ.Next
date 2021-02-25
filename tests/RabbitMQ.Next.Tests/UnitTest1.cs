@@ -2,14 +2,11 @@
 // using System.Buffers;
 // using System.Diagnostics;
 // using System.Threading.Tasks;
-// using RabbitMQ.Next.MessagePublisher;
-// using RabbitMQ.Next.MessagePublisher.Abstractions;
-// using RabbitMQ.Next.MessagePublisher.Abstractions.Attributes;
-// using RabbitMQ.Next.MessagePublisher.Abstractions.Transformers;
-// using RabbitMQ.Next.MessagePublisher.Transformers;
-// using RabbitMQ.Next.Serialization;
+// using RabbitMQ.Next.Publisher;
+// using RabbitMQ.Next.Publisher.Abstractions;
+// using RabbitMQ.Next.Publisher.Attributes;
+// using RabbitMQ.Next.Publisher.Transformers;
 // using RabbitMQ.Next.Serialization.Abstractions;
-// using RabbitMQ.Next.Serialization.Formatters;
 // using RabbitMQ.Next.Transport;
 // using Xunit;
 // using Xunit.Abstractions;
@@ -33,12 +30,12 @@
 //
 //             await connection.ConnectAsync();
 //
-//             var serializer = new Serializer(new FormatterSource(new StringFormatter(), new DummyFormatter()));
-//
-//             var publisher = connection.Publisher(serializer, new IMessageTransformer[]
-//             {
-//                 new ApplicationIdTransformer("unittest"),
-//             });
+//             var publisher = connection.NewPublisher(
+//                 builder => builder
+//                     .UseTransformer(new ApplicationIdTransformer("unittest"))
+//                     .UseAttributesTransformer()
+//                     .UseFormatter(new DummyFormatter())
+//                 );
 //
 //             var sw = Stopwatch.StartNew();
 //

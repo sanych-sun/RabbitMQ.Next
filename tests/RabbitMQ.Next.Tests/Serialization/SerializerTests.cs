@@ -12,54 +12,58 @@ namespace RabbitMQ.Next.Tests.Serialization
         [Fact]
         public void SerializeCallFormatter()
         {
-            this.MockFormatterSource<string>(out var formatterSource, out var formatter);
-            var serializer = new Serializer(formatterSource);
+            var mock = this.MockFormatterSource<string>();
+            var serializer = new Serializer(mock.Source);
 
             serializer.Serialize("test", new ArrayBufferWriter<byte>());
 
-            formatterSource.Received().GetFormatter<string>();
-            formatter.Received().Format("test", Arg.Any<IBufferWriter<byte>>());
+            mock.Source.Received().TryGetFormatter<string>(out Arg.Any<IFormatter>());
+            mock.Formatter.Received().Format("test", Arg.Any<IBufferWriter<byte>>());
         }
 
         [Fact]
         public void DeserializeCallFormatter()
         {
-            this.MockFormatterSource<string>(out var formatterSource, out var formatter);
-            var serializer = new Serializer(formatterSource);
+            var mock = this.MockFormatterSource<string>();
+            var serializer = new Serializer(mock.Source);
 
             serializer.Deserialize<string>(ReadOnlySequence<byte>.Empty);
 
-            formatterSource.Received().GetFormatter<string>();
-            formatter.Received().Parse<string>(Arg.Any<ReadOnlySequence<byte>>());
+            mock.Source.Received().TryGetFormatter<string>(out Arg.Any<IFormatter>());
+            mock.Formatter.Received().Parse<string>(Arg.Any<ReadOnlySequence<byte>>());
         }
 
         [Fact]
         public void SerializeThrowsOnNotSupportedTypes()
         {
-            var formatterSource = Substitute.For<IFormatterSource>();
-            formatterSource.GetFormatter<string>().Returns((IFormatter)null);
-            var serializer = new Serializer(formatterSource);
+            var mock = this.MockFormatterSource<string>();
+            var serializer = new Serializer(mock.Source);
 
-            Assert.Throws<InvalidOperationException>(() => serializer.Serialize("test", new ArrayBufferWriter<byte>()));
+            Assert.Throws<InvalidOperationException>(() => serializer.Serialize(42, new ArrayBufferWriter<byte>()));
         }
 
         [Fact]
         public void DeserializeThrowsOnNotSupportedTypes()
         {
-            var formatterSource = Substitute.For<IFormatterSource>();
-            formatterSource.GetFormatter<string>().Returns((IFormatter)null);
-            var serializer = new Serializer(formatterSource);
+            var mock = this.MockFormatterSource<string>();
+            var serializer = new Serializer(mock.Source);
 
-            Assert.Throws<InvalidOperationException>(() => serializer.Deserialize<string>(ReadOnlySequence<byte>.Empty));
+            Assert.Throws<InvalidOperationException>(() => serializer.Deserialize<int>(ReadOnlySequence<byte>.Empty));
         }
 
-        private void MockFormatterSource<TContent>(out IFormatterSource formatterSource, out IFormatter formatter)
+        private (IFormatterSource Source, IFormatter Formatter) MockFormatterSource<TContent>()
         {
-            formatter = Substitute.For<IFormatter>();
+            var formatter = Substitute.For<IFormatter>();
             formatter.CanHandle(typeof(TContent)).Returns(true);
 
-            formatterSource = Substitute.For<IFormatterSource>();
-            formatterSource.GetFormatter<string>().Returns(formatter);
+            var formatterSource = Substitute.For<IFormatterSource>();
+            formatterSource.TryGetFormatter<TContent>(out Arg.Any<IFormatter>())
+                .Returns(x => {
+                    x[0] = formatter;
+                    return true;
+                });
+
+            return (formatterSource, formatter);
         }
     }
 }

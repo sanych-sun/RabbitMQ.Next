@@ -1,25 +1,31 @@
-using System.Collections.Generic;
+using System;
 using RabbitMQ.Next.Abstractions;
-using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.Publisher.Abstractions;
-using RabbitMQ.Next.Publisher.Abstractions.Transformers;
-using RabbitMQ.Next.Publisher.Transformers;
+using RabbitMQ.Next.Serialization;
 
 namespace RabbitMQ.Next.Publisher
 {
     public static class ConnectionExtensions
     {
-        public static IPublisher Publisher(this IConnection connection,
-            ISerializer serializer,
-            IReadOnlyList<IMessageTransformer> transformers = null,
-            PublisherChannelOptions options = null)
+        public static IPublisher NewPublisher(this IConnection connection, Action<IPublisherBuilder> builder)
         {
-            if (options == null || options.LocalQueueLimit <= 1)
+            var publisherBuilder = new PublisherBuilder();
+            builder?.Invoke(publisherBuilder);
+
+            var formatters = FormatterSourceHelper.CombineFormatters(publisherBuilder.Formatters, publisherBuilder.FormatterSources);
+            if (formatters == null)
             {
-                return new Publisher(connection, serializer, transformers);
+                throw new InvalidOperationException("Should configure at least one Formatter or FormatterSource");
             }
 
-            return new BufferedPublisher(connection, serializer, transformers, options);
+            var serializer = new Serializer(formatters);
+
+            if (publisherBuilder.BufferSize == 0)
+            {
+                return new Publisher(connection, serializer, publisherBuilder.Transformers);
+            }
+
+            return new BufferedPublisher(connection, serializer, publisherBuilder.Transformers, publisherBuilder.BufferSize);
         }
     }
 }

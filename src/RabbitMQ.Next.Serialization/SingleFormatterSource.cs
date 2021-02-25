@@ -11,14 +11,16 @@ namespace RabbitMQ.Next.Serialization
             this.wrappedFormatter = formatter;
         }
 
-        public IFormatter GetFormatter<TContent>()
+        public bool TryGetFormatter<TContent>(out IFormatter formatter)
         {
             if (this.wrappedFormatter.CanHandle(typeof(TContent)))
             {
-                return this.wrappedFormatter;
+                formatter = this.wrappedFormatter;
+                return true;
             }
 
-            return null;
+            formatter = null;
+            return false;
         }
     }
 }

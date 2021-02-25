@@ -24,13 +24,12 @@ namespace RabbitMQ.Next.Serialization
 
         private IFormatter GetFormatter<TContent>()
         {
-            var formatter = this.formatterSource.GetFormatter<TContent>();
-            if (formatter == null)
+            if (this.formatterSource.TryGetFormatter<TContent>(out var formatter))
             {
-                throw new InvalidOperationException($"Cannot resolve formatter for the type: {typeof(TContent).FullName}");
+                return formatter;
             }
 
-            return formatter;
+            throw new InvalidOperationException($"Cannot resolve formatter for the type: {typeof(TContent).FullName}");
         }
     }
 }

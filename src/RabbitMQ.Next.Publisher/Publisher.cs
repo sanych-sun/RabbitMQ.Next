@@ -5,7 +5,7 @@ using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Abstractions.Transformers;
-using RabbitMQ.Next.Serialization.Abstractions;
+using RabbitMQ.Next.Serialization;
 
 namespace RabbitMQ.Next.Publisher
 {
