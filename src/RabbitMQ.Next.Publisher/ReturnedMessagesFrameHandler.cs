@@ -1,9 +1,10 @@
 using System;
 using System.Buffers;
+using System.Collections.Generic;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Methods;
+using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Serialization;
-using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Methods;
 using RabbitMQ.Next.Transport.Methods.Basic;
@@ -20,16 +21,19 @@ namespace RabbitMQ.Next.Publisher
         }
 
         private readonly IMethodParser<ReturnMethod> returnMethodParser;
-        private readonly ISerializer serializer;
-        private readonly ReturnedMessageHandlerCollection handlers;
+        private readonly ContentAccessor contentAccessor;
+        private readonly IReadOnlyList<Func<IReturnedMessage, IContent, bool>> handlers;
         private State state = State.None;
         private ReturnedMessage message;
 
 
-        public ReturnedMessagesFrameHandler(IMethodParser<ReturnMethod> returnMethodParser, ISerializer serializer, ReturnedMessageHandlerCollection handlers)
+        public ReturnedMessagesFrameHandler(
+            IMethodParser<ReturnMethod> returnMethodParser,
+            ISerializer serializer,
+            IReadOnlyList<Func<IReturnedMessage, IContent, bool>> handlers)
         {
             this.returnMethodParser = returnMethodParser;
-            this.serializer = serializer;
+            this.contentAccessor = new ContentAccessor(serializer);
             this.handlers = handlers;
         }
 
@@ -101,8 +105,16 @@ namespace RabbitMQ.Next.Publisher
                 return false;
             }
 
-            this.handlers.Invoke(this.message, new Content(this.serializer, payload));
+            this.contentAccessor.SetPayload(payload);
+            for (var i = 0; i < this.handlers.Count; i++)
+            {
+                if (this.handlers[i].Invoke(this.message, this.contentAccessor))
+                {
+                    break;
+                }
+            }
 
+            this.contentAccessor.SetPayload(ReadOnlySequence<byte>.Empty);
             this.state = State.None;
             return true;
         }

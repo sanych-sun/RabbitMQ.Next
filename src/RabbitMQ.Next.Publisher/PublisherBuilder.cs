@@ -11,7 +11,7 @@ namespace RabbitMQ.Next.Publisher
         private List<IMessageTransformer> transformers;
         private List<IFormatter> formatters;
         private List<IFormatterSource> formatterSources;
-        private List<Action<IReturnedMessage, IContent>> returnedMessageHandlers;
+        private List<Func<IReturnedMessage, IContent, bool>> returnedMessageHandlers;
 
         public int BufferSize { get; private set; }
 
@@ -21,7 +21,7 @@ namespace RabbitMQ.Next.Publisher
 
         public IReadOnlyList<IFormatterSource> FormatterSources => this.formatterSources;
 
-        public IReadOnlyList<Action<IReturnedMessage, IContent>> ReturnedMessageHandlers => this.returnedMessageHandlers;
+        public IReadOnlyList<Func<IReturnedMessage, IContent, bool>> ReturnedMessageHandlers => this.returnedMessageHandlers;
 
         IPublisherBuilder IPublisherBuilder.AllowBuffer(int messages)
         {
@@ -54,9 +54,9 @@ namespace RabbitMQ.Next.Publisher
             return this;
         }
 
-        IPublisherBuilder IPublisherBuilder.AddReturnedMessagesHandler(Action<IReturnedMessage, IContent> returnedMessageHandler)
+        IPublisherBuilder IPublisherBuilder.AddReturnedMessagesHandler(Func<IReturnedMessage, IContent, bool> returnedMessageHandler)
         {
-            this.returnedMessageHandlers ??= new List<Action<IReturnedMessage, IContent>>();
+            this.returnedMessageHandlers ??= new List<Func<IReturnedMessage, IContent, bool>>();
             this.returnedMessageHandlers.Add(returnedMessageHandler);
             return this;
         }

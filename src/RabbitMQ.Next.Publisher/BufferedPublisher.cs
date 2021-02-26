@@ -23,8 +23,8 @@ namespace RabbitMQ.Next.Publisher
         private volatile bool isCompleted;
 
 
-        public BufferedPublisher(IConnection connection, ISerializer serializer, IReadOnlyList<IMessageTransformer> transformers, int bufferSize)
-            : base(connection, serializer, transformers)
+        public BufferedPublisher(IConnection connection, ISerializer serializer, IReadOnlyList<IMessageTransformer> transformers, IReadOnlyList<Func<IReturnedMessage, IContent, bool>> returnedMessageHandlers, int bufferSize)
+            : base(connection, serializer, transformers, returnedMessageHandlers)
         {
             this.publishQueueSync = new SemaphoreSlim(bufferSize);
 
@@ -66,7 +66,6 @@ namespace RabbitMQ.Next.Publisher
 
         private async Task MessageSendLoop()
         {
-
             while (!this.isCompleted)
             {
                 await this.waitToRead.WaitAsync();

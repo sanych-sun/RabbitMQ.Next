@@ -22,10 +22,10 @@ namespace RabbitMQ.Next.Publisher
 
             if (publisherBuilder.BufferSize == 0)
             {
-                return new Publisher(connection, serializer, publisherBuilder.Transformers);
+                return new Publisher(connection, serializer, publisherBuilder.Transformers, publisherBuilder.ReturnedMessageHandlers);
             }
 
-            return new BufferedPublisher(connection, serializer, publisherBuilder.Transformers, publisherBuilder.BufferSize);
+            return new BufferedPublisher(connection, serializer, publisherBuilder.Transformers, publisherBuilder.ReturnedMessageHandlers, publisherBuilder.BufferSize);
         }
     }
 }

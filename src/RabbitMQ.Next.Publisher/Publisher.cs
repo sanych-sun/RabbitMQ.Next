@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,8 +12,8 @@ namespace RabbitMQ.Next.Publisher
 {
     internal class Publisher : PublisherBase, IPublisher
     {
-        public Publisher(IConnection connection, ISerializer serializer, IReadOnlyList<IMessageTransformer> transformers)
-            : base(connection, serializer, transformers)
+        public Publisher(IConnection connection, ISerializer serializer, IReadOnlyList<IMessageTransformer> transformers, IReadOnlyList<Func<IReturnedMessage, IContent, bool>> returnedMessageHandlers)
+            : base(connection, serializer, transformers, returnedMessageHandlers)
         {
         }
 

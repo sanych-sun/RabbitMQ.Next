@@ -1,18 +1,21 @@
 using System.Buffers;
 using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Serialization;
-using RabbitMQ.Next.Serialization.Abstractions;
 
 namespace RabbitMQ.Next.Publisher
 {
-    internal class Content : IContent
+    internal class ContentAccessor : IContent
     {
         private readonly ISerializer serializer;
-        private readonly ReadOnlySequence<byte> payload;
+        private ReadOnlySequence<byte> payload;
 
-        public Content(ISerializer serializer, ReadOnlySequence<byte> payload)
+        public ContentAccessor(ISerializer serializer)
         {
             this.serializer = serializer;
+        }
+
+        internal void SetPayload(ReadOnlySequence<byte> payload)
+        {
             this.payload = payload;
         }
 

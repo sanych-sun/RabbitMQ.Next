@@ -8,9 +8,7 @@ using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Abstractions.Transformers;
-using RabbitMQ.Next.Publisher.Transformers;
 using RabbitMQ.Next.Serialization;
-using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.Transport.Methods.Basic;
 
 namespace RabbitMQ.Next.Publisher
@@ -18,21 +16,21 @@ namespace RabbitMQ.Next.Publisher
     internal abstract class PublisherBase : IAsyncDisposable
     {
         private readonly SemaphoreSlim channelOpenSync = new SemaphoreSlim(1,1);
-        private readonly ReturnedMessageHandlerCollection returnedMessageHandlers = new ReturnedMessageHandlerCollection();
+        private readonly IFrameHandler returnedFrameHandler;
 
         private IChannel channel;
 
-        protected PublisherBase(IConnection connection, ISerializer serializer, IReadOnlyList<IMessageTransformer> transformers)
+        protected PublisherBase(IConnection connection, ISerializer serializer, IReadOnlyList<IMessageTransformer> transformers, IReadOnlyList<Func<IReturnedMessage, IContent, bool>> returnedMessageHandlers)
         {
             this.Connection = connection;
             this.Serializer = serializer;
             this.Transformers = transformers;
+
+            var returnMethodParser = this.Connection.MethodRegistry.GetParser<ReturnMethod>();
+            this.returnedFrameHandler = new ReturnedMessagesFrameHandler(returnMethodParser, serializer, returnedMessageHandlers);
         }
 
         public ValueTask DisposeAsync() => this.DisposeAsyncCore();
-
-        public IDisposable RegisterReturnedMessageHandler(Action<IReturnedMessage, IContent> returnedMessageHandler)
-            => this.returnedMessageHandlers.Add(returnedMessageHandler);
 
         protected IConnection Connection { get; }
 
@@ -111,6 +109,7 @@ namespace RabbitMQ.Next.Publisher
 
         private async ValueTask<IChannel> DoGetChannelAsync(CancellationToken cancellationToken)
         {
+            // TODO: implement functionality to wait for Open state unless connection is closed
             if (this.Connection.State != ConnectionState.Open)
             {
                 throw new InvalidOperationException("Connection should be in Open state to use the API");
@@ -120,10 +119,7 @@ namespace RabbitMQ.Next.Publisher
 
             try
             {
-                var returnMethodParser = this.Connection.MethodRegistry.GetParser<ReturnMethod>();
-                this.channel ??= await this.Connection.CreateChannelAsync(
-                    new IFrameHandler[] { new ReturnedMessagesFrameHandler(returnMethodParser, this.Serializer, this.returnedMessageHandlers) },
-                    cancellationToken);
+                this.channel ??= await this.Connection.CreateChannelAsync(new [] { this.returnedFrameHandler }, cancellationToken);
                 return this.channel;
             }
             finally
