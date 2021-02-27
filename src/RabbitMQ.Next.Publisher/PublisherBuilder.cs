@@ -54,7 +54,7 @@ namespace RabbitMQ.Next.Publisher
             return this;
         }
 
-        IPublisherBuilder IPublisherBuilder.AddReturnedMessagesHandler(Func<IReturnedMessage, IContent, bool> returnedMessageHandler)
+        IPublisherBuilder IPublisherBuilder.AddReturnedMessageHandler(Func<IReturnedMessage, IContent, bool> returnedMessageHandler)
         {
             this.returnedMessageHandlers ??= new List<Func<IReturnedMessage, IContent, bool>>();
             this.returnedMessageHandlers.Add(returnedMessageHandler);

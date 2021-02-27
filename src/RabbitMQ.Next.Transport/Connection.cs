@@ -62,6 +62,8 @@ namespace RabbitMQ.Next.Transport
 
         public async Task ConnectAsync()
         {
+            // TODO: adopt authentication_failure_close capability to handle auth errors
+
             await this.ChangeStateAsync(ConnectionState.Connecting);
             this.socket = await EndpointResolver.OpenSocketAsync(this.connectionString.EndPoints);
 

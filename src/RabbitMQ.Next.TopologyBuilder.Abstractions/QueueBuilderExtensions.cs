@@ -53,5 +53,8 @@ namespace RabbitMQ.Next.TopologyBuilder.Abstractions
             builder.SetArgument("x-queue-mode", "lazy");
             return builder;
         }
+
+        // TODO: add support of quorum queue attributes
+        // https://www.rabbitmq.com/quorum-queues.html
     }
 }
