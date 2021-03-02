@@ -10,12 +10,17 @@ namespace RabbitMQ.Next.Abstractions.Channels
             where TRequest : struct, IOutgoingMethod
             where TResponse : struct, IIncomingMethod
         {
-            return channel.UseSyncChannel(async (ch, state) =>
-            {
-                var waitTask = ch.WaitAsync<TResponse>(state.cancellationToken);
-                await ch.SendAsync(state.request);
-                return await waitTask;
-            }, (request, cancellationToken));
+            return channel.UseSyncChannel((request, cancellationToken), (ch, state) =>
+                ch.SendAsync<TRequest, TResponse>(state.request, state.cancellationToken));
+        }
+
+        public static async Task<TResponse> SendAsync<TRequest, TResponse>(this ISynchronizedChannel channel, TRequest request, CancellationToken cancellationToken = default)
+            where TRequest : struct, IOutgoingMethod
+            where TResponse : struct, IIncomingMethod
+        {
+            var waitTask = channel.WaitAsync<TResponse>(cancellationToken);
+            await channel.SendAsync(request);
+            return await waitTask;
         }
     }
 }

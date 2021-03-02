@@ -7,7 +7,9 @@ namespace RabbitMQ.Next.Abstractions.Channels
     {
         bool IsClosed { get; }
 
-        Task<TResult> UseSyncChannel<TResult, TState>(Func<ISynchronizedChannel, TState, Task<TResult>> fn, TState state);
+        Task UseSyncChannel<TState>(TState state, Func<ISynchronizedChannel, TState, Task> fn);
+
+        Task<TResult> UseSyncChannel<TResult, TState>(TState state, Func<ISynchronizedChannel, TState, Task<TResult>> fn);
 
         Task CloseAsync();
 

@@ -77,7 +77,7 @@ namespace RabbitMQ.Next.Transport
 
             await this.SendProtocolHeaderAsync();
 
-            var negotiationResults = await connectionChannel.UseSyncChannel(async (ch, connection) =>
+            var negotiationResults = await connectionChannel.UseSyncChannel(this.connectionString, async (ch, connection) =>
             {
                 var startMethod = ch.WaitAsync<StartMethod>();
                 // TODO: make it dynamic based on assembly version and allow add extra properties
@@ -99,7 +99,7 @@ namespace RabbitMQ.Next.Transport
                 await openOkTask;
 
                 return new ConnectionNegotiationResults(tuneMethod.ChannelMax, tuneMethod.MaxFrameSize, tuneMethod.HeartbeatInterval);
-            }, this.connectionString);
+            });
 
             this.heartbeatInterval = negotiationResults.HeartbeatInterval / 2;
             this.bufferPool.MaxFrameSize = (int)negotiationResults.MaxFrameSize;

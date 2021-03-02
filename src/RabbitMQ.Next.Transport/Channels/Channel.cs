@@ -87,7 +87,21 @@ namespace RabbitMQ.Next.Transport.Channels
             }
         }
 
-        public async Task<TResult> UseSyncChannel<TResult, TState>(Func<ISynchronizedChannel, TState, Task<TResult>> fn, TState state)
+        public async Task UseSyncChannel<TState>(TState state, Func<ISynchronizedChannel, TState, Task> fn)
+        {
+            await this.senderSync.WaitAsync();
+
+            try
+            {
+                await fn(this.syncChannel, state);
+            }
+            finally
+            {
+                this.senderSync.Release();
+            }
+        }
+
+        public async Task<TResult> UseSyncChannel<TResult, TState>(TState state, Func<ISynchronizedChannel, TState, Task<TResult>> fn)
         {
             await this.senderSync.WaitAsync();
 

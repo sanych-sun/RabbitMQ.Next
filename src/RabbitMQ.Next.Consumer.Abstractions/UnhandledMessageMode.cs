@@ -8,5 +8,7 @@ namespace RabbitMQ.Next.Consumer.Abstractions
         Drop = 0,
         Requeue = 1 << 0,
         StopConsumer = 1 << 1,
+
+        Default = Requeue | StopConsumer,
     }
 }

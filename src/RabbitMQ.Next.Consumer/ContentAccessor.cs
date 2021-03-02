@@ -1,8 +1,8 @@
 using System.Buffers;
-using RabbitMQ.Next.Publisher.Abstractions;
+using RabbitMQ.Next.Consumer.Abstractions;
 using RabbitMQ.Next.Serialization;
 
-namespace RabbitMQ.Next.Publisher
+namespace RabbitMQ.Next.Consumer
 {
     internal class ContentAccessor : IContent
     {
@@ -20,5 +20,8 @@ namespace RabbitMQ.Next.Publisher
         }
 
         public T GetContent<T>() => this.serializer.Deserialize<T>(this.content);
+
+        public IContent AsDetached()
+            => new DetachedContent(this.serializer, this.content);
     }
 }

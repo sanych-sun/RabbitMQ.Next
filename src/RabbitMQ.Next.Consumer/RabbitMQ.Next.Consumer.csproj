@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RabbitMQ.Next.Consumer.Abstractions\RabbitMQ.Next.Consumer.Abstractions.csproj" />
+    <ProjectReference Include="..\RabbitMQ.Next.Serialization\RabbitMQ.Next.Serialization.csproj" />
+    <ProjectReference Include="..\RabbitMQ.Next.Transport\RabbitMQ.Next.Transport.csproj" />
+  </ItemGroup>
+
+</Project>
