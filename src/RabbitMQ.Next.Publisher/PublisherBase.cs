@@ -20,7 +20,7 @@ namespace RabbitMQ.Next.Publisher
 
         private IChannel channel;
 
-        protected PublisherBase(IConnection connection, ISerializer serializer, IReadOnlyList<IMessageTransformer> transformers, IReadOnlyList<Func<IReturnedMessage, IContent, bool>> returnedMessageHandlers)
+        protected PublisherBase(IConnection connection, ISerializer serializer, IReadOnlyList<IMessageTransformer> transformers, IReadOnlyList<Func<ReturnedMessage, IContent, bool>> returnedMessageHandlers)
         {
             this.Connection = connection;
             this.Serializer = serializer;

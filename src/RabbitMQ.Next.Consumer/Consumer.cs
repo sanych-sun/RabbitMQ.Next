@@ -9,14 +9,13 @@ using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Consumer.Abstractions;
 using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Transport.Methods.Basic;
-using RabbitMQ.Next.Transport.Methods.Channel;
 
 namespace RabbitMQ.Next.Consumer
 {
     internal class Consumer : IConsumer
     {
         private readonly IConnection connection;
-        private readonly List<Func<IDeliveredMessage, IContent, ValueTask<bool>>> handlers;
+        private readonly List<Func<DeliveredMessage, IContent, ValueTask<bool>>> handlers;
         private readonly ConsumerInitializer initializer;
         private readonly Func<IAcknowledgement, IAcknowledgement> acknowledgerFactory;
         private readonly UnhandledMessageMode onUnhandledMessage;
@@ -25,13 +24,13 @@ namespace RabbitMQ.Next.Consumer
         private readonly ContentAccessor contentAccessor;
         private readonly TaskCompletionSource<bool> consumeTcs;
 
-        private IChannel channel = null;
-        private IAcknowledgement acknowledgement = null;
+        private IChannel channel;
+        private IAcknowledgement acknowledgement;
 
         public Consumer(
             IConnection connection,
             ISerializer serializer,
-            List<Func<IDeliveredMessage, IContent, ValueTask<bool>>> handlers,
+            List<Func<DeliveredMessage, IContent, ValueTask<bool>>> handlers,
             ConsumerInitializer initializer,
             Func<IAcknowledgement, IAcknowledgement> acknowledgerFactory,
             UnhandledMessageMode onUnhandledMessage,
@@ -60,9 +59,6 @@ namespace RabbitMQ.Next.Consumer
             this.channel = await this.connection.CreateChannelAsync(new IFrameHandler[] { this.frameHandler });
             await this.InitializeConsumerAsync(this.channel);
 
-            // await this.channel.UseSyncChannel(true, (ch, flow)
-            //     => ch.SendAsync<FlowMethod, FlowOkMethod>(new FlowMethod(flow)));
-
             cancellation.Register(() => this.CancelConsumeAsync());
 
             await this.consumeTcs.Task;
@@ -85,6 +81,12 @@ namespace RabbitMQ.Next.Consumer
             await this.channel.UseSyncChannel(this.initializer, (ch, initializer) =>
                 initializer.CancelAsync(ch));
 
+            await this.acknowledgement.DisposeAsync();
+            await this.channel.CloseAsync();
+
+            this.acknowledgement = null;
+            this.channel = null;
+
             if (ex == null)
             {
                 this.consumeTcs.SetResult(true);
@@ -104,19 +106,11 @@ namespace RabbitMQ.Next.Consumer
         private async ValueTask HandleMessageAsync(DeliverMethod method, IMessageProperties properties, ReadOnlySequence<byte> content)
         {
             this.contentAccessor.SetPayload(content);
-            var message = new DeliveredMessage
-            {
-                Exchange = method.Exchange,
-                RoutingKey = method.RoutingKey,
-                Properties = properties,
-                Redelivered = method.Redelivered,
-                ConsumerTag = method.ConsumerTag,
-                DeliveryTag = method.DeliveryTag,
-            };
+            var message = new DeliveredMessage(method.Exchange, method.RoutingKey, properties, method.Redelivered, method.ConsumerTag, method.DeliveryTag);
 
             for (var i = 0; i < this.handlers.Count; i++)
             {
-                bool handled = false;
+                bool handled ;
                 try
                 {
                     handled = await this.handlers[i].Invoke(message, this.contentAccessor);

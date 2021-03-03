@@ -2,16 +2,25 @@ using RabbitMQ.Next.Abstractions.Messaging;
 
 namespace RabbitMQ.Next.Publisher.Abstractions
 {
-    public interface IReturnedMessage
+    public readonly struct ReturnedMessage
     {
-        string Exchange { get; }
+        public ReturnedMessage(string exchange, string routingKey, IMessageProperties properties, ushort replyCode, string replyText)
+        {
+            this.Exchange = exchange;
+            this.RoutingKey = routingKey;
+            this.Properties = properties;
+            this.ReplyCode = replyCode;
+            this.ReplyText = replyText;
+        }
 
-        string RoutingKey { get; }
+        public string Exchange { get; }
 
-        IMessageProperties Properties { get; }
+        public string RoutingKey { get; }
 
-        ushort ReplyCode { get; }
+        public IMessageProperties Properties { get; }
 
-        string ReplyText { get; }
+        public ushort ReplyCode { get; }
+
+        public string ReplyText { get; }
     }
 }

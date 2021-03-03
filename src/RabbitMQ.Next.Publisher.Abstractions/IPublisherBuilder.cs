@@ -14,6 +14,6 @@ namespace RabbitMQ.Next.Publisher.Abstractions
 
         IPublisherBuilder UseTransformer(IMessageTransformer transformer);
 
-        IPublisherBuilder AddReturnedMessageHandler(Func<IReturnedMessage, IContent, bool> returnedMessageHandler);
+        IPublisherBuilder AddReturnedMessageHandler(Func<ReturnedMessage, IContent, bool> returnedMessageHandler);
     }
 }

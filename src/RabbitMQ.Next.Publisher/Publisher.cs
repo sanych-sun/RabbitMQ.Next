@@ -12,7 +12,7 @@ namespace RabbitMQ.Next.Publisher
 {
     internal class Publisher : PublisherBase, IPublisher
     {
-        public Publisher(IConnection connection, ISerializer serializer, IReadOnlyList<IMessageTransformer> transformers, IReadOnlyList<Func<IReturnedMessage, IContent, bool>> returnedMessageHandlers)
+        public Publisher(IConnection connection, ISerializer serializer, IReadOnlyList<IMessageTransformer> transformers, IReadOnlyList<Func<ReturnedMessage, IContent, bool>> returnedMessageHandlers)
             : base(connection, serializer, transformers, returnedMessageHandlers)
         {
         }

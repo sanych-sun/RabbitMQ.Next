@@ -2,9 +2,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions.Channels;
-using RabbitMQ.Next.Consumer.Abstractions;
 using RabbitMQ.Next.Transport.Methods.Basic;
-using RabbitMQ.Next.Transport.Methods.Channel;
 
 namespace RabbitMQ.Next.Consumer
 {
@@ -20,15 +18,14 @@ namespace RabbitMQ.Next.Consumer
 
         public readonly IReadOnlyList<QueueConsumerBuilder> Queues;
 
-        public uint PrefetchSize { get; private set; }
+        public uint PrefetchSize { get; }
 
-        public ushort PrefetchCount { get; private set; }
+        public ushort PrefetchCount { get; }
 
-        public bool NoAck { get; private set; }
+        public bool NoAck { get; }
 
         public async Task InitConsumerAsync(ISynchronizedChannel channel, CancellationToken cancellation)
         {
-            //await channel.SendAsync<FlowMethod, FlowOkMethod>(new FlowMethod(false), cancellation);
             await channel.SendAsync<QosMethod, QosOkMethod>(new QosMethod(this.PrefetchSize, this.PrefetchCount, false), cancellation);
 
             for (var i = 0; i < this.Queues.Count; i++)

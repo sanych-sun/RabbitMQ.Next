@@ -22,6 +22,6 @@ namespace RabbitMQ.Next.Consumer.Abstractions
 
         IConsumerBuilder OnPoisonMessage(UnhandledMessageMode mode);
 
-        IConsumerBuilder AddMessageHandler(Func<IDeliveredMessage, IContent, ValueTask<bool>> handler);
+        IConsumerBuilder AddMessageHandler(Func<DeliveredMessage, IContent, ValueTask<bool>> handler);
     }
 }

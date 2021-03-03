@@ -14,12 +14,12 @@ namespace RabbitMQ.Next.Publisher
     internal class ReturnedMessagesFrameHandler : ContentMessageFrameHandlerBase<ReturnMethod>
     {
         private readonly ContentAccessor contentAccessor;
-        private readonly IReadOnlyList<Func<IReturnedMessage, IContent, bool>> handlers;
+        private readonly IReadOnlyList<Func<ReturnedMessage, IContent, bool>> handlers;
 
         public ReturnedMessagesFrameHandler(
             IMethodParser<ReturnMethod> returnContentMethodParser,
             ISerializer serializer,
-            IReadOnlyList<Func<IReturnedMessage, IContent, bool>> handlers)
+            IReadOnlyList<Func<ReturnedMessage, IContent, bool>> handlers)
             : base((uint)MethodId.BasicReturn, returnContentMethodParser)
         {
             this.contentAccessor = new ContentAccessor(serializer);
@@ -31,14 +31,7 @@ namespace RabbitMQ.Next.Publisher
             this.contentAccessor.SetPayload(content);
             for (var i = 0; i < this.handlers.Count; i++)
             {
-                var message = new ReturnedMessage
-                {
-                    Exchange = method.Exchange,
-                    RoutingKey = method.RoutingKey,
-                    ReplyCode = method.ReplyCode,
-                    ReplyText = method.ReplyText,
-                    Properties = properties
-                };
+                var message = new ReturnedMessage(method.Exchange, method.RoutingKey, properties, method.ReplyCode, method.ReplyText);
 
                 if (this.handlers[i].Invoke(message, this.contentAccessor))
                 {

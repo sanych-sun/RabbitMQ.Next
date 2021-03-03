@@ -23,7 +23,7 @@ namespace RabbitMQ.Next.Publisher
         private volatile bool isCompleted;
 
 
-        public BufferedPublisher(IConnection connection, ISerializer serializer, IReadOnlyList<IMessageTransformer> transformers, IReadOnlyList<Func<IReturnedMessage, IContent, bool>> returnedMessageHandlers, int bufferSize)
+        public BufferedPublisher(IConnection connection, ISerializer serializer, IReadOnlyList<IMessageTransformer> transformers, IReadOnlyList<Func<ReturnedMessage, IContent, bool>> returnedMessageHandlers, int bufferSize)
             : base(connection, serializer, transformers, returnedMessageHandlers)
         {
             this.publishQueueSync = new SemaphoreSlim(bufferSize);
