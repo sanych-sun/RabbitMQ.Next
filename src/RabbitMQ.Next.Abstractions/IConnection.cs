@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -7,7 +8,7 @@ using RabbitMQ.Next.Abstractions.Methods;
 
 namespace RabbitMQ.Next.Abstractions
 {
-    public interface IConnection
+    public interface IConnection : IAsyncDisposable
     {
         IEventSource<ConnectionStateChanged> StateChanged { get; }
 

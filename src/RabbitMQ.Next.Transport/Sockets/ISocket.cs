@@ -1,5 +1,5 @@
 using System;
-using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RabbitMQ.Next.Transport.Sockets
@@ -8,6 +8,6 @@ namespace RabbitMQ.Next.Transport.Sockets
     {
         ValueTask SendAsync(ReadOnlyMemory<byte> payload);
 
-        int Receive(Span<byte> buffer, out SocketError responseCode);
+        ValueTask<int> ReceiveAsync(Memory<byte> buffer, CancellationToken cancellationToken = default);
     }
 }

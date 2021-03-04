@@ -4,12 +4,12 @@ using System.Threading.Tasks;
 
 namespace RabbitMQ.Next.Transport
 {
-    public interface ISocketWriter
+    internal interface ISocketWriter
     {
         Task SendAsync<TState>(TState state, Func<Func<ReadOnlyMemory<byte>, ValueTask>, TState, ValueTask> writer, CancellationToken cancellation = default);
     }
 
-    public static class SocketWriterExtensions
+    internal static class SocketWriterExtensions
     {
         public static Task SendAsync(this ISocketWriter socketWriter, ReadOnlyMemory<byte> payload, CancellationToken cancellation = default)
             => socketWriter.SendAsync(payload, (writer, data) => writer(data), cancellation);

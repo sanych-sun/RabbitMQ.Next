@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO.Pipelines;
-using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -28,8 +27,9 @@ namespace RabbitMQ.Next.Transport
         private readonly IBufferPoolInternal bufferPool;
 
         private ISocket socket;
+        private CancellationTokenSource socketIoCancellation;
 
-        private int heartbeatInterval;
+        private int heartbeatIntervalMs;
         private DateTimeOffset heartbeatTimeout = DateTimeOffset.MaxValue;
 
         private static readonly byte[] FrameEndPayload = { ProtocolConstants.FrameEndByte };
@@ -62,6 +62,7 @@ namespace RabbitMQ.Next.Transport
 
         public async Task ConnectAsync()
         {
+            this.socketIoCancellation = new CancellationTokenSource();
             // TODO: adopt authentication_failure_close capability to handle auth errors
 
             await this.ChangeStateAsync(ConnectionState.Connecting);
@@ -70,10 +71,7 @@ namespace RabbitMQ.Next.Transport
             await this.ChangeStateAsync(ConnectionState.Negotiating);
             var connectionChannel = this.channelPool.Next();
 
-            var socketReadThread = new Thread(this.ReceiveLoop);
-            socketReadThread.Name = "RabbitMQ socket reader";
-            socketReadThread.Start();
-
+            Task.Run(() => this.ReceiveLoop(socketIoCancellation.Token));
 
             await this.SendProtocolHeaderAsync();
 
@@ -101,8 +99,11 @@ namespace RabbitMQ.Next.Transport
                 return new ConnectionNegotiationResults(tuneMethod.ChannelMax, tuneMethod.MaxFrameSize, tuneMethod.HeartbeatInterval);
             });
 
-            this.heartbeatInterval = negotiationResults.HeartbeatInterval / 2;
+            this.heartbeatIntervalMs = negotiationResults.HeartbeatInterval * 1000 / 2;
             this.bufferPool.MaxFrameSize = (int)negotiationResults.MaxFrameSize;
+
+            // start heartbeat
+            Task.Run(() => this.HeartbeatLoop(socketIoCancellation.Token));
 
             this.ScheduleHeartBeat();
             await this.ChangeStateAsync(ConnectionState.Configuring);
@@ -138,13 +139,15 @@ namespace RabbitMQ.Next.Transport
             await this.ChangeStateAsync(ConnectionState.Closed);
         }
 
+        public ValueTask DisposeAsync() => new ValueTask(this.CloseAsync());
+
 
         public async Task SendAsync<TState>(TState state, Func<Func<ReadOnlyMemory<byte>, ValueTask>, TState, ValueTask> writer, CancellationToken cancellation = default)
         {
             await this.writerSemaphore.WaitAsync(cancellation);
             try
             {
-                await writer(this.socket.SendAsync, state);
+                await writer.Invoke(this.socket.SendAsync, state);
                 await this.socket.SendAsync(FrameEndPayload);
                 this.ScheduleHeartBeat();
             }
@@ -170,7 +173,7 @@ namespace RabbitMQ.Next.Transport
         {
             this.heartbeatTimeout = (this.State != ConnectionState.Open)
                 ? DateTimeOffset.MaxValue
-                : DateTimeOffset.UtcNow.AddSeconds(this.heartbeatInterval);
+                : DateTimeOffset.UtcNow.AddMilliseconds(this.heartbeatIntervalMs);
         }
 
         private async Task SendProtocolHeaderAsync()
@@ -178,111 +181,93 @@ namespace RabbitMQ.Next.Transport
             await this.socket.SendAsync(ProtocolConstants.AmqpHeader);
         }
 
-        private void ReceiveLoop()
+        private async Task HeartbeatLoop(CancellationToken cancellationToken)
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                if (this.heartbeatTimeout < DateTimeOffset.UtcNow)
+                {
+                    await this.SendAsync(ProtocolConstants.HeartbeatFrame);
+                }
+
+                await Task.Delay(this.heartbeatIntervalMs, cancellationToken);
+            }
+        }
+
+        private async Task ReceiveLoop(CancellationToken cancellationToken)
         {
             var headerBuffer = new byte[ProtocolConstants.FrameHeaderSize];
             var endFrameBuffer = new byte[1];
 
-            while (true)
-            {
-                // 0. Check if need to sent heartbeat
-                if (this.heartbeatTimeout < DateTimeOffset.UtcNow)
-                {
-                    Task.Run(() => this.SendAsync(ProtocolConstants.HeartbeatFrame, default));
-                }
-
-                // 1. Read frame header
-                if (this.socket.FillBuffer(headerBuffer) != SocketError.Success)
-                {
-                    this.CleanUpOnSocketClose();
-                    return;
-                }
-
-                ((ReadOnlySpan<byte>)headerBuffer).ReadFrameHeader(out FrameType frameType, out ushort channel, out uint payloadSize);
-
-                // 2. Choose appropriate channel to forward the data
-                var targetPipe = this.channelPool[channel].Pipe;
-
-                // 3. Read frame payload into the channel
-                var returnCode = SocketError.Success;
-                switch (frameType)
-                {
-                    case FrameType.Method:
-                        returnCode = ReceiveMethodFrame(this.socket, targetPipe, (int)payloadSize);
-                        break;
-                    case FrameType.ContentHeader:
-                        returnCode = ReceiveContentHeaderFrame(this.socket, targetPipe, (int)payloadSize);
-                        break;
-                    case FrameType.ContentBody:
-                        returnCode = ReceiveContentBodyFrame(this.socket, targetPipe, (int)payloadSize);
-                        break;
-                }
-
-                if (returnCode != SocketError.Success)
-                {
-                    this.CleanUpOnSocketClose();
-                    return;
-                }
-
-                // 4. Ensure there is FrameEnd
-                if (this.socket.FillBuffer(endFrameBuffer) != SocketError.Success)
-                {
-                    this.CleanUpOnSocketClose();
-                    return;
-                }
-                if (endFrameBuffer[0] != ProtocolConstants.FrameEndByte)
-                {
-                    // TODO: throw connection exception here
-                    throw new InvalidOperationException();
-                }
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static SocketError ReceiveMethodFrame(ISocket sourceSocket, PipeWrapper target, int payloadSize)
-        {
-            target.BeginLogicalFrame(FrameType.Method, payloadSize);
-            return sourceSocket.FillBuffer(target, payloadSize);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static SocketError ReceiveContentHeaderFrame(ISocket sourceSocket, PipeWrapper target, int payloadSize)
-        {
             const int customHeaderSize = 12;
-            Span<byte> contentHeaderCustomHeader = stackalloc byte[customHeaderSize];
+            Memory<byte> contentHeaderCustomHeader = new byte[customHeaderSize];
 
-            var returnCode = sourceSocket.FillBuffer(contentHeaderCustomHeader);
-            if (returnCode != SocketError.Success)
+            try
             {
-                return returnCode;
+                while (!cancellationToken.IsCancellationRequested)
+                {
+                    // 1. Read frame header
+                    await this.socket.FillBufferAsync(headerBuffer, cancellationToken);
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        break;
+                    }
+
+                    ((ReadOnlySpan<byte>) headerBuffer).ReadFrameHeader(out FrameType frameType, out ushort channel, out uint payloadSize);
+
+                    // 2. Choose appropriate channel to forward the data
+                    var targetPipe = this.channelPool[channel].Pipe;
+
+                    // 3. Read frame payload into the channel
+                    switch (frameType)
+                    {
+                        case FrameType.Method:
+                            targetPipe.BeginLogicalFrame(FrameType.Method, (int) payloadSize);
+                            await this.socket.FillBufferAsync(targetPipe, (int)payloadSize, cancellationToken);
+                            break;
+                        case FrameType.ContentHeader:
+                            await this.socket.FillBufferAsync(contentHeaderCustomHeader);
+
+                            ((ReadOnlySpan<byte>)(contentHeaderCustomHeader
+                                .Slice(4) // skip 2 obsolete shorts
+                                .Span)).Read(out ulong contentSide);
+
+                            var headerSize = payloadSize - customHeaderSize;
+                            targetPipe.BeginLogicalFrame(FrameType.ContentHeader, (int)headerSize);
+                            await this.socket.FillBufferAsync(targetPipe, (int)headerSize);
+
+                            targetPipe.BeginLogicalFrame(FrameType.ContentBody, (int)contentSide);
+                            break;
+                        case FrameType.ContentBody:
+                            await this.socket.FillBufferAsync(targetPipe, (int) payloadSize, cancellationToken);
+                            break;
+                    }
+
+                    // 4. Ensure there is FrameEnd
+                    await this.socket.FillBufferAsync(endFrameBuffer);
+
+                    if (endFrameBuffer[0] != ProtocolConstants.FrameEndByte)
+                    {
+                        // TODO: throw connection exception here
+                        throw new InvalidOperationException();
+                    }
+                }
             }
-
-            ((ReadOnlySpan<byte>)contentHeaderCustomHeader)
-                .Slice(4) // skip 2 obsolete shorts
-                .Read(out ulong contentSide);
-
-            var headerSize = payloadSize - customHeaderSize;
-            target.BeginLogicalFrame(FrameType.ContentHeader, headerSize);
-            returnCode = sourceSocket.FillBuffer(target, headerSize);
-
-            if (returnCode != SocketError.Success)
+            catch (Exception)
             {
-                return returnCode;
+                this.CleanUpOnSocketClose();
+                throw;
             }
-
-            target.BeginLogicalFrame(FrameType.ContentBody, (int)contentSide);
-
-            return SocketError.Success;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static SocketError ReceiveContentBodyFrame(ISocket sourceSocket, PipeWrapper target, int payloadSize)
-        {
-            return sourceSocket.FillBuffer(target, payloadSize);
         }
 
         private void CleanUpOnSocketClose()
         {
+            if (this.socketIoCancellation == null ||  this.socketIoCancellation.IsCancellationRequested)
+            {
+                return;
+            }
+
+            this.socketIoCancellation.Cancel();
             this.socket.Dispose();
             this.socket = null;
             this.channelPool.ReleaseAll();
