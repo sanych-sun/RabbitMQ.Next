@@ -66,7 +66,7 @@ namespace RabbitMQ.Next.Transport
             // TODO: adopt authentication_failure_close capability to handle auth errors
 
             await this.ChangeStateAsync(ConnectionState.Connecting);
-            this.socket = await EndpointResolver.OpenSocketAsync(this.connectionString.EndPoints);
+            this.socket = await EndpointResolver.OpenSocketAsync(this.connectionString.EndPoints, this.connectionString.Ssl);
 
             await this.ChangeStateAsync(ConnectionState.Negotiating);
             var connectionChannel = this.channelPool.Next();

@@ -9,7 +9,7 @@ namespace RabbitMQ.Next.Transport.Sockets
 {
     internal static class EndpointResolver
     {
-        public static async Task<ISocket> OpenSocketAsync(IReadOnlyList<Endpoint> endpoints)
+        public static async Task<ISocket> OpenSocketAsync(IReadOnlyList<Endpoint> endpoints, bool useSsl)
         {
             IPAddress FindAddress(IReadOnlyList<IPAddress> addresses, AddressFamily family)
                 => addresses.FirstOrDefault(a => a.AddressFamily == family);
@@ -26,7 +26,7 @@ namespace RabbitMQ.Next.Transport.Sockets
                     var socket = await TryConnectAsync(ipV6Address, endpoint.Port);
                     if (socket != null)
                     {
-                        return new SocketWrapper(socket);
+                        return new SocketWrapper(socket, useSsl, endpoint);
                     }
                 }
 
@@ -37,7 +37,7 @@ namespace RabbitMQ.Next.Transport.Sockets
                     var socket = await TryConnectAsync(ipV4Address, endpoint.Port);
                     if (socket != null)
                     {
-                        return new SocketWrapper(socket);
+                        return new SocketWrapper(socket, useSsl, endpoint);
                     }
                 }
             }

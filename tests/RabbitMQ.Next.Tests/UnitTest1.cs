@@ -29,7 +29,6 @@ namespace RabbitMQ.Next.Tests
         [Fact]
         public async Task Test1()
         {
-            //var connection = new Connection(ConnectionString.Create("amqp://rpeesesf:naQF5gZbGA9GzNHkSKE4QxwBt__Lsmu-@beaver.rmq.cloudamqp.com/rpeesesf"));
             var connection = new Connection(ConnectionString.Create("amqp://test2:test2@localhost:5672/"));
 
             await connection.ConnectAsync();
@@ -46,10 +45,10 @@ namespace RabbitMQ.Next.Tests
 
             //for (var i = 0; i < 10000; i++)
             {
-                await publisher.PublishAsync("new test", "MyExchange", flags: PublishFlags.Mandatory);
+                await publisher.PublishAsync("new test", "amq.fanout", flags: PublishFlags.Mandatory);
             }
 
-            await Task.Delay(600_000);
+            await Task.Delay(1_000);
             await publisher.CompleteAsync();
 
             sw.Stop();
