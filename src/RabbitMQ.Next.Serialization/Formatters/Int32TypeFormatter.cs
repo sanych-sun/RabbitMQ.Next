@@ -5,13 +5,13 @@ using RabbitMQ.Next.Transport;
 
 namespace RabbitMQ.Next.Serialization.Formatters
 {
-    public class Int64Formatter : IFormatter
+    public class Int32TypeFormatter : ITypeFormatter
     {
-        public bool CanHandle(Type type) => type == typeof(long);
+        public bool CanHandle(Type type) => type == typeof(int);
 
         public void Format<TContent>(TContent content, IBufferWriter<byte> writer)
         {
-            if (content is long lng)
+            if (content is int lng)
             {
                 this.FormatInternal(lng, writer);
                 return;
@@ -30,35 +30,33 @@ namespace RabbitMQ.Next.Serialization.Formatters
             throw new InvalidOperationException();
         }
 
-
-        private void FormatInternal(long content, IBufferWriter<byte> writer)
+        private void FormatInternal(int content, IBufferWriter<byte> writer)
         {
-            var span = writer.GetSpan(sizeof(long));
+            var span = writer.GetSpan(sizeof(int));
             span.Write(content);
-            writer.Advance(sizeof(long));
+            writer.Advance(sizeof(int));
         }
 
-        private long ParseInternal(ReadOnlySequence<byte> bytes)
+        private int ParseInternal(ReadOnlySequence<byte> bytes)
         {
-            if (bytes.Length != sizeof(long))
+            if (bytes.Length != sizeof(int))
             {
                 throw new ArgumentException($"Cannot parse content: expect content size {sizeof(int)} but got {bytes.Length}.");
             }
 
-            long result;
+            int result;
             if (bytes.IsSingleSegment)
             {
                 bytes.FirstSpan.Read(out result);
             }
             else
             {
-                Span<byte> buffer = stackalloc byte[sizeof(long)];
+                Span<byte> buffer = stackalloc byte[sizeof(int)];
                 bytes.CopyTo(buffer);
                 ((ReadOnlySpan<byte>) buffer).Read(out result);
             }
 
             return result;
         }
-
     }
 }

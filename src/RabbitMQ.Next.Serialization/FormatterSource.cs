@@ -1,29 +1,31 @@
-using System.Collections.Generic;
+using System;
 using RabbitMQ.Next.Serialization.Abstractions;
 
 namespace RabbitMQ.Next.Serialization
 {
     public class FormatterSource : IFormatterSource
     {
-        private readonly IReadOnlyList<IFormatter> formatters;
+        private readonly ITypeFormatter wrappedTypeFormatter;
 
-        public FormatterSource(IReadOnlyList<IFormatter> formatters)
+        public FormatterSource(ITypeFormatter typeFormatter)
         {
-            this.formatters = formatters;
-        }
-
-        public bool TryGetFormatter<TContent>(out IFormatter formatter)
-        {
-            foreach (var item in this.formatters)
+            if (typeFormatter == null)
             {
-                if (item.CanHandle(typeof(TContent)))
-                {
-                    formatter = item;
-                    return true;
-                }
+                throw new ArgumentNullException(nameof(typeFormatter));
             }
 
-            formatter = null;
+            this.wrappedTypeFormatter = typeFormatter;
+        }
+
+        public bool TryGetFormatter<TContent>(out ITypeFormatter typeFormatter)
+        {
+            if (this.wrappedTypeFormatter.CanHandle(typeof(TContent)))
+            {
+                typeFormatter = this.wrappedTypeFormatter;
+                return true;
+            }
+
+            typeFormatter = null;
             return false;
         }
     }

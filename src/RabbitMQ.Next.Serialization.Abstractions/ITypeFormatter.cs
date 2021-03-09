@@ -3,7 +3,7 @@ using System.Buffers;
 
 namespace RabbitMQ.Next.Serialization.Abstractions
 {
-    public interface IFormatter
+    public interface ITypeFormatter
     {
         bool CanHandle(Type type);
 

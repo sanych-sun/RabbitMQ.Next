@@ -6,7 +6,7 @@ namespace RabbitMQ.Next.Consumer.Abstractions
 {
     public interface IConsumerBuilder
     {
-        IConsumerBuilder UseFormatter(IFormatter formatter);
+        IConsumerBuilder UseFormatter(ITypeFormatter typeFormatter);
 
         IConsumerBuilder UserFormatterSource(IFormatterSource formatters);
 

@@ -12,7 +12,7 @@ namespace RabbitMQ.Next.Tests.Serialization.Formatters
         [MemberData(nameof(FormatTestCases))]
         public void CanFormat(string data, int initialBufferSize, byte[] expected)
         {
-            var formatter = new StringFormatter();
+            var formatter = new StringTypeFormatter();
             var bufferWriter = new ArrayBufferWriter<byte>(initialBufferSize);
 
             formatter.Format(data, bufferWriter);
@@ -24,12 +24,42 @@ namespace RabbitMQ.Next.Tests.Serialization.Formatters
         [MemberData(nameof(ParseTestCases))]
         public void CanParse(string expected, byte[][] contentparts)
         {
-            var formatter = new StringFormatter();
+            var formatter = new StringTypeFormatter();
             var sequence = Helpers.MakeSequence(contentparts);
 
             var result = formatter.Parse<string>(sequence);
 
             Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [InlineData(typeof(string), true)]
+        [InlineData(typeof(char[]), false)]
+        [InlineData(typeof(char), false)]
+        [InlineData(typeof(int), false)]
+        public void CanHandle(Type type, bool expected)
+        {
+            var formatter = new StringTypeFormatter();
+
+            Assert.Equal(expected, formatter.CanHandle(type));
+        }
+
+        [Fact]
+        public void ThrowsOnInvalidFormat()
+        {
+            var formatter = new StringTypeFormatter();
+            var bufferWriter = new ArrayBufferWriter<byte>();
+
+            Assert.Throws<InvalidOperationException>(() => formatter.Format(42, bufferWriter));
+        }
+
+        [Fact]
+        public void ThrowsOnInvalidParse()
+        {
+            var formatter = new StringTypeFormatter();
+            var sequence = Helpers.MakeSequence();
+
+            Assert.Throws<InvalidOperationException>(() => formatter.Parse<int>(sequence));
         }
 
         public static IEnumerable<object[]> FormatTestCases()

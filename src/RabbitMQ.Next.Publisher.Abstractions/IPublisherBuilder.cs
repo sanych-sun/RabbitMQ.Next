@@ -8,7 +8,7 @@ namespace RabbitMQ.Next.Publisher.Abstractions
     {
         IPublisherBuilder AllowBuffer(int messages);
 
-        IPublisherBuilder UseFormatter(IFormatter formatter);
+        IPublisherBuilder UseFormatter(ITypeFormatter typeFormatter);
 
         IPublisherBuilder UserFormatterSource(IFormatterSource formatters);
 

@@ -7,7 +7,7 @@ using RabbitMQ.Next.Transport.Buffers;
 
 namespace RabbitMQ.Next.Serialization.Formatters
 {
-    public class StringFormatter : IFormatter
+    public class StringTypeFormatter : ITypeFormatter
     {
         private static readonly int MinBufferSize = TextEncoding.GetMaxByteCount(1);
 

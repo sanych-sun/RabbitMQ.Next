@@ -10,7 +10,7 @@ namespace RabbitMQ.Next.Consumer
     {
         private readonly List<QueueConsumerBuilder> queues;
         private readonly List<Func<DeliveredMessage, IContent, ValueTask<bool>>> handlers;
-        private List<IFormatter> formatters;
+        private List<ITypeFormatter> formatters;
         private List<IFormatterSource> formatterSources;
 
         public ConsumerBuilder()
@@ -19,7 +19,7 @@ namespace RabbitMQ.Next.Consumer
             this.handlers = new List<Func<DeliveredMessage, IContent, ValueTask<bool>>>();
         }
 
-        public IReadOnlyList<IFormatter> Formatters => this.formatters;
+        public IReadOnlyList<ITypeFormatter> Formatters => this.formatters;
 
         public IReadOnlyList<IFormatterSource> FormatterSources => this.formatterSources;
 
@@ -37,10 +37,10 @@ namespace RabbitMQ.Next.Consumer
 
         public UnhandledMessageMode OnPoisonMessage { get; private set; } = UnhandledMessageMode.Default;
 
-        IConsumerBuilder IConsumerBuilder.UseFormatter(IFormatter formatter)
+        IConsumerBuilder IConsumerBuilder.UseFormatter(ITypeFormatter typeFormatter)
         {
-            this.formatters ??= new List<IFormatter>();
-            this.formatters.Add(formatter);
+            this.formatters ??= new List<ITypeFormatter>();
+            this.formatters.Add(typeFormatter);
             return this;
         }
 

@@ -9,7 +9,7 @@ namespace RabbitMQ.Next.Publisher
     internal sealed class PublisherBuilder : IPublisherBuilder
     {
         private List<IMessageTransformer> transformers;
-        private List<IFormatter> formatters;
+        private List<ITypeFormatter> formatters;
         private List<IFormatterSource> formatterSources;
         private List<Func<ReturnedMessage, IContent, bool>> returnedMessageHandlers;
 
@@ -17,7 +17,7 @@ namespace RabbitMQ.Next.Publisher
 
         public IReadOnlyList<IMessageTransformer> Transformers => this.transformers;
 
-        public IReadOnlyList<IFormatter> Formatters => this.formatters;
+        public IReadOnlyList<ITypeFormatter> Formatters => this.formatters;
 
         public IReadOnlyList<IFormatterSource> FormatterSources => this.formatterSources;
 
@@ -33,10 +33,10 @@ namespace RabbitMQ.Next.Publisher
             return this;
         }
 
-        IPublisherBuilder IPublisherBuilder.UseFormatter(IFormatter formatter)
+        IPublisherBuilder IPublisherBuilder.UseFormatter(ITypeFormatter typeFormatter)
         {
-            this.formatters ??= new List<IFormatter>();
-            this.formatters.Add(formatter);
+            this.formatters ??= new List<ITypeFormatter>();
+            this.formatters.Add(typeFormatter);
             return this;
         }
 

@@ -46,6 +46,11 @@ namespace RabbitMQ.Next.Tests
 
         public static ReadOnlySequence<byte> MakeSequence(params byte[][] contentparts)
         {
+            if (contentparts.Length == 0)
+            {
+                return ReadOnlySequence<byte>.Empty;
+            }
+
             var segment = new MemorySegment<byte>(contentparts[0]);
             var firstSegment = segment;
             for (var i = 1; i < contentparts.Length; i++)

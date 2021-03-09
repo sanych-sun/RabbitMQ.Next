@@ -4,7 +4,7 @@ using RabbitMQ.Next.Serialization.Abstractions;
 
 namespace RabbitMQ.Next.Serialization.Formatters
 {
-    public class ArrayFormatter : IFormatter
+    public class ArrayTypeFormatter : ITypeFormatter
     {
         public bool CanHandle(Type type) => type == typeof(byte[]);
 

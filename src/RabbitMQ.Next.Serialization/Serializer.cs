@@ -22,7 +22,7 @@ namespace RabbitMQ.Next.Serialization
             return formatter.Parse<TContent>(bytes);
         }
 
-        private IFormatter GetFormatter<TContent>()
+        private ITypeFormatter GetFormatter<TContent>()
         {
             if (this.formatterSource.TryGetFormatter<TContent>(out var formatter))
             {

@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using RabbitMQ.Next.Serialization.Abstractions;
 
@@ -6,18 +5,18 @@ namespace RabbitMQ.Next.Serialization
 {
     public static class FormatterSourceHelper
     {
-        public static IFormatterSource CombineFormatters(IReadOnlyList<IFormatter> formatters, IReadOnlyList<IFormatterSource> sources)
+        public static IFormatterSource CombineFormatters(IReadOnlyList<ITypeFormatter> formatters, IReadOnlyList<IFormatterSource> sources)
         {
             IFormatterSource result = null;
             if (formatters != null && formatters.Count > 0)
             {
                 if (formatters.Count == 1)
                 {
-                    result = new SingleFormatterSource(formatters[0]);
+                    result = new FormatterSource(formatters[0]);
                 }
                 else
                 {
-                    result = new FormatterSource(formatters);
+                    result = new MultipleFormatterSource(formatters);
                 }
             }
 
