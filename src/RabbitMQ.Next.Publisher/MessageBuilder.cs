@@ -39,7 +39,7 @@ namespace RabbitMQ.Next.Publisher
 
         public DeliveryMode DeliveryMode => this.deliveryMode ?? this.baseProperties?.DeliveryMode ?? DeliveryMode.Unset;
 
-        public byte? Priority => this.priority ?? this.baseProperties?.Priority ?? 0;
+        public byte? Priority => this.priority ?? this.baseProperties?.Priority;
 
         public string CorrelationId => this.correlationId ?? this.baseProperties?.CorrelationId;
 
@@ -62,9 +62,10 @@ namespace RabbitMQ.Next.Publisher
         public string RoutingKey { get; private set; }
 
         public PublishFlags PublishFlags { get; private set; }
-        public void SetExchange(string value) => this.Exchange = value;
 
-        public void SetRoutingKey(string value) => this.RoutingKey = value;
+        public void SetExchange(string value) => this.Exchange = value ?? string.Empty;
+
+        public void SetRoutingKey(string value) => this.RoutingKey = value ?? string.Empty;
 
         public void SetPublishFlags(PublishFlags value) => this.PublishFlags = value;
 
@@ -80,28 +81,28 @@ namespace RabbitMQ.Next.Publisher
             this.headers[key] = value;
         }
 
-        public void SetContentType(string value) => this.contentType = value;
+        public void SetContentType(string value) => this.contentType = value ?? string.Empty;
 
-        public void SetContentEncoding(string value) => this.contentEncoding = value;
+        public void SetContentEncoding(string value) => this.contentEncoding = value ?? string.Empty;
 
         public void SetDeliveryMode(DeliveryMode value) => this.deliveryMode = value;
 
         public void SetPriority(byte value) => this.priority = value;
 
-        public void SetCorrelationId(string value) => this.correlationId = value;
+        public void SetCorrelationId(string value) => this.correlationId = value ?? string.Empty;
 
-        public void SetReplyTo(string value) => this.replyTo = value;
+        public void SetReplyTo(string value) => this.replyTo = value ?? string.Empty;
 
-        public void SetExpiration(string value) => this.expiration = value;
+        public void SetExpiration(string value) => this.expiration = value ?? string.Empty;
 
-        public void SetMessageId(string value) => this.messageId = value;
+        public void SetMessageId(string value) => this.messageId = value ?? string.Empty;
 
         public void SetTimestamp(DateTimeOffset value) => this.timestamp = value;
 
-        public void SetType(string value) => this.type = value;
+        public void SetType(string value) => this.type = value ?? string.Empty;
 
-        public void SetUserId(string value) => this.userId = value;
+        public void SetUserId(string value) => this.userId = value ?? string.Empty;
 
-        public void SetApplicationId(string value) => this.applicationId = value;
+        public void SetApplicationId(string value) => this.applicationId = value ?? string.Empty;
     }
 }
