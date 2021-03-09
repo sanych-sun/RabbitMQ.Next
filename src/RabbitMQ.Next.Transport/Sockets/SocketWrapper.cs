@@ -15,7 +15,11 @@ namespace RabbitMQ.Next.Transport.Sockets
         public SocketWrapper(Socket socket, bool useSsl, Endpoint endpoint)
         {
             this.socket = socket;
-            this.stream = new NetworkStream(socket);
+            var netStream = new NetworkStream(socket);
+            netStream.ReadTimeout = 1000;
+            netStream.WriteTimeout = 1000;
+
+            this.stream = netStream;
             if (useSsl)
             {
                 var sslStream = new SslStream(this.stream, false);
@@ -35,8 +39,22 @@ namespace RabbitMQ.Next.Transport.Sockets
             await this.stream.WriteAsync(payload);
         }
 
-        public ValueTask<int> ReceiveAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
-            => this.stream.ReadAsync(buffer, cancellationToken);
+        public async ValueTask<int> ReceiveAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            var result = await this.stream.ReadAsync(buffer, cancellationToken);
+
+            if (result == 0 && this.IsConnectionClosedByServer())
+            {
+                throw new SocketException();
+            }
+
+            return result;
+        }
+
+        private bool IsConnectionClosedByServer()
+        {
+            return this.socket.Poll(1000, SelectMode.SelectRead) && this.socket.Available == 0;
+        }
 
         public void Dispose()
         {

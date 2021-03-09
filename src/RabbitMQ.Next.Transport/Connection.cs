@@ -256,13 +256,13 @@ namespace RabbitMQ.Next.Transport
             catch (Exception)
             {
                 this.CleanUpOnSocketClose();
-                throw;
+                // todo: report to diagnostic source
             }
         }
 
         private void CleanUpOnSocketClose()
         {
-            if (this.socketIoCancellation == null ||  this.socketIoCancellation.IsCancellationRequested)
+            if (this.socketIoCancellation == null || this.socketIoCancellation.IsCancellationRequested)
             {
                 return;
             }
@@ -270,7 +270,6 @@ namespace RabbitMQ.Next.Transport
             this.socketIoCancellation.Cancel();
             this.socket.Dispose();
             this.socket = null;
-            this.channelPool.ReleaseAll();
         }
     }
 }
