@@ -1,6 +1,6 @@
 using System;
 using NSubstitute;
-using RabbitMQ.Next.Transport.Buffers;
+using RabbitMQ.Next.Abstractions.Buffers;
 using Xunit;
 
 namespace RabbitMQ.Next.Tests.Transport.Buffers
@@ -11,12 +11,12 @@ namespace RabbitMQ.Next.Tests.Transport.Buffers
         public void MemoryRentsBuffer()
         {
             var bufferManager = Substitute.For<IBufferManager>();
-            bufferManager.Rent().Returns(new byte[10]);
+            bufferManager.Rent(Arg.Any<int>()).Returns(new byte[10]);
 
-            var memoryOwner = new MemoryOwner(bufferManager);
+            var memoryOwner = new MemoryOwner(bufferManager, 10);
             var memory = memoryOwner.Memory;
 
-            bufferManager.Received().Rent();
+            bufferManager.Received().Rent(10);
             Assert.Equal(10, memory.Length);
         }
 
@@ -24,9 +24,9 @@ namespace RabbitMQ.Next.Tests.Transport.Buffers
         public void MemoryReturnsSameBuffer()
         {
             var bufferManager = Substitute.For<IBufferManager>();
-            bufferManager.Rent().Returns(new byte[10]);
+            bufferManager.Rent(Arg.Any<int>()).Returns(new byte[10]);
 
-            var memoryOwner = new MemoryOwner(bufferManager);
+            var memoryOwner = new MemoryOwner(bufferManager, 10);
             var memory = memoryOwner.Memory;
             var memory2 = memoryOwner.Memory;
 
@@ -39,9 +39,9 @@ namespace RabbitMQ.Next.Tests.Transport.Buffers
             var buffer = new byte[10];
 
             var bufferManager = Substitute.For<IBufferManager>();
-            bufferManager.Rent().Returns(buffer);
+            bufferManager.Rent(Arg.Any<int>()).Returns(buffer);
 
-            var memoryOwner = new MemoryOwner(bufferManager);
+            var memoryOwner = new MemoryOwner(bufferManager, 10);
 
             memoryOwner.Dispose();
 
@@ -53,7 +53,7 @@ namespace RabbitMQ.Next.Tests.Transport.Buffers
         {
             var bufferManager = Substitute.For<IBufferManager>();
 
-            var memoryOwner = new MemoryOwner(bufferManager);
+            var memoryOwner = new MemoryOwner(bufferManager, 10);
             memoryOwner.Dispose();
 
             Assert.Throws<ObjectDisposedException>(() => memoryOwner.Memory);
@@ -64,7 +64,7 @@ namespace RabbitMQ.Next.Tests.Transport.Buffers
         {
             var bufferManager = Substitute.For<IBufferManager>();
 
-            var memoryOwner = new MemoryOwner(bufferManager);
+            var memoryOwner = new MemoryOwner(bufferManager, 10);
 
             memoryOwner.Dispose();
 

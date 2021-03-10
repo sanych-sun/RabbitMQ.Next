@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using RabbitMQ.Next.Abstractions.Buffers;
 
 namespace RabbitMQ.Next.Transport.Buffers
 {
@@ -19,8 +20,13 @@ namespace RabbitMQ.Next.Transport.Buffers
             this.bufferSize = bufferSize;
         }
 
-        public byte[] Rent()
+        public byte[] Rent(int minSize = 0)
         {
+            if (minSize > this.bufferSize)
+            {
+                return new byte[minSize];
+            }
+
             if (this.releasedItems.TryTake(out var result))
             {
                 return result;
@@ -31,6 +37,11 @@ namespace RabbitMQ.Next.Transport.Buffers
 
         public void Release(byte[] buffer)
         {
+            if (buffer == null)
+            {
+                return;
+            }
+
             if (buffer.Length != this.bufferSize)
             {
                 return;

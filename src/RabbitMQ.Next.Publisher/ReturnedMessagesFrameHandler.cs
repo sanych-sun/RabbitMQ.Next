@@ -1,11 +1,11 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Abstractions.Methods;
 using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Serialization;
-using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Channels;
 using RabbitMQ.Next.Transport.Methods.Basic;
 

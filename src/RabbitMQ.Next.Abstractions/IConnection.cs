@@ -21,5 +21,7 @@ namespace RabbitMQ.Next.Abstractions
         IMethodRegistry MethodRegistry { get; }
 
         IBufferPool BufferPool { get; }
+
+        IConnectionDetails Details { get; }
     }
 }

@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using NSubstitute;
 using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Buffers;
 using Xunit;
@@ -20,6 +19,15 @@ namespace RabbitMQ.Next.Tests.Transport.Buffers
             var bufferManager = new BufferManager(bufferSize);
 
             Assert.Equal(bufferSize, bufferManager.BufferSize);
+        }
+
+        [Fact]
+        public void CanRentMoreThenConfiguredSize()
+        {
+            var bufferManager = new BufferManager(100);
+            var buffer = bufferManager.Rent(200);
+
+            Assert.Equal(200, buffer.Length);
         }
 
         [Theory]

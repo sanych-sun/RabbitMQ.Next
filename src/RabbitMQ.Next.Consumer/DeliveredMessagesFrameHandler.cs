@@ -1,8 +1,8 @@
 using System;
 using System.Buffers;
+using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Abstractions.Methods;
-using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Channels;
 using RabbitMQ.Next.Transport.Methods.Basic;
 

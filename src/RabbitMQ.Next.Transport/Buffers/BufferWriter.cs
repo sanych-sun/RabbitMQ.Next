@@ -2,7 +2,6 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Buffers;
 
 namespace RabbitMQ.Next.Transport.Buffers
@@ -18,8 +17,6 @@ namespace RabbitMQ.Next.Transport.Buffers
         public BufferWriter(IBufferManager manager)
         {
             this.manager = manager;
-
-            this.buffer = manager.Rent();
             this.offset = 0;
         }
 
@@ -80,26 +77,29 @@ namespace RabbitMQ.Next.Transport.Buffers
 
         public void Dispose()
         {
-            if (this.buffer == null)
+            if (this.offset == -1)
             {
                 return;
             }
 
             this.manager.Release(this.buffer);
+            this.buffer = null;
             if (this.chunks != null)
             {
                 foreach (var chunk in this.chunks)
                 {
                     this.manager.Release(chunk.Array);
                 }
+
+                this.chunks.Clear();
             }
-            this.buffer = null;
+            this.offset = -1;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void CheckDisposed()
         {
-            if (this.buffer == null)
+            if (this.offset == -1)
             {
                 throw new ObjectDisposedException(nameof(BufferWriter));
             }
@@ -113,15 +113,25 @@ namespace RabbitMQ.Next.Transport.Buffers
                 requestedSize = MinChunkSize;
             }
 
-            if (this.offset + requestedSize <= this.buffer.Length)
+            if (this.buffer != null && this.offset + requestedSize <= this.buffer.Length)
             {
                 return;
             }
 
-            this.chunks ??= new List<ArraySegment<byte>>();
-            this.chunks.Add(new ArraySegment<byte>(this.buffer, 0, this.offset));
+            if (this.buffer != null)
+            {
+                if (this.offset == 0)
+                {
+                    this.manager.Release(this.buffer);
+                }
+                else
+                {
+                    this.chunks ??= new List<ArraySegment<byte>>();
+                    this.chunks.Add(new ArraySegment<byte>(this.buffer, 0, this.offset));
+                }
+            }
 
-            this.buffer = (requestedSize > this.manager.BufferSize) ? new byte[requestedSize] : this.manager.Rent();
+            this.buffer = this.manager.Rent(requestedSize);
             this.offset = 0;
         }
     }

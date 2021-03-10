@@ -1,6 +1,8 @@
 using System;
 using System.Buffers;
+using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
+using RabbitMQ.Next.Abstractions.Exceptions;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Abstractions.Methods;
 using RabbitMQ.Next.Transport.Methods;
@@ -50,6 +52,11 @@ namespace RabbitMQ.Next.Transport.Channels
 
         private bool TryHandleMethodFrame(ReadOnlySequence<byte> payload)
         {
+            if (this.state != State.None)
+            {
+                throw new ConnectionException(ReplyCode.UnexpectedFrame, $"Received unexpected method frame when in {this.state} state.");
+            }
+
             payload = payload.Read(out uint methodId);
             if (methodId != this.contentMethodId)
             {
@@ -66,7 +73,7 @@ namespace RabbitMQ.Next.Transport.Channels
         {
             if (this.state != State.ExpectHeader)
             {
-                return false;
+                throw new ConnectionException(ReplyCode.UnexpectedFrame, $"Received unexpected content header frame when in {this.state} state.");
             }
 
             if (payload.IsSingleSegment)
@@ -91,7 +98,7 @@ namespace RabbitMQ.Next.Transport.Channels
         {
             if (this.state != State.ExpectBody)
             {
-                return false;
+                throw new ConnectionException(ReplyCode.UnexpectedFrame, $"Received unexpected content frame when in {this.state} state.");
             }
 
             this.HandleMessage(this.method, this.properties, payload);

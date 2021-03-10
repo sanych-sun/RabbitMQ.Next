@@ -1,4 +1,4 @@
-namespace RabbitMQ.Next.Transport
+namespace RabbitMQ.Next.Abstractions
 {
     public enum ClassId : ushort
     {

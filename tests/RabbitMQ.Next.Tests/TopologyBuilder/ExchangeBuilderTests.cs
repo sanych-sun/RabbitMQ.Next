@@ -2,12 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using NSubstitute;
+using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Exceptions;
 using RabbitMQ.Next.TopologyBuilder;
 using RabbitMQ.Next.TopologyBuilder.Abstractions;
 using RabbitMQ.Next.TopologyBuilder.Abstractions.Exceptions;
-using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Methods.Exchange;
 using Xunit;
 

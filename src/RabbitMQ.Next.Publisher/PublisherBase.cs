@@ -119,7 +119,11 @@ namespace RabbitMQ.Next.Publisher
 
             try
             {
-                this.channel ??= await this.Connection.CreateChannelAsync(new [] { this.returnedFrameHandler }, cancellationToken);
+                if (this.channel == null || this.channel.IsClosed)
+                {
+                    this.channel = await this.Connection.CreateChannelAsync(new [] { this.returnedFrameHandler }, cancellationToken);
+                }
+
                 return this.channel;
             }
             finally

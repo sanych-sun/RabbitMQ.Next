@@ -38,14 +38,14 @@
 //                     .UseTransformer(new ApplicationIdTransformer("unittest"))
 //                     .UseAttributesTransformer()
 //                     .UseFormatter(new DummyFormatter())
-//                     .UseFormatter(new StringFormatter())
+//                     .UseFormatter(new StringTypeFormatter())
 //                 );
 //
 //             var sw = Stopwatch.StartNew();
 //
 //             //for (var i = 0; i < 10000; i++)
 //             {
-//                 await publisher.PublishAsync("new test", "amq.fanout", flags: PublishFlags.Mandatory);
+//                 await publisher.PublishAsync("new test", "MyExchange", flags: PublishFlags.Mandatory);
 //             }
 //
 //             await Task.Delay(100_000);
@@ -71,7 +71,7 @@
 //                     .BindToQueue("test-queue")
 //                     .EachMessageAcknowledgement()
 //                     .PrefetchCount(5)
-//                     .UseFormatter(new StringFormatter())
+//                     .UseFormatter(new StringTypeFormatter())
 //                     .AddMessageHandler((message, content) =>
 //                     {
 //                         this.output.WriteLine(content.GetContent<string>());
@@ -92,7 +92,7 @@
 //
 //         }
 //
-//         public class DummyFormatter : IFormatter
+//         public class DummyFormatter : ITypeFormatter
 //         {
 //             public bool CanHandle(Type type) => type == typeof(DummyClass);
 //

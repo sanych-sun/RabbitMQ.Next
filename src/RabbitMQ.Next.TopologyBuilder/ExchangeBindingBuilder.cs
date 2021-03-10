@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Exceptions;
 using RabbitMQ.Next.TopologyBuilder.Abstractions;
-using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Methods.Exchange;
 
 namespace RabbitMQ.Next.TopologyBuilder

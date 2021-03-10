@@ -1,17 +1,19 @@
 using System;
 using System.Buffers;
 
-namespace RabbitMQ.Next.Transport.Buffers
+namespace RabbitMQ.Next.Abstractions.Buffers
 {
-    internal struct MemoryOwner : IMemoryOwner<byte>
+    public struct MemoryOwner : IMemoryOwner<byte>
     {
         private readonly IBufferManager manager;
+        private readonly int size;
         private byte[] memory;
 
-        public MemoryOwner(IBufferManager manager)
+        public MemoryOwner(IBufferManager manager, int size)
         {
             this.manager = manager;
-            this.memory = this.manager.Rent();
+            this.size = size;
+            this.memory = this.manager.Rent(size);
         }
 
         public void Dispose()
@@ -34,7 +36,13 @@ namespace RabbitMQ.Next.Transport.Buffers
                     throw new ObjectDisposedException(nameof(MemoryOwner));
                 }
 
-                return this.memory;
+                if (this.size == 0)
+                {
+                    return this.memory;
+                }
+
+                return new Memory<byte>(this.memory, 0, this.size);
+
             }
         }
     }

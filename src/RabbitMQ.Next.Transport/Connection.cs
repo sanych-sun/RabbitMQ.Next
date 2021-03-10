@@ -25,6 +25,7 @@ namespace RabbitMQ.Next.Transport
         private readonly ConnectionString connectionString;
         private readonly EventSource<ConnectionStateChanged> stateChanged;
         private readonly IBufferPoolInternal bufferPool;
+        private readonly ConnectionDetails connectionDetails = new ConnectionDetails();
 
         private ISocket socket;
         private CancellationTokenSource socketIoCancellation;
@@ -51,7 +52,7 @@ namespace RabbitMQ.Next.Transport
             Func<int, IEnumerable<IFrameHandler>, Channel> channelFactory = (channelNumber, handlers) =>
             {
                 var pipe = new Pipe();
-                var methodSender = new FrameSender(this, this.MethodRegistry, (ushort) channelNumber, this.bufferPool);
+                var methodSender = new FrameSender(this, this, this.MethodRegistry, (ushort) channelNumber, this.bufferPool);
                 return new Channel(pipe, this.MethodRegistry, methodSender, handlers);
             };
 
@@ -100,7 +101,10 @@ namespace RabbitMQ.Next.Transport
             });
 
             this.heartbeatIntervalMs = negotiationResults.HeartbeatInterval * 1000 / 2;
-            this.bufferPool.MaxFrameSize = (int)negotiationResults.MaxFrameSize;
+            this.bufferPool.SetBufferSize((int)negotiationResults.MaxFrameSize);
+
+            this.connectionDetails.HeartbeatInterval = negotiationResults.HeartbeatInterval;
+            this.connectionDetails.FrameMaxSize = (int) negotiationResults.MaxFrameSize;
 
             // start heartbeat
             Task.Run(() => this.HeartbeatLoop(socketIoCancellation.Token));
@@ -115,6 +119,7 @@ namespace RabbitMQ.Next.Transport
         public IMethodRegistry MethodRegistry { get; }
 
         public IBufferPool BufferPool => this.bufferPool;
+        public IConnectionDetails Details => this.connectionDetails;
 
         public IEventSource<ConnectionStateChanged> StateChanged => this.stateChanged;
 

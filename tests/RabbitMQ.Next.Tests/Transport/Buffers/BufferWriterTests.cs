@@ -2,6 +2,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using NSubstitute;
+using RabbitMQ.Next.Abstractions.Buffers;
 using RabbitMQ.Next.Transport.Buffers;
 using Xunit;
 
@@ -17,6 +18,7 @@ namespace RabbitMQ.Next.Tests.Transport.Buffers
             var bufferManager = this.MakeBufferManager();
 
             var bufferWriter = new BufferWriter(bufferManager);
+            bufferWriter.GetMemory(100);
 
             Assert.Throws<ArgumentException>(() => bufferWriter.Advance(advance));
         }
@@ -32,7 +34,7 @@ namespace RabbitMQ.Next.Tests.Transport.Buffers
             bufferWriter.GetMemory(100);
             bufferWriter.Advance(100);
 
-            bufferManager.Received(2).Rent();
+            bufferManager.Received(2).Rent(Arg.Any<int>());
         }
 
         [Fact]
@@ -78,21 +80,6 @@ namespace RabbitMQ.Next.Tests.Transport.Buffers
             bufferWriter.Dispose();
 
             bufferManager.Received(3).Release(Arg.Any<byte[]>());
-        }
-
-        [Fact]
-        public void ShouldExtendMoreThenBufferSize()
-        {
-            var bufferManager = this.MakeBufferManager();
-
-            var bufferWriter = new BufferWriter(bufferManager);
-            bufferWriter.GetMemory(100);
-            bufferWriter.Advance(100);
-            var requested = 200;
-            var buffer = bufferWriter.GetMemory(requested);
-
-            bufferManager.Received(1).Rent();
-            Assert.True(buffer.Length >= requested);
         }
 
         [Theory]
@@ -162,8 +149,11 @@ namespace RabbitMQ.Next.Tests.Transport.Buffers
         private IBufferManager MakeBufferManager(int bufferSize = 150)
         {
             var bufferManager = Substitute.For<IBufferManager>();
-            bufferManager.BufferSize.Returns(bufferSize);
-            bufferManager.Rent().Returns(c => new byte[bufferSize]);
+            bufferManager.Rent(Arg.Any<int>()).Returns(x =>
+            {
+                var requestedSize = (int) x[0];
+                return (requestedSize < bufferSize) ? new byte[bufferSize] : new byte[requestedSize];
+            });
 
             return bufferManager;
         }
