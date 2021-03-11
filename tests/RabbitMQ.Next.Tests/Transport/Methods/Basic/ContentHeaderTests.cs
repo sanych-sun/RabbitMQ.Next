@@ -10,7 +10,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Basic
     {
         [Theory]
         [MemberData(nameof(WriteContentHeaderTestCases))]
-        internal void writeContentHeader(byte[] expected, MessageProperties props, ulong size)
+        internal void WriteContentHeader(byte[] expected, MessageProperties props, ulong size)
         {
             var buffer = new byte[expected.Length];
             var result = ((Span<byte>)buffer).WriteContentHeader(props, size);

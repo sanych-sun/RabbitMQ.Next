@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,6 +10,7 @@ using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Abstractions.Transformers;
 using RabbitMQ.Next.Serialization;
+using RabbitMQ.Next.Transport.Channels;
 using RabbitMQ.Next.Transport.Methods.Basic;
 
 namespace RabbitMQ.Next.Publisher
@@ -16,18 +18,22 @@ namespace RabbitMQ.Next.Publisher
     internal abstract class PublisherBase : IAsyncDisposable
     {
         private readonly SemaphoreSlim channelOpenSync = new SemaphoreSlim(1,1);
+        private readonly ContentAccessor returnedMessageContentAccessor;
+        private readonly IReadOnlyList<Func<ReturnedMessage, IContent, bool>> returnedMessageHandlers;
         private readonly IFrameHandler returnedFrameHandler;
 
         private IChannel channel;
 
         protected PublisherBase(IConnection connection, ISerializer serializer, IReadOnlyList<IMessageTransformer> transformers, IReadOnlyList<Func<ReturnedMessage, IContent, bool>> returnedMessageHandlers)
         {
+            this.returnedMessageContentAccessor = new ContentAccessor(serializer);
             this.Connection = connection;
             this.Serializer = serializer;
             this.Transformers = transformers;
+            this.returnedMessageHandlers = returnedMessageHandlers;
 
             var returnMethodParser = this.Connection.MethodRegistry.GetParser<ReturnMethod>();
-            this.returnedFrameHandler = new ReturnedMessagesFrameHandler(returnMethodParser, serializer, returnedMessageHandlers);
+            this.returnedFrameHandler = new ContentFrameHandler<ReturnMethod>((uint)MethodId.BasicReturn, returnMethodParser, this.HandleReturnedMessage, connection.BufferPool);
         }
 
         public ValueTask DisposeAsync() => this.DisposeAsyncCore();
@@ -130,6 +136,22 @@ namespace RabbitMQ.Next.Publisher
             {
                 this.channelOpenSync.Release();
             }
+        }
+
+        private void HandleReturnedMessage(ReturnMethod method, IMessageProperties properties, ReadOnlySequence<byte> content)
+        {
+            this.returnedMessageContentAccessor.SetPayload(content);
+            for (var i = 0; i < this.returnedMessageHandlers.Count; i++)
+            {
+                var message = new ReturnedMessage(method.Exchange, method.RoutingKey, properties, method.ReplyCode, method.ReplyText);
+
+                if (this.returnedMessageHandlers[i].Invoke(message, this.returnedMessageContentAccessor))
+                {
+                    break;
+                }
+            }
+
+            this.returnedMessageContentAccessor.SetPayload(ReadOnlySequence<byte>.Empty);
         }
     }
 }

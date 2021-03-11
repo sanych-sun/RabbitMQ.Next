@@ -3,7 +3,7 @@ using System;
 namespace RabbitMQ.Next.Consumer.Abstractions
 {
     [Flags]
-    public enum UnhandledMessageMode
+    public enum UnprocessedMessageMode
     {
         Drop = 0,
         Requeue = 1 << 0,

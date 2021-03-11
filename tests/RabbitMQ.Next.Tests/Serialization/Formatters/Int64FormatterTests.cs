@@ -27,12 +27,12 @@ namespace RabbitMQ.Next.Tests.Serialization.Formatters
         [InlineData(1, new byte[] { 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000001 })]
         [InlineData(42, new byte[] { 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00101010 })]
         [InlineData(-42, new byte[] { 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11010110 })]
-        [InlineData(-42, new byte[] { 0b_11111111, 0b_11111111, 0b_11111111 }, new byte[] { 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11010110 })]
-        [InlineData(-42, new byte[] { 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111}, new byte[] { 0b_11111111, 0b_11111111}, new byte[] { 0b_11111111, 0b_11010110 })]
-        public void CanParse(long expected, params byte[][] contentparts)
+        [InlineData(-42, new byte[] { 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11010110 }, 3)]
+        [InlineData(-42, new byte[] { 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11010110 }, 3, 2)]
+        public void CanParse(long expected, byte[] content, params int[] parts)
         {
             var formatter = new Int64TypeFormatter();
-            var sequence = Helpers.MakeSequence(contentparts);
+            var sequence = Helpers.MakeSequence(content, parts);
 
             var result = formatter.Parse<long>(sequence);
 

@@ -14,7 +14,7 @@ namespace RabbitMQ.Next.Transport
             else
             {
                 Span<byte> buffer = stackalloc byte[sizeof(uint)];
-                payload.CopyTo(buffer);
+                payload.Slice(0, sizeof(uint)).CopyTo(buffer);
                 ((ReadOnlySpan<byte>)buffer).Read(out methodId);
             }
 

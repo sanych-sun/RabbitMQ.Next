@@ -54,13 +54,15 @@ namespace RabbitMQ.Next.Tests.Transport.Buffers
         }
 
         [Theory]
+        [InlineData(10, null)]
         [InlineData(10, 0)]
         [InlineData(10, 1)]
         [InlineData(10, 100)]
-        public void ReturnIgnoresBufferWrongSize(int bufferSize, int returnSize)
+        public void ReturnIgnoresBufferWrongSize(int bufferSize, int? returnSize)
         {
             var bufferManager = new BufferManager(bufferSize);
-            bufferManager.Release(new byte[returnSize]);
+            var buffer = returnSize.HasValue ? new byte[returnSize.Value] : null;
+            bufferManager.Release(buffer);
 
             Assert.Equal(0, bufferManager.ReleasedItemsCount());
         }

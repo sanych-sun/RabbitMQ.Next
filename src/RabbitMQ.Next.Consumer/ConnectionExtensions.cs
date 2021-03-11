@@ -23,7 +23,7 @@ namespace RabbitMQ.Next.Consumer
 
             var consumer = new Consumer(connection, serializer, consumerBuilder.Handlers,
                 consumerInitializer, consumerBuilder.AcknowledgerFactory,
-                consumerBuilder.OnUnhandledMessage, consumerBuilder.OnPoisonMessage);
+                consumerBuilder.OnUnprocessedMessage, consumerBuilder.OnPoisonMessage);
 
             return consumer;
         }

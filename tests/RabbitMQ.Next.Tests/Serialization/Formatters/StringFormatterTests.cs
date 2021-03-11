@@ -22,10 +22,10 @@ namespace RabbitMQ.Next.Tests.Serialization.Formatters
 
         [Theory]
         [MemberData(nameof(ParseTestCases))]
-        public void CanParse(string expected, byte[][] contentparts)
+        public void CanParse(string expected, ReadOnlyMemory<byte> content, params int[] parts)
         {
             var formatter = new StringTypeFormatter();
-            var sequence = Helpers.MakeSequence(contentparts);
+            var sequence = Helpers.MakeSequence(content, parts);
 
             var result = formatter.Parse<string>(sequence);
 
@@ -57,7 +57,7 @@ namespace RabbitMQ.Next.Tests.Serialization.Formatters
         public void ThrowsOnInvalidParse()
         {
             var formatter = new StringTypeFormatter();
-            var sequence = Helpers.MakeSequence();
+            var sequence = ReadOnlySequence<byte>.Empty;
 
             Assert.Throws<InvalidOperationException>(() => formatter.Parse<int>(sequence));
         }
@@ -76,31 +76,16 @@ namespace RabbitMQ.Next.Tests.Serialization.Formatters
 
         public static IEnumerable<object[]> ParseTestCases()
         {
-            IEnumerable<byte[]> Slice(ReadOnlyMemory<byte> data, int chunkSize)
-            {
-                while (data.Length > 0)
-                {
-                    if (data.Length <= chunkSize)
-                    {
-                        yield return data.ToArray();
-                        yield break;
-                    }
-
-                    yield return data.Slice(0, chunkSize).ToArray();
-                    data = data.Slice(chunkSize);
-                }
-            }
-
-            yield return new object[] { string.Empty, new [] { new byte[0] }};
+            yield return new object[] { string.Empty, new byte[0] };
 
             var texts = Helpers.GetDummyTexts(0, 128);
 
             foreach (var text in texts)
             {
-                yield return new object[] { text.Text, new[] { text.Bytes.ToArray() }};
+                yield return new object[] { text.Text, text.Bytes };
                 if (text.Bytes.Length > 50)
                 {
-                    yield return new object[] { text.Text, Slice(text.Bytes, 50) };
+                    yield return new object[] { text.Text, text.Bytes, 50 };
                 }
             }
         }

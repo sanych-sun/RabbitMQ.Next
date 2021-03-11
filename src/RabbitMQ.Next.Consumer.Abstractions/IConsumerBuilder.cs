@@ -18,9 +18,9 @@ namespace RabbitMQ.Next.Consumer.Abstractions
 
         IConsumerBuilder SetAcknowledgement(Func<IAcknowledgement, IAcknowledgement> acknowledgerFactory);
 
-        IConsumerBuilder OnUnhandledMessage(UnhandledMessageMode mode);
+        IConsumerBuilder OnUnhandledMessage(UnprocessedMessageMode mode);
 
-        IConsumerBuilder OnPoisonMessage(UnhandledMessageMode mode);
+        IConsumerBuilder OnPoisonMessage(UnprocessedMessageMode mode);
 
         IConsumerBuilder AddMessageHandler(Func<DeliveredMessage, IContent, ValueTask<bool>> handler);
     }

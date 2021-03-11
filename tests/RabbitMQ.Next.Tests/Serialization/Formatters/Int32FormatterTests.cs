@@ -27,12 +27,12 @@ namespace RabbitMQ.Next.Tests.Serialization.Formatters
         [InlineData(1, new byte[] { 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000001 })]
         [InlineData(42, new byte[] { 0b_00000000, 0b_00000000, 0b_00000000, 0b_00101010 })]
         [InlineData(-42, new byte[] { 0b_11111111, 0b_11111111, 0b_11111111, 0b_11010110 })]
-        [InlineData(-42, new byte[] { 0b_11111111 }, new byte[] { 0b_11111111, 0b_11111111, 0b_11010110 })]
-        [InlineData(-42, new byte[] { 0b_11111111 }, new byte[] { 0b_11111111, 0b_11111111}, new byte[] { 0b_11010110 })]
-        public void CanParse(int expected, params byte[][] contentparts)
+        [InlineData(-42, new byte[] { 0b_11111111, 0b_11111111, 0b_11111111, 0b_11010110 }, 1)]
+        [InlineData(-42, new byte[] { 0b_11111111, 0b_11111111, 0b_11111111, 0b_11010110 }, 1, 2)]
+        public void CanParse(int expected, byte[] content, params int[] parts)
         {
             var formatter = new Int32TypeFormatter();
-            var sequence = Helpers.MakeSequence(contentparts);
+            var sequence = Helpers.MakeSequence(content, parts);
 
             var result = formatter.Parse<int>(sequence);
 

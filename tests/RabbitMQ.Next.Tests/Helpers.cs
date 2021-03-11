@@ -44,21 +44,37 @@ namespace RabbitMQ.Next.Tests
         public static IEnumerable<(string Charset, string Text, ReadOnlyMemory<byte> Bytes)> GetDummyTexts(int minBytes, int maxBytes = 0)
             => Texts.Where(i => i.Bytes.Length >= minBytes).Where(i => maxBytes == 0 || i.Bytes.Length <= maxBytes);
 
-        public static ReadOnlySequence<byte> MakeSequence(params byte[][] contentparts)
+        public static ReadOnlySequence<byte> MakeSequence(ReadOnlyMemory<byte> content, params int[] parts)
         {
-            if (contentparts.Length == 0)
+            if (parts.Length == 0)
             {
-                return ReadOnlySequence<byte>.Empty;
+                return new ReadOnlySequence<byte>(content);
             }
 
-            var segment = new MemorySegment<byte>(contentparts[0]);
-            var firstSegment = segment;
-            for (var i = 1; i < contentparts.Length; i++)
+            MemorySegment<byte> first = null;
+            MemorySegment<byte> last = null;
+            foreach (var part in parts)
             {
-                segment = segment.Append(contentparts[i]);
+                var chunk = content.Slice(0, part);
+                if (first == null)
+                {
+                    first = new MemorySegment<byte>(chunk);
+                    last = first;
+                }
+                else
+                {
+                    last = last.Append(chunk);
+                }
+                content = content.Slice(part);
             }
 
-            return new ReadOnlySequence<byte>(firstSegment, 0, segment, segment.Memory.Length);
+            if (content.Length > 0)
+            {
+                last = last.Append(content);
+            }
+
+            return new ReadOnlySequence<byte>(first, 0, last, last.Memory.Length);
+
         }
 
         public static byte[] GetFileContent(string resourcePath)

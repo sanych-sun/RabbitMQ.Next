@@ -22,12 +22,12 @@ namespace RabbitMQ.Next.Tests.Serialization.Formatters
         }
 
         [Theory]
-        [InlineData(new byte[0], new byte[0])]
-        [InlineData(new byte[] { 1, 2, 3, 4, 5 }, new byte[] { 1, 2 }, new byte[] { 3, 4, 5 })]
-        public void CanParse(byte[] expected, params byte[][] contentparts)
+        [InlineData(new byte[0])]
+        [InlineData(new byte[] { 1, 2, 3, 4, 5 }, 2, 3)]
+        public void CanParse(byte[] expected, params int[] contentparts)
         {
             var formatter = new ArrayTypeFormatter();
-            var sequence = Helpers.MakeSequence(contentparts);
+            var sequence = Helpers.MakeSequence(expected, contentparts);
 
             var result = formatter.Parse<byte[]>(sequence);
 
@@ -59,7 +59,7 @@ namespace RabbitMQ.Next.Tests.Serialization.Formatters
         public void ThrowsOnInvalidParse()
         {
             var formatter = new ArrayTypeFormatter();
-            var sequence = Helpers.MakeSequence();
+            var sequence = ReadOnlySequence<byte>.Empty;
 
             Assert.Throws<InvalidOperationException>(() => formatter.Parse<int[]>(sequence));
         }

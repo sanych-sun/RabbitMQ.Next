@@ -33,9 +33,9 @@ namespace RabbitMQ.Next.Consumer
 
         public Func<IAcknowledgement, IAcknowledgement> AcknowledgerFactory { get; private set; }
 
-        public UnhandledMessageMode OnUnhandledMessage { get; private set; } = UnhandledMessageMode.Default;
+        public UnprocessedMessageMode OnUnprocessedMessage { get; private set; } = UnprocessedMessageMode.Default;
 
-        public UnhandledMessageMode OnPoisonMessage { get; private set; } = UnhandledMessageMode.Default;
+        public UnprocessedMessageMode OnPoisonMessage { get; private set; } = UnprocessedMessageMode.Default;
 
         IConsumerBuilder IConsumerBuilder.UseFormatter(ITypeFormatter typeFormatter)
         {
@@ -77,13 +77,13 @@ namespace RabbitMQ.Next.Consumer
             return this;
         }
 
-        IConsumerBuilder IConsumerBuilder.OnUnhandledMessage(UnhandledMessageMode mode)
+        IConsumerBuilder IConsumerBuilder.OnUnhandledMessage(UnprocessedMessageMode mode)
         {
-            this.OnUnhandledMessage = mode;
+            this.OnUnprocessedMessage = mode;
             return this;
         }
 
-        IConsumerBuilder IConsumerBuilder.OnPoisonMessage(UnhandledMessageMode mode)
+        IConsumerBuilder IConsumerBuilder.OnPoisonMessage(UnprocessedMessageMode mode)
         {
             this.OnPoisonMessage = mode;
             return this;

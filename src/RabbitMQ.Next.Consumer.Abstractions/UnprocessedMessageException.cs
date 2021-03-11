@@ -2,9 +2,9 @@ using System;
 
 namespace RabbitMQ.Next.Consumer.Abstractions
 {
-    public class UnhandledMessageException : Exception
+    public class UnprocessedMessageException : Exception
     {
-        public UnhandledMessageException(DeliveredMessage message, IContent content)
+        public UnprocessedMessageException(DeliveredMessage message, IContent content)
             : base("No handler found for the delivered message.")
         {
             this.DeliveredMessage = message;
