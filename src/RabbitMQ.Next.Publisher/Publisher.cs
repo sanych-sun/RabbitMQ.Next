@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,12 +11,12 @@ namespace RabbitMQ.Next.Publisher
 {
     internal class Publisher : PublisherBase, IPublisher
     {
-        public Publisher(IConnection connection, ISerializer serializer, IReadOnlyList<IMessageTransformer> transformers, IReadOnlyList<Func<ReturnedMessage, IContent, bool>> returnedMessageHandlers)
+        public Publisher(IConnection connection, ISerializer serializer, IReadOnlyList<IMessageTransformer> transformers, IReadOnlyList<IReturnedMessageHandler> returnedMessageHandlers)
             : base(connection, serializer, transformers, returnedMessageHandlers)
         {
         }
 
-        public async ValueTask PublishAsync<TContent>(TContent content, string exchange = null, string routingKey = null, IMessageProperties properties = null, PublishFlags flags = PublishFlags.None, CancellationToken cancellationToken = default)
+        public ValueTask PublishAsync<TContent>(TContent content, string exchange = null, string routingKey = null, IMessageProperties properties = null, PublishFlags flags = PublishFlags.None, CancellationToken cancellationToken = default)
         {
             this.CheckDisposed();
 
@@ -26,7 +25,7 @@ namespace RabbitMQ.Next.Publisher
             using var bufferWriter = this.Connection.BufferPool.Create();
             this.Serializer.Serialize(content, bufferWriter);
 
-            await this.SendMessageAsync(message, bufferWriter, cancellationToken);
+            return this.SendMessageAsync(message, bufferWriter, cancellationToken);
         }
 
         public ValueTask CompleteAsync() => this.DisposeAsync();

@@ -11,7 +11,7 @@ namespace RabbitMQ.Next.Publisher
         private List<IMessageTransformer> transformers;
         private List<ITypeFormatter> formatters;
         private List<IFormatterSource> formatterSources;
-        private List<Func<ReturnedMessage, IContent, bool>> returnedMessageHandlers;
+        private List<IReturnedMessageHandler> returnedMessageHandlers;
 
         public int BufferSize { get; private set; }
 
@@ -21,7 +21,7 @@ namespace RabbitMQ.Next.Publisher
 
         public IReadOnlyList<IFormatterSource> FormatterSources => this.formatterSources;
 
-        public IReadOnlyList<Func<ReturnedMessage, IContent, bool>> ReturnedMessageHandlers => this.returnedMessageHandlers;
+        public IReadOnlyList<IReturnedMessageHandler> ReturnedMessageHandlers => this.returnedMessageHandlers;
 
         IPublisherBuilder IPublisherBuilder.AllowBuffer(int messages)
         {
@@ -35,13 +35,23 @@ namespace RabbitMQ.Next.Publisher
 
         IPublisherBuilder IPublisherBuilder.UseFormatter(ITypeFormatter typeFormatter)
         {
+            if (typeFormatter == null)
+            {
+                throw new ArgumentNullException(nameof(typeFormatter));
+            }
+
             this.formatters ??= new List<ITypeFormatter>();
             this.formatters.Add(typeFormatter);
             return this;
         }
 
-        IPublisherBuilder IPublisherBuilder.UserFormatterSource(IFormatterSource formatters)
+        IPublisherBuilder IPublisherBuilder.UseFormatterSource(IFormatterSource formatters)
         {
+            if (formatters == null)
+            {
+                throw new ArgumentNullException(nameof(formatters));
+            }
+
             this.formatterSources ??= new List<IFormatterSource>();
             this.formatterSources.Add(formatters);
             return this;
@@ -49,14 +59,24 @@ namespace RabbitMQ.Next.Publisher
 
         IPublisherBuilder IPublisherBuilder.UseTransformer(IMessageTransformer transformer)
         {
+            if (transformer == null)
+            {
+                throw new ArgumentNullException(nameof(transformer));
+            }
+
             this.transformers ??= new List<IMessageTransformer>();
             this.transformers.Add(transformer);
             return this;
         }
 
-        IPublisherBuilder IPublisherBuilder.AddReturnedMessageHandler(Func<ReturnedMessage, IContent, bool> returnedMessageHandler)
+        IPublisherBuilder IPublisherBuilder.AddReturnedMessageHandler(IReturnedMessageHandler returnedMessageHandler)
         {
-            this.returnedMessageHandlers ??= new List<Func<ReturnedMessage, IContent, bool>>();
+            if (returnedMessageHandler == null)
+            {
+                throw new ArgumentNullException(nameof(returnedMessageHandler));
+            }
+
+            this.returnedMessageHandlers ??= new List<IReturnedMessageHandler>();
             this.returnedMessageHandlers.Add(returnedMessageHandler);
             return this;
         }

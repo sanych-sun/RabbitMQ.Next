@@ -10,10 +10,10 @@ namespace RabbitMQ.Next.Publisher.Abstractions
 
         IPublisherBuilder UseFormatter(ITypeFormatter typeFormatter);
 
-        IPublisherBuilder UserFormatterSource(IFormatterSource formatters);
+        IPublisherBuilder UseFormatterSource(IFormatterSource formatters);
 
         IPublisherBuilder UseTransformer(IMessageTransformer transformer);
 
-        IPublisherBuilder AddReturnedMessageHandler(Func<ReturnedMessage, IContent, bool> returnedMessageHandler);
+        IPublisherBuilder AddReturnedMessageHandler(IReturnedMessageHandler returnedMessageHandler);
     }
 }

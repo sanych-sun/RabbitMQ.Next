@@ -28,20 +28,23 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
 
             var flags = (ushort)0;
 
-            target = target
-                .WriteProperty(properties.ContentType, ref flags, 15)
-                .WriteProperty(properties.ContentEncoding, ref flags, 14)
-                .WriteProperty(properties.Headers, ref flags, 13)
-                .WriteProperty((byte) properties.DeliveryMode, ref flags, 12)
-                .WriteProperty(properties.Priority, ref flags, 11)
-                .WriteProperty(properties.CorrelationId, ref flags, 10)
-                .WriteProperty(properties.ReplyTo, ref flags, 9)
-                .WriteProperty(properties.Expiration, ref flags, 8)
-                .WriteProperty(properties.MessageId, ref flags, 7)
-                .WriteProperty(properties.Timestamp, ref flags, 6)
-                .WriteProperty(properties.Type, ref flags, 5)
-                .WriteProperty(properties.UserId, ref flags, 4)
-                .WriteProperty(properties.ApplicationId, ref flags, 3);
+            if (properties != null)
+            {
+                target = target
+                    .WriteProperty(properties.ContentType, ref flags, 15)
+                    .WriteProperty(properties.ContentEncoding, ref flags, 14)
+                    .WriteProperty(properties.Headers, ref flags, 13)
+                    .WriteProperty((byte) properties.DeliveryMode, ref flags, 12)
+                    .WriteProperty(properties.Priority, ref flags, 11)
+                    .WriteProperty(properties.CorrelationId, ref flags, 10)
+                    .WriteProperty(properties.ReplyTo, ref flags, 9)
+                    .WriteProperty(properties.Expiration, ref flags, 8)
+                    .WriteProperty(properties.MessageId, ref flags, 7)
+                    .WriteProperty(properties.Timestamp, ref flags, 6)
+                    .WriteProperty(properties.Type, ref flags, 5)
+                    .WriteProperty(properties.UserId, ref flags, 4)
+                    .WriteProperty(properties.ApplicationId, ref flags, 3);
+            }
 
             flagsSpan.Write(flags);
 

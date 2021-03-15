@@ -58,6 +58,12 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Basic
             yield return new object[]
             {
                 new byte[] { 0, 60, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0b_00000000, 0b_00000000 },
+                null, 1
+            };
+
+            yield return new object[]
+            {
+                new byte[] { 0, 60, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0b_00000000, 0b_00000000 },
                 new MessageProperties(), 1
             };
 

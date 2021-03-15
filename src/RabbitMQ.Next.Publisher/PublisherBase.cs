@@ -19,12 +19,12 @@ namespace RabbitMQ.Next.Publisher
     {
         private readonly SemaphoreSlim channelOpenSync = new SemaphoreSlim(1,1);
         private readonly ContentAccessor returnedMessageContentAccessor;
-        private readonly IReadOnlyList<Func<ReturnedMessage, IContent, bool>> returnedMessageHandlers;
+        private readonly IReadOnlyList<IReturnedMessageHandler> returnedMessageHandlers;
         private readonly IFrameHandler returnedFrameHandler;
 
         private IChannel channel;
 
-        protected PublisherBase(IConnection connection, ISerializer serializer, IReadOnlyList<IMessageTransformer> transformers, IReadOnlyList<Func<ReturnedMessage, IContent, bool>> returnedMessageHandlers)
+        protected PublisherBase(IConnection connection, ISerializer serializer, IReadOnlyList<IMessageTransformer> transformers, IReadOnlyList<IReturnedMessageHandler> returnedMessageHandlers)
         {
             this.returnedMessageContentAccessor = new ContentAccessor(serializer);
             this.Connection = connection;
@@ -61,14 +61,22 @@ namespace RabbitMQ.Next.Publisher
                 return;
             }
 
-            var ch = this.channel;
-            if (ch == null || ch.IsClosed)
+            if (this.returnedMessageHandlers != null)
             {
-                return;
+                for (var i = 0; i < this.returnedMessageHandlers.Count; i++)
+                {
+                    this.returnedMessageHandlers[i].Dispose();
+                }
             }
 
             this.IsDisposed = true;
-            await ch.CloseAsync();
+            var ch = this.channel;
+            this.channel = null;
+
+            if (ch != null)
+            {
+                await ch.CloseAsync();
+            }
         }
 
         protected ValueTask SendMessageAsync((string Exchange, string RoutingKey, IMessageProperties Properties, PublishFlags PublishFlags) message, IBufferWriter contentBuffer, CancellationToken cancellationToken = default)
@@ -82,10 +90,7 @@ namespace RabbitMQ.Next.Publisher
 
         protected async ValueTask UseChannelAsync<TState>(TState state, Func<IChannel, TState, Task> fn, CancellationToken cancellationToken = default)
         {
-            if (this.IsDisposed)
-            {
-                throw new ObjectDisposedException(this.GetType().Name);
-            }
+            this.CheckDisposed();
 
             var ch = this.channel;
             if (ch == null || ch.IsClosed)
@@ -99,6 +104,8 @@ namespace RabbitMQ.Next.Publisher
         protected (string Exchange, string RoutingKey, IMessageProperties Properties, PublishFlags PublishFlags) ApplyTransformers<TContent>(
             TContent content, string exchange, string routingKey, IMessageProperties properties, PublishFlags publishFlags)
         {
+            this.CheckDisposed();
+
             if (this.Transformers == null)
             {
                 return (exchange, routingKey, properties, publishFlags);
@@ -145,7 +152,7 @@ namespace RabbitMQ.Next.Publisher
             {
                 var message = new ReturnedMessage(method.Exchange, method.RoutingKey, properties, method.ReplyCode, method.ReplyText);
 
-                if (this.returnedMessageHandlers[i].Invoke(message, this.returnedMessageContentAccessor))
+                if (this.returnedMessageHandlers[i].TryHandle(message, this.returnedMessageContentAccessor))
                 {
                     break;
                 }

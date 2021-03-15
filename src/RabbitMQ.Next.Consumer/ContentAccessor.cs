@@ -1,3 +1,4 @@
+using System;
 using System.Buffers;
 using RabbitMQ.Next.Consumer.Abstractions;
 using RabbitMQ.Next.Serialization;
@@ -11,6 +12,11 @@ namespace RabbitMQ.Next.Consumer
 
         public ContentAccessor(ISerializer serializer)
         {
+            if (serializer == null)
+            {
+                throw new ArgumentNullException(nameof(serializer));
+            }
+
             this.serializer = serializer;
         }
 
