@@ -17,7 +17,7 @@ namespace RabbitMQ.Next.Publisher
     {
         private readonly SemaphoreSlim publishQueueSync;
         private readonly AsyncManualResetEvent waitToRead;
-        private readonly TaskCompletionSource<bool> queueCompleteTcs;
+        private readonly Task messageSendTask;
 
         private readonly ConcurrentQueue<((string Exchange, string RoutingKey, IMessageProperties Properties, PublishFlags PublishFlags) Message, IBufferWriter Content)> localQueue;
         private volatile bool isCompleted;
@@ -28,27 +28,37 @@ namespace RabbitMQ.Next.Publisher
         {
             this.publishQueueSync = new SemaphoreSlim(bufferSize);
 
-            this.queueCompleteTcs = new TaskCompletionSource<bool>();
             this.waitToRead = new AsyncManualResetEvent(true);
             this.localQueue = new ConcurrentQueue<((string Exchange, string RoutingKey, IMessageProperties Properties, PublishFlags PublishFlags), IBufferWriter)>();
             this.isCompleted = false;
 
-            Task.Run(this.MessageSendLoop);
+            this.messageSendTask = this.MessageSendLoop();
         }
 
         public async ValueTask PublishAsync<TContent>(TContent content, string exchange = null, string routingKey = null, IMessageProperties properties = null, PublishFlags flags = PublishFlags.None, CancellationToken cancellationToken = default)
         {
-            this.CheckDisposed();
-            if (this.isCompleted)
+            void DisposedOrCompletedCheck()
             {
-                throw new ObjectDisposedException(this.GetType().Name);
+                this.CheckDisposed();
+                if (this.isCompleted)
+                {
+                    throw new ObjectDisposedException(this.GetType().Name);
+                }
             }
 
+            DisposedOrCompletedCheck();
             await this.publishQueueSync.WaitAsync(cancellationToken);
+            DisposedOrCompletedCheck();
 
             var message = this.ApplyTransformers(content, exchange, routingKey, properties, flags);
             var bufferWriter = this.Connection.BufferPool.Create();
             this.Serializer.Serialize(content, bufferWriter);
+
+            if (this.messageSendTask.IsCompleted)
+            {
+                // should never be here, but just in case the publisher was completed have to throw
+                throw new ObjectDisposedException(this.GetType().Name);
+            }
 
             this.localQueue.Enqueue((message, bufferWriter));
             this.waitToRead.Set();
@@ -58,9 +68,15 @@ namespace RabbitMQ.Next.Publisher
 
         protected override async ValueTask DisposeAsyncCore()
         {
+            if (this.isCompleted)
+            {
+                return;
+            }
+
             this.isCompleted = true;
             this.waitToRead.Set();
-            await this.queueCompleteTcs.Task;
+            await this.messageSendTask;
+            this.waitToRead.Dispose();
             await base.DisposeAsyncCore();
         }
 
@@ -76,9 +92,9 @@ namespace RabbitMQ.Next.Publisher
                     i.Content.Dispose();
                     this.publishQueueSync.Release();
                 }
-            }
 
-            this.queueCompleteTcs.SetResult(true);
+                this.waitToRead.Reset();
+            }
         }
 
     }

@@ -1,11 +1,13 @@
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace RabbitMQ.Next.Transport
 {
-    public class AsyncManualResetEvent
+    public class AsyncManualResetEvent : IDisposable
     {
         private volatile TaskCompletionSource<bool> completionSource;
+        private volatile bool disposed;
 
         public AsyncManualResetEvent(bool initialState = false)
         {
@@ -17,11 +19,14 @@ namespace RabbitMQ.Next.Transport
 
         public void Set()
         {
+            this.CheckDisposed();
             this.completionSource?.TrySetResult(true);
         }
 
         public ValueTask WaitAsync(CancellationToken cancellationToken = default)
         {
+            this.CheckDisposed();
+
             if (this.completionSource == null)
             {
                 return default;
@@ -42,6 +47,7 @@ namespace RabbitMQ.Next.Transport
 
         public void Reset()
         {
+            this.CheckDisposed();
             var currentCompletionSource = this.completionSource;
 
             if (currentCompletionSource != null && !currentCompletionSource.Task.IsCompleted)
@@ -50,6 +56,23 @@ namespace RabbitMQ.Next.Transport
             }
 
             Interlocked.CompareExchange(ref this.completionSource, new TaskCompletionSource<bool>(), currentCompletionSource);
+        }
+
+        public void Dispose()
+        {
+            this.disposed = true;
+            var currentCompletionSource = this.completionSource;
+            this.completionSource = null;
+
+            currentCompletionSource?.SetCanceled();
+        }
+
+        private void CheckDisposed()
+        {
+            if (this.disposed)
+            {
+                throw new ObjectDisposedException(nameof(AsyncManualResetEvent));
+            }
         }
     }
 }
