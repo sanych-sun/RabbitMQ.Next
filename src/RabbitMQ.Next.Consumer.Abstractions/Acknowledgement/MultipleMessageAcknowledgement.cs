@@ -11,12 +11,12 @@ namespace RabbitMQ.Next.Consumer.Abstractions.Acknowledgement
         private readonly CancellationTokenSource cts;
         private long lastProcessed;
 
-        public MultipleMessageAcknowledgement(IAcknowledgement acknowledgement, TimeSpan timeout)
+        public MultipleMessageAcknowledgement(IAcknowledgement acknowledgement, TimeSpan timeout, int count)
         {
             this.acknowledgement = acknowledgement;
             this.cts = new CancellationTokenSource();
 
-            this.Worker(timeout, this.cts.Token);
+            this.Worker(timeout, count, this.cts.Token);
         }
 
         public ValueTask AckAsync(ulong deliveryTag, bool multiple = false)
@@ -57,7 +57,7 @@ namespace RabbitMQ.Next.Consumer.Abstractions.Acknowledgement
             }
         }
 
-        private async Task Worker(TimeSpan timeout, CancellationToken cancellationToken)
+        private async Task Worker(TimeSpan timeout, int count, CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
             {
