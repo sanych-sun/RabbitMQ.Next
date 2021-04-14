@@ -21,6 +21,26 @@ namespace RabbitMQ.Next.Tests.Transport.Buffers
         }
 
         [Fact]
+        public void EmptySizeDoesNotRentBuffer()
+        {
+            var bufferManager = Substitute.For<IBufferManager>();
+
+            var memoryOwner = new MemoryOwner(bufferManager, 0);
+            var memory = memoryOwner.Memory;
+
+            bufferManager.DidNotReceive().Rent(Arg.Any<int>());
+            Assert.Equal(0, memory.Length);
+        }
+
+        [Fact]
+        public void ThrowsOnWrongSize()
+        {
+            var bufferManager = Substitute.For<IBufferManager>();
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => new MemoryOwner(bufferManager, -5));
+        }
+
+        [Fact]
         public void MemoryReturnsSameBuffer()
         {
             var bufferManager = Substitute.For<IBufferManager>();

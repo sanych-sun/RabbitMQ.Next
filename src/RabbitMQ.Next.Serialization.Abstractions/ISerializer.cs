@@ -1,6 +1,6 @@
 using System.Buffers;
 
-namespace RabbitMQ.Next.Serialization
+namespace RabbitMQ.Next.Serialization.Abstractions
 {
     public interface ISerializer
     {

@@ -1,5 +1,6 @@
 using System;
 using System.Buffers;
+using RabbitMQ.Next.Abstractions.Channels;
 
 namespace RabbitMQ.Next.Transport.Channels
 {
@@ -7,7 +8,7 @@ namespace RabbitMQ.Next.Transport.Channels
     {
         public const int FrameHeaderSize = 5; // type (byte) + size (int)
 
-        public static void WriteChannelHeader(this IBufferWriter<byte> buffer, FrameType type, int size)
+        public static void WriteChannelHeader(this IBufferWriter<byte> buffer, ChannelFrameType type, int size)
         {
             buffer.GetSpan(FrameHeaderSize)
                 .Write((byte) type)

@@ -1,14 +1,15 @@
 using System;
+using RabbitMQ.Next.Abstractions.Messaging;
 
 namespace RabbitMQ.Next.Publisher.Abstractions
 {
     internal class ReturnedMessageDelegateHandler : IReturnedMessageHandler
     {
-        private readonly Func<ReturnedMessage, IContent, bool> wrapped;
+        private Func<ReturnedMessage, IMessageProperties, Content, bool> wrapped;
 
-        public ReturnedMessageDelegateHandler(Func<ReturnedMessage, IContent, bool> handler)
+        public ReturnedMessageDelegateHandler(Func<ReturnedMessage, IMessageProperties, Content, bool> handler)
         {
-            if (wrapped == null)
+            if (handler == null)
             {
                 throw new ArgumentNullException(nameof(handler));
             }
@@ -16,8 +17,19 @@ namespace RabbitMQ.Next.Publisher.Abstractions
             this.wrapped = handler;
         }
 
-        public void Dispose() { }
+        public void Dispose()
+        {
+            this.wrapped = null;
+        }
 
-        public bool TryHandle(ReturnedMessage message, IContent content) => this.wrapped(message, content);
+        public bool TryHandle(ReturnedMessage message, IMessageProperties properties, Content content)
+        {
+            if (this.wrapped == null)
+            {
+                return false;
+            }
+
+            return this.wrapped(message, properties, content);
+        }
     }
 }

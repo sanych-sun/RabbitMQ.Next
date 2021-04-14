@@ -11,9 +11,14 @@ namespace RabbitMQ.Next.Abstractions.Buffers
 
         public MemoryOwner(IBufferManager manager, int size)
         {
+            if (size < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(size));
+            }
+
             this.manager = manager;
             this.size = size;
-            this.memory = this.manager.Rent(size);
+            this.memory = size == 0 ? Array.Empty<byte>() : this.manager.Rent(size);
         }
 
         public void Dispose()
@@ -36,13 +41,7 @@ namespace RabbitMQ.Next.Abstractions.Buffers
                     throw new ObjectDisposedException(nameof(MemoryOwner));
                 }
 
-                if (this.size == 0)
-                {
-                    return this.memory;
-                }
-
                 return new Memory<byte>(this.memory, 0, this.size);
-
             }
         }
     }

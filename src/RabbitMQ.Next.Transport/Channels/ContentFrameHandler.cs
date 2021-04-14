@@ -6,7 +6,7 @@ using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Exceptions;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Abstractions.Methods;
-using RabbitMQ.Next.Transport.Methods.Basic;
+using RabbitMQ.Next.Transport.Messaging;
 
 namespace RabbitMQ.Next.Transport.Channels
 {
@@ -19,8 +19,6 @@ namespace RabbitMQ.Next.Transport.Channels
         private readonly Action<TMessage, IMessageProperties, ReadOnlySequence<byte>> handler;
         private ContentFrameHandlerState state = ContentFrameHandlerState.None;
         private TMessage method;
-        private IMessageProperties properties;
-
 
         public ContentFrameHandler(uint contentMethodId, IMethodParser<TMessage> methodParser, Action<TMessage, IMessageProperties, ReadOnlySequence<byte>> handler, IBufferPool bufferPool)
         {
@@ -35,7 +33,6 @@ namespace RabbitMQ.Next.Transport.Channels
             var prevState = this.state;
             this.state = ContentFrameHandlerState.None;
             this.method = default;
-            this.properties = null;
 
             return prevState;
         }
@@ -46,10 +43,8 @@ namespace RabbitMQ.Next.Transport.Channels
             {
                 case ChannelFrameType.Method:
                     return this.TryHandleMethodFrame(payload);
-                case ChannelFrameType.ContentHeader:
-                    return this.TryHandleContentHeader(payload);
-                case ChannelFrameType.ContentBody:
-                    return this.TryHandlerContentBody(payload);
+                case ChannelFrameType.Content:
+                    return this.TryHandleContentFrame(payload);
                 default:
                     throw new ConnectionException(ReplyCode.UnexpectedFrame, $"Received unexpected {type} frame");
             }
@@ -80,56 +75,29 @@ namespace RabbitMQ.Next.Transport.Channels
                 this.method = this.methodParser.Parse(buffer.Memory.Span);
             }
 
-            this.state = ContentFrameHandlerState.ExpectHeader;
+            this.state = ContentFrameHandlerState.ExpectContent;
 
             return true;
         }
 
-        private bool TryHandleContentHeader(ReadOnlySequence<byte> payload)
+        private bool TryHandleContentFrame(ReadOnlySequence<byte> payload)
         {
             if (this.state == ContentFrameHandlerState.None)
             {
                 return false;
             }
 
-            if (this.state != ContentFrameHandlerState.ExpectHeader)
-            {
-                throw new ConnectionException(ReplyCode.UnexpectedFrame, $"Received unexpected content header frame when in {this.state} state.");
-            }
+            payload = payload.Read(out int headerSize);
+            var headerBytes = payload.Slice(0, headerSize);
+            var contentBytes = payload.Slice(headerSize);
 
-            if (payload.IsSingleSegment)
-            {
-                payload.FirstSpan.ReadMessageProperties(out var props);
-                this.properties = props;
-            }
-            else
-            {
-                using var buffer = this.bufferPool.CreateMemory((int)payload.Length);
-                payload.CopyTo(buffer.Memory.Span);
+            var messageProps = new MessageProperties(headerBytes);
+            this.handler(this.method, messageProps, contentBytes);
 
-                ((ReadOnlySpan<byte>)buffer.Memory.Span).ReadMessageProperties(out var props);
-                this.properties = props;
-            }
-
-            this.state = ContentFrameHandlerState.ExpectBody;
-            return true;
-        }
-
-        private bool TryHandlerContentBody(ReadOnlySequence<byte> payload)
-        {
-            if (this.state == ContentFrameHandlerState.None)
-            {
-                return false;
-            }
-
-            if (this.state != ContentFrameHandlerState.ExpectBody)
-            {
-                throw new ConnectionException(ReplyCode.UnexpectedFrame, $"Received unexpected content frame when in {this.state} state.");
-            }
-
-            this.handler(this.method, this.properties, payload);
+            // todo: dispose messageProps here to avoid buffers from leaking
 
             this.ResetState();
+
             return true;
         }
     }

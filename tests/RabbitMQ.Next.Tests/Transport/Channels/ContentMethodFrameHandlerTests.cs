@@ -79,46 +79,46 @@ namespace RabbitMQ.Next.Tests.Transport.Channels
                 0x00,0x3C,0x00,0x3C,  0x08, 0x63, 0x6F, 0x6E, 0x73, 0x75, 0x6D, 0x65, 0x72, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x2A, 0x01, 0x08, 0x65, 0x78, 0x63, 0x68, 0x61, 0x6E, 0x67, 0x65, 0x0A, 0x72, 0x6F, 0x75, 0x74, 0x69, 0x6E, 0x67, 0x4B, 0x65, 0x79
             };
 
-            var properties = new MessageProperties {MessageId = "messageId"};
-            var propertiesBytes = new byte[]
+            var properties = new MessagePropertiesMock {MessageId = "messageId"};
+            var contentBytes = new byte[]
             {
-                0b_00000000, 0b_10000000, 0x09, 0x6D, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x49, 0x64
-            };
-            var contentBody = new byte[]
-            {
+                // header size bytes
+                0, 0, 0, 12,
+                // header bytes
+                0b_00000000, 0b_10000000, 0x09, 0x6D, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x49, 0x64,
+                // content bytes
                 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15
             };
 
+            var payloadBytes = new byte[] {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15};
+
             yield return new object[]
             {
-                deliverMethod, properties, contentBody,
+                deliverMethod, properties, payloadBytes,
                 new[]
                 {
                     (ChannelFrameType.Method, Helpers.MakeSequence(deliverMethodBytes)),
-                    (ChannelFrameType.ContentHeader, Helpers.MakeSequence(propertiesBytes)),
-                    (ChannelFrameType.ContentBody, Helpers.MakeSequence(contentBody)),
+                    (ChannelFrameType.Content, Helpers.MakeSequence(contentBytes)),
                 }
             };
 
             yield return new object[]
             {
-                deliverMethod, properties, contentBody,
+                deliverMethod, properties, payloadBytes,
                 new[]
                 {
                     (ChannelFrameType.Method, Helpers.MakeSequence(deliverMethodBytes, 5)),
-                    (ChannelFrameType.ContentHeader, Helpers.MakeSequence(propertiesBytes, 5)),
-                    (ChannelFrameType.ContentBody, Helpers.MakeSequence(contentBody, 5)),
+                    (ChannelFrameType.Content, Helpers.MakeSequence(contentBytes, 18)),
                 }
             };
 
             yield return new object[]
             {
-                deliverMethod, properties, contentBody,
+                deliverMethod, properties, payloadBytes,
                 new[]
                 {
                     (ChannelFrameType.Method, Helpers.MakeSequence(deliverMethodBytes, 2, 5)),
-                    (ChannelFrameType.ContentHeader, Helpers.MakeSequence(propertiesBytes, 2 ,5)),
-                    (ChannelFrameType.ContentBody, Helpers.MakeSequence(contentBody, 2, 5)),
+                    (ChannelFrameType.Content, Helpers.MakeSequence(contentBytes, 18, 5)),
                 }
             };
         }
@@ -137,7 +137,7 @@ namespace RabbitMQ.Next.Tests.Transport.Channels
             {
                 new[]
                 {
-                    (ChannelFrameType.ContentHeader, Helpers.MakeSequence(new byte[] { 0x00, 0x00 })),
+                    (ChannelFrameType.Content, Helpers.MakeSequence(new byte[] { 0x00, 0x00 })),
                 }
             };
 
@@ -145,7 +145,7 @@ namespace RabbitMQ.Next.Tests.Transport.Channels
             {
                 new[]
                 {
-                    (ChannelFrameType.ContentBody, Helpers.MakeSequence(new byte[] { 0x00, 0x00 }))
+                    (ChannelFrameType.Content, Helpers.MakeSequence(new byte[] { 0x00, 0x00 }))
                 }
             };
 
@@ -154,17 +154,7 @@ namespace RabbitMQ.Next.Tests.Transport.Channels
                 new[]
                 {
                     (ChannelFrameType.Method, Helpers.MakeSequence(new byte[] {  0x00, 0x3C, 0x00, 0x32 })),
-                    (ChannelFrameType.ContentHeader, Helpers.MakeSequence(new byte[] { 0x00, 0x00 }))
-                }
-            };
-
-            yield return new object[]
-            {
-                new[]
-                {
-                    (ChannelFrameType.Method, Helpers.MakeSequence(new byte[] { 0x00, 0x3C, 0x00, 0x32 })),
-                    (ChannelFrameType.ContentHeader, Helpers.MakeSequence(new byte[] { 0x00, 0x00 })),
-                    (ChannelFrameType.ContentBody, Helpers.MakeSequence(new byte[] { 0x00, 0x00 }))
+                    (ChannelFrameType.Content, Helpers.MakeSequence(new byte[] { 0x00, 0x00 }))
                 }
             };
         }
@@ -181,11 +171,7 @@ namespace RabbitMQ.Next.Tests.Transport.Channels
 
             var deliverBytes = new byte[]
             {
-                0x00,0x3C,0x00,0x3C,  0x08, 0x63, 0x6F, 0x6E, 0x73, 0x75, 0x6D, 0x65, 0x72, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x2A, 0x01, 0x08, 0x65, 0x78, 0x63, 0x68, 0x61, 0x6E, 0x67, 0x65, 0x0A, 0x72, 0x6F, 0x75, 0x74, 0x69, 0x6E, 0x67, 0x4B, 0x65, 0x79
-            };
-            var propertiesBytes = new byte[]
-            {
-                0b_00000000, 0b_10000000, 0x09, 0x6D, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x49, 0x64
+                0x00,0x3C,0x00,0x3C, 0x08, 0x63, 0x6F, 0x6E, 0x73, 0x75, 0x6D, 0x65, 0x72, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x2A, 0x01, 0x08, 0x65, 0x78, 0x63, 0x68, 0x61, 0x6E, 0x67, 0x65, 0x0A, 0x72, 0x6F, 0x75, 0x74, 0x69, 0x6E, 0x67, 0x4B, 0x65, 0x79
             };
 
             yield return new object[]
@@ -203,35 +189,6 @@ namespace RabbitMQ.Next.Tests.Transport.Channels
                 {
                     (ChannelFrameType.Method, Helpers.MakeSequence(deliverBytes)),
                     (ChannelFrameType.Method, Helpers.MakeSequence(deliverBytes)),
-                }
-            };
-
-            yield return new object[]
-            {
-                new[]
-                {
-                    (ChannelFrameType.Method, Helpers.MakeSequence(deliverBytes)),
-                    (ChannelFrameType.ContentBody, Helpers.MakeSequence(new byte[] { 0x00, 0x3C, 0x00, 0x32 })),
-                }
-            };
-
-            yield return new object[]
-            {
-                new[]
-                {
-                    (ChannelFrameType.Method, Helpers.MakeSequence(deliverBytes)),
-                    (ChannelFrameType.ContentHeader, Helpers.MakeSequence(propertiesBytes)),
-                    (ChannelFrameType.Method, Helpers.MakeSequence(deliverBytes)),
-                }
-            };
-
-            yield return new object[]
-            {
-                new[]
-                {
-                    (ChannelFrameType.Method, Helpers.MakeSequence(deliverBytes)),
-                    (ChannelFrameType.ContentHeader, Helpers.MakeSequence(propertiesBytes)),
-                    (ChannelFrameType.ContentHeader, Helpers.MakeSequence(propertiesBytes)),
                 }
             };
         }

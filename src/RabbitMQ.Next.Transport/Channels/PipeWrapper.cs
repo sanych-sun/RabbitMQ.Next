@@ -1,6 +1,7 @@
 using System;
 using System.Buffers;
 using System.IO.Pipelines;
+using RabbitMQ.Next.Abstractions.Channels;
 
 namespace RabbitMQ.Next.Transport.Channels
 {
@@ -14,7 +15,7 @@ namespace RabbitMQ.Next.Transport.Channels
             this.writer = writer;
         }
 
-        public void BeginLogicalFrame(FrameType type, int size)
+        public void BeginLogicalFrame(ChannelFrameType type, int size)
         {
             if (this.dataSize != 0)
             {

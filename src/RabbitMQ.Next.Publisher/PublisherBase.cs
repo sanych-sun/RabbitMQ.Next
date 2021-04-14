@@ -9,7 +9,7 @@ using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Abstractions.Transformers;
-using RabbitMQ.Next.Serialization;
+using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.Transport.Channels;
 using RabbitMQ.Next.Transport.Methods.Basic;
 
@@ -18,7 +18,6 @@ namespace RabbitMQ.Next.Publisher
     internal abstract class PublisherBase : IAsyncDisposable
     {
         private readonly SemaphoreSlim channelOpenSync = new SemaphoreSlim(1,1);
-        private readonly ContentAccessor returnedMessageContentAccessor;
         private readonly IReadOnlyList<IReturnedMessageHandler> returnedMessageHandlers;
         private readonly IFrameHandler returnedFrameHandler;
 
@@ -26,7 +25,6 @@ namespace RabbitMQ.Next.Publisher
 
         protected PublisherBase(IConnection connection, ISerializer serializer, IReadOnlyList<IMessageTransformer> transformers, IReadOnlyList<IReturnedMessageHandler> returnedMessageHandlers)
         {
-            this.returnedMessageContentAccessor = new ContentAccessor(serializer);
             this.Connection = connection;
             this.Serializer = serializer;
             this.Transformers = transformers;
@@ -147,18 +145,15 @@ namespace RabbitMQ.Next.Publisher
 
         private void HandleReturnedMessage(ReturnMethod method, IMessageProperties properties, ReadOnlySequence<byte> content)
         {
-            this.returnedMessageContentAccessor.SetPayload(content);
             for (var i = 0; i < this.returnedMessageHandlers.Count; i++)
             {
-                var message = new ReturnedMessage(method.Exchange, method.RoutingKey, properties, method.ReplyCode, method.ReplyText);
+                var message = new ReturnedMessage(method.Exchange, method.RoutingKey, method.ReplyCode, method.ReplyText);
 
-                if (this.returnedMessageHandlers[i].TryHandle(message, this.returnedMessageContentAccessor))
+                if (this.returnedMessageHandlers[i].TryHandle(message, properties, new Content(this.Serializer, content)))
                 {
                     break;
                 }
             }
-
-            this.returnedMessageContentAccessor.SetPayload(ReadOnlySequence<byte>.Empty);
         }
     }
 }

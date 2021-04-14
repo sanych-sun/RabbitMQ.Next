@@ -48,7 +48,7 @@ namespace RabbitMQ.Next.Transport.Channels
                 return false;
             }
 
-            payload = payload.Read(out var methodId);
+            payload = payload.Read(out uint methodId);
 
             var task = this.waitingTask;
             if (methodId == this.expectedMethodId)

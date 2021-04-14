@@ -6,6 +6,7 @@ using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Abstractions.Transformers;
 using RabbitMQ.Next.Serialization;
+using RabbitMQ.Next.Serialization.Abstractions;
 
 namespace RabbitMQ.Next.Publisher
 {
@@ -16,7 +17,7 @@ namespace RabbitMQ.Next.Publisher
         {
         }
 
-        public ValueTask PublishAsync<TContent>(TContent content, string exchange = null, string routingKey = null, IMessageProperties properties = null, PublishFlags flags = PublishFlags.None, CancellationToken cancellationToken = default)
+        public async ValueTask PublishAsync<TContent>(TContent content, string exchange = null, string routingKey = null, IMessageProperties properties = null, PublishFlags flags = PublishFlags.None, CancellationToken cancellationToken = default)
         {
             this.CheckDisposed();
 
@@ -25,7 +26,7 @@ namespace RabbitMQ.Next.Publisher
             using var bufferWriter = this.Connection.BufferPool.Create();
             this.Serializer.Serialize(content, bufferWriter);
 
-            return this.SendMessageAsync(message, bufferWriter, cancellationToken);
+            await this.SendMessageAsync(message, bufferWriter, cancellationToken);
         }
 
         public ValueTask CompleteAsync() => this.DisposeAsync();

@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using NSubstitute;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Buffers;
-using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Abstractions.Transformers;
 using RabbitMQ.Next.Publisher.Transformers;
 using RabbitMQ.Next.Serialization;
+using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.Transport.Buffers;
 using RabbitMQ.Next.Transport.Methods.Basic;
 
@@ -36,9 +36,9 @@ namespace RabbitMQ.Next.Tests.Publisher
             yield return new object[]
             {
                 null,
-                "myExchange", "key", new MessageProperties { ApplicationId = "test"}, PublishFlags.None,
+                "myExchange", "key", new MessagePropertiesMock { ApplicationId = "test"}, PublishFlags.None,
                 new PublishMethod("myExchange", "key", 0),
-                new MessageProperties { ApplicationId = "test"}
+                new MessagePropertiesMock { ApplicationId = "test"}
             };
 
             yield return new object[]
@@ -46,23 +46,23 @@ namespace RabbitMQ.Next.Tests.Publisher
                 new IMessageTransformer[] { new ExchangeTransformer("default")},
                 "", "key", null, PublishFlags.None,
                 new PublishMethod("default", "key", 0),
-                new MessageProperties()
+                new MessagePropertiesMock()
             };
 
             yield return new object[]
             {
                 null,
-                "myExchange", "key", new MessageProperties { Priority = 1, Type = "test"}, PublishFlags.None,
+                "myExchange", "key", new MessagePropertiesMock { Priority = 1, Type = "test"}, PublishFlags.None,
                 new PublishMethod("myExchange", "key", 0),
-                new MessageProperties { Priority = 1, Type = "test"}
+                new MessagePropertiesMock { Priority = 1, Type = "test"}
             };
 
             yield return new object[]
             {
                 new IMessageTransformer[] { new UserIdTransformer("testUser")},
-                "exchange", "key", new MessageProperties { Priority = 1, Type = "test"}, PublishFlags.None,
+                "exchange", "key", new MessagePropertiesMock { Priority = 1, Type = "test"}, PublishFlags.None,
                 new PublishMethod("exchange", "key", 0),
-                new MessageProperties { Priority = 1, Type = "test", UserId = "testUser"}
+                new MessagePropertiesMock { Priority = 1, Type = "test", UserId = "testUser"}
             };
         }
 

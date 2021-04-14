@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Messaging;
 
-namespace RabbitMQ.Next.Transport.Methods.Basic
+namespace RabbitMQ.Next.Transport.Messaging
 {
     public static class ContentHeader
     {
@@ -52,46 +52,36 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<byte> ReadMessageProperties(this ReadOnlySpan<byte> source, out IMessageProperties properties)
+        internal static ReadOnlyMemory<byte> ReadProperty(this ReadOnlyMemory<byte> source, out StringProperty value, ushort flags, byte bitNumber)
         {
-            // TODO: might want to read from ReadOnlySequence
-            source = source
-                .Read(out ushort flags)
-                .ReadProperty(out string contentType, flags, 15)
-                .ReadProperty(out string contentEncoding, flags, 14)
-                .ReadProperty(out Dictionary<string, object> headers, flags, 13)
-                .ReadProperty(out byte deliveryMode, flags, 12)
-                .ReadProperty(out byte? priority, flags, 11)
-                .ReadProperty(out string correlationId, flags, 10)
-                .ReadProperty(out string replyTo, flags, 9)
-                .ReadProperty(out string expiration, flags, 8)
-                .ReadProperty(out string messageId, flags, 7)
-                .ReadProperty(out DateTimeOffset? timestamp, flags, 6)
-                .ReadProperty(out string type, flags, 5)
-                .ReadProperty(out string userId, flags, 4)
-                .ReadProperty(out string applicationId, flags, 3);
-
-            properties = new MessageProperties
+            if (!BitConverter.IsFlagSet(flags, bitNumber))
             {
-                ContentType = contentType,
-                ContentEncoding = contentEncoding,
-                Headers = headers,
-                DeliveryMode = (DeliveryMode)deliveryMode,
-                Priority = priority,
-                CorrelationId = correlationId,
-                ReplyTo = replyTo,
-                Expiration = expiration,
-                MessageId = messageId,
-                Timestamp = timestamp,
-                Type = type,
-                UserId = userId,
-                ApplicationId = applicationId
-            };
-            return source;
+                value = new StringProperty(ReadOnlyMemory<byte>.Empty);
+                return source;
+            }
+
+            source.Span.Read(out byte size);
+            value = new StringProperty(source.Slice(0, size + sizeof(byte)));
+
+            return source.Slice(size + sizeof(byte));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ReadOnlySpan<byte> ReadProperty(this ReadOnlySpan<byte> source, out string value, ushort flags, byte bitNumber)
+        internal static ReadOnlyMemory<byte> ReadProperty(this ReadOnlyMemory<byte> source, out TableProperty value, ushort flags, byte bitNumber)
+        {
+            if (!BitConverter.IsFlagSet(flags, bitNumber))
+            {
+                value = new TableProperty(ReadOnlyMemory<byte>.Empty);
+                return source;
+            }
+
+            source.Span.Read(out uint size);
+            value = new TableProperty(source.Slice(0, (int)size + sizeof(uint)));
+            return source.Slice((int)size + sizeof(uint));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static ReadOnlyMemory<byte> ReadProperty(this ReadOnlyMemory<byte> source, out byte? value, ushort flags, byte bitNumber)
         {
             if (!BitConverter.IsFlagSet(flags, bitNumber))
             {
@@ -99,49 +89,13 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
                 return source;
             }
 
-            return source.Read(out value);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ReadOnlySpan<byte> ReadProperty(this ReadOnlySpan<byte> source, out Dictionary<string, object> value, ushort flags, byte bitNumber)
-        {
-            if (!BitConverter.IsFlagSet(flags, bitNumber))
-            {
-                value = default;
-                return source;
-            }
-
-            return source.Read(out value);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ReadOnlySpan<byte> ReadProperty(this ReadOnlySpan<byte> source, out byte value, ushort flags, byte bitNumber)
-        {
-            if (!BitConverter.IsFlagSet(flags, bitNumber))
-            {
-                value = default;
-                return source;
-            }
-
-            return source.Read(out value);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ReadOnlySpan<byte> ReadProperty(this ReadOnlySpan<byte> source, out byte? value, ushort flags, byte bitNumber)
-        {
-            if (!BitConverter.IsFlagSet(flags, bitNumber))
-            {
-                value = default;
-                return source;
-            }
-
-            var result = source.Read(out byte data);
+            source.Span.Read(out byte data);
             value = data;
-            return result;
+            return source.Slice(sizeof(byte));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ReadOnlySpan<byte> ReadProperty(this ReadOnlySpan<byte> source, out DateTimeOffset? value, ushort flags, byte bitNumber)
+        internal static ReadOnlyMemory<byte> ReadProperty(this ReadOnlyMemory<byte> source, out DateTimeOffset? value, ushort flags, byte bitNumber)
         {
             if (!BitConverter.IsFlagSet(flags, bitNumber))
             {
@@ -149,9 +103,9 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
                 return source;
             }
 
-            var result = source.Read(out DateTimeOffset val);
+            source.Span.Read(out DateTimeOffset val);
             value = val;
-            return result;
+            return source.Slice(sizeof(long));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

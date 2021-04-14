@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Runtime.CompilerServices;
@@ -23,7 +24,7 @@ namespace RabbitMQ.Next.Transport
         private readonly SemaphoreSlim writerSemaphore;
         private readonly ChannelPool channelPool;
         private readonly ConnectionString connectionString;
-        private readonly EventSource<ConnectionStateChanged> stateChanged;
+        private readonly EventSource<ConnectionState> stateChanged;
         private readonly IBufferPoolInternal bufferPool;
         private readonly ConnectionDetails connectionDetails = new ConnectionDetails();
 
@@ -39,7 +40,7 @@ namespace RabbitMQ.Next.Transport
         {
             this.State = ConnectionState.Pending;
             this.bufferPool = new BufferPool(ProtocolConstants.FrameMinSize);
-            this.stateChanged = new EventSource<ConnectionStateChanged>();
+            this.stateChanged = new EventSource<ConnectionState>();
             var registryBuilder = new MethodRegistryBuilder();
             registryBuilder.AddConnectionMethods();
             registryBuilder.AddChannelMethods();
@@ -121,7 +122,7 @@ namespace RabbitMQ.Next.Transport
         public IBufferPool BufferPool => this.bufferPool;
         public IConnectionDetails Details => this.connectionDetails;
 
-        public IEventSource<ConnectionStateChanged> StateChanged => this.stateChanged;
+        public IEventSource<ConnectionState> StateChanged => this.stateChanged;
 
         public async Task<IChannel> CreateChannelAsync(IEnumerable<IFrameHandler> handlers = null, CancellationToken cancellationToken = default)
         {
@@ -170,7 +171,7 @@ namespace RabbitMQ.Next.Transport
             }
 
             this.State = newState;
-            await this.stateChanged.InvokeAsync(new ConnectionStateChanged(newState));
+            await this.stateChanged.InvokeAsync(newState);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -227,7 +228,7 @@ namespace RabbitMQ.Next.Transport
                     switch (frameType)
                     {
                         case FrameType.Method:
-                            targetPipe.BeginLogicalFrame(FrameType.Method, (int) payloadSize);
+                            targetPipe.BeginLogicalFrame(ChannelFrameType.Method, (int) payloadSize);
                             await this.socket.FillBufferAsync(targetPipe, (int)payloadSize, cancellationToken);
                             break;
                         case FrameType.ContentHeader:
@@ -238,13 +239,14 @@ namespace RabbitMQ.Next.Transport
                                 .Span)).Read(out ulong contentSide);
 
                             var headerSize = payloadSize - customHeaderSize;
-                            targetPipe.BeginLogicalFrame(FrameType.ContentHeader, (int)headerSize);
+                            targetPipe.BeginLogicalFrame(ChannelFrameType.Content, sizeof(int) + (int)headerSize + (int)contentSide);
+                            targetPipe.GetMemory(sizeof(int)).Span.Write((int)headerSize);
+                            targetPipe.Advance(sizeof(int));
                             await this.socket.FillBufferAsync(targetPipe, (int)headerSize);
 
-                            targetPipe.BeginLogicalFrame(FrameType.ContentBody, (int)contentSide);
                             break;
                         case FrameType.ContentBody:
-                            await this.socket.FillBufferAsync(targetPipe, (int) payloadSize, cancellationToken);
+                            await this.socket.FillBufferAsync(targetPipe, (int)payloadSize, cancellationToken);
                             break;
                     }
 

@@ -6,6 +6,7 @@ using RabbitMQ.Next.Abstractions.Buffers;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Abstractions.Methods;
 using RabbitMQ.Next.Transport.Buffers;
+using RabbitMQ.Next.Transport.Messaging;
 using RabbitMQ.Next.Transport.Methods;
 using RabbitMQ.Next.Transport.Methods.Basic;
 

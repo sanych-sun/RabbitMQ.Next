@@ -10,7 +10,7 @@ namespace RabbitMQ.Next.Abstractions
 {
     public interface IConnection : IAsyncDisposable
     {
-        IEventSource<ConnectionStateChanged> StateChanged { get; }
+        IEventSource<ConnectionState> StateChanged { get; }
 
         Task<IChannel> CreateChannelAsync(IEnumerable<IFrameHandler> handlers = null, CancellationToken cancellationToken = default);
 

@@ -4,11 +4,10 @@ namespace RabbitMQ.Next.Publisher.Abstractions
 {
     public readonly struct ReturnedMessage
     {
-        public ReturnedMessage(string exchange, string routingKey, IMessageProperties properties, ushort replyCode, string replyText)
+        public ReturnedMessage(string exchange, string routingKey, ushort replyCode, string replyText)
         {
             this.Exchange = exchange;
             this.RoutingKey = routingKey;
-            this.Properties = properties;
             this.ReplyCode = replyCode;
             this.ReplyText = replyText;
         }
@@ -16,8 +15,6 @@ namespace RabbitMQ.Next.Publisher.Abstractions
         public string Exchange { get; }
 
         public string RoutingKey { get; }
-
-        public IMessageProperties Properties { get; }
 
         public ushort ReplyCode { get; }
 
