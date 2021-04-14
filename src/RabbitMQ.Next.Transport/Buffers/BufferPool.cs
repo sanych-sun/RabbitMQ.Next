@@ -13,7 +13,15 @@ namespace RabbitMQ.Next.Transport.Buffers
 
         public IBufferWriter Create() => new BufferWriter(this.bufferManager);
 
-        public MemoryOwner CreateMemory(int size = 0) => new MemoryOwner(this.bufferManager, size);
+        public MemoryOwner CreateMemory(int minSize = 0)
+        {
+            if (minSize == 0)
+            {
+                minSize = this.bufferManager.BufferSize;
+            }
+
+            return new MemoryOwner(this.bufferManager, minSize);
+        }
 
         public void SetBufferSize(int maxSize)
             => this.bufferManager.SetBufferSize(maxSize);

@@ -12,16 +12,14 @@ namespace RabbitMQ.Next.Tests.Consumer
         {
             var exchange = "exchange";
             var routingKey = "routingKey";
-            var properties = Substitute.For<IMessageProperties>();
             var redelivered = true;
             var consumerTag = "consumerTag";
             var deliveryTag = (ulong)42;
 
-            var message = new DeliveredMessage(exchange, routingKey, properties, redelivered, consumerTag, deliveryTag);
+            var message = new DeliveredMessage(exchange, routingKey, redelivered, consumerTag, deliveryTag);
 
             Assert.Equal(exchange, message.Exchange);
             Assert.Equal(routingKey, message.RoutingKey);
-            Assert.Equal(properties, message.Properties);
             Assert.Equal(redelivered, message.Redelivered);
             Assert.Equal(consumerTag, message.ConsumerTag);
             Assert.Equal(deliveryTag, message.DeliveryTag);

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Consumer.Abstractions;
 using RabbitMQ.Next.Serialization.Abstractions;
 
@@ -9,14 +10,14 @@ namespace RabbitMQ.Next.Consumer
     internal class ConsumerBuilder : IConsumerBuilder
     {
         private readonly List<QueueConsumerBuilder> queues;
-        private readonly List<Func<DeliveredMessage, IContent, ValueTask<bool>>> handlers;
+        private readonly List<Func<DeliveredMessage, IMessageProperties, Content, ValueTask<bool>>> handlers;
         private List<ITypeFormatter> formatters;
         private List<IFormatterSource> formatterSources;
 
         public ConsumerBuilder()
         {
             this.queues = new List<QueueConsumerBuilder>();
-            this.handlers = new List<Func<DeliveredMessage, IContent, ValueTask<bool>>>();
+            this.handlers = new List<Func<DeliveredMessage, IMessageProperties, Content, ValueTask<bool>>>();
         }
 
         public IReadOnlyList<ITypeFormatter> Formatters => this.formatters;
@@ -25,7 +26,7 @@ namespace RabbitMQ.Next.Consumer
 
         public IReadOnlyList<QueueConsumerBuilder> Queues => this.queues;
 
-        public List<Func<DeliveredMessage, IContent, ValueTask<bool>>> Handlers => this.handlers;
+        public List<Func<DeliveredMessage, IMessageProperties, Content, ValueTask<bool>>> Handlers => this.handlers;
 
         public uint PrefetchSize { get; private set; }
 
@@ -37,17 +38,17 @@ namespace RabbitMQ.Next.Consumer
 
         public UnprocessedMessageMode OnPoisonMessage { get; private set; } = UnprocessedMessageMode.Default;
 
-        IConsumerBuilder IConsumerBuilder.UseFormatter(ITypeFormatter typeFormatter)
+        IConsumerBuilder IConsumerBuilder.UseFormatter(ITypeFormatter formatter)
         {
             this.formatters ??= new List<ITypeFormatter>();
-            this.formatters.Add(typeFormatter);
+            this.formatters.Add(formatter);
             return this;
         }
 
-        IConsumerBuilder IConsumerBuilder.UserFormatterSource(IFormatterSource formatters)
+        IConsumerBuilder IConsumerBuilder.UserFormatterSource(IFormatterSource formatterSource)
         {
             this.formatterSources ??= new List<IFormatterSource>();
-            this.formatterSources.Add(formatters);
+            this.formatterSources.Add(formatterSource);
             return this;
         }
 
@@ -89,7 +90,7 @@ namespace RabbitMQ.Next.Consumer
             return this;
         }
 
-        IConsumerBuilder IConsumerBuilder.AddMessageHandler(Func<DeliveredMessage, IContent, ValueTask<bool>> handler)
+        IConsumerBuilder IConsumerBuilder.AddMessageHandler(Func<DeliveredMessage, IMessageProperties, Content, ValueTask<bool>> handler)
         {
             if (handler == null)
             {

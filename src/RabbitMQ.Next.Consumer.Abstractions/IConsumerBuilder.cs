@@ -1,14 +1,15 @@
 ﻿using System;
 using System.Threading.Tasks;
+using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Serialization.Abstractions;
 
 namespace RabbitMQ.Next.Consumer.Abstractions
 {
     public interface IConsumerBuilder
     {
-        IConsumerBuilder UseFormatter(ITypeFormatter typeFormatter);
+        IConsumerBuilder UseFormatter(ITypeFormatter formatter);
 
-        IConsumerBuilder UserFormatterSource(IFormatterSource formatters);
+        IConsumerBuilder UserFormatterSource(IFormatterSource formatterSource);
 
         IConsumerBuilder BindToQueue(string queue, Action<IQueueConsumerBuilder> builder = null);
 
@@ -22,6 +23,6 @@ namespace RabbitMQ.Next.Consumer.Abstractions
 
         IConsumerBuilder OnPoisonMessage(UnprocessedMessageMode mode);
 
-        IConsumerBuilder AddMessageHandler(Func<DeliveredMessage, IContent, ValueTask<bool>> handler);
+        IConsumerBuilder AddMessageHandler(Func<DeliveredMessage, IMessageProperties, Content, ValueTask<bool>> handler);
     }
 }

@@ -7,7 +7,6 @@ using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Consumer.Abstractions;
-using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.Transport.Channels;
 using RabbitMQ.Next.Transport.Methods.Basic;
@@ -17,13 +16,13 @@ namespace RabbitMQ.Next.Consumer
     internal class Consumer : IConsumer
     {
         private readonly IConnection connection;
-        private readonly List<Func<DeliveredMessage, IContent, ValueTask<bool>>> handlers;
+        private readonly ISerializer serializer;
+        private readonly List<Func<DeliveredMessage, IMessageProperties, Content, ValueTask<bool>>> handlers;
         private readonly ConsumerInitializer initializer;
         private readonly Func<IAcknowledgement, IAcknowledgement> acknowledgerFactory;
         private readonly UnprocessedMessageMode onUnprocessedMessage;
         private readonly UnprocessedMessageMode onPoisonMessage;
         private readonly IFrameHandler frameHandler;
-        private readonly ContentAccessor contentAccessor;
         private readonly TaskCompletionSource<bool> consumeTcs;
 
         private IChannel channel;
@@ -32,13 +31,14 @@ namespace RabbitMQ.Next.Consumer
         public Consumer(
             IConnection connection,
             ISerializer serializer,
-            List<Func<DeliveredMessage, IContent, ValueTask<bool>>> handlers,
+            List<Func<DeliveredMessage, IMessageProperties, Content, ValueTask<bool>>> handlers,
             ConsumerInitializer initializer,
             Func<IAcknowledgement, IAcknowledgement> acknowledgerFactory,
             UnprocessedMessageMode onUnprocessedMessage,
             UnprocessedMessageMode onPoisonMessage)
         {
             this.connection = connection;
+            this.serializer = serializer;
             this.handlers = handlers;
             this.initializer = initializer;
             this.acknowledgerFactory = acknowledgerFactory;
@@ -47,7 +47,6 @@ namespace RabbitMQ.Next.Consumer
 
             var deliverMethodParser = this.connection.MethodRegistry.GetParser<DeliverMethod>();
             this.frameHandler = new ContentFrameHandler<DeliverMethod>((uint)MethodId.BasicDeliver, deliverMethodParser, this.HandleDeliveredMessage, connection.BufferPool);
-            this.contentAccessor = new ContentAccessor(serializer);
             this.consumeTcs = new TaskCompletionSource<bool>();
         }
 
@@ -58,7 +57,7 @@ namespace RabbitMQ.Next.Consumer
         public async Task ConsumeAsync(CancellationToken cancellation)
         {
             // TODO: deal with connection state here
-            this.channel = await this.connection.CreateChannelAsync(new IFrameHandler[] { this.frameHandler });
+            this.channel = await this.connection.CreateChannelAsync(new IFrameHandler[] { this.frameHandler }, cancellation);
             await this.InitializeConsumerAsync(this.channel);
 
             cancellation.Register(() => this.CancelConsumeAsync());
@@ -105,16 +104,16 @@ namespace RabbitMQ.Next.Consumer
             this.HandleMessageAsync(method, properties, content).GetAwaiter().GetResult();
         }
 
-        private async ValueTask HandleMessageAsync(DeliverMethod method, IMessageProperties properties, ReadOnlySequence<byte> content)
+        private async ValueTask HandleMessageAsync(DeliverMethod method, IMessageProperties properties, ReadOnlySequence<byte> payload)
         {
-            this.contentAccessor.SetPayload(content);
-            var message = new DeliveredMessage(method.Exchange, method.RoutingKey, properties, method.Redelivered, method.ConsumerTag, method.DeliveryTag);
+            var message = new DeliveredMessage(method.Exchange, method.RoutingKey, method.Redelivered, method.ConsumerTag, method.DeliveryTag);
+            var content = new Content(this.serializer, payload);
 
             try
             {
                 for (var i = 0; i < this.handlers.Count; i++)
                 {
-                    var handled = await this.handlers[i].Invoke(message, this.contentAccessor);
+                    var handled = await this.handlers[i].Invoke(message, properties, content);
 
                     if (handled)
                     {
@@ -125,11 +124,15 @@ namespace RabbitMQ.Next.Consumer
             }
             catch (Exception ex)
             {
-                await this.ProcessPoisonMessageAsync(message, ex);
+                await this.ProcessPoisonMessageAsync(message, properties, payload, ex);
                 return;
             }
+            finally
+            {
+                content.Dispose();
+            }
 
-            await this.ProcessUnprocessedMessageAsync(message);
+            await this.ProcessUnprocessedMessageAsync(message, properties, payload);
         }
 
         private async ValueTask AckAsync(DeliveredMessage message)
@@ -149,22 +152,29 @@ namespace RabbitMQ.Next.Consumer
             }
         }
 
-        private async ValueTask ProcessPoisonMessageAsync(DeliveredMessage message, Exception ex)
+        private async ValueTask ProcessPoisonMessageAsync(DeliveredMessage message, IMessageProperties properties, ReadOnlySequence<byte> payload, Exception ex)
         {
             await this.NackAsync(message, this.onPoisonMessage);
             if ((this.onPoisonMessage | UnprocessedMessageMode.StopConsumer) == UnprocessedMessageMode.StopConsumer)
             {
-                await this.CancelConsumeAsync(new PoisonMessageException(message, this.contentAccessor.AsDetached(), ex));
+                await this.CancelConsumeAsync(new PoisonMessageException(message, new DetachedMessageProperties(properties), this.MakeDetachedContent(payload), ex));
             }
         }
 
-        private async ValueTask ProcessUnprocessedMessageAsync(DeliveredMessage message)
+        private async ValueTask ProcessUnprocessedMessageAsync(DeliveredMessage message, IMessageProperties properties, ReadOnlySequence<byte> payload)
         {
             await this.NackAsync(message, this.onUnprocessedMessage);
             if ((this.onUnprocessedMessage | UnprocessedMessageMode.StopConsumer) == UnprocessedMessageMode.StopConsumer)
             {
-                await this.CancelConsumeAsync(new UnprocessedMessageException(message, this.contentAccessor.AsDetached()));
+                await this.CancelConsumeAsync(new UnprocessedMessageException(message, new DetachedMessageProperties(properties), this.MakeDetachedContent(payload)));
             }
+        }
+
+        private Content MakeDetachedContent(ReadOnlySequence<byte> payload)
+        {
+            var detachedPayload = new byte[payload.Length];
+            payload.CopyTo(detachedPayload);
+            return new Content(this.serializer, new ReadOnlySequence<byte>(detachedPayload));
         }
     }
 }

@@ -1,5 +1,3 @@
-using RabbitMQ.Next.Abstractions.Messaging;
-
 namespace RabbitMQ.Next.Publisher.Abstractions
 {
     public readonly struct ReturnedMessage
