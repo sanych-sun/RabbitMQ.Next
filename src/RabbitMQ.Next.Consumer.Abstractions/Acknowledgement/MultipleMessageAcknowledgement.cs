@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace RabbitMQ.Next.Consumer.Abstractions.Acknowledgement
 {
-    public class MultipleMessageAcknowledgement : IAcknowledgement
+    internal class MultipleMessageAcknowledgement : IAcknowledgement
     {
         private readonly IAcknowledgement acknowledgement;
         private readonly CancellationTokenSource cts;
@@ -77,7 +77,6 @@ namespace RabbitMQ.Next.Consumer.Abstractions.Acknowledgement
                 await this.acknowledgement.AckAsync((ulong)deliveryTag, true);
             }
         }
-
 
     }
 }

@@ -22,11 +22,11 @@ namespace RabbitMQ.Next.Consumer
             return default;
         }
 
-        public ValueTask AckAsync(ulong deliveryTag, bool multiple = false)
+        public async ValueTask AckAsync(ulong deliveryTag, bool multiple = false)
         {
             this.CheckDisposed();
 
-            return new ValueTask(this.channel.SendAsync(new AckMethod(deliveryTag, multiple)));
+            await this.channel.SendAsync(new AckMethod(deliveryTag, multiple));
         }
 
 

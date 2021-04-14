@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace RabbitMQ.Next.Consumer.Abstractions.Acknowledgement
 {
-    public class EachMessageAcknowledgement : IAcknowledgement
+    internal class EachMessageAcknowledgement : IAcknowledgement
     {
         private readonly IAcknowledgement acknowledgement;
         
