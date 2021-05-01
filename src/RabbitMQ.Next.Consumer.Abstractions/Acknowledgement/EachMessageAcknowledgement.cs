@@ -1,12 +1,13 @@
 using System;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace RabbitMQ.Next.Consumer.Abstractions.Acknowledgement
 {
     internal class EachMessageAcknowledgement : IAcknowledgement
     {
-        private readonly IAcknowledgement acknowledgement;
-        
+        private IAcknowledgement acknowledgement;
+
         public EachMessageAcknowledgement(IAcknowledgement acknowledgement)
         {
             if (acknowledgement == null)
@@ -18,13 +19,36 @@ namespace RabbitMQ.Next.Consumer.Abstractions.Acknowledgement
         }
 
         public ValueTask AckAsync(ulong deliveryTag, bool multiple = false)
-            => this.acknowledgement.AckAsync(deliveryTag, multiple);
+        {
+            this.CheckDisposed();
+            return this.acknowledgement.AckAsync(deliveryTag, multiple);
+        }
 
         public ValueTask NackAsync(ulong deliveryTag, bool requeue)
-            => this.acknowledgement.NackAsync(deliveryTag, requeue);
+        {
+            this.CheckDisposed();
+            return this.acknowledgement.NackAsync(deliveryTag, requeue);
+        }
 
 
-        public ValueTask DisposeAsync()
-            => this.acknowledgement.DisposeAsync();
+        public async ValueTask DisposeAsync()
+        {
+            if (this.acknowledgement == null)
+            {
+                return;
+            }
+
+            await this.acknowledgement.DisposeAsync();
+            this.acknowledgement = null;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void CheckDisposed()
+        {
+            if (this.acknowledgement == null)
+            {
+                throw new ObjectDisposedException(nameof(EachMessageAcknowledgement));
+            }
+        }
     }
 }
