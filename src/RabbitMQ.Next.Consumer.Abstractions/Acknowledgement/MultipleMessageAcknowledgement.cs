@@ -9,22 +9,44 @@ namespace RabbitMQ.Next.Consumer.Abstractions.Acknowledgement
     {
         private readonly IAcknowledgement acknowledgement;
         private readonly CancellationTokenSource cts;
+        private readonly int pendingLimit;
+        private readonly int timeoutMs;
         private long lastProcessed;
+        private int pendingCount;
 
-        public MultipleMessageAcknowledgement(IAcknowledgement acknowledgement, TimeSpan timeout)
+        public MultipleMessageAcknowledgement(IAcknowledgement acknowledgement, TimeSpan timeout, int count)
         {
             this.acknowledgement = acknowledgement;
             this.cts = new CancellationTokenSource();
-
-            this.Worker(timeout, this.cts.Token);
+            this.pendingLimit = count;
+            this.timeoutMs = (int)timeout.TotalMilliseconds;
         }
 
-        public ValueTask AckAsync(ulong deliveryTag, bool multiple = false)
+        public async ValueTask AckAsync(ulong deliveryTag, bool multiple = false)
         {
             this.CheckDisposed();
 
-            Interlocked.Exchange(ref this.lastProcessed, (long)deliveryTag);
-            return default;
+            var count = Interlocked.Increment(ref this.pendingCount);
+            var prev = Interlocked.Exchange(ref this.lastProcessed, (long)deliveryTag);
+
+            if (count >= this.pendingLimit)
+            {
+                await this.SendPendingAck();
+            }
+            else if (prev == 0)
+            {
+#pragma warning disable 4014
+                Task.Run(async () =>
+                {
+                    await Task.Delay(this.timeoutMs, this.cts.Token)
+                        .ContinueWith(c => { }); // use empty continuation to suppress the TaskCancelledException
+                    if (!this.cts.Token.IsCancellationRequested)
+                    {
+                        await this.SendPendingAck();
+                    }
+                });
+#pragma warning restore 4014
+            }
         }
 
         public async ValueTask NackAsync(ulong deliveryTag, bool requeue)
@@ -57,20 +79,9 @@ namespace RabbitMQ.Next.Consumer.Abstractions.Acknowledgement
             }
         }
 
-        private async Task Worker(TimeSpan timeout, CancellationToken cancellationToken)
-        {
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                await Task.Delay(timeout, cancellationToken);
-                if (!cancellationToken.IsCancellationRequested)
-                {
-                    await this.SendPendingAck();
-                }
-            }
-        }
-
         private async ValueTask SendPendingAck()
         {
+            Interlocked.Exchange(ref this.pendingCount, 0);
             var deliveryTag = Interlocked.Exchange(ref this.lastProcessed, 0);
             if (deliveryTag != 0)
             {

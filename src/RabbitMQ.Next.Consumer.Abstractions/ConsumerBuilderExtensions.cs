@@ -11,9 +11,14 @@ namespace RabbitMQ.Next.Consumer.Abstractions
             return builder;
         }
 
-        public static IConsumerBuilder MultipleMessageAcknowledgement(this IConsumerBuilder builder, TimeSpan timeout)
+        public static IConsumerBuilder MultipleMessageAcknowledgement(this IConsumerBuilder builder, TimeSpan timeout, int count)
         {
-            builder.SetAcknowledgement(ack => new MultipleMessageAcknowledgement(ack, timeout));
+            if (count <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(count));
+            }
+
+            builder.SetAcknowledgement(ack => new MultipleMessageAcknowledgement(ack, timeout, count));
             return builder;
         }
     }
