@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions.Messaging;
+using RabbitMQ.Next.Consumer.Abstractions.Acknowledgement;
 using RabbitMQ.Next.Serialization.Abstractions;
 
 namespace RabbitMQ.Next.Consumer.Abstractions
@@ -17,7 +18,7 @@ namespace RabbitMQ.Next.Consumer.Abstractions
 
         IConsumerBuilder PrefetchCount(ushort messages);
 
-        IConsumerBuilder SetAcknowledgement(Func<IAcknowledgement, IAcknowledgement> acknowledgerFactory);
+        IConsumerBuilder SetAcknowledger(Func<IAcknowledgement, IAcknowledger> acknowledgerFactory);
 
         IConsumerBuilder OnUnhandledMessage(UnprocessedMessageMode mode);
 

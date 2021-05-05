@@ -1,39 +1,37 @@
 using System;
 using System.Threading.Tasks;
 using NSubstitute;
-using RabbitMQ.Next.Consumer.Abstractions;
 using RabbitMQ.Next.Consumer.Abstractions.Acknowledgement;
 using Xunit;
 
 namespace RabbitMQ.Next.Tests.Consumer.Acknowledgements
 {
-    public class EachMessageAcknowledgementTests
+    public class EachMessageAcknowledgerTests
     {
         [Fact]
-        public void ThrowsOnNullBaseAck()
+        public void ThrowsOnNullAcknowledgement()
         {
-            Assert.Throws<ArgumentNullException>(() => new EachMessageAcknowledgement(null));
+            Assert.Throws<ArgumentNullException>(() => new EachMessageAcknowledger(null));
         }
 
         [Theory]
-        [InlineData(1, true)]
-        [InlineData(2, false)]
-        [InlineData(12345, false)]
-        public async Task AckPassParametersToBase(ulong deliveryTag, bool multiple)
+        [InlineData(1)]
+        [InlineData(12345)]
+        public async Task AckPassParametersToBase(ulong deliveryTag)
         {
             var baseAck = Substitute.For<IAcknowledgement>();
-            var ack = new EachMessageAcknowledgement(baseAck);
+            var ack = new EachMessageAcknowledger(baseAck);
 
-            await ack.AckAsync(deliveryTag, multiple);
+            await ack.AckAsync(deliveryTag);
 
-            await baseAck.Received().AckAsync(deliveryTag, multiple);
+            await baseAck.Received().AckAsync(deliveryTag);
         }
 
         [Fact]
-        public async Task AckCallBaseAckOnEachMessage()
+        public async Task AckCallAcknowledgementOnEachMessage()
         {
             var baseAck = Substitute.For<IAcknowledgement>();
-            var ack = new EachMessageAcknowledgement(baseAck);
+            var ack = new EachMessageAcknowledger(baseAck);
 
             await ack.AckAsync(1);
             await ack.AckAsync(2);
@@ -48,7 +46,7 @@ namespace RabbitMQ.Next.Tests.Consumer.Acknowledgements
         public async Task NackPassParametersToBase(ulong deliveryTag, bool requeue)
         {
             var baseAck = Substitute.For<IAcknowledgement>();
-            var ack = new EachMessageAcknowledgement(baseAck);
+            var ack = new EachMessageAcknowledger(baseAck);
 
             await ack.NackAsync(deliveryTag, requeue);
 
@@ -56,10 +54,10 @@ namespace RabbitMQ.Next.Tests.Consumer.Acknowledgements
         }
 
         [Fact]
-        public async Task NackCallBaseAckOnEachMessage()
+        public async Task NackCallAcknowledgementOnEachMessage()
         {
             var baseAck = Substitute.For<IAcknowledgement>();
-            var ack = new EachMessageAcknowledgement(baseAck);
+            var ack = new EachMessageAcknowledger(baseAck);
 
             await ack.NackAsync(1, false);
             await ack.NackAsync(2, false);
@@ -71,7 +69,7 @@ namespace RabbitMQ.Next.Tests.Consumer.Acknowledgements
         public async Task CanDisposeTwice()
         {
             var baseAck = Substitute.For<IAcknowledgement>();
-            var ack = new EachMessageAcknowledgement(baseAck);
+            var ack = new EachMessageAcknowledger(baseAck);
 
             await ack.DisposeAsync();
 
@@ -84,7 +82,7 @@ namespace RabbitMQ.Next.Tests.Consumer.Acknowledgements
         public async Task ThrowsIfDisposed()
         {
             var baseAck = Substitute.For<IAcknowledgement>();
-            var ack = new EachMessageAcknowledgement(baseAck);
+            var ack = new EachMessageAcknowledger(baseAck);
 
             await ack.DisposeAsync();
 

@@ -7,6 +7,7 @@ using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Consumer.Abstractions;
+using RabbitMQ.Next.Consumer.Abstractions.Acknowledgement;
 using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.Transport.Channels;
 using RabbitMQ.Next.Transport.Methods.Basic;
@@ -19,21 +20,21 @@ namespace RabbitMQ.Next.Consumer
         private readonly ISerializer serializer;
         private readonly List<Func<DeliveredMessage, IMessageProperties, Content, ValueTask<bool>>> handlers;
         private readonly ConsumerInitializer initializer;
-        private readonly Func<IAcknowledgement, IAcknowledgement> acknowledgerFactory;
+        private readonly Func<IAcknowledgement, IAcknowledger> acknowledgerFactory;
         private readonly UnprocessedMessageMode onUnprocessedMessage;
         private readonly UnprocessedMessageMode onPoisonMessage;
         private readonly IFrameHandler frameHandler;
         private readonly TaskCompletionSource<bool> consumeTcs;
 
         private IChannel channel;
-        private IAcknowledgement acknowledgement;
+        private IAcknowledger acknowledger;
 
         public Consumer(
             IConnection connection,
             ISerializer serializer,
             List<Func<DeliveredMessage, IMessageProperties, Content, ValueTask<bool>>> handlers,
             ConsumerInitializer initializer,
-            Func<IAcknowledgement, IAcknowledgement> acknowledgerFactory,
+            Func<IAcknowledgement, IAcknowledger> acknowledgerFactory,
             UnprocessedMessageMode onUnprocessedMessage,
             UnprocessedMessageMode onPoisonMessage)
         {
@@ -73,7 +74,7 @@ namespace RabbitMQ.Next.Consumer
              if (this.acknowledgerFactory != null)
              {
                  var ack = new Acknowledgement(channel);
-                 this.acknowledgement = this.acknowledgerFactory(ack);
+                 this.acknowledger = this.acknowledgerFactory(ack);
              }
         }
 
@@ -82,10 +83,10 @@ namespace RabbitMQ.Next.Consumer
             await this.channel.UseSyncChannel(this.initializer, (ch, initializer) =>
                 initializer.CancelAsync(ch));
 
-            await this.acknowledgement.DisposeAsync();
+            await this.acknowledger.DisposeAsync();
             await this.channel.CloseAsync();
 
-            this.acknowledgement = null;
+            this.acknowledger = null;
             this.channel = null;
 
             if (ex == null)
@@ -137,18 +138,18 @@ namespace RabbitMQ.Next.Consumer
 
         private async ValueTask AckAsync(DeliveredMessage message)
         {
-            if (this.acknowledgement != null)
+            if (this.acknowledger != null)
             {
-                await this.acknowledgement.AckAsync(message.DeliveryTag);
+                await this.acknowledger.AckAsync(message.DeliveryTag);
             }
         }
 
         private async ValueTask NackAsync(DeliveredMessage message, UnprocessedMessageMode mode)
         {
-            if (this.acknowledgement != null)
+            if (this.acknowledger != null)
             {
                 var requeue = (mode | UnprocessedMessageMode.Requeue) == UnprocessedMessageMode.Requeue;
-                await this.acknowledgement.NackAsync(message.DeliveryTag, requeue);
+                await this.acknowledger.NackAsync(message.DeliveryTag, requeue);
             }
         }
 

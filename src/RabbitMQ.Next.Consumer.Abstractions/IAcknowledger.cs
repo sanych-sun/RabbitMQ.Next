@@ -3,9 +3,9 @@ using System.Threading.Tasks;
 
 namespace RabbitMQ.Next.Consumer.Abstractions
 {
-    public interface IAcknowledgement : IAsyncDisposable
+    public interface IAcknowledger : IAsyncDisposable
     {
-        ValueTask AckAsync(ulong deliveryTag, bool multiple = false);
+        ValueTask AckAsync(ulong deliveryTag);
 
         ValueTask NackAsync(ulong deliveryTag, bool requeue);
     }

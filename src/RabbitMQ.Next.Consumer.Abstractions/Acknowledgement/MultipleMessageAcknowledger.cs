@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace RabbitMQ.Next.Consumer.Abstractions.Acknowledgement
 {
-    internal class MultipleMessageAcknowledgement : IAcknowledgement
+    internal class MultipleMessageAcknowledger : IAcknowledger
     {
         private readonly IAcknowledgement acknowledgement;
         private readonly CancellationTokenSource cts;
@@ -13,16 +13,32 @@ namespace RabbitMQ.Next.Consumer.Abstractions.Acknowledgement
         private readonly int timeoutMs;
         private long lastProcessed;
         private int pendingCount;
+        private Task pendingSendTask;
 
-        public MultipleMessageAcknowledgement(IAcknowledgement acknowledgement, TimeSpan timeout, int count)
+        public MultipleMessageAcknowledger(IAcknowledgement acknowledgement, TimeSpan timeout, int count)
         {
+            if (acknowledgement == null)
+            {
+                throw new ArgumentNullException(nameof(acknowledgement));
+            }
+
+            if(timeout <= TimeSpan.Zero)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeout));
+            }
+
+            if (count <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(count));
+            }
+
             this.acknowledgement = acknowledgement;
             this.cts = new CancellationTokenSource();
             this.pendingLimit = count;
             this.timeoutMs = (int)timeout.TotalMilliseconds;
         }
 
-        public async ValueTask AckAsync(ulong deliveryTag, bool multiple = false)
+        public async ValueTask AckAsync(ulong deliveryTag)
         {
             this.CheckDisposed();
 
@@ -35,17 +51,19 @@ namespace RabbitMQ.Next.Consumer.Abstractions.Acknowledgement
             }
             else if (prev == 0)
             {
-#pragma warning disable 4014
-                Task.Run(async () =>
+                var pendingTask = this.pendingSendTask;
+                if (pendingTask == null || pendingTask.IsCompleted)
                 {
-                    await Task.Delay(this.timeoutMs, this.cts.Token)
-                        .ContinueWith(c => { }); // use empty continuation to suppress the TaskCancelledException
-                    if (!this.cts.Token.IsCancellationRequested)
+                    this.pendingSendTask = Task.Run(async () =>
                     {
-                        await this.SendPendingAck();
-                    }
-                });
-#pragma warning restore 4014
+                        await Task.Delay(this.timeoutMs, this.cts.Token)
+                            .ContinueWith(c => { }); // use empty continuation to suppress the TaskCancelledException
+                        if (!this.cts.Token.IsCancellationRequested)
+                        {
+                            await this.SendPendingAck();
+                        }
+                    });
+                }
             }
         }
 
@@ -75,7 +93,7 @@ namespace RabbitMQ.Next.Consumer.Abstractions.Acknowledgement
         {
             if (this.cts.IsCancellationRequested)
             {
-                throw new ObjectDisposedException(nameof(MultipleMessageAcknowledgement));
+                throw new ObjectDisposedException(nameof(MultipleMessageAcknowledger));
             }
         }
 

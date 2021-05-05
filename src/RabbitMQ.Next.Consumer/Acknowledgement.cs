@@ -1,7 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions.Channels;
-using RabbitMQ.Next.Consumer.Abstractions;
+using RabbitMQ.Next.Consumer.Abstractions.Acknowledgement;
 using RabbitMQ.Next.Transport.Methods.Basic;
 
 namespace RabbitMQ.Next.Consumer
@@ -22,7 +22,7 @@ namespace RabbitMQ.Next.Consumer
             return default;
         }
 
-        public async ValueTask AckAsync(ulong deliveryTag, bool multiple = false)
+        public async Task AckAsync(ulong deliveryTag, bool multiple = false)
         {
             this.CheckDisposed();
 
@@ -30,11 +30,11 @@ namespace RabbitMQ.Next.Consumer
         }
 
 
-        public ValueTask NackAsync(ulong deliveryTag, bool requeue)
+        public Task NackAsync(ulong deliveryTag, bool requeue)
         {
             this.CheckDisposed();
 
-            return new ValueTask(this.channel.SendAsync(new NackMethod(deliveryTag, false, requeue)));
+            return this.channel.SendAsync(new NackMethod(deliveryTag, false, requeue));
         }
 
         private void CheckDisposed()

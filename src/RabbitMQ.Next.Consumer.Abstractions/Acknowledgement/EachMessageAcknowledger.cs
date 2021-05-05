@@ -4,11 +4,11 @@ using System.Threading.Tasks;
 
 namespace RabbitMQ.Next.Consumer.Abstractions.Acknowledgement
 {
-    internal class EachMessageAcknowledgement : IAcknowledgement
+    internal class EachMessageAcknowledger : IAcknowledger
     {
         private IAcknowledgement acknowledgement;
 
-        public EachMessageAcknowledgement(IAcknowledgement acknowledgement)
+        public EachMessageAcknowledger(IAcknowledgement acknowledgement)
         {
             if (acknowledgement == null)
             {
@@ -18,16 +18,16 @@ namespace RabbitMQ.Next.Consumer.Abstractions.Acknowledgement
             this.acknowledgement = acknowledgement;
         }
 
-        public ValueTask AckAsync(ulong deliveryTag, bool multiple = false)
+        public async ValueTask AckAsync(ulong deliveryTag)
         {
             this.CheckDisposed();
-            return this.acknowledgement.AckAsync(deliveryTag, multiple);
+            await this.acknowledgement.AckAsync(deliveryTag);
         }
 
-        public ValueTask NackAsync(ulong deliveryTag, bool requeue)
+        public async ValueTask NackAsync(ulong deliveryTag, bool requeue)
         {
             this.CheckDisposed();
-            return this.acknowledgement.NackAsync(deliveryTag, requeue);
+            await this.acknowledgement.NackAsync(deliveryTag, requeue);
         }
 
 
@@ -47,7 +47,7 @@ namespace RabbitMQ.Next.Consumer.Abstractions.Acknowledgement
         {
             if (this.acknowledgement == null)
             {
-                throw new ObjectDisposedException(nameof(EachMessageAcknowledgement));
+                throw new ObjectDisposedException(nameof(EachMessageAcknowledger));
             }
         }
     }

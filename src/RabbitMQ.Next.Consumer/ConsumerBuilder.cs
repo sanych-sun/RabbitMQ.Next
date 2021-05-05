@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Consumer.Abstractions;
+using RabbitMQ.Next.Consumer.Abstractions.Acknowledgement;
 using RabbitMQ.Next.Serialization.Abstractions;
 
 namespace RabbitMQ.Next.Consumer
@@ -32,7 +33,7 @@ namespace RabbitMQ.Next.Consumer
 
         public ushort PrefetchCount { get; private set; }
 
-        public Func<IAcknowledgement, IAcknowledgement> AcknowledgerFactory { get; private set; }
+        public Func<IAcknowledgement, IAcknowledger> AcknowledgerFactory { get; private set; }
 
         public UnprocessedMessageMode OnUnprocessedMessage { get; private set; } = UnprocessedMessageMode.Default;
 
@@ -72,7 +73,7 @@ namespace RabbitMQ.Next.Consumer
             return this;
         }
 
-        IConsumerBuilder IConsumerBuilder.SetAcknowledgement(Func<IAcknowledgement, IAcknowledgement> acknowledgerFactory)
+        IConsumerBuilder IConsumerBuilder.SetAcknowledger(Func<IAcknowledgement, IAcknowledger> acknowledgerFactory)
         {
             this.AcknowledgerFactory = acknowledgerFactory;
             return this;
