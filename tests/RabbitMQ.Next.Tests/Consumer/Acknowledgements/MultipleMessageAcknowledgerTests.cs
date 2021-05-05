@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using NSubstitute;
 using RabbitMQ.Next.Consumer.Abstractions;
+using RabbitMQ.Next.Consumer.Abstractions.Acknowledger;
 using Xunit;
 
 namespace RabbitMQ.Next.Tests.Consumer.Acknowledgements
