@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace RabbitMQ.Next.Consumer.Abstractions.Acknowledgement
+namespace RabbitMQ.Next.Consumer.Abstractions.Acknowledger
 {
     internal class MultipleMessageAcknowledger : IAcknowledger
     {

@@ -7,7 +7,6 @@ using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Consumer.Abstractions;
-using RabbitMQ.Next.Consumer.Abstractions.Acknowledgement;
 using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.Transport.Channels;
 using RabbitMQ.Next.Transport.Methods.Basic;
@@ -83,7 +82,11 @@ namespace RabbitMQ.Next.Consumer
             await this.channel.UseSyncChannel(this.initializer, (ch, initializer) =>
                 initializer.CancelAsync(ch));
 
-            await this.acknowledger.DisposeAsync();
+            if (this.acknowledger != null)
+            {
+                await this.acknowledger.DisposeAsync();
+            }
+
             await this.channel.CloseAsync();
 
             this.acknowledger = null;

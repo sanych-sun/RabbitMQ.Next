@@ -1,5 +1,5 @@
 using System;
-using RabbitMQ.Next.Consumer.Abstractions.Acknowledgement;
+using RabbitMQ.Next.Consumer.Abstractions.Acknowledger;
 
 namespace RabbitMQ.Next.Consumer.Abstractions
 {

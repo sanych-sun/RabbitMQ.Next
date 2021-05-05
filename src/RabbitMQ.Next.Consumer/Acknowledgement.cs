@@ -1,7 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions.Channels;
-using RabbitMQ.Next.Consumer.Abstractions.Acknowledgement;
+using RabbitMQ.Next.Consumer.Abstractions;
 using RabbitMQ.Next.Transport.Methods.Basic;
 
 namespace RabbitMQ.Next.Consumer

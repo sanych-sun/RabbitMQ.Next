@@ -1,7 +1,7 @@
 using System;
 using System.Threading.Tasks;
 
-namespace RabbitMQ.Next.Consumer.Abstractions.Acknowledgement
+namespace RabbitMQ.Next.Consumer.Abstractions
 {
     public interface IAcknowledgement : IAsyncDisposable
     {

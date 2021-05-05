@@ -6,7 +6,7 @@ using RabbitMQ.Next.Consumer;
 using RabbitMQ.Next.Transport.Methods.Basic;
 using Xunit;
 
-namespace RabbitMQ.Next.Tests.Consumer.Acknowledgements
+namespace RabbitMQ.Next.Tests.Consumer
 {
     public class AcknowledgementTests
     {
