@@ -11,7 +11,7 @@ namespace RabbitMQ.Next.Transport.Sockets
         {
             while (buffer.Length > 0)
             {
-                var received = await socket.ReceiveAsync(buffer);
+                var received = await socket.ReceiveAsync(buffer, cancellationToken);
                 buffer = buffer.Slice(received);
             }
         }

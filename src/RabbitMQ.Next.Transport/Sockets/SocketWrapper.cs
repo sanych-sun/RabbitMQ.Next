@@ -11,15 +11,19 @@ namespace RabbitMQ.Next.Transport.Sockets
     {
         private readonly Socket socket;
         private readonly Stream stream;
+        private readonly SemaphoreSlim writerSemaphore;
+        private readonly Func<ReadOnlyMemory<byte>, ValueTask> sendData;
 
         public SocketWrapper(Socket socket, bool useSsl, Endpoint endpoint)
         {
+            this.writerSemaphore = new SemaphoreSlim(1, 1);
             this.socket = socket;
             var netStream = new NetworkStream(socket);
             netStream.ReadTimeout = 1000;
             netStream.WriteTimeout = 1000;
 
             this.stream = netStream;
+            this.sendData = (bytes) => this.stream.WriteAsync(bytes);
             if (useSsl)
             {
                 var sslStream = new SslStream(this.stream, false);
@@ -29,14 +33,30 @@ namespace RabbitMQ.Next.Transport.Sockets
             }
         }
 
-        public async ValueTask SendAsync(ReadOnlyMemory<byte> payload)
+        public async ValueTask SendAsync(ReadOnlyMemory<byte> payload, CancellationToken cancellation = default)
         {
-            if (payload.IsEmpty)
+            await this.writerSemaphore.WaitAsync(cancellation);
+            try
             {
-                return;
+                await this.sendData(payload);
             }
+            finally
+            {
+                this.writerSemaphore.Release();
+            }
+        }
 
-            await this.stream.WriteAsync(payload);
+        public async ValueTask SendAsync<TState>(TState state, Func<Func<ReadOnlyMemory<byte>, ValueTask>, TState, ValueTask> writer, CancellationToken cancellation = default)
+        {
+            await this.writerSemaphore.WaitAsync(cancellation);
+            try
+            {
+                await writer.Invoke(this.sendData, state);
+            }
+            finally
+            {
+                this.writerSemaphore.Release();
+            }
         }
 
         public async ValueTask<int> ReceiveAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)

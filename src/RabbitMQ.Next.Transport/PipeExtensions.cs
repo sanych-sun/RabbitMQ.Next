@@ -10,7 +10,7 @@ namespace RabbitMQ.Next.Transport
     {
         public static async ValueTask<TResult> ReadAsync<TResult>(this PipeReader reader, int length, Func<ReadOnlySequence<byte>, TResult> parser, CancellationToken cancellation = default)
         {
-            while (true)
+            while (!cancellation.IsCancellationRequested)
             {
                 var data = await reader.ReadAsync(cancellation);
 
@@ -29,6 +29,8 @@ namespace RabbitMQ.Next.Transport
 
                 reader.AdvanceTo(data.Buffer.Start);
             }
+
+            return default;
         }
     }
 }

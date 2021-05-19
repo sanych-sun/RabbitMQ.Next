@@ -9,27 +9,29 @@ namespace RabbitMQ.Next.Transport.Channels
 {
     internal class SynchronizedChannel : ISynchronizedChannel
     {
+        private readonly ushort channelNumber;
         private readonly IFrameSender frameSender;
         private readonly WaitMethodFrameHandler waitFrameHandler;
 
-        public SynchronizedChannel(IFrameSender frameSender, WaitMethodFrameHandler waitFrameHandler)
+        public SynchronizedChannel(ushort channelNumber, IFrameSender frameSender, WaitMethodFrameHandler waitFrameHandler)
         {
+            this.channelNumber = channelNumber;
             this.frameSender = frameSender;
             this.waitFrameHandler = waitFrameHandler;
         }
 
-        public Task SendAsync<TMethod>(TMethod request)
+        public async Task SendAsync<TMethod>(TMethod request)
             where TMethod : struct, IOutgoingMethod
-            => this.frameSender.SendMethodAsync(request);
+            => await this.frameSender.SendMethodAsync(this.channelNumber, request);
 
         public async Task SendAsync<TMethod>(TMethod request, IMessageProperties properties, ReadOnlySequence<byte> content)
             where TMethod : struct, IOutgoingMethod
         {
-            await this.frameSender.SendMethodAsync(request);
-            await this.frameSender.SendContentHeaderAsync(properties, (ulong) content.Length);
+            await this.frameSender.SendMethodAsync(this.channelNumber, request);
+            await this.frameSender.SendContentHeaderAsync(this.channelNumber,properties, (ulong) content.Length);
             if (!content.IsEmpty)
             {
-                await this.frameSender.SendContentAsync(content);
+                await this.frameSender.SendContentAsync(this.channelNumber, content);
             }
         }
 

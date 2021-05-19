@@ -50,6 +50,12 @@ namespace RabbitMQ.Next.Transport.Channels
             }
         }
 
+        public void Reset()
+        {
+            this.method = default;
+            this.state = ContentFrameHandlerState.None;
+        }
+
         private bool TryHandleMethodFrame(ReadOnlySequence<byte> payload)
         {
             if (this.state != ContentFrameHandlerState.None)

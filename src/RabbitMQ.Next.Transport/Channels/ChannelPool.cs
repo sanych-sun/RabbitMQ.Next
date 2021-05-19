@@ -1,42 +1,35 @@
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using RabbitMQ.Next.Abstractions.Channels;
 
 namespace RabbitMQ.Next.Transport.Channels
 {
     internal class ChannelPool
     {
-        private readonly Func<int, IEnumerable<IFrameHandler>, Channel> channelFactory;
         private readonly ReaderWriterLockSlim channelsLock;
-        private readonly ConcurrentQueue<int> releasedItems;
+        private readonly ConcurrentQueue<ushort> releasedItems;
         private Channel[] channels;
         private int lastId = -1;
 
-        public ChannelPool(Func<int, IEnumerable<IFrameHandler>, Channel> channelFactory, int initialPoolSize = 10)
+        public ChannelPool(int initialPoolSize = 10)
         {
-            this.channelFactory = channelFactory;
             this.channelsLock = new ReaderWriterLockSlim();
-            this.releasedItems = new ConcurrentQueue<int>();
+            this.releasedItems = new ConcurrentQueue<ushort>();
             this.channels = new Channel[initialPoolSize];
         }
 
-        public Channel Next(IEnumerable<IFrameHandler> handlers = null)
+        public ushort Register(Channel channel)
         {
             var nextIndex = this.GetNextIndex();
-            return this.Create(nextIndex, handlers);
+            this.AssignChannel(nextIndex, channel);
+            return nextIndex;
         }
 
-        public void Release(int index)
+        public void Release(Channel channel)
         {
-            var channel = this[index];
-
-            this.AssignChannel(index, null);
-            this.releasedItems.Enqueue(index);
-
-            channel.Dispose();
+            this.AssignChannel(channel.ChannelNumber, null);
+            this.releasedItems.Enqueue(channel.ChannelNumber);
         }
 
         public void ReleaseAll()
@@ -52,7 +45,6 @@ namespace RabbitMQ.Next.Transport.Channels
                         continue;
                     }
 
-                    this.channels[i].Dispose();
                     this.channels[i] = null;
                 }
 
@@ -84,21 +76,14 @@ namespace RabbitMQ.Next.Transport.Channels
             }
         }
 
-        private Channel Create(int index, IEnumerable<IFrameHandler> handlers = null)
-        {
-            var channel = this.channelFactory(index, handlers);
-            this.AssignChannel(index, channel);
-            return channel;
-        }
-
-        private int GetNextIndex()
+        private ushort GetNextIndex()
         {
             if (this.releasedItems.TryDequeue(out var result))
             {
                 return result;
             }
 
-            var nextId = Interlocked.Increment(ref this.lastId);
+            var nextId = (ushort)Interlocked.Increment(ref this.lastId);
             this.channelsLock.EnterReadLock();
             try
             {

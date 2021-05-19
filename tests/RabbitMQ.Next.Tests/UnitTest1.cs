@@ -77,7 +77,7 @@
 //                     })
 //             );
 //
-//             var cancellation = new CancellationTokenSource(TimeSpan.FromMinutes(1));
+//             var cancellation = new CancellationTokenSource(TimeSpan.FromMinutes(10));
 //
 //             await consumer.ConsumeAsync(cancellation.Token);
 //

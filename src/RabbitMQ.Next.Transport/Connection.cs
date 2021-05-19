@@ -1,8 +1,6 @@
 using System;
-using System.Buffers;
 using System.Collections.Generic;
-using System.IO.Pipelines;
-using System.Runtime.CompilerServices;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
@@ -19,9 +17,8 @@ using RabbitMQ.Next.Transport.Methods;
 
 namespace RabbitMQ.Next.Transport
 {
-    internal class Connection : IConnection, ISocketWriter
+    internal class Connection : IConnection
     {
-        private readonly SemaphoreSlim writerSemaphore;
         private readonly ChannelPool channelPool;
         private readonly ConnectionString connectionString;
         private readonly EventSource<ConnectionState> stateChanged;
@@ -29,12 +26,8 @@ namespace RabbitMQ.Next.Transport
         private readonly ConnectionDetails connectionDetails = new ConnectionDetails();
 
         private ISocket socket;
+        private IFrameSender frameSender;
         private CancellationTokenSource socketIoCancellation;
-
-        private int heartbeatIntervalMs;
-        private DateTimeOffset heartbeatTimeout = DateTimeOffset.MaxValue;
-
-        private static readonly byte[] FrameEndPayload = { ProtocolConstants.FrameEndByte };
 
         public Connection(ConnectionString connectionString)
         {
@@ -49,30 +42,22 @@ namespace RabbitMQ.Next.Transport
             registryBuilder.AddBasicMethods();
 
             this.MethodRegistry = registryBuilder.Build();
-
-            Func<int, IEnumerable<IFrameHandler>, Channel> channelFactory = (channelNumber, handlers) =>
-            {
-                var pipe = new Pipe();
-                var methodSender = new FrameSender(this, this, this.MethodRegistry, (ushort) channelNumber, this.bufferPool);
-                return new Channel(pipe, this.MethodRegistry, methodSender, handlers);
-            };
-
-            this.channelPool = new ChannelPool(channelFactory);
-            this.writerSemaphore = new SemaphoreSlim(1, 1);
+            this.channelPool = new ChannelPool();
             this.connectionString = connectionString;
         }
 
         public async Task ConnectAsync()
         {
-            this.socketIoCancellation = new CancellationTokenSource();
             // TODO: adopt authentication_failure_close capability to handle auth errors
 
             await this.ChangeStateAsync(ConnectionState.Connecting);
             this.socket = await EndpointResolver.OpenSocketAsync(this.connectionString.EndPoints, this.connectionString.Ssl);
+            this.frameSender = new FrameSender(this.socket, this.MethodRegistry, this.BufferPool);
 
             await this.ChangeStateAsync(ConnectionState.Negotiating);
-            var connectionChannel = this.channelPool.Next();
+            var connectionChannel = new Channel(this.channelPool, this.MethodRegistry, this.frameSender, null);
 
+            this.socketIoCancellation = new CancellationTokenSource();
             Task.Run(() => this.ReceiveLoop(socketIoCancellation.Token));
 
             await this.SendProtocolHeaderAsync();
@@ -101,16 +86,15 @@ namespace RabbitMQ.Next.Transport
                 return new ConnectionNegotiationResults(tuneMethod.ChannelMax, tuneMethod.MaxFrameSize, tuneMethod.HeartbeatInterval);
             });
 
-            this.heartbeatIntervalMs = negotiationResults.HeartbeatInterval * 1000 / 2;
+            var heartbeatIntervalMs = negotiationResults.HeartbeatInterval * 1000;
             this.bufferPool.SetBufferSize((int)negotiationResults.MaxFrameSize);
 
             this.connectionDetails.HeartbeatInterval = negotiationResults.HeartbeatInterval;
             this.connectionDetails.FrameMaxSize = (int) negotiationResults.MaxFrameSize;
 
             // start heartbeat
-            Task.Run(() => this.HeartbeatLoop(socketIoCancellation.Token));
+            Task.Run(() => this.HeartbeatLoop(heartbeatIntervalMs, socketIoCancellation.Token));
 
-            this.ScheduleHeartBeat();
             await this.ChangeStateAsync(ConnectionState.Configuring);
             await this.ChangeStateAsync(ConnectionState.Open);
         }
@@ -128,7 +112,7 @@ namespace RabbitMQ.Next.Transport
         {
             // TODO: validate state
 
-            var channel = this.channelPool.Next(handlers);
+            var channel = new Channel(this.channelPool, this.MethodRegistry, this.frameSender, handlers);
             await channel.SendAsync<Methods.Channel.OpenMethod, Methods.Channel.OpenOkMethod>(new Methods.Channel.OpenMethod(), cancellationToken);
 
             return channel;
@@ -147,22 +131,6 @@ namespace RabbitMQ.Next.Transport
 
         public ValueTask DisposeAsync() => new ValueTask(this.CloseAsync());
 
-
-        public async Task SendAsync<TState>(TState state, Func<Func<ReadOnlyMemory<byte>, ValueTask>, TState, ValueTask> writer, CancellationToken cancellation = default)
-        {
-            await this.writerSemaphore.WaitAsync(cancellation);
-            try
-            {
-                await writer.Invoke(this.socket.SendAsync, state);
-                await this.socket.SendAsync(FrameEndPayload);
-                this.ScheduleHeartBeat();
-            }
-            finally
-            {
-                this.writerSemaphore.Release();
-            }
-        }
-
         private async ValueTask ChangeStateAsync(ConnectionState newState)
         {
             if (this.State == newState)
@@ -174,29 +142,17 @@ namespace RabbitMQ.Next.Transport
             await this.stateChanged.InvokeAsync(newState);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void ScheduleHeartBeat()
-        {
-            this.heartbeatTimeout = (this.State != ConnectionState.Open)
-                ? DateTimeOffset.MaxValue
-                : DateTimeOffset.UtcNow.AddMilliseconds(this.heartbeatIntervalMs);
-        }
-
         private async Task SendProtocolHeaderAsync()
         {
             await this.socket.SendAsync(ProtocolConstants.AmqpHeader);
         }
 
-        private async Task HeartbeatLoop(CancellationToken cancellationToken)
+        private async Task HeartbeatLoop(int heartbeatIntervalMs, CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                if (this.heartbeatTimeout < DateTimeOffset.UtcNow)
-                {
-                    await this.SendAsync(ProtocolConstants.HeartbeatFrame);
-                }
-
-                await Task.Delay(this.heartbeatIntervalMs, cancellationToken);
+                await Task.Delay(heartbeatIntervalMs, cancellationToken);
+                await this.frameSender.SendHeartBeatAsync();
             }
         }
 
@@ -230,6 +186,7 @@ namespace RabbitMQ.Next.Transport
                         case FrameType.Method:
                             targetPipe.BeginLogicalFrame(ChannelFrameType.Method, (int) payloadSize);
                             await this.socket.FillBufferAsync(targetPipe, (int)payloadSize, cancellationToken);
+                            await targetPipe.FlushAsync();
                             break;
                         case FrameType.ContentHeader:
                             await this.socket.FillBufferAsync(contentHeaderCustomHeader);
@@ -243,10 +200,10 @@ namespace RabbitMQ.Next.Transport
                             targetPipe.GetMemory(sizeof(int)).Span.Write((int)headerSize);
                             targetPipe.Advance(sizeof(int));
                             await this.socket.FillBufferAsync(targetPipe, (int)headerSize);
-
                             break;
                         case FrameType.ContentBody:
                             await this.socket.FillBufferAsync(targetPipe, (int)payloadSize, cancellationToken);
+                            await targetPipe.FlushAsync();
                             break;
                     }
 
@@ -260,10 +217,11 @@ namespace RabbitMQ.Next.Transport
                     }
                 }
             }
-            catch (Exception)
+            catch (SocketException)
             {
-                this.CleanUpOnSocketClose();
                 // todo: report to diagnostic source
+
+                this.CleanUpOnSocketClose();
             }
         }
 
@@ -277,6 +235,8 @@ namespace RabbitMQ.Next.Transport
             this.socketIoCancellation.Cancel();
             this.socket.Dispose();
             this.socket = null;
+
+            this.channelPool.ReleaseAll();
         }
     }
 }

@@ -12,32 +12,36 @@ using RabbitMQ.Next.Transport.Methods.Channel;
 
 namespace RabbitMQ.Next.Transport.Channels
 {
-    internal sealed class Channel : IChannel, IDisposable
+    internal sealed class Channel : IChannel
     {
         private readonly SynchronizedChannel syncChannel;
         private readonly SemaphoreSlim senderSync;
+        private readonly ChannelPool channelPool;
 
         private readonly IReadOnlyList<IFrameHandler> frameHandlers;
 
-        public Channel(Pipe pipe, IMethodRegistry methodRegistry, IFrameSender frameSender, IEnumerable<IFrameHandler> handlers)
+        public Channel(ChannelPool channelPool, IMethodRegistry methodRegistry, IFrameSender frameSender, IEnumerable<IFrameHandler> handlers)
         {
+            this.channelPool = channelPool;
             this.MethodRegistry = methodRegistry;
-            this.Pipe =  new PipeWrapper(pipe.Writer);
-            var waitFrameHandler = new WaitMethodFrameHandler(methodRegistry);
-            this.syncChannel = new SynchronizedChannel(frameSender, waitFrameHandler);
+
             handlers ??= Array.Empty<IFrameHandler>();
-            this.frameHandlers = new List<IFrameHandler>(handlers) { waitFrameHandler };
+
+            var pipe = new Pipe();
+            this.Pipe =  new PipeWrapper(pipe.Writer);
             this.senderSync = new SemaphoreSlim(1,1);
+
+            var waitFrameHandler = new WaitMethodFrameHandler(methodRegistry);
+            this.frameHandlers = new List<IFrameHandler>(handlers) { waitFrameHandler };
+            this.ChannelNumber = channelPool.Register(this);
+            this.syncChannel = new SynchronizedChannel(this.ChannelNumber, frameSender, waitFrameHandler);
 
             Task.Run(() => this.LoopAsync(pipe.Reader));
         }
 
-        public PipeWrapper Pipe { get; }
+        public ushort ChannelNumber { get; }
 
-        public void Dispose()
-        {
-            // todo: implement proper resources cleanup
-        }
+        public PipeWrapper Pipe { get; }
 
         public bool IsClosed { get; }
 
@@ -127,6 +131,9 @@ namespace RabbitMQ.Next.Transport.Channels
             }
 
             await this.SendAsync<CloseMethod, CloseOkMethod>(new CloseMethod(statusCode, description, failedMethodId));
+
+            this.Pipe.Complete();
+            this.channelPool.Release(this);
         }
 
         private async Task LoopAsync(PipeReader pipeReader)
@@ -139,6 +146,10 @@ namespace RabbitMQ.Next.Transport.Channels
             while (true)
             {
                 var header = await pipeReader.ReadAsync(ChannelFrame.FrameHeaderSize, headerParser);
+                if (header == default)
+                {
+                    return;
+                }
 
                 Func<ReadOnlySequence<byte>, bool> payloadHandler;
                 switch (header.Type)
@@ -157,7 +168,12 @@ namespace RabbitMQ.Next.Transport.Channels
                         throw new InvalidOperationException();
                 }
 
-                await pipeReader.ReadAsync(header.Size, payloadHandler);
+                var processed = await pipeReader.ReadAsync(header.Size, payloadHandler);
+
+                if (!processed)
+                {
+                    return;
+                }
             }
         }
 

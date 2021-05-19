@@ -58,23 +58,18 @@ namespace RabbitMQ.Next.Consumer
         {
             // TODO: deal with connection state here
             this.channel = await this.connection.CreateChannelAsync(new IFrameHandler[] { this.frameHandler }, cancellation);
-            await this.InitializeConsumerAsync(this.channel);
+            await this.channel.UseSyncChannel(this.initializer, (ch, state)
+                => state.InitConsumerAsync(ch, CancellationToken.None));
+
+            if (this.acknowledgerFactory != null)
+            {
+                var ack = new Acknowledgement(this.channel);
+                this.acknowledger = this.acknowledgerFactory(ack);
+            }
 
             cancellation.Register(() => this.CancelConsumeAsync());
 
             await this.consumeTcs.Task;
-        }
-
-        private async Task InitializeConsumerAsync(IChannel channel)
-        {
-             await channel.UseSyncChannel(this.initializer, (ch, state)
-                => state.InitConsumerAsync(ch, CancellationToken.None));
-
-             if (this.acknowledgerFactory != null)
-             {
-                 var ack = new Acknowledgement(channel);
-                 this.acknowledger = this.acknowledgerFactory(ack);
-             }
         }
 
         private async ValueTask CancelConsumeAsync(Exception ex = null)
