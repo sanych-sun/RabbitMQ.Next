@@ -27,5 +27,17 @@ namespace RabbitMQ.Next.Transport.Channels
 
             return ((FrameType)type, size);
         }
+
+        public static (FrameType, int) ReadChannelHeader(ReadOnlySequence<byte> sequence)
+        {
+            if (sequence.IsSingleSegment)
+            {
+                return sequence.FirstSpan.ReadChannelHeader();
+            }
+
+            Span<byte> headerBuffer = stackalloc byte[ProtocolConstants.FrameHeaderSize];
+            sequence.Slice(0, ProtocolConstants.FrameHeaderSize).CopyTo(headerBuffer);
+            return ((ReadOnlySpan<byte>) headerBuffer).ReadChannelHeader();
+        }
     }
 }

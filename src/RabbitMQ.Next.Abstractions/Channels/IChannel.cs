@@ -5,7 +5,7 @@ namespace RabbitMQ.Next.Abstractions.Channels
 {
     public interface IChannel : ISynchronizedChannel
     {
-        bool IsClosed { get; }
+        Task Completion { get; }
 
         Task UseSyncChannel<TState>(TState state, Func<ISynchronizedChannel, TState, Task> fn);
 

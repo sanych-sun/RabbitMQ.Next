@@ -2,6 +2,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO.Pipelines;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
@@ -12,27 +13,29 @@ using RabbitMQ.Next.Transport.Methods.Channel;
 
 namespace RabbitMQ.Next.Transport.Channels
 {
-    internal sealed class Channel : IChannel
+    internal sealed class Channel : IChannelInternal
     {
         private readonly SynchronizedChannel syncChannel;
         private readonly SemaphoreSlim senderSync;
         private readonly ChannelPool channelPool;
+        private readonly TaskCompletionSource<bool> channelCompletion;
 
         private readonly IReadOnlyList<IFrameHandler> frameHandlers;
 
         public Channel(ChannelPool channelPool, IMethodRegistry methodRegistry, IFrameSender frameSender, IEnumerable<IFrameHandler> handlers)
         {
             this.channelPool = channelPool;
-            this.MethodRegistry = methodRegistry;
 
             handlers ??= Array.Empty<IFrameHandler>();
 
+            this.channelCompletion = new TaskCompletionSource<bool>();
             var pipe = new Pipe();
-            this.Pipe =  new PipeWrapper(pipe.Writer);
+            this.Writer =  new ChannelWriter(pipe.Writer);
             this.senderSync = new SemaphoreSlim(1,1);
 
             var waitFrameHandler = new WaitMethodFrameHandler(methodRegistry);
-            this.frameHandlers = new List<IFrameHandler>(handlers) { waitFrameHandler };
+            var channelCloseHandler = new ChannelCloseHandler(methodRegistry, this);
+            this.frameHandlers = new List<IFrameHandler>(handlers) { waitFrameHandler, channelCloseHandler };
             this.ChannelNumber = channelPool.Register(this);
             this.syncChannel = new SynchronizedChannel(this.ChannelNumber, frameSender, waitFrameHandler);
 
@@ -41,11 +44,22 @@ namespace RabbitMQ.Next.Transport.Channels
 
         public ushort ChannelNumber { get; }
 
-        public PipeWrapper Pipe { get; }
+        public ChannelWriter Writer { get; }
 
-        public bool IsClosed { get; }
+        public Task Completion => this.channelCompletion.Task;
 
-        public IMethodRegistry MethodRegistry { get; }
+        public void SetCompleted(Exception ex = null)
+        {
+            this.Writer.Dispose();
+            if (ex != null)
+            {
+                this.channelCompletion.SetException(ex);
+            }
+            else
+            {
+                this.channelCompletion.SetResult(true);
+            }
+        }
 
         public async Task SendAsync<TMethod>(TMethod request)
             where TMethod : struct, IOutgoingMethod
@@ -54,6 +68,7 @@ namespace RabbitMQ.Next.Transport.Channels
 
             try
             {
+                this.ValidateState();
                 await this.syncChannel.SendAsync(request);
             }
             finally
@@ -69,6 +84,7 @@ namespace RabbitMQ.Next.Transport.Channels
 
             try
             {
+                this.ValidateState();
                 await this.syncChannel.SendAsync(request, properties, content);
             }
             finally
@@ -84,6 +100,7 @@ namespace RabbitMQ.Next.Transport.Channels
 
             try
             {
+                this.ValidateState();
                 return await this.syncChannel.WaitAsync<TMethod>(cancellation);
             }
             finally
@@ -98,6 +115,7 @@ namespace RabbitMQ.Next.Transport.Channels
 
             try
             {
+                this.ValidateState();
                 await fn(this.syncChannel, state);
             }
             finally
@@ -112,6 +130,7 @@ namespace RabbitMQ.Next.Transport.Channels
 
             try
             {
+                this.ValidateState();
                 return await fn(this.syncChannel, state);
             }
             finally
@@ -125,25 +144,19 @@ namespace RabbitMQ.Next.Transport.Channels
 
         public async Task CloseAsync(ushort statusCode, string description, uint failedMethodId)
         {
-            if (this.IsClosed)
-            {
-                return;
-            }
-
             await this.SendAsync<CloseMethod, CloseOkMethod>(new CloseMethod(statusCode, description, failedMethodId));
 
-            this.Pipe.Complete();
-            this.channelPool.Release(this);
+            this.channelPool.Release(this.ChannelNumber);
         }
 
         private async Task LoopAsync(PipeReader pipeReader)
         {
-            Func<ReadOnlySequence<byte>, (FrameType Type, int Size)> headerParser = this.ParseFrameHeader;
+            Func<ReadOnlySequence<byte>, (FrameType Type, int Size)> headerParser = ChannelFrame.ReadChannelHeader;
             Func<ReadOnlySequence<byte>, bool> methodFrameHandler = (sequence) => this.ParseFramePayload(FrameType.Method, sequence);
             Func<ReadOnlySequence<byte>, bool> contentHeaderFrameHandler = (sequence) => this.ParseFramePayload(FrameType.ContentHeader, sequence);
             Func<ReadOnlySequence<byte>, bool> contentBodyFrameHandler = (sequence) => this.ParseFramePayload(FrameType.ContentBody, sequence);
 
-            while (true)
+            while (!this.Completion.IsCompleted)
             {
                 var header = await pipeReader.ReadAsync(ChannelFrame.FrameHeaderSize, headerParser);
                 if (header == default)
@@ -177,6 +190,15 @@ namespace RabbitMQ.Next.Transport.Channels
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void ValidateState()
+        {
+            if (this.Completion.IsCompleted)
+            {
+                throw new InvalidOperationException("Cannot perform operation on closed channel");
+            }
+        }
+
         private bool ParseFramePayload(FrameType type, ReadOnlySequence<byte> sequence)
         {
             for (var i = 0; i < this.frameHandlers.Count; i++)
@@ -188,18 +210,6 @@ namespace RabbitMQ.Next.Transport.Channels
             }
 
             return false;
-        }
-
-        private (FrameType, int) ParseFrameHeader(ReadOnlySequence<byte> sequence)
-        {
-            if (sequence.IsSingleSegment)
-            {
-                return sequence.FirstSpan.ReadChannelHeader();
-            }
-
-            Span<byte> headerBuffer = stackalloc byte[ProtocolConstants.FrameHeaderSize];
-            sequence.Slice(0, ProtocolConstants.FrameHeaderSize).CopyTo(headerBuffer);
-            return ((ReadOnlySpan<byte>) headerBuffer).ReadChannelHeader();
         }
     }
 }

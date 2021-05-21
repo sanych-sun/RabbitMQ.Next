@@ -41,21 +41,6 @@ namespace RabbitMQ.Next.Tests.Transport.Channels
         }
 
         [Theory]
-        [MemberData(nameof(IgnoreFramesTestCases))]
-        public void ShouldIgnoreOtherFrames((ChannelFrameType type, ReadOnlySequence<byte> data)[] frames)
-        {
-            var methodHandler = Substitute.For<Action<DeliverMethod, IMessageProperties, ReadOnlySequence<byte>>>();
-            var frameHandler = this.Create(methodHandler);
-
-            foreach (var frame in frames)
-            {
-                ((IFrameHandler) frameHandler).Handle(frame.type, frame.data);
-            }
-
-            Assert.Equal(ContentFrameHandlerState.None, frameHandler.ResetState());
-        }
-
-        [Theory]
         [MemberData(nameof(InvalidFramesTestCases))]
         public void ThrowsOnUnexpectedFrames((ChannelFrameType type, ReadOnlySequence<byte> data)[] frames)
         {
@@ -119,42 +104,6 @@ namespace RabbitMQ.Next.Tests.Transport.Channels
                 {
                     (ChannelFrameType.Method, Helpers.MakeSequence(deliverMethodBytes, 2, 5)),
                     (ChannelFrameType.Content, Helpers.MakeSequence(contentBytes, 18, 5)),
-                }
-            };
-        }
-
-        public static IEnumerable<object[]> IgnoreFramesTestCases()
-        {
-            yield return new object[]
-            {
-                new[]
-                {
-                    (ChannelFrameType.Method, Helpers.MakeSequence(new byte[] { 0x00, 0x3C, 0x00, 0x32 }))
-                }
-            };
-
-            yield return new object[]
-            {
-                new[]
-                {
-                    (ChannelFrameType.Content, Helpers.MakeSequence(new byte[] { 0x00, 0x00 })),
-                }
-            };
-
-            yield return new object[]
-            {
-                new[]
-                {
-                    (ChannelFrameType.Content, Helpers.MakeSequence(new byte[] { 0x00, 0x00 }))
-                }
-            };
-
-            yield return new object[]
-            {
-                new[]
-                {
-                    (ChannelFrameType.Method, Helpers.MakeSequence(new byte[] {  0x00, 0x3C, 0x00, 0x32 })),
-                    (ChannelFrameType.Content, Helpers.MakeSequence(new byte[] { 0x00, 0x00 }))
                 }
             };
         }

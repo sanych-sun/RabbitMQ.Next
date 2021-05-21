@@ -17,7 +17,7 @@ namespace RabbitMQ.Next.Transport.Channels
         private readonly IMethodParser<TMessage> methodParser;
         private readonly uint contentMethodId;
         private readonly Action<TMessage, IMessageProperties, ReadOnlySequence<byte>> handler;
-        private ContentFrameHandlerState state = ContentFrameHandlerState.None;
+        private bool expectContent;
         private TMessage method;
 
         public ContentFrameHandler(uint contentMethodId, IMethodParser<TMessage> methodParser, Action<TMessage, IMessageProperties, ReadOnlySequence<byte>> handler, IBufferPool bufferPool)
@@ -26,15 +26,6 @@ namespace RabbitMQ.Next.Transport.Channels
             this.methodParser = methodParser;
             this.contentMethodId = contentMethodId;
             this.handler = handler;
-        }
-
-        public ContentFrameHandlerState ResetState()
-        {
-            var prevState = this.state;
-            this.state = ContentFrameHandlerState.None;
-            this.method = default;
-
-            return prevState;
         }
 
         bool IFrameHandler.Handle(ChannelFrameType type, ReadOnlySequence<byte> payload)
@@ -53,14 +44,14 @@ namespace RabbitMQ.Next.Transport.Channels
         public void Reset()
         {
             this.method = default;
-            this.state = ContentFrameHandlerState.None;
+            this.expectContent = false;
         }
 
         private bool TryHandleMethodFrame(ReadOnlySequence<byte> payload)
         {
-            if (this.state != ContentFrameHandlerState.None)
+            if (this.expectContent)
             {
-                throw new ConnectionException(ReplyCode.UnexpectedFrame, $"Received unexpected method frame when in {this.state} state.");
+                throw new ConnectionException(ReplyCode.UnexpectedFrame, $"Received method frame when content frame was expected.");
             }
 
             payload = payload.Read(out uint methodId);
@@ -81,14 +72,14 @@ namespace RabbitMQ.Next.Transport.Channels
                 this.method = this.methodParser.Parse(buffer.Memory.Span);
             }
 
-            this.state = ContentFrameHandlerState.ExpectContent;
+            this.expectContent = true;
 
             return true;
         }
 
         private bool TryHandleContentFrame(ReadOnlySequence<byte> payload)
         {
-            if (this.state == ContentFrameHandlerState.None)
+            if (!this.expectContent)
             {
                 return false;
             }
@@ -102,7 +93,7 @@ namespace RabbitMQ.Next.Transport.Channels
 
             // todo: dispose messageProps here to avoid buffers from leaking
 
-            this.ResetState();
+            this.Reset();
 
             return true;
         }

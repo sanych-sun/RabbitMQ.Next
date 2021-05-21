@@ -56,6 +56,7 @@ namespace RabbitMQ.Next.Transport
                     await sender(state.payload);
                     await sender(FrameEndPayload);
                 });
+
         }
 
         public async ValueTask SendContentHeaderAsync(ushort channelNumber, IMessageProperties properties, ulong contentSize)

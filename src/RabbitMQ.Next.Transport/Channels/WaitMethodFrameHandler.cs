@@ -51,22 +51,16 @@ namespace RabbitMQ.Next.Transport.Channels
             payload = payload.Read(out uint methodId);
 
             var task = this.waitingTask;
-            if (methodId == this.expectedMethodId)
+            if (methodId != this.expectedMethodId)
             {
-                this.waitingTask = null;
+                return false;
+            }
+
+            this.waitingTask = null;
                 this.expectedMethodId = 0;
                 task.SetResult(this.registry.GetParser(methodId).ParseMethod(payload));
 
-                return true;
-            }
-
-            if (methodId == (uint) MethodId.ChannelClose)
-            {
-                var channelClose = this.registry.GetParser<Methods.Channel.CloseMethod>().Parse(payload);
-                task.SetException(new ChannelException(channelClose.StatusCode, channelClose.Description, channelClose.FailedMethodId));
-            }
-
-            return false;
+            return true;
         }
     }
 }

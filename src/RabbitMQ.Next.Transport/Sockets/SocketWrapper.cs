@@ -18,12 +18,13 @@ namespace RabbitMQ.Next.Transport.Sockets
         {
             this.writerSemaphore = new SemaphoreSlim(1, 1);
             this.socket = socket;
-            var netStream = new NetworkStream(socket);
-            netStream.ReadTimeout = 1000;
-            netStream.WriteTimeout = 1000;
 
-            this.stream = netStream;
-            this.sendData = (bytes) => this.stream.WriteAsync(bytes);
+            this.stream = new NetworkStream(socket)
+            {
+                ReadTimeout = 1000,
+                WriteTimeout = 1000,
+            };
+
             if (useSsl)
             {
                 var sslStream = new SslStream(this.stream, false);
@@ -31,6 +32,8 @@ namespace RabbitMQ.Next.Transport.Sockets
 
                 this.stream = sslStream;
             }
+
+            this.sendData = (bytes) => this.stream.WriteAsync(bytes);
         }
 
         public async ValueTask SendAsync(ReadOnlyMemory<byte> payload, CancellationToken cancellation = default)

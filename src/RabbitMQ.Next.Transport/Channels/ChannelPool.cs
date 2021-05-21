@@ -9,30 +9,30 @@ namespace RabbitMQ.Next.Transport.Channels
     {
         private readonly ReaderWriterLockSlim channelsLock;
         private readonly ConcurrentQueue<ushort> releasedItems;
-        private Channel[] channels;
+        private IChannelInternal[] channels;
         private int lastId = -1;
 
         public ChannelPool(int initialPoolSize = 10)
         {
             this.channelsLock = new ReaderWriterLockSlim();
             this.releasedItems = new ConcurrentQueue<ushort>();
-            this.channels = new Channel[initialPoolSize];
+            this.channels = new IChannelInternal[initialPoolSize];
         }
 
-        public ushort Register(Channel channel)
+        public ushort Register(IChannelInternal channel)
         {
             var nextIndex = this.GetNextIndex();
             this.AssignChannel(nextIndex, channel);
             return nextIndex;
         }
 
-        public void Release(Channel channel)
+        public void Release(ushort channelNumber, Exception ex = null)
         {
-            this.AssignChannel(channel.ChannelNumber, null);
-            this.releasedItems.Enqueue(channel.ChannelNumber);
+            var channel = this.AssignChannel(channelNumber, null);
+            channel?.SetCompleted(ex);
         }
 
-        public void ReleaseAll()
+        public void ReleaseAll(Exception ex = null)
         {
             this.channelsLock.EnterWriteLock();
 
@@ -40,14 +40,11 @@ namespace RabbitMQ.Next.Transport.Channels
             {
                 for (var i = 0; i < this.channels.Length; i++)
                 {
-                    if (this.channels[i] == null)
-                    {
-                        continue;
-                    }
-
+                    this.channels[i]?.SetCompleted(ex);
                     this.channels[i] = null;
                 }
 
+                this.releasedItems.Clear();
                 this.lastId = -1;
             }
             finally
@@ -56,7 +53,7 @@ namespace RabbitMQ.Next.Transport.Channels
             }
         }
 
-        public Channel this[int i]
+        public IChannelInternal this[int i]
         {
             get
             {
@@ -103,7 +100,7 @@ namespace RabbitMQ.Next.Transport.Channels
                 if (nextId < this.channels.Length)
                 {
                     var channelsTmp = this.channels;
-                    this.channels = new Channel[channelsTmp.Length * 2];
+                    this.channels = new IChannelInternal[channelsTmp.Length * 2];
                     channelsTmp.CopyTo(this.channels, 0);
                 }
             }
@@ -116,18 +113,22 @@ namespace RabbitMQ.Next.Transport.Channels
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void AssignChannel(int index, Channel channel)
+        private IChannelInternal AssignChannel(int index, IChannelInternal channel)
         {
+            IChannelInternal prev = null;
             this.channelsLock.EnterWriteLock();
 
             try
             {
+                prev = this.channels[index];
                 this.channels[index] = channel;
             }
             finally
             {
                 this.channelsLock.ExitWriteLock();
             }
+
+            return prev;
         }
 
     }

@@ -91,7 +91,7 @@ namespace RabbitMQ.Next.Publisher
             this.CheckDisposed();
 
             var ch = this.channel;
-            if (ch == null || ch.IsClosed)
+            if (ch == null || ch.Completion.IsCompleted)
             {
                 ch = await this.DoGetChannelAsync(cancellationToken);
             }
@@ -130,7 +130,7 @@ namespace RabbitMQ.Next.Publisher
 
             try
             {
-                if (this.channel == null || this.channel.IsClosed)
+                if (this.channel == null || this.channel.Completion.IsCompleted)
                 {
                     this.channel = await this.Connection.CreateChannelAsync(new [] { this.returnedFrameHandler }, cancellationToken);
                 }

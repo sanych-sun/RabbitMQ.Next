@@ -178,15 +178,15 @@ namespace RabbitMQ.Next.Transport
                     ((ReadOnlySpan<byte>) headerBuffer).ReadFrameHeader(out FrameType frameType, out ushort channel, out uint payloadSize);
 
                     // 2. Choose appropriate channel to forward the data
-                    var targetPipe = this.channelPool[channel].Pipe;
+                    var targetWriter = this.channelPool[channel].Writer;
 
                     // 3. Read frame payload into the channel
                     switch (frameType)
                     {
                         case FrameType.Method:
-                            targetPipe.BeginLogicalFrame(ChannelFrameType.Method, (int) payloadSize);
-                            await this.socket.FillBufferAsync(targetPipe, (int)payloadSize, cancellationToken);
-                            await targetPipe.FlushAsync();
+                            targetWriter.BeginLogicalFrame(ChannelFrameType.Method, (int) payloadSize);
+                            await this.socket.FillBufferAsync(targetWriter, (int)payloadSize, cancellationToken);
+                            await targetWriter.FlushAsync();
                             break;
                         case FrameType.ContentHeader:
                             await this.socket.FillBufferAsync(contentHeaderCustomHeader);
@@ -196,14 +196,14 @@ namespace RabbitMQ.Next.Transport
                                 .Span)).Read(out ulong contentSide);
 
                             var headerSize = payloadSize - customHeaderSize;
-                            targetPipe.BeginLogicalFrame(ChannelFrameType.Content, sizeof(int) + (int)headerSize + (int)contentSide);
-                            targetPipe.GetMemory(sizeof(int)).Span.Write((int)headerSize);
-                            targetPipe.Advance(sizeof(int));
-                            await this.socket.FillBufferAsync(targetPipe, (int)headerSize);
+                            targetWriter.BeginLogicalFrame(ChannelFrameType.Content, sizeof(int) + (int)headerSize + (int)contentSide);
+                            targetWriter.GetMemory(sizeof(int)).Span.Write((int)headerSize);
+                            targetWriter.Advance(sizeof(int));
+                            await this.socket.FillBufferAsync(targetWriter, (int)headerSize);
                             break;
                         case FrameType.ContentBody:
-                            await this.socket.FillBufferAsync(targetPipe, (int)payloadSize, cancellationToken);
-                            await targetPipe.FlushAsync();
+                            await this.socket.FillBufferAsync(targetWriter, (int)payloadSize, cancellationToken);
+                            await targetWriter.FlushAsync();
                             break;
                     }
 

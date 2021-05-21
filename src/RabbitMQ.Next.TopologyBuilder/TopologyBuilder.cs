@@ -58,7 +58,7 @@ namespace RabbitMQ.Next.TopologyBuilder
         private ValueTask<IChannel> GetChannelAsync()
         {
             var ch = this.channel;
-            if (ch == null || ch.IsClosed)
+            if (ch == null || ch.Completion.IsCompleted)
             {
                 return this.OpenChannelAsync();
             }

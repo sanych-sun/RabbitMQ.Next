@@ -7,12 +7,12 @@ using RabbitMQ.Next.Abstractions.Channels;
 
 namespace RabbitMQ.Next.Transport.Channels
 {
-    internal sealed class PipeWrapper : IBufferWriter<byte>
+    internal sealed class ChannelWriter : IBufferWriter<byte>, IDisposable
     {
         private PipeWriter writer;
         private long dataSize;
 
-        public PipeWrapper(PipeWriter writer)
+        public ChannelWriter(PipeWriter writer)
         {
             if (writer == null)
             {
@@ -22,9 +22,7 @@ namespace RabbitMQ.Next.Transport.Channels
             this.writer = writer;
         }
 
-        public bool IsCompleted => (this.writer == null);
-
-        public void Complete()
+        public void Dispose()
         {
             this.writer?.Complete();
             this.writer = null;
@@ -86,7 +84,7 @@ namespace RabbitMQ.Next.Transport.Channels
         {
             if (this.writer == null)
             {
-                throw new InvalidOperationException("Cannot use completed PipeWriter.");
+                throw new InvalidOperationException("Cannot use completed ChannelWriter.");
             }
         }
     }
