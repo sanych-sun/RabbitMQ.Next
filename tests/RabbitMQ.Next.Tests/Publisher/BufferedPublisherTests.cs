@@ -3,7 +3,6 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using NSubstitute;
-using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Publisher;
@@ -27,9 +26,9 @@ namespace RabbitMQ.Next.Tests.Publisher
             var connection = this.MockConnection();
             connection.CreateChannelAsync(Arg.Any<IEnumerable<IFrameHandler>>()).Returns(Task.FromResult(channel));
 
-            var publisher = new BufferedPublisher(connection, this.MockSerializer(), transformers, null, 10);
+            var publisher = new BufferedPublisher(connection, exchange, this.MockSerializer(), transformers, null, 10);
 
-            await publisher.PublishAsync("test", exchange, routingKey, properties, flags);
+            await publisher.PublishAsync("test", routingKey, properties, flags);
 
             await publisher.CompleteAsync();
 
@@ -45,7 +44,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         {
             var connection = this.MockConnection();
 
-            var publisher = new BufferedPublisher(connection, this.MockSerializer(), null, null, 10);
+            var publisher = new BufferedPublisher(connection, "exchange", this.MockSerializer(), null, null, 10);
             await publisher.DisposeAsync();
 
             await Assert.ThrowsAsync<ObjectDisposedException>(async () => await publisher.PublishAsync("test"));
@@ -56,7 +55,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         {
             var connection = this.MockConnection();
 
-            var publisher = new BufferedPublisher(connection, this.MockSerializer(), null, null, 10);
+            var publisher = new BufferedPublisher(connection, "exchange", this.MockSerializer(), null, null, 10);
             await publisher.DisposeAsync();
 
             var ex = await Record.ExceptionAsync(async () => await publisher.DisposeAsync());

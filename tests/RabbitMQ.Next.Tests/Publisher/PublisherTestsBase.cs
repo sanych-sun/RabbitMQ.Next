@@ -6,7 +6,6 @@ using RabbitMQ.Next.Abstractions.Buffers;
 using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Abstractions.Transformers;
 using RabbitMQ.Next.Publisher.Transformers;
-using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.Transport.Buffers;
 using RabbitMQ.Next.Transport.Methods.Basic;
@@ -39,14 +38,6 @@ namespace RabbitMQ.Next.Tests.Publisher
                 "myExchange", "key", new MessagePropertiesMock { ApplicationId = "test"}, PublishFlags.None,
                 new PublishMethod("myExchange", "key", 0),
                 new MessagePropertiesMock { ApplicationId = "test"}
-            };
-
-            yield return new object[]
-            {
-                new IMessageTransformer[] { new ExchangeTransformer("default")},
-                "", "key", null, PublishFlags.None,
-                new PublishMethod("default", "key", 0),
-                new MessagePropertiesMock()
             };
 
             yield return new object[]

@@ -22,17 +22,6 @@ namespace RabbitMQ.Next.Tests.Publisher.Attributes
         }
 
         [Fact]
-        public void TestExchangeAttribute()
-        {
-            var attributeTransformer = new AttributeTransformer();
-            var message = Substitute.For<IMessageBuilder>();
-
-            attributeTransformer.Apply(new ExchangeAttributeData(), message);
-
-            message.Received().SetExchange("test");
-        }
-
-        [Fact]
         public void TestRoutingKeyAttribute()
         {
             var attributeTransformer = new AttributeTransformer();
@@ -64,7 +53,6 @@ namespace RabbitMQ.Next.Tests.Publisher.Attributes
 
             attributeTransformer.Apply(new MultipleAttributesData(), message);
 
-            message.Received().SetExchange("test");
             message.Received().SetRoutingKey("route");
             message.Received().SetPriority(7);
         }
@@ -72,11 +60,6 @@ namespace RabbitMQ.Next.Tests.Publisher.Attributes
         private class AssemblyAttributesData
         {
 
-        }
-
-        [Exchange("test")]
-        private class ExchangeAttributeData
-        {
         }
 
         [RoutingKey("route")]
@@ -90,7 +73,6 @@ namespace RabbitMQ.Next.Tests.Publisher.Attributes
         {
         }
 
-        [Exchange("test")]
         [RoutingKey("route")]
         [Priority(7)]
         private class MultipleAttributesData

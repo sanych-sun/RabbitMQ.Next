@@ -7,8 +7,13 @@ namespace RabbitMQ.Next.Publisher
 {
     public static class ConnectionExtensions
     {
-        public static IPublisher NewPublisher(this IConnection connection, Action<IPublisherBuilder> builder)
+        public static IPublisher NewPublisher(this IConnection connection, string exchange, Action<IPublisherBuilder> builder)
         {
+            if (string.IsNullOrWhiteSpace(exchange))
+            {
+                throw new ArgumentNullException(nameof(exchange));
+            }
+
             var publisherBuilder = new PublisherBuilder();
             builder?.Invoke(publisherBuilder);
 
@@ -22,10 +27,10 @@ namespace RabbitMQ.Next.Publisher
 
             if (publisherBuilder.BufferSize == 0)
             {
-                return new Publisher(connection, serializer, publisherBuilder.Transformers, publisherBuilder.ReturnedMessageHandlers);
+                return new Publisher(connection, exchange, serializer, publisherBuilder.Transformers, publisherBuilder.ReturnedMessageHandlers);
             }
 
-            return new BufferedPublisher(connection, serializer, publisherBuilder.Transformers, publisherBuilder.ReturnedMessageHandlers, publisherBuilder.BufferSize);
+            return new BufferedPublisher(connection, exchange, serializer, publisherBuilder.Transformers, publisherBuilder.ReturnedMessageHandlers, publisherBuilder.BufferSize);
         }
     }
 }

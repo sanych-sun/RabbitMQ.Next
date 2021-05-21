@@ -5,23 +5,22 @@ using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Abstractions.Transformers;
-using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Serialization.Abstractions;
 
 namespace RabbitMQ.Next.Publisher
 {
     internal class Publisher : PublisherBase, IPublisher
     {
-        public Publisher(IConnection connection, ISerializer serializer, IReadOnlyList<IMessageTransformer> transformers, IReadOnlyList<IReturnedMessageHandler> returnedMessageHandlers)
-            : base(connection, serializer, transformers, returnedMessageHandlers)
+        public Publisher(IConnection connection, string exchange, ISerializer serializer, IReadOnlyList<IMessageTransformer> transformers, IReadOnlyList<IReturnedMessageHandler> returnedMessageHandlers)
+            : base(connection, exchange, serializer, transformers, returnedMessageHandlers)
         {
         }
 
-        public async ValueTask PublishAsync<TContent>(TContent content, string exchange = null, string routingKey = null, IMessageProperties properties = null, PublishFlags flags = PublishFlags.None, CancellationToken cancellationToken = default)
+        public async ValueTask PublishAsync<TContent>(TContent content, string routingKey = null, IMessageProperties properties = null, PublishFlags flags = PublishFlags.None, CancellationToken cancellationToken = default)
         {
             this.CheckDisposed();
 
-            var message = this.ApplyTransformers(content, exchange, routingKey, properties, flags);
+            var message = this.ApplyTransformers(content, routingKey, properties, flags);
 
             using var bufferWriter = this.Connection.BufferPool.Create();
             this.Serializer.Serialize(content, bufferWriter);

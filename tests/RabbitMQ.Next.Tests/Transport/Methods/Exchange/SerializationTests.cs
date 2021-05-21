@@ -1,4 +1,3 @@
-using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Transport.Methods;
 using RabbitMQ.Next.Transport.Methods.Exchange;
 using Xunit;
@@ -14,7 +13,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Exchange
 
         [Fact]
         public void DeclareMethodFormatter()
-            => this.TestFormatter(new DeclareMethod("myexchange", "direct", false, true, false, false, false,null));
+            => this.TestFormatter(new DeclareMethod("myexchange", "direct", true, false, false, false,null));
 
 
         [Fact]

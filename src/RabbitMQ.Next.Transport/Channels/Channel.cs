@@ -33,7 +33,7 @@ namespace RabbitMQ.Next.Transport.Channels
             this.Writer =  new ChannelWriter(pipe.Writer);
             this.senderSync = new SemaphoreSlim(1,1);
 
-            var waitFrameHandler = new WaitMethodFrameHandler(methodRegistry);
+            var waitFrameHandler = new WaitMethodFrameHandler(methodRegistry, this);
             var channelCloseHandler = new ChannelCloseHandler(methodRegistry, this);
             this.frameHandlers = new List<IFrameHandler>(handlers) { waitFrameHandler, channelCloseHandler };
             this.ChannelNumber = channelPool.Register(this);

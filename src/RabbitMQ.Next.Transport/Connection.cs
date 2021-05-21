@@ -60,11 +60,13 @@ namespace RabbitMQ.Next.Transport
             this.socketIoCancellation = new CancellationTokenSource();
             Task.Run(() => this.ReceiveLoop(socketIoCancellation.Token));
 
-            await this.SendProtocolHeaderAsync();
 
             var negotiationResults = await connectionChannel.UseSyncChannel(this.connectionString, async (ch, connection) =>
             {
                 var startMethod = ch.WaitAsync<StartMethod>();
+                await this.SendProtocolHeaderAsync();
+                await startMethod;
+
                 // TODO: make it dynamic based on assembly version and allow add extra properties
                 var clientProperties = new Dictionary<string, object>()
                 {
@@ -79,9 +81,8 @@ namespace RabbitMQ.Next.Transport
                 var tuneMethod = await tuneMethodTask;
 
                 await ch.SendAsync(new TuneOkMethod(tuneMethod.ChannelMax, tuneMethod.MaxFrameSize, tuneMethod.HeartbeatInterval));
-                var openOkTask = ch.WaitAsync<OpenOkMethod>();
-                await ch.SendAsync(new OpenMethod(connection.VirtualHost));
-                await openOkTask;
+
+                await ch.SendAsync<OpenMethod, OpenOkMethod>(new OpenMethod(connection.VirtualHost));
 
                 return new ConnectionNegotiationResults(tuneMethod.ChannelMax, tuneMethod.MaxFrameSize, tuneMethod.HeartbeatInterval);
             });

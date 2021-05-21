@@ -23,9 +23,8 @@ namespace RabbitMQ.Next.Publisher
         private string userId;
         private string applicationId;
 
-        public MessageBuilder(string exchange, string routingKey, IMessageProperties properties, PublishFlags flags)
+        public MessageBuilder(string routingKey, IMessageProperties properties, PublishFlags flags)
         {
-            this.Exchange = exchange;
             this.RoutingKey = routingKey;
             this.PublishFlags = flags;
             this.baseProperties = properties;
@@ -57,13 +56,9 @@ namespace RabbitMQ.Next.Publisher
 
         public string ApplicationId => this.applicationId ?? this.baseProperties?.ApplicationId;
 
-        public string Exchange { get; private set; }
-
         public string RoutingKey { get; private set; }
 
         public PublishFlags PublishFlags { get; private set; }
-
-        public void SetExchange(string value) => this.Exchange = value ?? string.Empty;
 
         public void SetRoutingKey(string value) => this.RoutingKey = value ?? string.Empty;
 

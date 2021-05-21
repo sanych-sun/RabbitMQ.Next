@@ -17,13 +17,19 @@ namespace RabbitMQ.Next.Transport.Channels
         private uint expectedMethodId;
         private TaskCompletionSource<IIncomingMethod> waitingTask;
 
-        public WaitMethodFrameHandler(IMethodRegistry registry)
+        public WaitMethodFrameHandler(IMethodRegistry registry, IChannelInternal channel)
         {
             this.registry = registry;
             this.cancellationHandler = () =>
             {
                 this.waitingTask?.SetCanceled();
             };
+            channel.Completion.ContinueWith(t =>
+            {
+                Exception ex = t.Exception?.InnerException;
+                ex ??= new InvalidOperationException();
+                this.waitingTask?.SetException(ex);
+            });
         }
 
         public Task<IIncomingMethod> WaitAsync<TMethod>(CancellationToken cancellation = default)

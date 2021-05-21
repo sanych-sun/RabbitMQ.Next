@@ -33,7 +33,7 @@ namespace RabbitMQ.Next.Tests
 
             await connection.ConnectAsync();
 
-            var publisher = connection.NewPublisher(
+            var publisher = connection.NewPublisher("MineExchange",
                 builder => builder
                     .UseTransformer(new ApplicationIdTransformer("unittest"))
                     .UseAttributesTransformer()
@@ -43,11 +43,12 @@ namespace RabbitMQ.Next.Tests
 
             var sw = Stopwatch.StartNew();
 
-            for (var i = 0; i < 10000; i++)
+            for (var i = 0; i < 1; i++)
             {
-                await publisher.PublishAsync("new test", "MyExchange", flags: PublishFlags.Mandatory);
+                await publisher.PublishAsync("new test", flags: PublishFlags.Mandatory);
             }
 
+            await Task.Delay(10000);
             await publisher.CompleteAsync();
 
             sw.Stop();
@@ -84,7 +85,6 @@ namespace RabbitMQ.Next.Tests
             await connection.CloseAsync();
         }
 
-        [Exchange("MyExchange")]
         [Header("test", "wokrs")]
         public class DummyClass
         {

@@ -13,7 +13,6 @@ namespace RabbitMQ.Next.Tests.Publisher
         [Fact]
         public void CtorTest()
         {
-            var exchange = "myExchange";
             var routingKey = "route";
             var publishFlags = PublishFlags.Immediate;
             var contentType = "contentType";
@@ -45,9 +44,8 @@ namespace RabbitMQ.Next.Tests.Publisher
             properties.UserId.Returns(userId);
             properties.ApplicationId.Returns(applicationId);
 
-            var builder = new MessageBuilder(exchange, routingKey, properties, publishFlags);
+            var builder = new MessageBuilder(routingKey, properties, publishFlags);
 
-            Assert.Equal(exchange, builder.Exchange);
             Assert.Equal(routingKey, builder.RoutingKey);
             Assert.Equal(publishFlags, builder.PublishFlags);
             Assert.Equal(contentType, builder.ContentType);
@@ -63,19 +61,6 @@ namespace RabbitMQ.Next.Tests.Publisher
             Assert.Equal(type, builder.Type);
             Assert.Equal(userId, builder.UserId);
             Assert.Equal(applicationId, builder.ApplicationId);
-        }
-
-        [Theory]
-        [InlineData("myExchange", null, "")]
-        [InlineData("myExchange", "", "")]
-        [InlineData("myExchange", "new", "new")]
-        public void CanOverrideExchange(string initial, string value, string expected)
-        {
-            var builder = this.Create(exchange: initial);
-
-            builder.SetExchange(value);
-
-            Assert.Equal(expected, builder.Exchange);
         }
 
         [Theory]
@@ -283,7 +268,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             yield return new object[] {DateTimeOffset.Now, DateTimeOffset.UtcNow};
         }
 
-        private MessageBuilder Create(string exchange = null, string routingKey = null, PublishFlags publishFlags = PublishFlags.None,
+        private MessageBuilder Create(string routingKey = null, PublishFlags publishFlags = PublishFlags.None,
             string contentType = null, string contentEncoding = null, IReadOnlyDictionary<string, object> headers = null,
             DeliveryMode deliveryMode = DeliveryMode.Unset, byte? priority = null, string correlationId = null,
             string replyTo = null, string expiration = null, string messageId = null, DateTimeOffset? timestamp = null,
@@ -304,7 +289,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             properties.UserId.Returns(userId);
             properties.ApplicationId.Returns(applicationId);
 
-            return new MessageBuilder(exchange, routingKey, properties, publishFlags);
+            return new MessageBuilder(routingKey, properties, publishFlags);
         }
     }
 }

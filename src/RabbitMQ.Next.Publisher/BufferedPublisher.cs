@@ -8,7 +8,6 @@ using RabbitMQ.Next.Abstractions.Buffers;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Abstractions.Transformers;
-using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.Transport;
 
@@ -20,23 +19,23 @@ namespace RabbitMQ.Next.Publisher
         private readonly AsyncManualResetEvent waitToRead;
         private readonly Task messageSendTask;
 
-        private readonly ConcurrentQueue<((string Exchange, string RoutingKey, IMessageProperties Properties, PublishFlags PublishFlags) Message, IBufferWriter Content)> localQueue;
+        private readonly ConcurrentQueue<((string RoutingKey, IMessageProperties Properties, PublishFlags PublishFlags) Message, IBufferWriter Content)> localQueue;
         private volatile bool isCompleted;
 
 
-        public BufferedPublisher(IConnection connection, ISerializer serializer, IReadOnlyList<IMessageTransformer> transformers, IReadOnlyList<IReturnedMessageHandler> returnedMessageHandlers, int bufferSize)
-            : base(connection, serializer, transformers, returnedMessageHandlers)
+        public BufferedPublisher(IConnection connection, string exchange, ISerializer serializer, IReadOnlyList<IMessageTransformer> transformers, IReadOnlyList<IReturnedMessageHandler> returnedMessageHandlers, int bufferSize)
+            : base(connection, exchange, serializer, transformers, returnedMessageHandlers)
         {
             this.publishQueueSync = new SemaphoreSlim(bufferSize);
 
             this.waitToRead = new AsyncManualResetEvent(true);
-            this.localQueue = new ConcurrentQueue<((string Exchange, string RoutingKey, IMessageProperties Properties, PublishFlags PublishFlags), IBufferWriter)>();
+            this.localQueue = new ConcurrentQueue<((string RoutingKey, IMessageProperties Properties, PublishFlags PublishFlags), IBufferWriter)>();
             this.isCompleted = false;
 
             this.messageSendTask = this.MessageSendLoop();
         }
 
-        public async ValueTask PublishAsync<TContent>(TContent content, string exchange = null, string routingKey = null, IMessageProperties properties = null, PublishFlags flags = PublishFlags.None, CancellationToken cancellationToken = default)
+        public async ValueTask PublishAsync<TContent>(TContent content, string routingKey = null, IMessageProperties properties = null, PublishFlags flags = PublishFlags.None, CancellationToken cancellationToken = default)
         {
             void DisposedOrCompletedCheck()
             {
@@ -47,11 +46,13 @@ namespace RabbitMQ.Next.Publisher
                 }
             }
 
+            // have to ensure channel open to validate the exchange name
+            await this.EnsureChannelOpenAsync(cancellationToken);
             DisposedOrCompletedCheck();
             await this.publishQueueSync.WaitAsync(cancellationToken);
             DisposedOrCompletedCheck();
 
-            var message = this.ApplyTransformers(content, exchange, routingKey, properties, flags);
+            var message = this.ApplyTransformers(content, routingKey, properties, flags);
             var bufferWriter = this.Connection.BufferPool.Create();
             this.Serializer.Serialize(content, bufferWriter);
 

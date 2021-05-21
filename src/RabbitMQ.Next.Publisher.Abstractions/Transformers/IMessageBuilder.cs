@@ -5,13 +5,9 @@ namespace RabbitMQ.Next.Publisher.Abstractions.Transformers
 {
     public interface IMessageBuilder : IMessageProperties
     {
-        string Exchange { get; }
-
         string RoutingKey { get; }
 
         public PublishFlags PublishFlags { get; }
-
-        void SetExchange(string value);
 
         void SetRoutingKey(string value);
 

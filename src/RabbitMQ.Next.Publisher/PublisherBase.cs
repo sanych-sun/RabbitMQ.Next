@@ -12,6 +12,7 @@ using RabbitMQ.Next.Publisher.Abstractions.Transformers;
 using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.Transport.Channels;
 using RabbitMQ.Next.Transport.Methods.Basic;
+using RabbitMQ.Next.Transport.Methods.Exchange;
 
 namespace RabbitMQ.Next.Publisher
 {
@@ -23,9 +24,10 @@ namespace RabbitMQ.Next.Publisher
 
         private IChannel channel;
 
-        protected PublisherBase(IConnection connection, ISerializer serializer, IReadOnlyList<IMessageTransformer> transformers, IReadOnlyList<IReturnedMessageHandler> returnedMessageHandlers)
+        protected PublisherBase(IConnection connection, string exchange, ISerializer serializer, IReadOnlyList<IMessageTransformer> transformers, IReadOnlyList<IReturnedMessageHandler> returnedMessageHandlers)
         {
             this.Connection = connection;
+            this.Exchange = exchange;
             this.Serializer = serializer;
             this.Transformers = transformers;
             this.returnedMessageHandlers = returnedMessageHandlers;
@@ -37,6 +39,8 @@ namespace RabbitMQ.Next.Publisher
         public ValueTask DisposeAsync() => this.DisposeAsyncCore();
 
         protected IConnection Connection { get; }
+
+        protected string Exchange { get; }
 
         protected ISerializer Serializer { get; }
 
@@ -77,48 +81,45 @@ namespace RabbitMQ.Next.Publisher
             }
         }
 
-        protected ValueTask SendMessageAsync((string Exchange, string RoutingKey, IMessageProperties Properties, PublishFlags PublishFlags) message, IBufferWriter contentBuffer, CancellationToken cancellationToken = default)
+        protected async ValueTask SendMessageAsync((string RoutingKey, IMessageProperties Properties, PublishFlags PublishFlags) message, IBufferWriter contentBuffer, CancellationToken cancellationToken = default)
         {
-            return this.UseChannelAsync(
-                (message.Exchange, message.RoutingKey, message.PublishFlags, message.Properties, contentBuffer),
-                (ch, state) => ch.SendAsync(
-                    new PublishMethod(state.Exchange, state.RoutingKey, (byte)state.PublishFlags), state.Properties, state.contentBuffer.ToSequence())
-                , cancellationToken);
+            var ch = await this.EnsureChannelOpenAsync(cancellationToken);
+            await ch.SendAsync(new PublishMethod(this.Exchange, message.RoutingKey, (byte)message.PublishFlags), message.Properties, contentBuffer.ToSequence());
         }
 
-        protected async ValueTask UseChannelAsync<TState>(TState state, Func<IChannel, TState, Task> fn, CancellationToken cancellationToken = default)
+        protected async ValueTask<IChannel> EnsureChannelOpenAsync(CancellationToken cancellationToken)
         {
             this.CheckDisposed();
 
             var ch = this.channel;
             if (ch == null || ch.Completion.IsCompleted)
             {
-                ch = await this.DoGetChannelAsync(cancellationToken);
+                await this.OpenChannelAsync(cancellationToken);
             }
 
-            await fn(ch, state);
+            return ch;
         }
 
-        protected (string Exchange, string RoutingKey, IMessageProperties Properties, PublishFlags PublishFlags) ApplyTransformers<TContent>(
-            TContent content, string exchange, string routingKey, IMessageProperties properties, PublishFlags publishFlags)
+        protected (string RoutingKey, IMessageProperties Properties, PublishFlags PublishFlags) ApplyTransformers<TContent>(
+            TContent content, string routingKey, IMessageProperties properties, PublishFlags publishFlags)
         {
             this.CheckDisposed();
 
             if (this.Transformers == null)
             {
-                return (exchange, routingKey, properties, publishFlags);
+                return (routingKey, properties, publishFlags);
             }
 
-            var messageBuilder = new MessageBuilder(exchange, routingKey, properties, publishFlags);
+            var messageBuilder = new MessageBuilder(routingKey, properties, publishFlags);
             for (var i = 0; i <= this.Transformers.Count - 1; i++)
             {
                 this.Transformers[i].Apply(content, messageBuilder);
             }
 
-            return (messageBuilder.Exchange, messageBuilder.RoutingKey, messageBuilder, messageBuilder.PublishFlags);
+            return (messageBuilder.RoutingKey, messageBuilder, messageBuilder.PublishFlags);
         }
 
-        private async ValueTask<IChannel> DoGetChannelAsync(CancellationToken cancellationToken)
+        private async ValueTask<IChannel> OpenChannelAsync(CancellationToken cancellationToken)
         {
             // TODO: implement functionality to wait for Open state unless connection is closed
             if (this.Connection.State != ConnectionState.Open)
@@ -133,6 +134,7 @@ namespace RabbitMQ.Next.Publisher
                 if (this.channel == null || this.channel.Completion.IsCompleted)
                 {
                     this.channel = await this.Connection.CreateChannelAsync(new [] { this.returnedFrameHandler }, cancellationToken);
+                    await this.channel.SendAsync<DeclareMethod, DeclareOkMethod>(new DeclareMethod(this.Exchange));
                 }
 
                 return this.channel;
