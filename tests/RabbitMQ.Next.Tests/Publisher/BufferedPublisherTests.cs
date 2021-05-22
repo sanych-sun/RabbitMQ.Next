@@ -9,12 +9,27 @@ using RabbitMQ.Next.Publisher;
 using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Abstractions.Transformers;
 using RabbitMQ.Next.Transport.Methods.Basic;
+using RabbitMQ.Next.Transport.Methods.Exchange;
 using Xunit;
 
 namespace RabbitMQ.Next.Tests.Publisher
 {
     public class BufferedPublisherTests : PublisherTestsBase
     {
+        [Fact]
+        public async Task PublishCheckExchangeExistsAsync()
+        {
+            var channel = this.MockChannel();
+            var connection = this.MockConnection();
+            connection.CreateChannelAsync(Arg.Any<IEnumerable<IFrameHandler>>()).Returns(Task.FromResult(channel));
+
+            var publisher = new BufferedPublisher(connection, "exchange", this.MockSerializer(), null, null, 10);
+
+            await publisher.PublishAsync("test");
+
+            await channel.Received().SendAsync<DeclareMethod, DeclareOkMethod>(new DeclareMethod("exchange"));
+        }
+
         [Theory]
         [MemberData(nameof(PublishTestCases))]
         public async Task PublishAsync(

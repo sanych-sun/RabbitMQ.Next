@@ -1,14 +1,17 @@
 using System.Buffers;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using NSubstitute;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Buffers;
+using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Abstractions.Transformers;
 using RabbitMQ.Next.Publisher.Transformers;
 using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.Transport.Buffers;
 using RabbitMQ.Next.Transport.Methods.Basic;
+using RabbitMQ.Next.Transport.Methods.Exchange;
 
 namespace RabbitMQ.Next.Tests.Publisher
 {
@@ -74,6 +77,14 @@ namespace RabbitMQ.Next.Tests.Publisher
             connection.State.Returns(ConnectionState.Open);
 
             return connection;
+        }
+
+        protected IChannel MockChannel()
+        {
+            var channel = Substitute.For<IChannel>();
+            channel.Completion.Returns(new TaskCompletionSource<bool>().Task);
+            channel.WaitAsync<DeclareOkMethod>().Returns(Task.FromResult(new DeclareOkMethod()));
+            return channel;
         }
     }
 }

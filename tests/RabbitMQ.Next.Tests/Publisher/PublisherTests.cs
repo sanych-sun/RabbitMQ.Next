@@ -9,12 +9,27 @@ using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Abstractions.Transformers;
 using RabbitMQ.Next.Transport.Methods.Basic;
+using RabbitMQ.Next.Transport.Methods.Exchange;
 using Xunit;
 
 namespace RabbitMQ.Next.Tests.Publisher
 {
     public class PublisherTests : PublisherTestsBase
     {
+        [Fact]
+        public async Task PublishCheckExchangeExistsAsync()
+        {
+            var channel = this.MockChannel();
+            var connection = this.MockConnection();
+            connection.CreateChannelAsync(Arg.Any<IEnumerable<IFrameHandler>>()).Returns(Task.FromResult(channel));
+
+            var publisher = new Next.Publisher.Publisher(connection, "exchange", this.MockSerializer(), null, null);
+
+            await publisher.PublishAsync("test");
+
+            await channel.Received().SendAsync<DeclareMethod, DeclareOkMethod>(new DeclareMethod("exchange"));
+        }
+
         [Theory]
         [MemberData(nameof(PublishTestCases))]
         public async Task PublishAsync(
@@ -22,7 +37,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             string exchange, string routingKey, IMessageProperties properties, PublishFlags flags,
             PublishMethod expectedMethod, IMessageProperties expectedProperties)
         {
-            var channel = Substitute.For<IChannel>();
+            var channel = this.MockChannel();
             var connection = this.MockConnection();
             connection.CreateChannelAsync(Arg.Any<IEnumerable<IFrameHandler>>()).Returns(Task.FromResult(channel));
 
@@ -99,7 +114,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         [Fact]
         public async Task DisposeShouldCloseChannel()
         {
-            var channel = Substitute.For<IChannel>();
+            var channel = this.MockChannel();
             var connection = this.MockConnection();
             connection.CreateChannelAsync(Arg.Any<IEnumerable<IFrameHandler>>()).Returns(Task.FromResult(channel));
 

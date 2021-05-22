@@ -94,7 +94,7 @@ namespace RabbitMQ.Next.Publisher
             var ch = this.channel;
             if (ch == null || ch.Completion.IsCompleted)
             {
-                await this.OpenChannelAsync(cancellationToken);
+                ch = await this.OpenChannelAsync(cancellationToken);
             }
 
             return ch;
