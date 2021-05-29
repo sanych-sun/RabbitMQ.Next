@@ -7,5 +7,6 @@ namespace RabbitMQ.Next.Abstractions
         Exchange = 40,
         Queue = 50,
         Basic = 60,
+        Confirm = 85,
     }
 }

@@ -181,5 +181,16 @@ namespace RabbitMQ.Next.Transport.Methods
 
             return builder;
         }
+
+        public static IMethodRegistryBuilder AddConfirmMethods(this IMethodRegistryBuilder builder)
+        {
+            builder.Register<Confirm.SelectMethod>((uint) MethodId.ConfirmSelect,
+                registration => registration.Use(new Confirm.SelectMethodFormatter()));
+
+            builder.Register<Confirm.SelectOkMethod>((uint) MethodId.ConfirmSelectOk,
+                registration => registration.Use(new EmptyArgsParser<Confirm.SelectOkMethod>()));
+
+            return builder;
+        }
     }
 }

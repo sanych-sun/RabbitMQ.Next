@@ -26,13 +26,12 @@ namespace RabbitMQ.Next.Transport.Channels
             return nextIndex;
         }
 
-        public void Release(ushort channelNumber, Exception ex = null)
+        public void Release(ushort channelNumber)
         {
             var channel = this.AssignChannel(channelNumber, null);
             if (channel != null)
             {
                 this.releasedItems.Enqueue(channelNumber);
-                channel.SetCompleted(ex);
             }
         }
 
@@ -119,7 +118,7 @@ namespace RabbitMQ.Next.Transport.Channels
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private IChannelInternal AssignChannel(int index, IChannelInternal channel)
         {
-            IChannelInternal prev = null;
+            IChannelInternal prev;
             this.channelsLock.EnterWriteLock();
 
             try

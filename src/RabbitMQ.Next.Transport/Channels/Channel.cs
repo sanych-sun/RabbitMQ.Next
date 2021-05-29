@@ -65,7 +65,6 @@ namespace RabbitMQ.Next.Transport.Channels
                 this.channelCompletion.SetResult(true);
             }
 
-            this.channelPool.Release(this.ChannelNumber);
             this.Writer.Complete();
         }
 
@@ -154,6 +153,7 @@ namespace RabbitMQ.Next.Transport.Channels
         {
             await this.SendAsync<CloseMethod, CloseOkMethod>(new CloseMethod(statusCode, description, failedMethodId));
             this.SetCompleted();
+            this.channelPool.Release(this.ChannelNumber);
         }
 
         private async Task LoopAsync(PipeReader pipeReader)
@@ -201,6 +201,7 @@ namespace RabbitMQ.Next.Transport.Channels
                 {
                     await this.syncChannel.SendAsync(new CloseOkMethod());
                     this.SetCompleted(new ChannelException(closeMethod.StatusCode, closeMethod.Description, closeMethod.Method));
+                    this.channelPool.Release(this.ChannelNumber);
                 }
 
                 if (!processed)
