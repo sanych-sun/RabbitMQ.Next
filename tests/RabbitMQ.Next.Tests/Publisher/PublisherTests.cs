@@ -21,7 +21,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         {
             var channel = this.MockChannel();
             var connection = this.MockConnection();
-            connection.CreateChannelAsync(Arg.Any<IEnumerable<IFrameHandler>>()).Returns(Task.FromResult(channel));
+            connection.CreateChannelAsync(Arg.Any<IEnumerable<IMethodHandler>>()).Returns(Task.FromResult(channel));
 
             var publisher = new Next.Publisher.Publisher(connection, "exchange", this.MockSerializer(), null, null);
 
@@ -39,7 +39,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         {
             var channel = this.MockChannel();
             var connection = this.MockConnection();
-            connection.CreateChannelAsync(Arg.Any<IEnumerable<IFrameHandler>>()).Returns(Task.FromResult(channel));
+            connection.CreateChannelAsync(Arg.Any<IEnumerable<IMethodHandler>>()).Returns(Task.FromResult(channel));
 
             var publisher = new Next.Publisher.Publisher(connection, exchange, this.MockSerializer(), transformers, null);
 
@@ -116,7 +116,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         {
             var channel = this.MockChannel();
             var connection = this.MockConnection();
-            connection.CreateChannelAsync(Arg.Any<IEnumerable<IFrameHandler>>()).Returns(Task.FromResult(channel));
+            connection.CreateChannelAsync(Arg.Any<IEnumerable<IMethodHandler>>()).Returns(Task.FromResult(channel));
 
             var publisher = new Next.Publisher.Publisher(connection, "exchange", this.MockSerializer(), null, null);
             await publisher.PublishAsync("test", "route");

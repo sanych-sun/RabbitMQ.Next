@@ -20,7 +20,7 @@ namespace RabbitMQ.Next.Publisher
     {
         private readonly SemaphoreSlim channelOpenSync = new SemaphoreSlim(1,1);
         private readonly IReadOnlyList<IReturnedMessageHandler> returnedMessageHandlers;
-        private readonly IFrameHandler returnedFrameHandler;
+        private readonly IMethodHandler returnedFrameHandler;
 
         private IChannel channel;
 
@@ -32,8 +32,7 @@ namespace RabbitMQ.Next.Publisher
             this.Transformers = transformers;
             this.returnedMessageHandlers = returnedMessageHandlers;
 
-            var returnMethodParser = this.Connection.MethodRegistry.GetParser<ReturnMethod>();
-            this.returnedFrameHandler = new ContentFrameHandler<ReturnMethod>((uint)MethodId.BasicReturn, returnMethodParser, this.HandleReturnedMessage, connection.BufferPool);
+            this.returnedFrameHandler = new MethodHandler<ReturnMethod>(this.HandleReturnedMessage);
         }
 
         public ValueTask DisposeAsync() => this.DisposeAsyncCore();
@@ -145,17 +144,25 @@ namespace RabbitMQ.Next.Publisher
             }
         }
 
-        private void HandleReturnedMessage(ReturnMethod method, IMessageProperties properties, ReadOnlySequence<byte> content)
+        private async ValueTask<bool> HandleReturnedMessage(ReturnMethod method, IMessageProperties properties, ReadOnlySequence<byte> contentBytes)
         {
+            if (this.returnedMessageHandlers.Count == 0)
+            {
+                return true;
+            }
+
+            var message = new ReturnedMessage(method.Exchange, method.RoutingKey, method.ReplyCode, method.ReplyText);
+            var content = new Content(this.Serializer, contentBytes);
+
             for (var i = 0; i < this.returnedMessageHandlers.Count; i++)
             {
-                var message = new ReturnedMessage(method.Exchange, method.RoutingKey, method.ReplyCode, method.ReplyText);
-
-                if (this.returnedMessageHandlers[i].TryHandle(message, properties, new Content(this.Serializer, content)))
+                if (await this.returnedMessageHandlers[i].TryHandleAsync(message, properties, content))
                 {
                     break;
                 }
             }
+
+            return true;
         }
     }
 }

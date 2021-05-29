@@ -1,13 +1,14 @@
 using System;
+using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions.Messaging;
 
 namespace RabbitMQ.Next.Publisher.Abstractions
 {
     internal class ReturnedMessageDelegateHandler : IReturnedMessageHandler
     {
-        private Func<ReturnedMessage, IMessageProperties, Content, bool> wrapped;
+        private Func<ReturnedMessage, IMessageProperties, Content, ValueTask<bool>> wrapped;
 
-        public ReturnedMessageDelegateHandler(Func<ReturnedMessage, IMessageProperties, Content, bool> handler)
+        public ReturnedMessageDelegateHandler(Func<ReturnedMessage, IMessageProperties, Content, ValueTask<bool>> handler)
         {
             if (handler == null)
             {
@@ -22,11 +23,11 @@ namespace RabbitMQ.Next.Publisher.Abstractions
             this.wrapped = null;
         }
 
-        public bool TryHandle(ReturnedMessage message, IMessageProperties properties, Content content)
+        public ValueTask<bool> TryHandleAsync(ReturnedMessage message, IMessageProperties properties, Content content)
         {
             if (this.wrapped == null)
             {
-                return false;
+                return new ValueTask<bool>(false);
             }
 
             return this.wrapped(message, properties, content);

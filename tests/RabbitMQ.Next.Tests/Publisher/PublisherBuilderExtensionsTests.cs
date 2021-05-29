@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using NSubstitute;
 using RabbitMQ.Next.Publisher.Abstractions;
 using Xunit;
@@ -11,7 +12,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         {
             var builder = Substitute.For<IPublisherBuilder>();
 
-            builder.AddReturnedMessageHandler((message, props, content) => false);
+            builder.AddReturnedMessageHandler((message, props, content) => new ValueTask<bool>(false));
 
             builder.Received().AddReturnedMessageHandler(Arg.Any<IReturnedMessageHandler>());
         }

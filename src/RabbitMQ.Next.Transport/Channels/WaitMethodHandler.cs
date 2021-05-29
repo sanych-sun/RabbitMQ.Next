@@ -2,22 +2,20 @@ using System;
 using System.Buffers;
 using System.Threading;
 using System.Threading.Tasks;
-using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
-using RabbitMQ.Next.Abstractions.Exceptions;
+using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Abstractions.Methods;
-using RabbitMQ.Next.Transport.Methods;
 
 namespace RabbitMQ.Next.Transport.Channels
 {
-    internal class WaitMethodFrameHandler : IFrameHandler
+    internal class WaitMethodHandler : IMethodHandler
     {
         private readonly Action cancellationHandler;
         private readonly IMethodRegistry registry;
         private uint expectedMethodId;
         private TaskCompletionSource<IIncomingMethod> waitingTask;
 
-        public WaitMethodFrameHandler(IMethodRegistry registry, IChannelInternal channel)
+        public WaitMethodHandler(IMethodRegistry registry, IChannelInternal channel)
         {
             this.registry = registry;
             this.cancellationHandler = () =>
@@ -47,26 +45,24 @@ namespace RabbitMQ.Next.Transport.Channels
             return this.waitingTask.Task;
         }
 
-        bool IFrameHandler.Handle(ChannelFrameType frameType, ReadOnlySequence<byte> payload)
+        ValueTask<bool> IMethodHandler.HandleAsync(IIncomingMethod method, IMessageProperties properties, ReadOnlySequence<byte> contentBytes)
         {
             if (this.waitingTask == null)
             {
-                return false;
+                return new ValueTask<bool>(false);
             }
 
-            payload = payload.Read(out uint methodId);
-
             var task = this.waitingTask;
-            if (methodId != this.expectedMethodId)
+            if (method.Method != this.expectedMethodId)
             {
-                return false;
+                return new ValueTask<bool>(false);
             }
 
             this.waitingTask = null;
-                this.expectedMethodId = 0;
-                task.SetResult(this.registry.GetParser(methodId).ParseMethod(payload));
+            this.expectedMethodId = 0;
+            task.SetResult(method);
 
-            return true;
+            return new ValueTask<bool>(true);
         }
     }
 }

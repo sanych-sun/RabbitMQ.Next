@@ -48,7 +48,6 @@
 //                 await publisher.PublishAsync("new test", flags: PublishFlags.Mandatory);
 //             }
 //
-//             await Task.Delay(10000);
 //             await publisher.CompleteAsync();
 //
 //             sw.Stop();

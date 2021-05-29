@@ -29,7 +29,11 @@ namespace RabbitMQ.Next.Transport.Channels
         public void Release(ushort channelNumber, Exception ex = null)
         {
             var channel = this.AssignChannel(channelNumber, null);
-            channel?.SetCompleted(ex);
+            if (channel != null)
+            {
+                this.releasedItems.Enqueue(channelNumber);
+                channel.SetCompleted(ex);
+            }
         }
 
         public void ReleaseAll(Exception ex = null)
@@ -38,7 +42,7 @@ namespace RabbitMQ.Next.Transport.Channels
 
             try
             {
-                for (var i = 0; i < this.channels.Length; i++)
+                for (var i = 0; i <= this.lastId; i++)
                 {
                     this.channels[i]?.SetCompleted(ex);
                     this.channels[i] = null;
@@ -97,7 +101,7 @@ namespace RabbitMQ.Next.Transport.Channels
             this.channelsLock.EnterWriteLock();
             try
             {
-                if (nextId < this.channels.Length)
+                if (nextId >= this.channels.Length)
                 {
                     var channelsTmp = this.channels;
                     this.channels = new IChannelInternal[channelsTmp.Length * 2];

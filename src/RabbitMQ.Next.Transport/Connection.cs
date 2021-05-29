@@ -55,7 +55,7 @@ namespace RabbitMQ.Next.Transport
             this.frameSender = new FrameSender(this.socket, this.MethodRegistry, this.BufferPool);
 
             await this.ChangeStateAsync(ConnectionState.Negotiating);
-            var connectionChannel = new Channel(this.channelPool, this.MethodRegistry, this.frameSender, null);
+            var connectionChannel = new Channel(this.channelPool, this.MethodRegistry, this.frameSender, this.bufferPool, null);
 
             this.socketIoCancellation = new CancellationTokenSource();
             Task.Run(() => this.ReceiveLoop(socketIoCancellation.Token));
@@ -109,11 +109,11 @@ namespace RabbitMQ.Next.Transport
 
         public IEventSource<ConnectionState> StateChanged => this.stateChanged;
 
-        public async Task<IChannel> CreateChannelAsync(IEnumerable<IFrameHandler> handlers = null, CancellationToken cancellationToken = default)
+        public async Task<IChannel> CreateChannelAsync(IEnumerable<IMethodHandler> handlers = null, CancellationToken cancellationToken = default)
         {
             // TODO: validate state
 
-            var channel = new Channel(this.channelPool, this.MethodRegistry, this.frameSender, handlers);
+            var channel = new Channel(this.channelPool, this.MethodRegistry, this.frameSender, this.bufferPool, handlers);
             await channel.SendAsync<Methods.Channel.OpenMethod, Methods.Channel.OpenOkMethod>(new Methods.Channel.OpenMethod(), cancellationToken);
 
             return channel;
@@ -185,7 +185,7 @@ namespace RabbitMQ.Next.Transport
                     switch (frameType)
                     {
                         case FrameType.Method:
-                            targetWriter.BeginLogicalFrame(ChannelFrameType.Method, (int) payloadSize);
+                            ChannelFrame.WriteHeader(targetWriter, ChannelFrameType.Method, payloadSize);
                             await this.socket.FillBufferAsync(targetWriter, (int)payloadSize, cancellationToken);
                             await targetWriter.FlushAsync();
                             break;
@@ -197,7 +197,7 @@ namespace RabbitMQ.Next.Transport
                                 .Span)).Read(out ulong contentSide);
 
                             var headerSize = payloadSize - customHeaderSize;
-                            targetWriter.BeginLogicalFrame(ChannelFrameType.Content, sizeof(int) + (int)headerSize + (int)contentSide);
+                            ChannelFrame.WriteHeader(targetWriter, ChannelFrameType.Content, sizeof(uint) + headerSize + (uint)contentSide);
                             targetWriter.GetMemory(sizeof(int)).Span.Write((int)headerSize);
                             targetWriter.Advance(sizeof(int));
                             await this.socket.FillBufferAsync(targetWriter, (int)headerSize);

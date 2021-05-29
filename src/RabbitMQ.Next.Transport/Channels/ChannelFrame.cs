@@ -6,9 +6,9 @@ namespace RabbitMQ.Next.Transport.Channels
 {
     internal static class ChannelFrame
     {
-        public const int FrameHeaderSize = 5; // type (byte) + size (int)
+        public const int FrameHeaderSize = 5; // type (byte) + size (uint)
 
-        public static void WriteChannelHeader(this IBufferWriter<byte> buffer, ChannelFrameType type, int size)
+        public static void WriteHeader(IBufferWriter<byte> buffer, ChannelFrameType type, uint size)
         {
             buffer.GetSpan(FrameHeaderSize)
                 .Write((byte) type)
@@ -16,28 +16,25 @@ namespace RabbitMQ.Next.Transport.Channels
             buffer.Advance(FrameHeaderSize);
         }
 
-        public static (FrameType FrameType, int Size) ReadChannelHeader(this ReadOnlySpan<byte> payload)
-        {
-            byte type;
-            int size;
-
-            payload
-                .Read(out type)
-                .Read(out size);
-
-            return ((FrameType)type, size);
-        }
-
-        public static (FrameType, int) ReadChannelHeader(ReadOnlySequence<byte> sequence)
+        public static (ChannelFrameType Type, uint Size) ReadHeader(ReadOnlySequence<byte> sequence)
         {
             if (sequence.IsSingleSegment)
             {
-                return sequence.FirstSpan.ReadChannelHeader();
+                return ReadHeader(sequence.FirstSpan);
             }
 
-            Span<byte> headerBuffer = stackalloc byte[ProtocolConstants.FrameHeaderSize];
-            sequence.Slice(0, ProtocolConstants.FrameHeaderSize).CopyTo(headerBuffer);
-            return ((ReadOnlySpan<byte>) headerBuffer).ReadChannelHeader();
+            Span<byte> headerBuffer = stackalloc byte[FrameHeaderSize];
+            sequence.Slice(0, FrameHeaderSize).CopyTo(headerBuffer);
+            return ReadHeader(headerBuffer);
+        }
+
+        private static (ChannelFrameType FrameType, uint Size) ReadHeader(ReadOnlySpan<byte> payload)
+        {
+            payload
+                .Read(out byte type)
+                .Read(out uint size);
+
+            return ((ChannelFrameType)type, size);
         }
     }
 }

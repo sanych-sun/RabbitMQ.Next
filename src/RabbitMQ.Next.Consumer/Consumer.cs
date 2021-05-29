@@ -22,7 +22,7 @@ namespace RabbitMQ.Next.Consumer
         private readonly Func<IAcknowledgement, IAcknowledger> acknowledgerFactory;
         private readonly UnprocessedMessageMode onUnprocessedMessage;
         private readonly UnprocessedMessageMode onPoisonMessage;
-        private readonly IFrameHandler frameHandler;
+        private readonly IMethodHandler frameHandler;
         private readonly TaskCompletionSource<bool> consumeTcs;
 
         private IChannel channel;
@@ -45,8 +45,7 @@ namespace RabbitMQ.Next.Consumer
             this.onUnprocessedMessage = onUnprocessedMessage;
             this.onPoisonMessage = onPoisonMessage;
 
-            var deliverMethodParser = this.connection.MethodRegistry.GetParser<DeliverMethod>();
-            this.frameHandler = new ContentFrameHandler<DeliverMethod>((uint)MethodId.BasicDeliver, deliverMethodParser, this.HandleDeliveredMessage, connection.BufferPool);
+            this.frameHandler = new MethodHandler<DeliverMethod>(this.HandleMessageAsync);
             this.consumeTcs = new TaskCompletionSource<bool>();
         }
 
@@ -57,7 +56,7 @@ namespace RabbitMQ.Next.Consumer
         public async Task ConsumeAsync(CancellationToken cancellation)
         {
             // TODO: deal with connection state here
-            this.channel = await this.connection.CreateChannelAsync(new IFrameHandler[] { this.frameHandler }, cancellation);
+            this.channel = await this.connection.CreateChannelAsync(new [] { this.frameHandler }, cancellation);
             if (this.acknowledgerFactory != null)
             {
                 var ack = new Acknowledgement(this.channel);
@@ -97,13 +96,7 @@ namespace RabbitMQ.Next.Consumer
             }
         }
 
-
-        private void HandleDeliveredMessage(DeliverMethod method, IMessageProperties properties, ReadOnlySequence<byte> content)
-        {
-            this.HandleMessageAsync(method, properties, content).GetAwaiter().GetResult();
-        }
-
-        private async ValueTask HandleMessageAsync(DeliverMethod method, IMessageProperties properties, ReadOnlySequence<byte> payload)
+        private async ValueTask<bool> HandleMessageAsync(DeliverMethod method, IMessageProperties properties, ReadOnlySequence<byte> payload)
         {
             var message = new DeliveredMessage(method.Exchange, method.RoutingKey, method.Redelivered, method.ConsumerTag, method.DeliveryTag);
             var content = new Content(this.serializer, payload);
@@ -117,14 +110,14 @@ namespace RabbitMQ.Next.Consumer
                     if (handled)
                     {
                         await this.AckAsync(message);
-                        return;
+                        return true;
                     }
                 }
             }
             catch (Exception ex)
             {
                 await this.ProcessPoisonMessageAsync(message, properties, payload, ex);
-                return;
+                return true;
             }
             finally
             {
@@ -132,6 +125,7 @@ namespace RabbitMQ.Next.Consumer
             }
 
             await this.ProcessUnprocessedMessageAsync(message, properties, payload);
+            return true;
         }
 
         private async ValueTask AckAsync(DeliveredMessage message)

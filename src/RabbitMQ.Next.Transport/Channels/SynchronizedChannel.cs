@@ -11,13 +11,13 @@ namespace RabbitMQ.Next.Transport.Channels
     {
         private readonly ushort channelNumber;
         private readonly IFrameSender frameSender;
-        private readonly WaitMethodFrameHandler waitFrameHandler;
+        private readonly WaitMethodHandler waitHandler;
 
-        public SynchronizedChannel(ushort channelNumber, IFrameSender frameSender, WaitMethodFrameHandler waitFrameHandler)
+        public SynchronizedChannel(ushort channelNumber, IFrameSender frameSender, WaitMethodHandler waitHandler)
         {
             this.channelNumber = channelNumber;
             this.frameSender = frameSender;
-            this.waitFrameHandler = waitFrameHandler;
+            this.waitHandler = waitHandler;
         }
 
         public async Task SendAsync<TMethod>(TMethod request)
@@ -38,7 +38,7 @@ namespace RabbitMQ.Next.Transport.Channels
         public async Task<TMethod> WaitAsync<TMethod>(CancellationToken cancellation = default)
             where TMethod : struct, IIncomingMethod
         {
-            var result = await this.waitFrameHandler.WaitAsync<TMethod>(cancellation);
+            var result = await this.waitHandler.WaitAsync<TMethod>(cancellation);
             return (TMethod) result;
         }
     }
