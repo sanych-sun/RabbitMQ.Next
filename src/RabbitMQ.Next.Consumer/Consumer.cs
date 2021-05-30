@@ -63,7 +63,7 @@ namespace RabbitMQ.Next.Consumer
                 this.acknowledger = this.acknowledgerFactory(ack);
             }
 
-            await this.channel.UseSyncChannel(this.initializer, (ch, state)
+            await this.channel.UseChannel(this.initializer, (ch, state)
                 => state.InitConsumerAsync(ch, CancellationToken.None));
 
             cancellation.Register(() => this.CancelConsumeAsync());
@@ -73,7 +73,7 @@ namespace RabbitMQ.Next.Consumer
 
         private async ValueTask CancelConsumeAsync(Exception ex = null)
         {
-            await this.channel.UseSyncChannel(this.initializer, (ch, initializer) =>
+            await this.channel.UseChannel(this.initializer, (ch, initializer) =>
                 initializer.CancelAsync(ch));
 
             if (this.acknowledger != null)

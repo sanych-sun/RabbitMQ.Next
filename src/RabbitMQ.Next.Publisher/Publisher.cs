@@ -19,6 +19,7 @@ namespace RabbitMQ.Next.Publisher
 {
     internal sealed class Publisher : IPublisher
     {
+        private readonly SemaphoreSlim flowControl = new SemaphoreSlim(100);
         private readonly SemaphoreSlim channelOpenSync = new SemaphoreSlim(1,1);
         private readonly IReadOnlyList<IReturnedMessageHandler> returnedMessageHandlers;
         private readonly IMethodHandler returnedFrameHandler;
@@ -84,31 +85,40 @@ namespace RabbitMQ.Next.Publisher
         {
             this.CheckDisposed();
 
-            var message = this.ApplyTransformers(content, routingKey, properties, flags);
+            await this.flowControl.WaitAsync(cancellationToken);
 
-            using var bufferWriter = this.connection.BufferPool.Create();
-            this.serializer.Serialize(content, bufferWriter);
-
-            var ch = await this.EnsureChannelOpenAsync(cancellationToken);
-
-            var messageDeliveryTag = await ch.UseSyncChannel(
-                (publisher: this, message, content: bufferWriter.ToSequence()),
-                async (sender, state) =>
-                {
-                    var method = new PublishMethod(state.publisher.exchange, state.message.RoutingKey, (byte)state.message.PublishFlags);
-                    await sender.SendAsync(method, state.message.Properties, state.content);
-
-                    return ++this.lastDeliveryTag;
-                });
-
-            if (this.confirms != null)
+            try
             {
-                var confirmed = await this.confirms.WaitForConfirmAsync(messageDeliveryTag);
-                if (!confirmed)
+                var ch = await this.EnsureChannelOpenAsync(cancellationToken);
+
+                var message = this.ApplyTransformers(content, routingKey, properties, flags);
+
+                using var bufferWriter = this.connection.BufferPool.Create();
+                this.serializer.Serialize(content, bufferWriter);
+
+                var messageDeliveryTag = await ch.UseChannel(
+                    (publisher: this, message, content: bufferWriter.ToSequence()),
+                    async (sender, state) =>
+                    {
+                        var method = new PublishMethod(state.publisher.exchange, state.message.RoutingKey, (byte) state.message.PublishFlags);
+                        await sender.SendAsync(method, state.message.Properties, state.content);
+
+                        return ++this.lastDeliveryTag;
+                    });
+
+                if (this.confirms != null)
                 {
-                    // todo: provide some useful info here
-                    throw new DeliveryFailedException();
+                    var confirmed = await this.confirms.WaitForConfirmAsync(messageDeliveryTag);
+                    if (!confirmed)
+                    {
+                        // todo: provide some useful info here
+                        throw new DeliveryFailedException();
+                    }
                 }
+            }
+            finally
+            {
+                this.flowControl.Release();
             }
         }
 

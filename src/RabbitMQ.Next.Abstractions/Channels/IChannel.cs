@@ -1,15 +1,16 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RabbitMQ.Next.Abstractions.Channels
 {
-    public interface IChannel : ISynchronizedChannel
+    public interface IChannel
     {
         Task Completion { get; }
 
-        Task UseSyncChannel<TState>(TState state, Func<ISynchronizedChannel, TState, Task> fn);
+        Task UseChannel<TState>(TState state, Func<ISynchronizedChannel, TState, Task> fn, CancellationToken cancellation = default);
 
-        Task<TResult> UseSyncChannel<TResult, TState>(TState state, Func<ISynchronizedChannel, TState, Task<TResult>> fn);
+        Task<TResult> UseChannel<TState, TResult>(TState state, Func<ISynchronizedChannel, TState, Task<TResult>> fn, CancellationToken cancellation = default);
 
         Task CloseAsync();
 

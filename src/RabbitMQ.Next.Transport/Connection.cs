@@ -63,7 +63,7 @@ namespace RabbitMQ.Next.Transport
             Task.Run(() => this.ReceiveLoop(socketIoCancellation.Token));
 
 
-            var negotiationResults = await connectionChannel.UseSyncChannel(this.connectionString, async (ch, connection) =>
+            var negotiationResults = await connectionChannel.UseChannel(this.connectionString, async (ch, connection) =>
             {
                 var startMethod = ch.WaitAsync<StartMethod>();
                 await this.SendProtocolHeaderAsync();

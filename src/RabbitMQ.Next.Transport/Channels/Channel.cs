@@ -9,7 +9,6 @@ using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Buffers;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Exceptions;
-using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Abstractions.Methods;
 using RabbitMQ.Next.Transport.Messaging;
 using RabbitMQ.Next.Transport.Methods.Channel;
@@ -68,57 +67,9 @@ namespace RabbitMQ.Next.Transport.Channels
             this.Writer.Complete();
         }
 
-        public async Task SendAsync<TMethod>(TMethod request)
-            where TMethod : struct, IOutgoingMethod
-        {
-            await this.senderSync.WaitAsync();
-
-            try
-            {
-                this.ValidateState();
-                await this.syncChannel.SendAsync(request);
-            }
-            finally
-            {
-                this.senderSync.Release();
-            }
-        }
-
-        public async Task SendAsync<TMethod>(TMethod request, IMessageProperties properties, ReadOnlySequence<byte> content)
-            where TMethod : struct, IOutgoingMethod
-        {
-            await this.senderSync.WaitAsync();
-
-            try
-            {
-                this.ValidateState();
-                await this.syncChannel.SendAsync(request, properties, content);
-            }
-            finally
-            {
-                this.senderSync.Release();
-            }
-        }
-
-        public async Task<TMethod> WaitAsync<TMethod>(CancellationToken cancellation = default)
-            where TMethod : struct, IIncomingMethod
+        public async Task UseChannel<TState>(TState state, Func<ISynchronizedChannel, TState, Task> fn, CancellationToken cancellation = default)
         {
             await this.senderSync.WaitAsync(cancellation);
-
-            try
-            {
-                this.ValidateState();
-                return await this.syncChannel.WaitAsync<TMethod>(cancellation);
-            }
-            finally
-            {
-                this.senderSync.Release();
-            }
-        }
-
-        public async Task UseSyncChannel<TState>(TState state, Func<ISynchronizedChannel, TState, Task> fn)
-        {
-            await this.senderSync.WaitAsync();
 
             try
             {
@@ -131,9 +82,9 @@ namespace RabbitMQ.Next.Transport.Channels
             }
         }
 
-        public async Task<TResult> UseSyncChannel<TResult, TState>(TState state, Func<ISynchronizedChannel, TState, Task<TResult>> fn)
+        public async Task<TResult> UseChannel<TState, TResult>(TState state, Func<ISynchronizedChannel, TState, Task<TResult>> fn, CancellationToken cancellation = default)
         {
-            await this.senderSync.WaitAsync();
+            await this.senderSync.WaitAsync(cancellation);
 
             try
             {
