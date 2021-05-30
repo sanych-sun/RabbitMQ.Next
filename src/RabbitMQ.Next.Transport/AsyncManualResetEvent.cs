@@ -13,7 +13,7 @@ namespace RabbitMQ.Next.Transport
         {
             if (!initialState)
             {
-                this.completionSource = new TaskCompletionSource<bool>();
+                this.completionSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             }
         }
 
@@ -55,7 +55,7 @@ namespace RabbitMQ.Next.Transport
                 return;
             }
 
-            Interlocked.CompareExchange(ref this.completionSource, new TaskCompletionSource<bool>(), currentCompletionSource);
+            Interlocked.CompareExchange(ref this.completionSource, new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously), currentCompletionSource);
         }
 
         public void Dispose()

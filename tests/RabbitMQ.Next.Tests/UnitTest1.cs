@@ -1,6 +1,7 @@
 // using System;
 // using System.Buffers;
 // using System.Diagnostics;
+// using System.Linq;
 // using System.Threading;
 // using System.Threading.Tasks;
 // using RabbitMQ.Next.Consumer;
@@ -33,19 +34,20 @@
 //
 //             await connection.ConnectAsync();
 //
-//             var publisher = connection.NewPublisher("MineExchange",
+//             var publisher = connection.NewPublisher("MyExchange",
 //                 builder => builder
 //                     .UseTransformer(new ApplicationIdTransformer("unittest"))
 //                     .UseAttributesTransformer()
 //                     .UseFormatter(new DummyFormatter())
 //                     .UseFormatter(new StringTypeFormatter())
+//                     .PublisherConfirms()
 //                 );
 //
 //             var sw = Stopwatch.StartNew();
 //
-//             for (var i = 0; i < 1; i++)
+//             for (var i = 0; i < 1000; i++)
 //             {
-//                 await publisher.PublishAsync("new test", flags: PublishFlags.Mandatory);
+//                 await publisher.PublishAsync($"new test {i}", flags: PublishFlags.Mandatory);
 //             }
 //
 //             await publisher.CompleteAsync();

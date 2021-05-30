@@ -18,8 +18,6 @@ namespace RabbitMQ.Next.Abstractions
 
         ConnectionState State { get; }
 
-        IMethodRegistry MethodRegistry { get; }
-
         IBufferPool BufferPool { get; }
 
         IConnectionDetails Details { get; }

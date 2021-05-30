@@ -11,33 +11,6 @@ namespace RabbitMQ.Next.Tests.Publisher
     public class PublisherBuilderTests
     {
         [Fact]
-        public void BufferIsDisabledByDefault()
-        {
-            var builder = new PublisherBuilder();
-
-            Assert.Equal(0, builder.BufferSize);
-        }
-
-        [Fact]
-        public void CanSetBufferSize()
-        {
-            var bufferSize = 10;
-            var builder = new PublisherBuilder();
-
-            ((IPublisherBuilder) builder).AllowBuffer(bufferSize);
-
-            Assert.Equal(bufferSize, builder.BufferSize);
-        }
-
-        [Fact]
-        public void ThrowsOnInvalidBufferSize()
-        {
-            var builder = new PublisherBuilder();
-
-            Assert.Throws<ArgumentOutOfRangeException>(() => ((IPublisherBuilder) builder).AllowBuffer(-1));
-        }
-
-        [Fact]
         public void CanRegisterFormatters()
         {
             var formatter1 = Substitute.For<ITypeFormatter>();

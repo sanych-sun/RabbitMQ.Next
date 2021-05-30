@@ -105,19 +105,6 @@ namespace RabbitMQ.Next.Tests.Transport.Channels
 
         [Theory]
         [MemberData(nameof(ReleaseTestCases))]
-        public void ReleaseShouldCompleteChannel(Exception exception)
-        {
-            var channelPool = new ChannelPool();
-            var channel = Substitute.For<IChannelInternal>();
-            channelPool.Register(channel);
-
-            channelPool.Release(0, exception);
-
-            channel.Received().SetCompleted(exception);
-        }
-
-        [Theory]
-        [MemberData(nameof(ReleaseTestCases))]
         public void ReleaseAllShouldCompleteAll(Exception exception)
         {
             var channelPool = new ChannelPool();

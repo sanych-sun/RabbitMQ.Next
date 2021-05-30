@@ -23,6 +23,7 @@ namespace RabbitMQ.Next.Transport
         private readonly ConnectionString connectionString;
         private readonly EventSource<ConnectionState> stateChanged;
         private readonly IBufferPoolInternal bufferPool;
+        private readonly IMethodRegistry methodRegistry;
         private readonly ConnectionDetails connectionDetails = new ConnectionDetails();
 
         private ISocket socket;
@@ -40,8 +41,9 @@ namespace RabbitMQ.Next.Transport
             registryBuilder.AddExchangeMethods();
             registryBuilder.AddQueueMethods();
             registryBuilder.AddBasicMethods();
+            registryBuilder.AddConfirmMethods();
 
-            this.MethodRegistry = registryBuilder.Build();
+            this.methodRegistry = registryBuilder.Build();
             this.channelPool = new ChannelPool();
             this.connectionString = connectionString;
         }
@@ -52,10 +54,10 @@ namespace RabbitMQ.Next.Transport
 
             await this.ChangeStateAsync(ConnectionState.Connecting);
             this.socket = await EndpointResolver.OpenSocketAsync(this.connectionString.EndPoints, this.connectionString.Ssl);
-            this.frameSender = new FrameSender(this.socket, this.MethodRegistry, this.BufferPool);
+            this.frameSender = new FrameSender(this.socket, this.methodRegistry, this.BufferPool);
 
             await this.ChangeStateAsync(ConnectionState.Negotiating);
-            var connectionChannel = new Channel(this.channelPool, this.MethodRegistry, this.frameSender, this.bufferPool, null);
+            var connectionChannel = new Channel(this.channelPool, this.methodRegistry, this.frameSender, this.bufferPool, null);
 
             this.socketIoCancellation = new CancellationTokenSource();
             Task.Run(() => this.ReceiveLoop(socketIoCancellation.Token));
@@ -102,9 +104,8 @@ namespace RabbitMQ.Next.Transport
 
         public ConnectionState State { get; private set; }
 
-        public IMethodRegistry MethodRegistry { get; }
-
         public IBufferPool BufferPool => this.bufferPool;
+
         public IConnectionDetails Details => this.connectionDetails;
 
         public IEventSource<ConnectionState> StateChanged => this.stateChanged;
@@ -113,7 +114,7 @@ namespace RabbitMQ.Next.Transport
         {
             // TODO: validate state
 
-            var channel = new Channel(this.channelPool, this.MethodRegistry, this.frameSender, this.bufferPool, handlers);
+            var channel = new Channel(this.channelPool, this.methodRegistry, this.frameSender, this.bufferPool, handlers);
             await channel.SendAsync<Methods.Channel.OpenMethod, Methods.Channel.OpenOkMethod>(new Methods.Channel.OpenMethod(), cancellationToken);
 
             return channel;
@@ -186,24 +187,24 @@ namespace RabbitMQ.Next.Transport
                     {
                         case FrameType.Method:
                             ChannelFrame.WriteHeader(targetWriter, ChannelFrameType.Method, payloadSize);
-                            await this.socket.FillBufferAsync(targetWriter, (int)payloadSize, cancellationToken);
+                            await this.socket.FillBufferAsync(targetWriter, (int) payloadSize, cancellationToken);
                             await targetWriter.FlushAsync();
                             break;
                         case FrameType.ContentHeader:
                             await this.socket.FillBufferAsync(contentHeaderCustomHeader);
 
-                            ((ReadOnlySpan<byte>)(contentHeaderCustomHeader
+                            ((ReadOnlySpan<byte>) (contentHeaderCustomHeader
                                 .Slice(4) // skip 2 obsolete shorts
                                 .Span)).Read(out ulong contentSide);
 
                             var headerSize = payloadSize - customHeaderSize;
-                            ChannelFrame.WriteHeader(targetWriter, ChannelFrameType.Content, sizeof(uint) + headerSize + (uint)contentSide);
-                            targetWriter.GetMemory(sizeof(int)).Span.Write((int)headerSize);
+                            ChannelFrame.WriteHeader(targetWriter, ChannelFrameType.Content, sizeof(uint) + headerSize + (uint) contentSide);
+                            targetWriter.GetMemory(sizeof(int)).Span.Write((int) headerSize);
                             targetWriter.Advance(sizeof(int));
-                            await this.socket.FillBufferAsync(targetWriter, (int)headerSize);
+                            await this.socket.FillBufferAsync(targetWriter, (int) headerSize);
                             break;
                         case FrameType.ContentBody:
-                            await this.socket.FillBufferAsync(targetWriter, (int)payloadSize, cancellationToken);
+                            await this.socket.FillBufferAsync(targetWriter, (int) payloadSize, cancellationToken);
                             await targetWriter.FlushAsync();
                             break;
                     }
@@ -223,6 +224,10 @@ namespace RabbitMQ.Next.Transport
                 // todo: report to diagnostic source
 
                 this.CleanUpOnSocketClose();
+            }
+            catch (Exception)
+            {
+                var i = 0;
             }
         }
 

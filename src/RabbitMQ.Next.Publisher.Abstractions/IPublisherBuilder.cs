@@ -5,8 +5,6 @@ namespace RabbitMQ.Next.Publisher.Abstractions
 {
     public interface IPublisherBuilder
     {
-        IPublisherBuilder AllowBuffer(int messages);
-
         IPublisherBuilder UseFormatter(ITypeFormatter typeFormatter);
 
         IPublisherBuilder UseFormatterSource(IFormatterSource formatters);
@@ -14,5 +12,7 @@ namespace RabbitMQ.Next.Publisher.Abstractions
         IPublisherBuilder UseTransformer(IMessageTransformer transformer);
 
         IPublisherBuilder AddReturnedMessageHandler(IReturnedMessageHandler returnedMessageHandler);
+
+        IPublisherBuilder PublisherConfirms();
     }
 }

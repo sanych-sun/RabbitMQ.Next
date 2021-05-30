@@ -23,33 +23,11 @@ namespace RabbitMQ.Next.Tests.Publisher
             var connection = this.MockConnection();
             connection.CreateChannelAsync(Arg.Any<IEnumerable<IMethodHandler>>()).Returns(Task.FromResult(channel));
 
-            var publisher = new Next.Publisher.Publisher(connection, "exchange", this.MockSerializer(), null, null);
+            var publisher = new Next.Publisher.Publisher(connection, "exchange", false, this.MockSerializer(), null, null);
 
             await publisher.PublishAsync("test");
 
             await channel.Received().SendAsync<DeclareMethod, DeclareOkMethod>(new DeclareMethod("exchange"));
-        }
-
-        [Theory]
-        [MemberData(nameof(PublishTestCases))]
-        public async Task PublishAsync(
-            IReadOnlyList<IMessageTransformer> transformers, 
-            string exchange, string routingKey, IMessageProperties properties, PublishFlags flags,
-            PublishMethod expectedMethod, IMessageProperties expectedProperties)
-        {
-            var channel = this.MockChannel();
-            var connection = this.MockConnection();
-            connection.CreateChannelAsync(Arg.Any<IEnumerable<IMethodHandler>>()).Returns(Task.FromResult(channel));
-
-            var publisher = new Next.Publisher.Publisher(connection, exchange, this.MockSerializer(), transformers, null);
-
-            await publisher.PublishAsync("test", routingKey, properties, flags);
-
-            await channel.Received().SendAsync(
-                expectedMethod,
-                Arg.Is<IMessageProperties>(p => new MessagePropertiesComparer().Equals(p, expectedProperties)),
-                Arg.Any<ReadOnlySequence<byte>>()
-            );
         }
 
         [Fact]
@@ -58,7 +36,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             var connection = this.MockConnection();
             connection.State.Returns(ConnectionState.Closed);
 
-            var publisher = new Next.Publisher.Publisher(connection, "exchange", this.MockSerializer(), null, null);
+            var publisher = new Next.Publisher.Publisher(connection, "exchange", false, this.MockSerializer(), null, null);
 
             await Assert.ThrowsAsync<InvalidOperationException>(async () => await publisher.PublishAsync("test"));
         }
@@ -68,7 +46,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         {
             var connection = this.MockConnection();
 
-            var publisher = new Next.Publisher.Publisher(connection, "exchange", this.MockSerializer(), null, null);
+            var publisher = new Next.Publisher.Publisher(connection, "exchange", false, this.MockSerializer(), null, null);
             await publisher.DisposeAsync();
 
             await Assert.ThrowsAsync<ObjectDisposedException>(async () => await publisher.PublishAsync("test"));
@@ -79,7 +57,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         {
             var connection = this.MockConnection();
 
-            var publisher = new Next.Publisher.Publisher(connection, "exchange", this.MockSerializer(), null, null);
+            var publisher = new Next.Publisher.Publisher(connection, "exchange", false, this.MockSerializer(), null, null);
             await publisher.DisposeAsync();
 
             var ex = await Record.ExceptionAsync(async () => await publisher.DisposeAsync());
@@ -92,7 +70,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         {
             var connection = this.MockConnection();
 
-            var publisher = new Next.Publisher.Publisher(connection, "exchange", this.MockSerializer(), null, null);
+            var publisher = new Next.Publisher.Publisher(connection, "exchange", false, this.MockSerializer(), null, null);
             await publisher.CompleteAsync();
 
             await Assert.ThrowsAsync<ObjectDisposedException>(async () => await publisher.PublishAsync("test"));
@@ -105,7 +83,7 @@ namespace RabbitMQ.Next.Tests.Publisher
 
             var returnedMessageHandler = Substitute.For<IReturnedMessageHandler>();
 
-            var publisher = new Next.Publisher.Publisher(connection, "exchange", this.MockSerializer(), null, new[] {returnedMessageHandler});
+            var publisher = new Next.Publisher.Publisher(connection, "exchange", false, this.MockSerializer(), null, new[] {returnedMessageHandler});
             await publisher.DisposeAsync();
 
             returnedMessageHandler.Received().Dispose();
@@ -118,7 +96,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             var connection = this.MockConnection();
             connection.CreateChannelAsync(Arg.Any<IEnumerable<IMethodHandler>>()).Returns(Task.FromResult(channel));
 
-            var publisher = new Next.Publisher.Publisher(connection, "exchange", this.MockSerializer(), null, null);
+            var publisher = new Next.Publisher.Publisher(connection, "exchange", false, this.MockSerializer(), null, null);
             await publisher.PublishAsync("test", "route");
             await publisher.DisposeAsync();
 

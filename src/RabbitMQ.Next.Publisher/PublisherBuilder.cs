@@ -13,8 +13,6 @@ namespace RabbitMQ.Next.Publisher
         private List<IFormatterSource> formatterSources;
         private List<IReturnedMessageHandler> returnedMessageHandlers;
 
-        public int BufferSize { get; private set; }
-
         public IReadOnlyList<IMessageTransformer> Transformers => this.transformers;
 
         public IReadOnlyList<ITypeFormatter> Formatters => this.formatters;
@@ -23,15 +21,7 @@ namespace RabbitMQ.Next.Publisher
 
         public IReadOnlyList<IReturnedMessageHandler> ReturnedMessageHandlers => this.returnedMessageHandlers;
 
-        IPublisherBuilder IPublisherBuilder.AllowBuffer(int messages)
-        {
-            if (messages < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(messages));
-            }
-            this.BufferSize = messages;
-            return this;
-        }
+        public bool PublisherConfirms { get; private set; }
 
         IPublisherBuilder IPublisherBuilder.UseFormatter(ITypeFormatter typeFormatter)
         {
@@ -78,6 +68,12 @@ namespace RabbitMQ.Next.Publisher
 
             this.returnedMessageHandlers ??= new List<IReturnedMessageHandler>();
             this.returnedMessageHandlers.Add(returnedMessageHandler);
+            return this;
+        }
+
+        IPublisherBuilder IPublisherBuilder.PublisherConfirms()
+        {
+            this.PublisherConfirms = true;
             return this;
         }
     }

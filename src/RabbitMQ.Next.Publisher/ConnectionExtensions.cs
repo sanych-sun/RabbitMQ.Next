@@ -25,12 +25,7 @@ namespace RabbitMQ.Next.Publisher
 
             var serializer = new Serializer(formatters);
 
-            if (publisherBuilder.BufferSize == 0)
-            {
-                return new Publisher(connection, exchange, serializer, publisherBuilder.Transformers, publisherBuilder.ReturnedMessageHandlers);
-            }
-
-            return new BufferedPublisher(connection, exchange, serializer, publisherBuilder.Transformers, publisherBuilder.ReturnedMessageHandlers, publisherBuilder.BufferSize);
+            return new Publisher(connection, exchange, publisherBuilder.PublisherConfirms, serializer, publisherBuilder.Transformers, publisherBuilder.ReturnedMessageHandlers);
         }
     }
 }
