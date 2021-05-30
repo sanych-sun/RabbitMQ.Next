@@ -168,7 +168,9 @@ namespace RabbitMQ.Next.Transport.Methods
                 registration => registration.Use(new EmptyArgsParser<Basic.GetEmptyMethod>()));
             
             builder.Register<Basic.AckMethod>((uint) MethodId.BasicAck,
-                registration => registration.Use(new Basic.AckMethodFormatter()));
+                registration => registration
+                    .Use(new Basic.AckMethodFormatter())
+                    .Use(new Basic.AckMethodParser()));
             
             builder.Register<Basic.RecoverMethod>((uint) MethodId.BasicRecover,
                 registration => registration.Use(new Basic.RecoverMethodFormatter()));
@@ -177,7 +179,9 @@ namespace RabbitMQ.Next.Transport.Methods
                 registration => registration.Use(new EmptyArgsParser<Basic.RecoverOkMethod>()));
 
             builder.Register<Basic.NackMethod>((uint) MethodId.BasicNack,
-                registration => registration.Use(new Basic.NackMethodFormatter()));
+                registration => registration
+                    .Use(new Basic.NackMethodFormatter())
+                    .Use(new Basic.NackMethodParser()));
 
             return builder;
         }

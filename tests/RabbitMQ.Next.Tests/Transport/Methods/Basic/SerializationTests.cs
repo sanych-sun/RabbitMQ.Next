@@ -69,6 +69,10 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Basic
             => this.TestFormatter(new AckMethod(24, true));
 
         [Fact]
+        public void AckMethodParser()
+            => this.TestParser(new AckMethod(24, true));
+
+        [Fact]
         public void RecoverMethodFormatter()
             => this.TestFormatter(new RecoverMethod(true));
 
@@ -79,5 +83,9 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Basic
         [Fact]
         public void NackMethodFormatter()
             => this.TestFormatter(new NackMethod(24, true, true));
+
+        [Fact]
+        public void NackMethodParser()
+            => this.TestParser(new NackMethod(24, true, true));
     }
 }
