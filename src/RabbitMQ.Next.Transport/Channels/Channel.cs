@@ -98,9 +98,9 @@ namespace RabbitMQ.Next.Transport.Channels
         }
 
         public Task CloseAsync()
-            => this.CloseAsync((ushort)ReplyCode.Success, string.Empty, 0);
+            => this.CloseAsync((ushort)ReplyCode.Success, string.Empty, MethodId.Unknown);
 
-        public async Task CloseAsync(ushort statusCode, string description, uint failedMethodId)
+        public async Task CloseAsync(ushort statusCode, string description, MethodId failedMethodId)
         {
             await this.SendAsync<CloseMethod, CloseOkMethod>(new CloseMethod(statusCode, description, failedMethodId));
             this.SetCompleted();
@@ -130,7 +130,7 @@ namespace RabbitMQ.Next.Transport.Channels
                 }
 
                 bool processed;
-                if (this.registry.HasContent(methodArgs.Method))
+                if (this.registry.HasContent(methodArgs.MethodId))
                 {
                     var contentHeader = await pipeReader.ReadAsync(ChannelFrame.FrameHeaderSize, headerParser);
                     if (header == default)
@@ -151,7 +151,7 @@ namespace RabbitMQ.Next.Transport.Channels
                 if (methodArgs is CloseMethod closeMethod)
                 {
                     await this.syncChannel.SendAsync(new CloseOkMethod());
-                    this.SetCompleted(new ChannelException(closeMethod.StatusCode, closeMethod.Description, closeMethod.Method));
+                    this.SetCompleted(new ChannelException(closeMethod.StatusCode, closeMethod.Description, closeMethod.MethodId));
                     this.channelPool.Release(this.ChannelNumber);
                 }
 
@@ -175,7 +175,7 @@ namespace RabbitMQ.Next.Transport.Channels
         private IIncomingMethod ParseMethodFrame(ReadOnlySequence<byte> payload)
         {
             payload = payload.Read(out uint methodId);
-            var parser = this.registry.GetParser(methodId);
+            var parser = this.registry.GetParser((MethodId)methodId);
 
             if (payload.IsSingleSegment)
             {

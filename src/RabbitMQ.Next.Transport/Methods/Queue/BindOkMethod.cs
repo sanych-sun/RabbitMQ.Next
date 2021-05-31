@@ -5,6 +5,6 @@ namespace RabbitMQ.Next.Transport.Methods.Queue
 {
     public readonly struct BindOkMethod : IIncomingMethod
     {
-        public uint Method => (uint) MethodId.QueueBindOk;
+        public MethodId MethodId => MethodId.QueueBindOk;
     }
 }

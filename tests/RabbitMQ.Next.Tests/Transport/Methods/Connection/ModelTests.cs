@@ -21,7 +21,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Connection
 
             var startMethod = new StartMethod(versionMajor, versionMinor, mechanisms, locales, props);
 
-            Assert.Equal((uint)MethodId.ConnectionStart, startMethod.Method);
+            Assert.Equal(MethodId.ConnectionStart, startMethod.MethodId);
             Assert.Equal(versionMajor, startMethod.VersionMajor);
             Assert.Equal(versionMinor, startMethod.VersionMinor);
             Assert.Equal(mechanisms, startMethod.Mechanisms);
@@ -42,7 +42,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Connection
 
             var startOkMethod = new StartOkMethod(mechanism, response, locale, clientProperties);
 
-            Assert.Equal((uint)MethodId.ConnectionStartOk, startOkMethod.Method);
+            Assert.Equal(MethodId.ConnectionStartOk, startOkMethod.MethodId);
             Assert.Equal(mechanism, startOkMethod.Mechanism);
             Assert.Equal(response, startOkMethod.Response);
             Assert.Equal(locale, startOkMethod.Locale);
@@ -58,7 +58,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Connection
 
             var tuneMethod = new TuneMethod(channelMax, maxFrameSize, heartbeatInterval);
 
-            Assert.Equal((uint)MethodId.ConnectionTune, tuneMethod.Method);
+            Assert.Equal(MethodId.ConnectionTune, tuneMethod.MethodId);
             Assert.Equal(channelMax, tuneMethod.ChannelMax);
             Assert.Equal(maxFrameSize, tuneMethod.MaxFrameSize);
             Assert.Equal(heartbeatInterval, tuneMethod.HeartbeatInterval);
@@ -73,7 +73,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Connection
 
             var tuneMethod = new TuneOkMethod(channelMax, maxFrameSize, heartbeatInterval);
 
-            Assert.Equal((uint)MethodId.ConnectionTuneOk, tuneMethod.Method);
+            Assert.Equal(MethodId.ConnectionTuneOk, tuneMethod.MethodId);
             Assert.Equal(channelMax, tuneMethod.ChannelMax);
             Assert.Equal(maxFrameSize, tuneMethod.MaxFrameSize);
             Assert.Equal(heartbeatInterval, tuneMethod.HeartbeatInterval);
@@ -86,7 +86,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Connection
 
             var openMethod = new OpenMethod(vHost);
 
-            Assert.Equal((uint)MethodId.ConnectionOpen, openMethod.Method);
+            Assert.Equal(MethodId.ConnectionOpen, openMethod.MethodId);
             Assert.Equal(vHost, openMethod.VirtualHost);
         }
 
@@ -95,7 +95,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Connection
         {
             var openOkMethod = new OpenOkMethod();
 
-            Assert.Equal((uint)MethodId.ConnectionOpenOk, openOkMethod.Method);
+            Assert.Equal(MethodId.ConnectionOpenOk, openOkMethod.MethodId);
         }
 
         [Fact]
@@ -103,7 +103,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Connection
         {
             var method = new CloseMethod(504, "SomeError", 42);
 
-            Assert.Equal((uint)MethodId.ConnectionClose, method.Method);
+            Assert.Equal(MethodId.ConnectionClose, method.MethodId);
             Assert.Equal(504, method.StatusCode);
             Assert.Equal("SomeError", method.Description);
             Assert.Equal((uint)42, method.FailedMethodId);
@@ -114,7 +114,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Connection
         {
             var method = new CloseOkMethod();
 
-            Assert.Equal((uint)MethodId.ConnectionCloseOk, method.Method);
+            Assert.Equal(MethodId.ConnectionCloseOk, method.MethodId);
         }
 
         [Fact]
@@ -123,7 +123,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Connection
             var reason = "just because";
             var method = new BlockedMethod(reason);
 
-            Assert.Equal((uint)MethodId.ConnectionBlocked, method.Method);
+            Assert.Equal(MethodId.ConnectionBlocked, method.MethodId);
             Assert.Equal(reason, method.Reason);
         }
 
@@ -132,7 +132,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Connection
         {
             var method = new UnblockedMethod();
 
-            Assert.Equal((uint)MethodId.ConnectionUnblocked, method.Method);
+            Assert.Equal(MethodId.ConnectionUnblocked, method.MethodId);
         }
     }
 }

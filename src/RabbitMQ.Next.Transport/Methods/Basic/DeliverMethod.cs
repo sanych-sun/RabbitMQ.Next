@@ -14,7 +14,7 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
             this.Redelivered = redelivered;
         }
 
-        public uint Method => (uint) MethodId.BasicDeliver;
+        public MethodId MethodId => MethodId.BasicDeliver;
 
         public string Exchange { get; }
 

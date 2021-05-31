@@ -10,7 +10,7 @@ namespace RabbitMQ.Next.Transport.Methods.Connection
             this.VirtualHost = virtualHost;
         }
 
-        public uint Method => (uint) MethodId.ConnectionOpen;
+        public MethodId MethodId => MethodId.ConnectionOpen;
 
         public string VirtualHost { get; }
 

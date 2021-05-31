@@ -10,7 +10,7 @@ namespace RabbitMQ.Next.Transport.Methods.Confirm
             this.NoWait = noWait;
         }
 
-        public uint Method => (uint) MethodId.ConfirmSelect;
+        public MethodId MethodId => MethodId.ConfirmSelect;
 
         public bool NoWait { get; }
     }

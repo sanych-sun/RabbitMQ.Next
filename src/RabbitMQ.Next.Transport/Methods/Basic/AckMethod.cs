@@ -11,7 +11,7 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
             this.Multiple = multiple;
         }
 
-        public uint Method => (uint) MethodId.BasicAck;
+        public MethodId MethodId => MethodId.BasicAck;
 
         public ulong DeliveryTag { get; }
 

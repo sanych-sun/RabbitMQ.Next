@@ -10,7 +10,7 @@ namespace RabbitMQ.Next.Transport.Methods.Queue
             this.MessageCount = messageCount;
         }
 
-        public uint Method => (uint) MethodId.QueueDeleteOk;
+        public MethodId MethodId => MethodId.QueueDeleteOk;
 
         public uint MessageCount { get; }
     }

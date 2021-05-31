@@ -5,6 +5,6 @@ namespace RabbitMQ.Next.Transport.Methods.Confirm
 {
     public struct SelectOkMethod : IIncomingMethod
     {
-        public uint Method => (uint) MethodId.ConfirmSelectOk;
+        public MethodId MethodId => MethodId.ConfirmSelectOk;
     }
 }

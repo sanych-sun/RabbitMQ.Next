@@ -11,7 +11,7 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
             this.NoWait = noWait;
         }
 
-        public uint Method => (uint) MethodId.BasicCancel;
+        public MethodId MethodId => MethodId.BasicCancel;
 
         public string ConsumerTag { get; }
 

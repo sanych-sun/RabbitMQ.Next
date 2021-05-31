@@ -13,7 +13,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Confirm
 
             var method = new SelectMethod(noWait);
 
-            Assert.Equal((uint)MethodId.ConfirmSelect, method.Method);
+            Assert.Equal(MethodId.ConfirmSelect, method.MethodId);
             Assert.Equal(noWait, method.NoWait);
         }
 
@@ -22,7 +22,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Confirm
         {
             var method = new SelectOkMethod();
 
-            Assert.Equal((uint)MethodId.ConfirmSelectOk, method.Method);
+            Assert.Equal(MethodId.ConfirmSelectOk, method.MethodId);
         }
     }
 }

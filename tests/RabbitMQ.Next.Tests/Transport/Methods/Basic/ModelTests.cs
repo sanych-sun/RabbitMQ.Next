@@ -16,7 +16,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Basic
 
             var method = new QosMethod(prefetchSize, prefetchCount, global);
 
-            Assert.Equal((uint)MethodId.BasicQos, method.Method);
+            Assert.Equal(MethodId.BasicQos, method.MethodId);
             Assert.Equal(prefetchSize, method.PrefetchSize);
             Assert.Equal(prefetchCount, method.PrefetchCount);
             Assert.Equal(global, method.Global);
@@ -27,7 +27,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Basic
         {
             var method = new QosOkMethod();
 
-            Assert.Equal((uint)MethodId.BasicQosOk, method.Method);
+            Assert.Equal(MethodId.BasicQosOk, method.MethodId);
         }
 
         [Fact]
@@ -40,7 +40,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Basic
 
             var method = new ConsumeMethod(queue, consumerTag, flags, args);
 
-            Assert.Equal((uint)MethodId.BasicConsume, method.Method);
+            Assert.Equal(MethodId.BasicConsume, method.MethodId);
             Assert.Equal(queue, method.Queue);
             Assert.Equal(consumerTag, method.ConsumerTag);
             Assert.Equal(flags, method.Flags);
@@ -68,7 +68,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Basic
 
             var method = new ConsumeOkMethod(consumerTag);
 
-            Assert.Equal((uint)MethodId.BasicConsumeOk, method.Method);
+            Assert.Equal(MethodId.BasicConsumeOk, method.MethodId);
             Assert.Equal(consumerTag, method.ConsumerTag);
         }
 
@@ -80,7 +80,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Basic
 
             var method = new CancelMethod(consumerTag, noWait);
 
-            Assert.Equal((uint)MethodId.BasicCancel, method.Method);
+            Assert.Equal(MethodId.BasicCancel, method.MethodId);
             Assert.Equal(consumerTag, method.ConsumerTag);
             Assert.Equal(noWait, method.NoWait);
         }
@@ -92,7 +92,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Basic
 
             var method = new CancelOkMethod(consumerTag);
 
-            Assert.Equal((uint)MethodId.BasicCancelOk, method.Method);
+            Assert.Equal(MethodId.BasicCancelOk, method.MethodId);
             Assert.Equal(consumerTag, method.ConsumerTag);
         }
 
@@ -105,7 +105,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Basic
 
             var method = new PublishMethod(exchange, routingKey, flags);
 
-            Assert.Equal((uint)MethodId.BasicPublish, method.Method);
+            Assert.Equal(MethodId.BasicPublish, method.MethodId);
             Assert.Equal(exchange, method.Exchange);
             Assert.Equal(routingKey, method.RoutingKey);
             Assert.Equal(flags, method.Flags);
@@ -133,7 +133,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Basic
 
             var method = new ReturnMethod(exchange, routingKey, replyCode, replyText);
 
-            Assert.Equal((uint)MethodId.BasicReturn, method.Method);
+            Assert.Equal(MethodId.BasicReturn, method.MethodId);
             Assert.Equal(exchange, method.Exchange);
             Assert.Equal(routingKey, method.RoutingKey);
             Assert.Equal(replyCode, method.ReplyCode);
@@ -151,7 +151,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Basic
 
             var method = new DeliverMethod(exchange, routingKey, consumerTag, deliveryTag, redelivered);
 
-            Assert.Equal((uint)MethodId.BasicDeliver, method.Method);
+            Assert.Equal(MethodId.BasicDeliver, method.MethodId);
             Assert.Equal(exchange, method.Exchange);
             Assert.Equal(routingKey, method.RoutingKey);
             Assert.Equal(consumerTag, method.ConsumerTag);
@@ -167,7 +167,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Basic
 
             var method = new GetMethod(queue, noAck);
 
-            Assert.Equal((uint)MethodId.BasicGet, method.Method);
+            Assert.Equal(MethodId.BasicGet, method.MethodId);
             Assert.Equal(queue, method.Queue);
             Assert.Equal(noAck, method.NoAck);
         }
@@ -183,7 +183,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Basic
 
             var method = new GetOkMethod(exchange, routingKey, deliveryTag, redelivered, messageCount);
 
-            Assert.Equal((uint)MethodId.BasicGetOk, method.Method);
+            Assert.Equal(MethodId.BasicGetOk, method.MethodId);
             Assert.Equal(exchange, method.Exchange);
             Assert.Equal(routingKey, method.RoutingKey);
             Assert.Equal(deliveryTag, method.DeliveryTag);
@@ -196,7 +196,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Basic
         {
             var method = new GetEmptyMethod();
 
-            Assert.Equal((uint)MethodId.BasicGetEmpty, method.Method);
+            Assert.Equal(MethodId.BasicGetEmpty, method.MethodId);
         }
 
         [Fact]
@@ -207,7 +207,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Basic
 
             var method = new AckMethod(deliveryTag, multiple);
 
-            Assert.Equal((uint)MethodId.BasicAck, method.Method);
+            Assert.Equal(MethodId.BasicAck, method.MethodId);
             Assert.Equal(deliveryTag, method.DeliveryTag);
             Assert.Equal(multiple, method.Multiple);
         }
@@ -219,7 +219,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Basic
 
             var method = new RecoverMethod(requeue);
 
-            Assert.Equal((uint)MethodId.BasicRecover, method.Method);
+            Assert.Equal(MethodId.BasicRecover, method.MethodId);
             Assert.Equal(requeue, method.Requeue);
         }
 
@@ -228,7 +228,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Basic
         {
             var method = new RecoverOkMethod();
 
-            Assert.Equal((uint)MethodId.BasicRecoverOk, method.Method);
+            Assert.Equal(MethodId.BasicRecoverOk, method.MethodId);
         }
 
         [Fact]
@@ -240,7 +240,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Basic
 
             var method = new NackMethod(deliveryTag, multiple, requeue);
 
-            Assert.Equal((uint)MethodId.BasicNack, method.Method);
+            Assert.Equal(MethodId.BasicNack, method.MethodId);
             Assert.Equal(deliveryTag, method.DeliveryTag);
             Assert.Equal(multiple, method.Multiple);
             Assert.Equal(requeue, method.Requeue);

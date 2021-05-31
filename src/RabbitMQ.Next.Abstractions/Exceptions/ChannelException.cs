@@ -4,7 +4,7 @@ namespace RabbitMQ.Next.Abstractions.Exceptions
 {
     public class ChannelException : ProtocolException
     {
-        public ChannelException(ushort errorCode, string message, uint failedMethodId)
+        public ChannelException(ushort errorCode, string message, MethodId failedMethodId)
             : base(message)
         {
             this.ErrorCode = errorCode;
@@ -13,6 +13,6 @@ namespace RabbitMQ.Next.Abstractions.Exceptions
 
         public ushort ErrorCode { get; }
 
-        public uint FailedMethodId { get; }
+        public MethodId FailedMethodId { get; }
     }
 }

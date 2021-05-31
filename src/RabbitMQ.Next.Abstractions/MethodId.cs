@@ -2,6 +2,7 @@ namespace RabbitMQ.Next.Abstractions
 {
     public enum MethodId : uint
     {
+        Unknown = 0,
         // @formatter:off
         // Connection class methods:
         ConnectionStart          = (ClassId.Connection << 16) | 10,

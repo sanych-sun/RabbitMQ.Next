@@ -1,5 +1,5 @@
 using System;
-using RabbitMQ.Next.Abstractions.Channels;
+using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Methods;
 
 namespace RabbitMQ.Next.Transport.Methods.Registry
@@ -7,13 +7,13 @@ namespace RabbitMQ.Next.Transport.Methods.Registry
     internal class MethodRegistration<TMethod> : IMethodRegistrationBuilder<TMethod>, IMethodRegistration
         where TMethod: struct, IMethod
     {
-        public MethodRegistration(uint methodId)
+        public MethodRegistration(MethodId methodId)
         {
             this.MethodId = methodId;
             this.Type = typeof(TMethod);
         }
 
-        public uint MethodId { get; }
+        public MethodId MethodId { get; }
 
         public Type Type { get; }
 

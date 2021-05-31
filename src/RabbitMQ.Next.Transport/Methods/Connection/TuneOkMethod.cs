@@ -12,7 +12,7 @@ namespace RabbitMQ.Next.Transport.Methods.Connection
             this.HeartbeatInterval = heartbeatInterval;
         }
 
-        public uint Method => (uint) MethodId.ConnectionTuneOk;
+        public MethodId MethodId => MethodId.ConnectionTuneOk;
 
         public ushort ChannelMax { get; }
 

@@ -1,5 +1,6 @@
 using System;
 using NSubstitute;
+using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Methods;
 using RabbitMQ.Next.Transport.Methods;
@@ -20,21 +21,21 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Registry
             this.parser = Substitute.For<IMethodParser<DummyMethod<string>>>();
 
             this.registry = new MethodRegistryBuilder()
-                .Register<DummyMethod<int>>(1,
+                .Register<DummyMethod<int>>(MethodId.BasicGet,
                 registration => registration
                     .HasContent()
                     .Use(this.formatter)
                 )
-                .Register<DummyMethod<string>>(2,
+                .Register<DummyMethod<string>>(MethodId.BasicAck,
                     registration => registration
                         .Use(this.parser)
                 ).Build();
         }
 
         [Theory]
-        [InlineData(true, 1)]
-        [InlineData(false, 2)]
-        public void HasContentTests(bool expected, uint methodId)
+        [InlineData(true, MethodId.BasicGet)]
+        [InlineData(false, MethodId.BasicAck)]
+        public void HasContentTests(bool expected, MethodId methodId)
         {
             var result = this.registry.HasContent(methodId);
 
@@ -42,9 +43,9 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Registry
         }
 
         [Theory]
-        [InlineData(typeof(DummyMethod<int>), 1)]
-        [InlineData(typeof(DummyMethod<string>), 2)]
-        public void GetMethodType(Type expected, uint methodId)
+        [InlineData(typeof(DummyMethod<int>), MethodId.BasicGet)]
+        [InlineData(typeof(DummyMethod<string>), MethodId.BasicAck)]
+        public void GetMethodType(Type expected, MethodId methodId)
         {
             var result = this.registry.GetMethodType(methodId);
 
@@ -56,7 +57,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Registry
         {
             var result = this.registry.GetMethodId<DummyMethod<int>>();
 
-            Assert.Equal((uint)1, result);
+            Assert.Equal(MethodId.BasicGet, result);
         }
 
         [Fact]
@@ -64,7 +65,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Registry
         {
             var result = this.registry.GetMethodId<DummyMethod<string>>();
 
-            Assert.Equal((uint)2, result);
+            Assert.Equal(MethodId.BasicAck, result);
         }
 
         [Fact]
@@ -78,7 +79,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Registry
         [Fact]
         public void GetParserByMethodId()
         {
-            var result = this.registry.GetParser(2);
+            var result = this.registry.GetParser(MethodId.BasicAck);
 
             Assert.Equal(this.parser, result);
         }
@@ -101,7 +102,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Registry
         [Fact]
         public void GetParserByMethodIdReturnsNullIfNoParser()
         {
-            var result = this.registry.GetParser(1);
+            var result = this.registry.GetParser(MethodId.BasicGet);
             Assert.Null(result);
         }
 
@@ -115,13 +116,13 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Registry
         [Fact]
         public void HasContentThrowsIfNotRegistered()
         {
-            Assert.Throws<NotSupportedException>(() => this.registry.HasContent(3));
+            Assert.Throws<NotSupportedException>(() => this.registry.HasContent(MethodId.Unknown));
         }
 
         [Fact]
         public void GetMethodTypeThrowsIfNotRegistered()
         {
-            Assert.Throws<NotSupportedException>(() => this.registry.GetMethodType(3));
+            Assert.Throws<NotSupportedException>(() => this.registry.GetMethodType(MethodId.Unknown));
         }
 
         [Fact]
@@ -140,7 +141,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Registry
         [Fact]
         public void GetParserByMethodIdThrowsIfNotRegistered()
         {
-            Assert.Throws<NotSupportedException>(() => this.registry.GetParser(3));
+            Assert.Throws<NotSupportedException>(() => this.registry.GetParser(MethodId.Unknown));
         }
 
         [Fact]

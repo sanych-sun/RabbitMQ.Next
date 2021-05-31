@@ -10,7 +10,7 @@ namespace RabbitMQ.Next.Transport.Methods.Queue
             this.Queue = queue;
         }
 
-        public uint Method => (uint) MethodId.QueuePurge;
+        public MethodId MethodId => MethodId.QueuePurge;
 
         public string Queue { get; }
     }

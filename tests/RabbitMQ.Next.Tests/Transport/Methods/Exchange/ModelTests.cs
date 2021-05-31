@@ -20,7 +20,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Exchange
 
             var method = new DeclareMethod(name, type, flags, arguments);
 
-            Assert.Equal((uint)MethodId.ExchangeDeclare, method.Method);
+            Assert.Equal(MethodId.ExchangeDeclare, method.MethodId);
             Assert.Equal(name, method.Exchange);
             Assert.Equal(type, method.Type);
             Assert.Equal(flags, method.Flags);
@@ -45,7 +45,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Exchange
         {
             var method = new DeclareOkMethod();
 
-            Assert.Equal((uint)MethodId.ExchangeDeclareOk, method.Method);
+            Assert.Equal(MethodId.ExchangeDeclareOk, method.MethodId);
         }
 
         [Fact]
@@ -61,7 +61,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Exchange
 
             var method = new BindMethod(destination, source, routingKey, arguments);
 
-            Assert.Equal((uint)MethodId.ExchangeBind, method.Method);
+            Assert.Equal(MethodId.ExchangeBind, method.MethodId);
             Assert.Equal(destination, method.Destination);
             Assert.Equal(source, method.Source);
             Assert.Equal(routingKey, method.RoutingKey);
@@ -73,7 +73,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Exchange
         {
             var method = new BindOkMethod();
 
-            Assert.Equal((uint)MethodId.ExchangeBindOk, method.Method);
+            Assert.Equal(MethodId.ExchangeBindOk, method.MethodId);
         }
 
         [Fact]
@@ -89,7 +89,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Exchange
 
             var method = new UnbindMethod(destination, source, routingKey, arguments);
 
-            Assert.Equal((uint)MethodId.ExchangeUnbind, method.Method);
+            Assert.Equal(MethodId.ExchangeUnbind, method.MethodId);
             Assert.Equal(destination, method.Destination);
             Assert.Equal(source, method.Source);
             Assert.Equal(routingKey, method.RoutingKey);
@@ -101,7 +101,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Exchange
         {
             var method = new UnbindOkMethod();
 
-            Assert.Equal((uint)MethodId.ExchangeUnbindOk, method.Method);
+            Assert.Equal(MethodId.ExchangeUnbindOk, method.MethodId);
         }
 
         [Fact]
@@ -112,7 +112,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Exchange
 
             var method = new DeleteMethod(name, unusedOnly);
 
-            Assert.Equal((uint)MethodId.ExchangeDelete, method.Method);
+            Assert.Equal(MethodId.ExchangeDelete, method.MethodId);
             Assert.Equal(name, method.Exchange);
             Assert.Equal(unusedOnly, method.UnusedOnly);
         }
@@ -122,7 +122,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Exchange
         {
             var method = new DeleteOkMethod();
 
-            Assert.Equal((uint)MethodId.ExchangeDeleteOk, method.Method);
+            Assert.Equal(MethodId.ExchangeDeleteOk, method.MethodId);
         }
     }
 }

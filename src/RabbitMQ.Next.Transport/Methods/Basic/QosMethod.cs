@@ -12,7 +12,7 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
             this.Global = global;
         }
 
-        public uint Method => (uint) MethodId.BasicQos;
+        public MethodId MethodId => MethodId.BasicQos;
 
         public uint PrefetchSize { get; }
 

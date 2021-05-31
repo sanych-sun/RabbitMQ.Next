@@ -1,3 +1,4 @@
+using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Exceptions;
 using Xunit;
 
@@ -10,7 +11,7 @@ namespace RabbitMQ.Next.Tests.Abstractions.Exceptions
         {
             var errorCode = (ushort)404;
             var description = "not found";
-            var failedMethodId = (uint)42;
+            var failedMethodId = MethodId.BasicDeliver;
 
             var ex = new ChannelException(errorCode, description, failedMethodId);
 

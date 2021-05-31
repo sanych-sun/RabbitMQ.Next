@@ -14,7 +14,7 @@ namespace RabbitMQ.Next.Transport.Methods.Exchange
             this.Arguments = arguments;
         }
 
-        public uint Method => (uint) MethodId.ExchangeBind;
+        public MethodId MethodId => MethodId.ExchangeBind;
 
         public string Destination { get; }
 

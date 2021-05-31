@@ -10,7 +10,7 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
             this.ConsumerTag = consumerTag;
         }
 
-        public uint Method => (uint) MethodId.BasicConsumeOk;
+        public MethodId MethodId => MethodId.BasicConsumeOk;
 
         public string ConsumerTag { get; }
     }

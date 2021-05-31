@@ -14,7 +14,7 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
             this.MessageCount = messageCount;
         }
 
-        public uint Method => (uint) MethodId.BasicGetOk;
+        public MethodId MethodId => MethodId.BasicGetOk;
 
         public string Exchange { get; }
 

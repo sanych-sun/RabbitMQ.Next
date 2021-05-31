@@ -2,6 +2,7 @@ using System;
 using System.Buffers;
 using System.Threading;
 using System.Threading.Tasks;
+using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Abstractions.Methods;
@@ -12,7 +13,7 @@ namespace RabbitMQ.Next.Transport.Channels
     {
         private readonly Action cancellationHandler;
         private readonly IMethodRegistry registry;
-        private uint expectedMethodId;
+        private MethodId expectedMethodId;
         private TaskCompletionSource<IIncomingMethod> waitingTask;
 
         public WaitMethodHandler(IMethodRegistry registry, IChannelInternal channel)
@@ -53,7 +54,7 @@ namespace RabbitMQ.Next.Transport.Channels
             }
 
             var task = this.waitingTask;
-            if (method.Method != this.expectedMethodId)
+            if (method.MethodId != this.expectedMethodId)
             {
                 return new ValueTask<bool>(false);
             }

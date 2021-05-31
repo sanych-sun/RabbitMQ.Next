@@ -21,7 +21,7 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
             this.Arguments = arguments;
         }
 
-        public uint Method => (uint) MethodId.BasicConsume;
+        public MethodId MethodId => MethodId.BasicConsume;
 
         public string Queue { get; }
 

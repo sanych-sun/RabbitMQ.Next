@@ -14,7 +14,7 @@ namespace RabbitMQ.Next.Transport.Methods.Connection
             this.ClientProperties = clientProperties;
         }
 
-        public uint Method => (uint) MethodId.ConnectionStartOk;
+        public MethodId MethodId => MethodId.ConnectionStartOk;
 
         public IReadOnlyDictionary<string, object> ClientProperties { get; }
 

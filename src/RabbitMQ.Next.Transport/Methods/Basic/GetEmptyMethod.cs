@@ -5,6 +5,6 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
 {
     public readonly struct GetEmptyMethod : IIncomingMethod
     {
-        public uint Method => (uint) MethodId.BasicGetEmpty;
+        public MethodId MethodId => MethodId.BasicGetEmpty;
     }
 }

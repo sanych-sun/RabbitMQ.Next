@@ -14,7 +14,7 @@ namespace RabbitMQ.Next.Transport.Methods.Queue
             this.Arguments = arguments;
         }
 
-        public uint Method => (uint) MethodId.QueueBind;
+        public MethodId MethodId => MethodId.QueueBind;
 
         public string Queue { get; }
 

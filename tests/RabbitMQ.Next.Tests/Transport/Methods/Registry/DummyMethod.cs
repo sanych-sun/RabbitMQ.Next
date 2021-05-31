@@ -1,16 +1,17 @@
+using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Methods;
 
 namespace RabbitMQ.Next.Tests.Transport.Methods.Registry
 {
     public readonly struct DummyMethod<TData> : IMethod, IIncomingMethod, IOutgoingMethod
     {
-        public DummyMethod(uint methodId, TData data)
+        public DummyMethod(MethodId methodId, TData data)
         {
-            this.Method = methodId;
+            this.MethodId = methodId;
             this.Data = data;
         }
 
-        public uint Method { get; }
+        public MethodId MethodId { get; }
 
         public TData Data { get; }
     }

@@ -1,4 +1,5 @@
 using NSubstitute;
+using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Methods;
 using RabbitMQ.Next.Transport.Methods.Registry;
 using Xunit;
@@ -10,16 +11,16 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Registry
         [Fact]
         public void RegistrationCtor()
         {
-            var registration = new MethodRegistration<DummyMethod<int>>(uint.MaxValue);
+            var registration = new MethodRegistration<DummyMethod<int>>(MethodId.Unknown);
 
-            Assert.Equal(uint.MaxValue, registration.MethodId);
+            Assert.Equal(MethodId.Unknown, registration.MethodId);
             Assert.Equal(typeof(DummyMethod<int>), registration.Type);
         }
 
         [Fact]
         public void HasContent()
         {
-            var registration = new MethodRegistration<DummyMethod<int>>(uint.MaxValue);
+            var registration = new MethodRegistration<DummyMethod<int>>(MethodId.Unknown);
             ((IMethodRegistrationBuilder<DummyMethod<int>>)registration).HasContent();
 
             Assert.True(registration.HasContent);
@@ -30,7 +31,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Registry
         {
             var formatter = Substitute.For<IMethodFormatter<DummyMethod<int>>>();
 
-            var registration = new MethodRegistration<DummyMethod<int>>(uint.MaxValue);
+            var registration = new MethodRegistration<DummyMethod<int>>(MethodId.Unknown);
             ((IMethodRegistrationBuilder<DummyMethod<int>>)registration).Use(formatter);
 
             Assert.Equal(formatter, registration.Formatter);
@@ -41,7 +42,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Registry
         {
             var formatter = Substitute.For<IMethodParser<DummyMethod<int>>>();
 
-            var registration = new MethodRegistration<DummyMethod<int>>(uint.MaxValue);
+            var registration = new MethodRegistration<DummyMethod<int>>(MethodId.Unknown);
             ((IMethodRegistrationBuilder<DummyMethod<int>>)registration).Use(formatter);
 
             Assert.Equal(formatter, registration.Parser);

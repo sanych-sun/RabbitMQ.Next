@@ -19,7 +19,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Queue
 
             var method = new DeclareMethod(name, flags, arguments);
 
-            Assert.Equal((uint)MethodId.QueueDeclare, method.Method);
+            Assert.Equal(MethodId.QueueDeclare, method.MethodId);
             Assert.Equal(name, method.Queue);
             Assert.Equal(flags, method.Flags);
             Assert.Equal(arguments, method.Arguments);
@@ -49,7 +49,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Queue
 
             var method = new DeclareOkMethod(name, messageCount, consumerCount);
 
-            Assert.Equal((uint)MethodId.QueueDeclareOk, method.Method);
+            Assert.Equal(MethodId.QueueDeclareOk, method.MethodId);
             Assert.Equal(name, method.Queue);
             Assert.Equal(messageCount, method.MessageCount);
             Assert.Equal(consumerCount, method.ConsumerCount);
@@ -68,7 +68,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Queue
 
             var method = new BindMethod(queue, exchange, routingKey, arguments);
 
-            Assert.Equal((uint)MethodId.QueueBind, method.Method);
+            Assert.Equal(MethodId.QueueBind, method.MethodId);
             Assert.Equal(queue, method.Queue);
             Assert.Equal(exchange, method.Exchange);
             Assert.Equal(routingKey, method.RoutingKey);
@@ -80,7 +80,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Queue
         {
             var method = new BindOkMethod();
 
-            Assert.Equal((uint)MethodId.QueueBindOk, method.Method);
+            Assert.Equal(MethodId.QueueBindOk, method.MethodId);
         }
 
         [Fact]
@@ -96,7 +96,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Queue
 
             var method = new UnbindMethod(queue, exchange, routingKey, arguments);
 
-            Assert.Equal((uint)MethodId.QueueUnbind, method.Method);
+            Assert.Equal(MethodId.QueueUnbind, method.MethodId);
             Assert.Equal(queue, method.Queue);
             Assert.Equal(exchange, method.Exchange);
             Assert.Equal(routingKey, method.RoutingKey);
@@ -108,7 +108,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Queue
         {
             var method = new UnbindOkMethod();
 
-            Assert.Equal((uint)MethodId.QueueUnbindOk, method.Method);
+            Assert.Equal(MethodId.QueueUnbindOk, method.MethodId);
         }
 
         [Fact]
@@ -118,7 +118,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Queue
 
             var method = new PurgeMethod(queue);
 
-            Assert.Equal((uint)MethodId.QueuePurge, method.Method);
+            Assert.Equal(MethodId.QueuePurge, method.MethodId);
             Assert.Equal(queue, method.Queue);
         }
 
@@ -129,7 +129,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Queue
 
             var method = new PurgeOkMethod(messageCount);
 
-            Assert.Equal((uint)MethodId.QueuePurgeOk, method.Method);
+            Assert.Equal(MethodId.QueuePurgeOk, method.MethodId);
             Assert.Equal(messageCount, method.MessageCount);
         }
         
@@ -142,7 +142,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Queue
 
             var method = new DeleteMethod(queue, unusedOnly, emptyOnly);
 
-            Assert.Equal((uint)MethodId.QueueDelete, method.Method);
+            Assert.Equal(MethodId.QueueDelete, method.MethodId);
             Assert.Equal(queue, method.Queue);
             Assert.Equal(unusedOnly, method.UnusedOnly);
             Assert.Equal(emptyOnly, method.EmptyOnly);
@@ -155,7 +155,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Queue
 
             var method = new DeleteOkMethod(messageCount);
 
-            Assert.Equal((uint)MethodId.QueueDeleteOk, method.Method);
+            Assert.Equal(MethodId.QueueDeleteOk, method.MethodId);
             Assert.Equal(messageCount, method.MessageCount);
         }
     }

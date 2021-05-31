@@ -10,7 +10,7 @@ namespace RabbitMQ.Next.Transport.Methods.Queue
             this.MessageCount = messageCount;
         }
 
-        public uint Method => (uint) MethodId.QueuePurgeOk;
+        public MethodId MethodId => MethodId.QueuePurgeOk;
 
         public uint MessageCount { get; }
     }

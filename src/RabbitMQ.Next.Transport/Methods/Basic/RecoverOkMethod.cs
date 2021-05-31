@@ -5,6 +5,6 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
 {
     public readonly struct RecoverOkMethod : IIncomingMethod
     {
-        public uint Method => (uint) MethodId.BasicRecoverOk;
+        public MethodId MethodId => MethodId.BasicRecoverOk;
     }
 }

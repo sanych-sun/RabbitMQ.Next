@@ -11,7 +11,7 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
             this.NoAck = noAck;
         }
 
-        public uint Method => (uint) MethodId.BasicGet;
+        public MethodId MethodId => MethodId.BasicGet;
 
         public string Queue { get; }
 

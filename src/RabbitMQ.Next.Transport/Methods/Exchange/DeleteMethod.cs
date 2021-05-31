@@ -11,7 +11,7 @@ namespace RabbitMQ.Next.Transport.Methods.Exchange
             this.UnusedOnly = unusedOnly;
         }
 
-        public uint Method => (uint) MethodId.ExchangeDelete;
+        public MethodId MethodId => MethodId.ExchangeDelete;
 
         public string Exchange { get; }
 

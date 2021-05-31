@@ -15,7 +15,7 @@ namespace RabbitMQ.Next.Transport.Methods.Connection
             this.ServerProperties = properties;
         }
 
-        public uint Method => (uint)MethodId.ConnectionStart;
+        public MethodId MethodId => MethodId.ConnectionStart;
 
         public byte VersionMajor { get; }
 

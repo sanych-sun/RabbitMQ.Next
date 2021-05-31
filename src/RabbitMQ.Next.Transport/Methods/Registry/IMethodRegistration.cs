@@ -1,10 +1,11 @@
 using System;
+using RabbitMQ.Next.Abstractions;
 
 namespace RabbitMQ.Next.Transport.Methods.Registry
 {
     internal interface IMethodRegistration
     {
-        uint MethodId { get; }
+        MethodId MethodId { get; }
 
         Type Type { get; }
 

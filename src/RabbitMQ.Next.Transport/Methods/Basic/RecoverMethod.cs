@@ -10,7 +10,7 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
             this.Requeue = requeue;
         }
 
-        public uint Method => (uint) MethodId.BasicRecover;
+        public MethodId MethodId => MethodId.BasicRecover;
 
         public bool Requeue { get; }
     }

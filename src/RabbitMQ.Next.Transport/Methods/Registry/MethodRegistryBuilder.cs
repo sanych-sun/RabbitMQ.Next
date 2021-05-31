@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using RabbitMQ.Next.Abstractions.Channels;
+using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Methods;
 
 namespace RabbitMQ.Next.Transport.Methods.Registry
@@ -14,7 +14,7 @@ namespace RabbitMQ.Next.Transport.Methods.Registry
             this.items = new List<IMethodRegistration>();
         }
 
-        public IMethodRegistryBuilder Register<TMethod>(uint methodId, Action<IMethodRegistrationBuilder<TMethod>> registration)
+        public IMethodRegistryBuilder Register<TMethod>(MethodId methodId, Action<IMethodRegistrationBuilder<TMethod>> registration)
             where TMethod : struct, IMethod
         {
             var info = new MethodRegistration<TMethod>(methodId);

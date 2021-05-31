@@ -12,7 +12,7 @@ namespace RabbitMQ.Next.Transport.Methods.Queue
             this.EmptyOnly = emptyOnly;
         }
 
-        public uint Method => (uint) MethodId.QueueDelete;
+        public MethodId MethodId => MethodId.QueueDelete;
 
         public string Queue { get; }
 

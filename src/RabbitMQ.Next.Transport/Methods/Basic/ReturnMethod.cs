@@ -13,7 +13,7 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
             this.ReplyText = replyText;
         }
 
-        public uint Method => (uint) MethodId.BasicReturn;
+        public MethodId MethodId => MethodId.BasicReturn;
 
         public string Exchange { get; }
 

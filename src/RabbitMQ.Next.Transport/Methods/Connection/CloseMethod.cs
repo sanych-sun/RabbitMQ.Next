@@ -5,7 +5,7 @@ namespace RabbitMQ.Next.Transport.Methods.Connection
 {
     public readonly struct CloseMethod : IIncomingMethod, IOutgoingMethod
     {
-        public uint Method => (uint) MethodId.ConnectionClose;
+        public MethodId MethodId => MethodId.ConnectionClose;
 
         public CloseMethod(ushort statusCode, string description, uint failedMethod)
         {

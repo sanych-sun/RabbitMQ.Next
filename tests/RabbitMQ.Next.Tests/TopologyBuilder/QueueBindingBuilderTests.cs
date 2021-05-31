@@ -57,7 +57,7 @@ namespace RabbitMQ.Next.Tests.TopologyBuilder
         {
             var channel = Substitute.For<IChannel>();
             channel.SendAsync<BindMethod, BindOkMethod>(default)
-                .ReturnsForAnyArgs(Task.FromException<BindOkMethod>(new ChannelException((ushort)replyCode, "error message", (uint) MethodId.QueueBind)));
+                .ReturnsForAnyArgs(Task.FromException<BindOkMethod>(new ChannelException((ushort)replyCode, "error message", MethodId.QueueBind)));
             var builder = new QueueBindingBuilder("queue", "exchange");
 
             await Assert.ThrowsAsync(exceptionType,async ()=> await builder.ApplyAsync(channel));

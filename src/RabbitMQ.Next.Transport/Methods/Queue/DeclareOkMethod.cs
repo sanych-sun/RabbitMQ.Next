@@ -12,7 +12,7 @@ namespace RabbitMQ.Next.Transport.Methods.Queue
             this.ConsumerCount = consumerCount;
         }
 
-        public uint Method => (uint) MethodId.QueueDeclareOk;
+        public MethodId MethodId => MethodId.QueueDeclareOk;
 
         public string Queue { get; }
 

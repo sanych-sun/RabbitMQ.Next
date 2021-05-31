@@ -10,7 +10,7 @@ namespace RabbitMQ.Next.Transport.Methods.Channel
             this.Active = active;
         }
 
-        public uint Method => (uint) MethodId.ChannelFlow;
+        public MethodId MethodId => MethodId.ChannelFlow;
 
         public bool Active { get; }
     }

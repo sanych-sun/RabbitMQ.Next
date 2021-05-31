@@ -24,7 +24,7 @@ namespace RabbitMQ.Next.Transport.Methods.Exchange
             this.Arguments = arguments;
         }
 
-        public uint Method => (uint) MethodId.ExchangeDeclare;
+        public MethodId MethodId => MethodId.ExchangeDeclare;
 
         public string Exchange { get; }
 

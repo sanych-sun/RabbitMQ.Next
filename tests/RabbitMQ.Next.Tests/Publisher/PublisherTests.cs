@@ -14,7 +14,6 @@ using RabbitMQ.Next.Publisher.Transformers;
 using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.Transport.Buffers;
 using RabbitMQ.Next.Transport.Methods.Basic;
-using RabbitMQ.Next.Transport.Methods.Confirm;
 using RabbitMQ.Next.Transport.Methods.Exchange;
 using Xunit;
 
@@ -219,7 +218,7 @@ namespace RabbitMQ.Next.Tests.Publisher
                 return Task.CompletedTask;
             }
 
-            public Task CloseAsync(ushort statusCode, string description, uint failedMethodId)
+            public Task CloseAsync(ushort statusCode, string description, MethodId failedMethodId)
             {
                 this.IsClosed = true;
                 return Task.CompletedTask;

@@ -16,7 +16,7 @@ namespace RabbitMQ.Next.Transport.Methods
             }
 
             var resultSpan = buffer.Span
-                .Write(method.Method);
+                .Write((uint)method.MethodId);
 
             resultSpan = formatter.Write(resultSpan, method);
 

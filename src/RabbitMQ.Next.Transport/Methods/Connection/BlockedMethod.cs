@@ -10,7 +10,7 @@ namespace RabbitMQ.Next.Transport.Methods.Connection
             this.Reason = reason;
         }
 
-        public uint Method => (uint) MethodId.ConnectionBlocked;
+        public MethodId MethodId => MethodId.ConnectionBlocked;
 
         public string Reason { get; }
     }

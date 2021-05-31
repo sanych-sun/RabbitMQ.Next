@@ -11,7 +11,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Channel
         {
             var method = new OpenMethod();
 
-            Assert.Equal((uint)MethodId.ChannelOpen, method.Method);
+            Assert.Equal(MethodId.ChannelOpen, method.MethodId);
         }
 
         [Fact]
@@ -19,7 +19,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Channel
         {
             var method = new OpenOkMethod();
 
-            Assert.Equal((uint)MethodId.ChannelOpenOk, method.Method);
+            Assert.Equal(MethodId.ChannelOpenOk, method.MethodId);
         }
 
         [Fact]
@@ -27,7 +27,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Channel
         {
             var method = new FlowMethod(true);
 
-            Assert.Equal((uint)MethodId.ChannelFlow, method.Method);
+            Assert.Equal(MethodId.ChannelFlow, method.MethodId);
             Assert.True(method.Active);
         }
 
@@ -36,19 +36,19 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Channel
         {
             var method = new FlowOkMethod(true);
 
-            Assert.Equal((uint)MethodId.ChannelFlowOk, method.Method);
+            Assert.Equal(MethodId.ChannelFlowOk, method.MethodId);
             Assert.True(method.Active);
         }
 
         [Fact]
         public void CloseMethod()
         {
-            var method = new CloseMethod(504, "SomeError", 42);
+            var method = new CloseMethod(504, "SomeError", MethodId.BasicDeliver);
 
-            Assert.Equal((uint)MethodId.ChannelClose, method.Method);
+            Assert.Equal(MethodId.ChannelClose, method.MethodId);
             Assert.Equal(504, method.StatusCode);
             Assert.Equal("SomeError", method.Description);
-            Assert.Equal((uint)42, method.FailedMethodId);
+            Assert.Equal(MethodId.BasicDeliver, method.FailedMethodId);
         }
 
         [Fact]
@@ -56,7 +56,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Channel
         {
             var method = new CloseOkMethod();
 
-            Assert.Equal((uint)MethodId.ChannelCloseOk, method.Method);
+            Assert.Equal(MethodId.ChannelCloseOk, method.MethodId);
         }
     }
 }

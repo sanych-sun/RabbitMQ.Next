@@ -1,13 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Methods;
 
 namespace RabbitMQ.Next.Transport.Methods.Registry
 {
     internal sealed class MethodRegistry : IMethodRegistry
     {
-        private readonly IReadOnlyDictionary<uint, IMethodRegistration> methods;
+        private readonly IReadOnlyDictionary<MethodId, IMethodRegistration> methods;
         private readonly IReadOnlyDictionary<Type, IMethodRegistration> types;
 
         public MethodRegistry(IReadOnlyList<IMethodRegistration> items)
@@ -17,7 +18,7 @@ namespace RabbitMQ.Next.Transport.Methods.Registry
                 throw new ArgumentNullException(nameof(items));
             }
 
-            var methodMap = new Dictionary<uint, IMethodRegistration>();
+            var methodMap = new Dictionary<MethodId, IMethodRegistration>();
             var typeMap = new Dictionary<Type, IMethodRegistration>();
             for (var i = 0; i < items.Count; i++)
             {
@@ -30,11 +31,11 @@ namespace RabbitMQ.Next.Transport.Methods.Registry
             this.types = typeMap;
         }
 
-        public bool HasContent(uint methodId) => this.GetMethod(methodId).HasContent;
+        public bool HasContent(MethodId methodId) => this.GetMethod(methodId).HasContent;
 
-        public Type GetMethodType(uint methodId) => this.GetMethod(methodId).Type;
+        public Type GetMethodType(MethodId methodId) => this.GetMethod(methodId).Type;
 
-        public uint GetMethodId<TMethod>() where TMethod : struct, IMethod => this.GetMethod(typeof(TMethod)).MethodId;
+        public MethodId GetMethodId<TMethod>() where TMethod : struct, IMethod => this.GetMethod(typeof(TMethod)).MethodId;
 
         public IMethodParser<TMethod> GetParser<TMethod>()
             where TMethod : struct, IIncomingMethod
@@ -48,7 +49,7 @@ namespace RabbitMQ.Next.Transport.Methods.Registry
             return null;
         }
 
-        public IMethodParser GetParser(uint methodId) => (IMethodParser)this.GetMethod(methodId).Parser;
+        public IMethodParser GetParser(MethodId methodId) => (IMethodParser)this.GetMethod(methodId).Parser;
 
         public IMethodFormatter<TMethod> GetFormatter<TMethod>()
             where TMethod : struct, IOutgoingMethod
@@ -63,7 +64,7 @@ namespace RabbitMQ.Next.Transport.Methods.Registry
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private IMethodRegistration GetMethod(uint methodId)
+        private IMethodRegistration GetMethod(MethodId methodId)
         {
             if (this.methods.TryGetValue(methodId, out var info))
             {

@@ -22,7 +22,7 @@ namespace RabbitMQ.Next.Transport.Methods.Queue
             this.Arguments = arguments;
         }
 
-        public uint Method => (uint) MethodId.QueueDeclare;
+        public MethodId MethodId => MethodId.QueueDeclare;
 
         public string Queue { get; }
 

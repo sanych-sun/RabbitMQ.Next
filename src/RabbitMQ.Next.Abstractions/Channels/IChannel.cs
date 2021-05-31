@@ -14,6 +14,6 @@ namespace RabbitMQ.Next.Abstractions.Channels
 
         Task CloseAsync();
 
-        Task CloseAsync(ushort statusCode, string description, uint failedMethodId);
+        Task CloseAsync(ushort statusCode, string description, MethodId failedMethodId);
     }
 }

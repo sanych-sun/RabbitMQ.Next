@@ -12,7 +12,7 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
             this.Requeue = requeue;
         }
 
-        public uint Method => (uint) MethodId.BasicNack;
+        public MethodId MethodId => MethodId.BasicNack;
 
         public ulong DeliveryTag { get; }
 

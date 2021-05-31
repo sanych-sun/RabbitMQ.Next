@@ -17,7 +17,7 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
             this.Flags = flags;
         }
 
-        public uint Method => (uint) MethodId.BasicPublish;
+        public MethodId MethodId => MethodId.BasicPublish;
 
         public string Exchange { get; }
 
