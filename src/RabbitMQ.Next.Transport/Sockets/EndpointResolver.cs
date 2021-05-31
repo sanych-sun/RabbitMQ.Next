@@ -4,12 +4,13 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using RabbitMQ.Next.Abstractions;
 
 namespace RabbitMQ.Next.Transport.Sockets
 {
     internal static class EndpointResolver
     {
-        public static async Task<ISocket> OpenSocketAsync(IReadOnlyList<Endpoint> endpoints, bool useSsl)
+        public static async Task<ISocket> OpenSocketAsync(IReadOnlyList<Endpoint> endpoints)
         {
             IPAddress FindAddress(IReadOnlyList<IPAddress> addresses, AddressFamily family)
                 => addresses.FirstOrDefault(a => a.AddressFamily == family);
@@ -26,7 +27,7 @@ namespace RabbitMQ.Next.Transport.Sockets
                     var socket = await TryConnectAsync(ipV6Address, endpoint.Port);
                     if (socket != null)
                     {
-                        return new SocketWrapper(socket, useSsl, endpoint);
+                        return new SocketWrapper(socket, endpoint);
                     }
                 }
 
@@ -37,7 +38,7 @@ namespace RabbitMQ.Next.Transport.Sockets
                     var socket = await TryConnectAsync(ipV4Address, endpoint.Port);
                     if (socket != null)
                     {
-                        return new SocketWrapper(socket, useSsl, endpoint);
+                        return new SocketWrapper(socket, endpoint);
                     }
                 }
             }

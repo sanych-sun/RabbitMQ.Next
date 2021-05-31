@@ -12,41 +12,47 @@ using RabbitMQ.Next.Transport.Buffers;
 using RabbitMQ.Next.Transport.Channels;
 using RabbitMQ.Next.Transport.Events;
 using RabbitMQ.Next.Transport.Methods.Connection;
-using RabbitMQ.Next.Transport.Methods.Registry;
 using RabbitMQ.Next.Transport.Sockets;
-using RabbitMQ.Next.Transport.Methods;
 
 namespace RabbitMQ.Next.Transport
 {
     internal class Connection : IConnection
     {
+        private readonly IReadOnlyList<Endpoint> endpoints;
+        private readonly string virtualHost;
+        private readonly IAuthMechanism authMechanism;
+        private readonly IReadOnlyDictionary<string, object> clientProperties;
+        private readonly string locale;
+        private readonly IMethodRegistry methodRegistry;
+
         private readonly ChannelPool channelPool;
-        private readonly ConnectionString connectionString;
         private readonly EventSource<ConnectionState> stateChanged;
         private readonly IBufferPoolInternal bufferPool;
-        private readonly IMethodRegistry methodRegistry;
         private readonly ConnectionDetails connectionDetails = new ConnectionDetails();
 
         private ISocket socket;
         private IFrameSender frameSender;
         private CancellationTokenSource socketIoCancellation;
 
-        public Connection(ConnectionString connectionString)
+        public Connection(
+            IReadOnlyList<Endpoint> endpoints,
+            string virtualHost,
+            IAuthMechanism authMechanism,
+            string locale,
+            IReadOnlyDictionary<string, object> clientProperties,
+            IMethodRegistry methodRegistry)
         {
+            this.endpoints = endpoints;
+            this.virtualHost = virtualHost;
+            this.authMechanism = authMechanism;
+            this.locale = locale;
+            this.clientProperties = clientProperties;
+            this.methodRegistry = methodRegistry;
+
             this.State = ConnectionState.Pending;
             this.bufferPool = new BufferPool(ProtocolConstants.FrameMinSize);
             this.stateChanged = new EventSource<ConnectionState>();
-            var registryBuilder = new MethodRegistryBuilder();
-            registryBuilder.AddConnectionMethods();
-            registryBuilder.AddChannelMethods();
-            registryBuilder.AddExchangeMethods();
-            registryBuilder.AddQueueMethods();
-            registryBuilder.AddBasicMethods();
-            registryBuilder.AddConfirmMethods();
-
-            this.methodRegistry = registryBuilder.Build();
             this.channelPool = new ChannelPool();
-            this.connectionString = connectionString;
         }
 
         public async Task ConnectAsync()
@@ -54,7 +60,7 @@ namespace RabbitMQ.Next.Transport
             // TODO: adopt authentication_failure_close capability to handle auth errors
 
             await this.ChangeStateAsync(ConnectionState.Connecting);
-            this.socket = await EndpointResolver.OpenSocketAsync(this.connectionString.EndPoints, this.connectionString.Ssl);
+            this.socket = await EndpointResolver.OpenSocketAsync(this.endpoints);
             this.frameSender = new FrameSender(this.socket, this.methodRegistry, this.BufferPool);
 
             await this.ChangeStateAsync(ConnectionState.Negotiating);
@@ -63,29 +69,27 @@ namespace RabbitMQ.Next.Transport
             this.socketIoCancellation = new CancellationTokenSource();
             Task.Run(() => this.ReceiveLoop(this.socketIoCancellation.Token));
 
-
-            var negotiationResults = await connectionChannel.UseChannel(this.connectionString, async (ch, connection) =>
+            var negotiationResults = await connectionChannel.UseChannel(async ch =>
             {
-                var startMethod = ch.WaitAsync<StartMethod>();
+                var startMethodTask = ch.WaitAsync<StartMethod>();
                 await this.SendProtocolHeaderAsync();
-                await startMethod;
-
-                // TODO: make it dynamic based on assembly version and allow add extra properties
-                var clientProperties = new Dictionary<string, object>()
-                {
-                    ["product"] = "RabbitMQ.Next.Transport",
-                    ["version"] = "0.1.0",
-                    ["platform"] = Environment.OSVersion.ToString(),
-                };
+                var startMethod = await startMethodTask;
 
                 var tuneMethodTask = ch.WaitAsync<TuneMethod>();
-                await ch.SendAsync(new StartOkMethod("PLAIN", $"\0{connection.UserName}\0{connection.Password}", "en-US", clientProperties));
+
+                if (!startMethod.Mechanisms.Contains(this.authMechanism.Type))
+                {
+                    throw new NotSupportedException("Provided auth mechanism does not supported by the server");
+                }
+
+                await ch.SendAsync(new StartOkMethod(this.authMechanism.Type, this.authMechanism.ToResponse(), this.locale, this.clientProperties));
 
                 var tuneMethod = await tuneMethodTask;
 
                 await ch.SendAsync(new TuneOkMethod(tuneMethod.ChannelMax, tuneMethod.MaxFrameSize, tuneMethod.HeartbeatInterval));
 
-                await ch.SendAsync<OpenMethod, OpenOkMethod>(new OpenMethod(connection.VirtualHost));
+                // todo: handle wrong vhost name
+                await ch.SendAsync<OpenMethod, OpenOkMethod>(new OpenMethod(this.virtualHost));
 
                 return new ConnectionNegotiationResults(tuneMethod.ChannelMax, tuneMethod.MaxFrameSize, tuneMethod.HeartbeatInterval);
             });

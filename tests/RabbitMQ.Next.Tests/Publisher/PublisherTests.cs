@@ -206,8 +206,14 @@ namespace RabbitMQ.Next.Tests.Publisher
 
             public Task Completion { get; }
 
+            public Task UseChannel(Func<ISynchronizedChannel, Task> fn, CancellationToken cancellation = default)
+                => fn(this.channel);
+
             public Task UseChannel<TState>(TState state, Func<ISynchronizedChannel, TState, Task> fn, CancellationToken cancellation = default)
                 => fn(this.channel, state);
+
+            public Task<TResult> UseChannel<TResult>(Func<ISynchronizedChannel, Task<TResult>> fn, CancellationToken cancellation = default)
+                => fn(this.channel);
 
             public Task<TResult> UseChannel<TState, TResult>(TState state, Func<ISynchronizedChannel, TState, Task<TResult>> fn, CancellationToken cancellation = default)
                 => fn(this.channel, state);

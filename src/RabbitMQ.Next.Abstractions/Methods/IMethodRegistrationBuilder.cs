@@ -1,6 +1,4 @@
-using RabbitMQ.Next.Abstractions.Methods;
-
-namespace RabbitMQ.Next.Transport.Methods.Registry
+namespace RabbitMQ.Next.Abstractions.Methods
 {
     public interface IMethodRegistrationBuilder<TMethod>
         where TMethod : struct, IMethod

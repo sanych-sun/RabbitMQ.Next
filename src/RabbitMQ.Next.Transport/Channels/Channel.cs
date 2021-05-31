@@ -67,6 +67,21 @@ namespace RabbitMQ.Next.Transport.Channels
             this.Writer.Complete();
         }
 
+        public async Task UseChannel(Func<ISynchronizedChannel, Task> fn, CancellationToken cancellation = default)
+        {
+            await this.senderSync.WaitAsync(cancellation);
+
+            try
+            {
+                this.ValidateState();
+                await fn(this.syncChannel);
+            }
+            finally
+            {
+                this.senderSync.Release();
+            }
+        }
+
         public async Task UseChannel<TState>(TState state, Func<ISynchronizedChannel, TState, Task> fn, CancellationToken cancellation = default)
         {
             await this.senderSync.WaitAsync(cancellation);
@@ -75,6 +90,21 @@ namespace RabbitMQ.Next.Transport.Channels
             {
                 this.ValidateState();
                 await fn(this.syncChannel, state);
+            }
+            finally
+            {
+                this.senderSync.Release();
+            }
+        }
+
+        public async Task<TResult> UseChannel<TResult>(Func<ISynchronizedChannel, Task<TResult>> fn, CancellationToken cancellation = default)
+        {
+            await this.senderSync.WaitAsync(cancellation);
+
+            try
+            {
+                this.ValidateState();
+                return await fn(this.syncChannel);
             }
             finally
             {

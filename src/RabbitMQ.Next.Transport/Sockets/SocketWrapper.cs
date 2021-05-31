@@ -4,6 +4,7 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using RabbitMQ.Next.Abstractions;
 
 namespace RabbitMQ.Next.Transport.Sockets
 {
@@ -14,7 +15,7 @@ namespace RabbitMQ.Next.Transport.Sockets
         private readonly SemaphoreSlim writerSemaphore;
         private readonly Func<ReadOnlyMemory<byte>, ValueTask> sendData;
 
-        public SocketWrapper(Socket socket, bool useSsl, Endpoint endpoint)
+        public SocketWrapper(Socket socket, Endpoint endpoint)
         {
             this.writerSemaphore = new SemaphoreSlim(1, 1);
             this.socket = socket;
@@ -25,7 +26,7 @@ namespace RabbitMQ.Next.Transport.Sockets
                 WriteTimeout = 10000,
             };
 
-            if (useSsl)
+            if (endpoint.UseSsl)
             {
                 var sslStream = new SslStream(this.stream, false);
                 sslStream.AuthenticateAsClient(endpoint.Host);

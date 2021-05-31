@@ -14,6 +14,8 @@ namespace RabbitMQ.Next.Abstractions
 
         Task<IChannel> CreateChannelAsync(IEnumerable<IMethodHandler> handlers = null, CancellationToken cancellationToken = default);
 
+        Task ConnectAsync();
+
         Task CloseAsync();
 
         ConnectionState State { get; }

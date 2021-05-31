@@ -30,7 +30,10 @@
 //         [Fact]
 //         public async Task Test1()
 //         {
-//             var connection = new Connection(ConnectionString.Create("amqp://test2:test2@localhost:5672/"));
+//             var connection = ConnectionBuilder
+//                 .Create("amqp://test2:test2@localhost:5672/")
+//                 .UseDefaults()
+//                 .Build();
 //
 //             await connection.ConnectAsync();
 //
@@ -63,7 +66,10 @@
 //         public async Task TestConsumer()
 //         {
 //             //var connection = new Connection(ConnectionString.Create("amqp://rpeesesf:naQF5gZbGA9GzNHkSKE4QxwBt__Lsmu-@beaver.rmq.cloudamqp.com/rpeesesf"));
-//             var connection = new Connection(ConnectionString.Create("amqp://test1:test1@localhost:5672/"));
+//             var connection = ConnectionBuilder
+//                 .Create("amqp://test1:test1@localhost:5672/")
+//                 .UseDefaults()
+//                 .Build();
 //
 //             await connection.ConnectAsync();
 //

@@ -1,8 +1,6 @@
 using System;
-using RabbitMQ.Next.Abstractions;
-using RabbitMQ.Next.Abstractions.Methods;
 
-namespace RabbitMQ.Next.Transport.Methods.Registry
+namespace RabbitMQ.Next.Abstractions.Methods
 {
     public interface IMethodRegistryBuilder
     {
