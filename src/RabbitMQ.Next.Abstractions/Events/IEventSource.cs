@@ -1,7 +1,7 @@
 using System;
 using System.Threading.Tasks;
 
-namespace RabbitMQ.Next.Abstractions
+namespace RabbitMQ.Next.Abstractions.Events
 {
     public interface IEventSource<out TEventArgs>
     {

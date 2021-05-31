@@ -1,4 +1,3 @@
-using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Methods;
 
 namespace RabbitMQ.Next.Transport.Methods.Registry

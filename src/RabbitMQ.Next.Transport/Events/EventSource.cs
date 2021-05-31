@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using RabbitMQ.Next.Abstractions;
+using RabbitMQ.Next.Abstractions.Events;
 
 namespace RabbitMQ.Next.Transport.Events
 {

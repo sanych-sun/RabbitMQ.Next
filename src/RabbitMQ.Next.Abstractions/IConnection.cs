@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions.Buffers;
 using RabbitMQ.Next.Abstractions.Channels;
+using RabbitMQ.Next.Abstractions.Events;
 
 namespace RabbitMQ.Next.Abstractions
 {

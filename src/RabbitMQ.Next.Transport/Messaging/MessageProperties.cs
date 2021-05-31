@@ -3,7 +3,6 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using RabbitMQ.Next.Abstractions.Messaging;
-using RabbitMQ.Next.Transport.Methods.Basic;
 
 namespace RabbitMQ.Next.Transport.Messaging
 {

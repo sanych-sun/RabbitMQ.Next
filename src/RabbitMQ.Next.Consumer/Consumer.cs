@@ -73,8 +73,7 @@ namespace RabbitMQ.Next.Consumer
 
         private async ValueTask CancelConsumeAsync(Exception ex = null)
         {
-            await this.channel.UseChannel(this.initializer, (ch, initializer) =>
-                initializer.CancelAsync(ch));
+            await this.channel.UseChannel(this.initializer, (ch, init) => init.CancelAsync(ch));
 
             if (this.acknowledger != null)
             {

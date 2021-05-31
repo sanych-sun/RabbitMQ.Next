@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Buffers;
 using RabbitMQ.Next.Abstractions.Channels;
+using RabbitMQ.Next.Abstractions.Events;
 using RabbitMQ.Next.Abstractions.Methods;
 using RabbitMQ.Next.Transport.Buffers;
 using RabbitMQ.Next.Transport.Channels;
@@ -60,7 +61,7 @@ namespace RabbitMQ.Next.Transport
             var connectionChannel = new Channel(this.channelPool, this.methodRegistry, this.frameSender, this.bufferPool, null);
 
             this.socketIoCancellation = new CancellationTokenSource();
-            Task.Run(() => this.ReceiveLoop(socketIoCancellation.Token));
+            Task.Run(() => this.ReceiveLoop(this.socketIoCancellation.Token));
 
 
             var negotiationResults = await connectionChannel.UseChannel(this.connectionString, async (ch, connection) =>
@@ -96,7 +97,7 @@ namespace RabbitMQ.Next.Transport
             this.connectionDetails.FrameMaxSize = (int) negotiationResults.MaxFrameSize;
 
             // start heartbeat
-            Task.Run(() => this.HeartbeatLoop(heartbeatIntervalMs, socketIoCancellation.Token));
+            Task.Run(() => this.HeartbeatLoop(heartbeatIntervalMs, this.socketIoCancellation.Token));
 
             await this.ChangeStateAsync(ConnectionState.Configuring);
             await this.ChangeStateAsync(ConnectionState.Open);
@@ -224,10 +225,6 @@ namespace RabbitMQ.Next.Transport
                 // todo: report to diagnostic source
 
                 this.CleanUpOnSocketClose();
-            }
-            catch (Exception)
-            {
-                var i = 0;
             }
         }
 
