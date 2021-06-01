@@ -97,5 +97,22 @@ namespace RabbitMQ.Next.Tests.Publisher
             
             Assert.Throws<ArgumentNullException>(() => ((IPublisherBuilder)builder).AddReturnedMessageHandler(null));
         }
+
+        [Fact]
+        public void ConfirmsDefault()
+        {
+            var builder = new PublisherBuilder();
+
+            Assert.False(builder.PublisherConfirms);
+        }
+
+        [Fact]
+        public void Confirms()
+        {
+            var builder = new PublisherBuilder();
+            ((IPublisherBuilder)builder).PublisherConfirms();
+
+            Assert.True(builder.PublisherConfirms);
+        }
     }
 }

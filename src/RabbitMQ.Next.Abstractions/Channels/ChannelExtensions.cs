@@ -21,10 +21,7 @@ namespace RabbitMQ.Next.Abstractions.Channels
         {
             return channel.UseChannel(
                 (request, cancellationToken),
-                (ch, state) =>
-                {
-                    return ch.SendAsync<TRequest, TResponse>(state.request, state.cancellationToken);
-                },
+                (ch, state) => ch.SendAsync<TRequest, TResponse>(state.request, state.cancellationToken),
                 cancellationToken);
         }
 

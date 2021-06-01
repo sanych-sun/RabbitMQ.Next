@@ -115,7 +115,7 @@ namespace RabbitMQ.Next.Transport
 
         public IEventSource<ConnectionState> StateChanged => this.stateChanged;
 
-        public async Task<IChannel> CreateChannelAsync(IEnumerable<IMethodHandler> handlers = null, CancellationToken cancellationToken = default)
+        public async Task<IChannel> CreateChannelAsync(IReadOnlyList<IMethodHandler> handlers = null, CancellationToken cancellationToken = default)
         {
             // TODO: validate state
 

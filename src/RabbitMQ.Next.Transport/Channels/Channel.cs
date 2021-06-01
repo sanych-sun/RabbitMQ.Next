@@ -26,7 +26,7 @@ namespace RabbitMQ.Next.Transport.Channels
 
         private readonly IReadOnlyList<IMethodHandler> methodHandlers;
 
-        public Channel(ChannelPool channelPool, IMethodRegistry methodRegistry, IFrameSender frameSender, IBufferPool bufferPool, IEnumerable<IMethodHandler> handlers)
+        public Channel(ChannelPool channelPool, IMethodRegistry methodRegistry, IFrameSender frameSender, IBufferPool bufferPool, IReadOnlyList<IMethodHandler> handlers)
         {
             this.channelPool = channelPool;
             this.registry = methodRegistry;

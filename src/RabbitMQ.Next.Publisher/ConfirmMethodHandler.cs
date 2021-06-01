@@ -49,7 +49,7 @@ namespace RabbitMQ.Next.Publisher
         {
             if (method is AckMethod ack)
             {
-                if (ack.Multiple || this.lastMultipleAckTag + 1 == ack.DeliveryTag)
+                if (ack.Multiple)
                 {
                     this.lastMultipleAckTag = ack.DeliveryTag;
                 }
@@ -57,6 +57,7 @@ namespace RabbitMQ.Next.Publisher
                 {
                     this.responses.TryAdd(ack.DeliveryTag, true);
                 }
+
                 this.confirmations.Set();
                 this.confirmations.Reset();
 
@@ -73,6 +74,7 @@ namespace RabbitMQ.Next.Publisher
                 {
                     this.responses.TryAdd(nack.DeliveryTag, false);
                 }
+
                 this.confirmations.Set();
                 this.confirmations.Reset();
 

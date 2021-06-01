@@ -8,12 +8,14 @@ using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Buffers;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
+using RabbitMQ.Next.Abstractions.Methods;
 using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Abstractions.Transformers;
 using RabbitMQ.Next.Publisher.Transformers;
 using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.Transport.Buffers;
 using RabbitMQ.Next.Transport.Methods.Basic;
+using RabbitMQ.Next.Transport.Methods.Confirm;
 using RabbitMQ.Next.Transport.Methods.Exchange;
 using Xunit;
 
@@ -31,6 +33,32 @@ namespace RabbitMQ.Next.Tests.Publisher
             await publisher.PublishAsync("test");
 
             await mock.sync.Received().SendAsync(new DeclareMethod("exchange"));
+        }
+
+        [Fact]
+        public async Task PublisherSetConfirmModeAsync()
+        {
+            var mock = this.Mock();
+
+            var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", true, this.MockSerializer(), null, null);
+
+            var publishTask = publisher.PublishAsync("test");
+            await mock.channel.EmulateMethodAsync(new AckMethod(1, false));
+            await publishTask;
+
+            await mock.sync.Received().SendAsync(Arg.Any<SelectMethod>());
+        }
+
+        [Fact]
+        public async Task PublisherDoesNotSetConfirmModeAsync()
+        {
+            var mock = this.Mock();
+
+            var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", false, this.MockSerializer(), null, null);
+
+            await publisher.PublishAsync("test");
+
+            await mock.sync.DidNotReceive().SendAsync( Arg.Any<SelectMethod>());
         }
 
         [Fact]
@@ -124,6 +152,59 @@ namespace RabbitMQ.Next.Tests.Publisher
             );
         }
 
+        [Fact]
+        public async Task PublishWaitForConfirmAck()
+        {
+            var mock = this.Mock();
+
+            var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", true, this.MockSerializer(), null, null);
+
+            var publishTask = publisher.PublishAsync("test");
+
+            await Task.Delay(10);
+            Assert.False(publishTask.IsCompleted);
+
+            mock.channel.EmulateMethodAsync(new AckMethod(1, false));
+
+            var ex = await Record.ExceptionAsync(async () => await publishTask);
+            Assert.Null(ex);
+        }
+
+        [Fact]
+        public async Task PublishWaitForConfirmNack()
+        {
+            var mock = this.Mock();
+
+            var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", true, this.MockSerializer(), null, null);
+
+            var publishTask = publisher.PublishAsync("test");
+
+            await Task.Delay(10);
+            Assert.False(publishTask.IsCompleted);
+
+            mock.channel.EmulateMethodAsync(new NackMethod(1, false, false));
+
+            var ex = await Record.ExceptionAsync(async () => await publishTask);
+            Assert.NotNull(ex);
+        }
+
+        [Fact]
+        public async Task CallReturnedMessageHandlers()
+        {
+            var mock = this.Mock();
+            var returnedMessagesHandler = Substitute.For<IReturnedMessageHandler>();
+            returnedMessagesHandler.TryHandleAsync(Arg.Any<ReturnedMessage>(), Arg.Any<IMessageProperties>(), Arg.Any<Content>())
+                .Returns(new ValueTask<bool>(true));
+
+            var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", false, this.MockSerializer(), null, new [] { returnedMessagesHandler } );
+            await publisher.PublishAsync("test");
+
+            var props = Substitute.For<IMessageProperties>();
+            await mock.channel.EmulateMethodAsync(new ReturnMethod("exchange", null, 301, "test"), props, ReadOnlySequence<byte>.Empty);
+
+            await returnedMessagesHandler.Received().TryHandleAsync(Arg.Any<ReturnedMessage>(), props, Arg.Any<Content>());
+        }
+
         public static IEnumerable<object[]> PublishTestCases()
         {
             yield return new object[]
@@ -180,14 +261,18 @@ namespace RabbitMQ.Next.Tests.Publisher
         private (IConnection connection, ChannelMock channel, ISynchronizedChannel sync) Mock()
         {
             var syncChannel = Substitute.For<ISynchronizedChannel>();
-            syncChannel.WaitAsync<DeclareOkMethod>().Returns(new DeclareOkMethod());
 
             var channel = new ChannelMock(syncChannel);
 
             var connection = Substitute.For<IConnection>();
             connection.BufferPool.Returns(new BufferPool(1024));
             connection.State.Returns(ConnectionState.Open);
-            connection.CreateChannelAsync(Arg.Any<IEnumerable<IMethodHandler>>()).Returns(Task.FromResult((IChannel)channel));
+            connection.CreateChannelAsync(Arg.Any<IReadOnlyList<IMethodHandler>>())
+                .Returns(args =>
+                {
+                    channel.SetHandlers(args.Arg<IReadOnlyList<IMethodHandler>>());
+                    return Task.FromResult((IChannel) channel);
+                });
 
             return (connection, channel, syncChannel);
         }
@@ -195,6 +280,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         public class ChannelMock : IChannel
         {
             private readonly ISynchronizedChannel channel;
+            private IReadOnlyList<IMethodHandler> handlers;
 
             public ChannelMock(ISynchronizedChannel channel)
             {
@@ -228,6 +314,22 @@ namespace RabbitMQ.Next.Tests.Publisher
             {
                 this.IsClosed = true;
                 return Task.CompletedTask;
+            }
+
+            public void SetHandlers(IReadOnlyList<IMethodHandler> handlers)
+            {
+                this.handlers = handlers;
+            }
+
+            public async Task EmulateMethodAsync(IIncomingMethod method, IMessageProperties properties = null, ReadOnlySequence<byte> content = default)
+            {
+                foreach (var handler in this.handlers)
+                {
+                    if (await handler.HandleAsync(method, properties, content))
+                    {
+                        return;
+                    }
+                }
             }
         }
     }

@@ -187,11 +187,16 @@ namespace RabbitMQ.Next.Publisher
                     }
 
                     this.channel = await this.connection.CreateChannelAsync(methodHandlers, cancellationToken);
-                    await this.channel.SendAsync<DeclareMethod, DeclareOkMethod>(new DeclareMethod(this.exchange));
-                    if (this.publisherConfirms)
-                    {
-                        await this.channel.SendAsync<SelectMethod, SelectOkMethod>(new SelectMethod(false));
-                    }
+                    await this.channel.UseChannel(
+                        (this.exchange, this.publisherConfirms),
+                        async (ch, state) =>
+                        {
+                            await ch.SendAsync<DeclareMethod, DeclareOkMethod>(new DeclareMethod(state.exchange));
+                            if (state.publisherConfirms)
+                            {
+                                await ch.SendAsync<SelectMethod, SelectOkMethod>(new SelectMethod(false));
+                            }
+                        });
                 }
 
                 return this.channel;
