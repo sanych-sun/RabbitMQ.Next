@@ -23,7 +23,7 @@ namespace RabbitMQ.Next.Transport
             this.completionSource?.TrySetResult(true);
         }
 
-        public ValueTask WaitAsync(CancellationToken cancellationToken = default)
+        public ValueTask<bool> WaitAsync(int milliseconds = -1, CancellationToken cancellation = default)
         {
             this.CheckDisposed();
 
@@ -37,12 +37,19 @@ namespace RabbitMQ.Next.Transport
                 return default;
             }
 
-            if (!cancellationToken.CanBeCanceled)
+            var innerTask = this.completionSource.Task;
+            if (milliseconds > 0)
             {
-                return new ValueTask(this.completionSource.Task);
+                var delayTask = Task.Delay(milliseconds, cancellation);
+                innerTask = Task.WhenAny(innerTask, delayTask)
+                    .ContinueWith(t => t != delayTask);
+            }
+            else if (cancellation.CanBeCanceled)
+            {
+                innerTask = innerTask.WithCancellation(cancellation);
             }
 
-            return new ValueTask(this.completionSource.Task.WithCancellation(cancellationToken));
+            return new ValueTask<bool>(innerTask);
         }
 
         public void Reset()

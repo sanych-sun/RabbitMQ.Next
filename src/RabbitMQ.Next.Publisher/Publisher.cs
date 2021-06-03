@@ -108,7 +108,7 @@ namespace RabbitMQ.Next.Publisher
 
                 if (this.confirms != null)
                 {
-                    var confirmed = await this.confirms.WaitForConfirmAsync(messageDeliveryTag);
+                    var confirmed = await this.confirms.WaitForConfirmAsync(messageDeliveryTag, cancellationToken);
                     if (!confirmed)
                     {
                         // todo: provide some useful info here
@@ -196,7 +196,7 @@ namespace RabbitMQ.Next.Publisher
                             {
                                 await ch.SendAsync<SelectMethod, SelectOkMethod>(new SelectMethod(false));
                             }
-                        });
+                        }, cancellationToken);
                 }
 
                 return this.channel;

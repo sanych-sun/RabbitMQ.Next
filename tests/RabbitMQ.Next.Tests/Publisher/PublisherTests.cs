@@ -205,6 +205,32 @@ namespace RabbitMQ.Next.Tests.Publisher
             await returnedMessagesHandler.Received().TryHandleAsync(Arg.Any<ReturnedMessage>(), props, Arg.Any<Content>());
         }
 
+        [Fact]
+        public async Task CallMultipleReturnedMessageHandlers()
+        {
+            var mock = this.Mock();
+            var returnedMessagesHandler1 = Substitute.For<IReturnedMessageHandler>();
+            returnedMessagesHandler1.TryHandleAsync(Arg.Any<ReturnedMessage>(), Arg.Any<IMessageProperties>(), Arg.Any<Content>())
+                .Returns(new ValueTask<bool>(false));
+            var returnedMessagesHandler2 = Substitute.For<IReturnedMessageHandler>();
+            returnedMessagesHandler2.TryHandleAsync(Arg.Any<ReturnedMessage>(), Arg.Any<IMessageProperties>(), Arg.Any<Content>())
+                .Returns(new ValueTask<bool>(true));
+            var returnedMessagesHandler3 = Substitute.For<IReturnedMessageHandler>();
+            returnedMessagesHandler3.TryHandleAsync(Arg.Any<ReturnedMessage>(), Arg.Any<IMessageProperties>(), Arg.Any<Content>())
+                .Returns(new ValueTask<bool>(true));
+
+            var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", false, this.MockSerializer(), null,
+                new [] { returnedMessagesHandler1, returnedMessagesHandler2, returnedMessagesHandler3 } );
+            await publisher.PublishAsync("test");
+
+            var props = Substitute.For<IMessageProperties>();
+            await mock.channel.EmulateMethodAsync(new ReturnMethod("exchange", null, 301, "test"), props, ReadOnlySequence<byte>.Empty);
+
+            await returnedMessagesHandler1.Received().TryHandleAsync(Arg.Any<ReturnedMessage>(), props, Arg.Any<Content>());
+            await returnedMessagesHandler2.Received().TryHandleAsync(Arg.Any<ReturnedMessage>(), props, Arg.Any<Content>());
+            await returnedMessagesHandler3.DidNotReceive().TryHandleAsync(Arg.Any<ReturnedMessage>(), props, Arg.Any<Content>());
+        }
+
         public static IEnumerable<object[]> PublishTestCases()
         {
             yield return new object[]

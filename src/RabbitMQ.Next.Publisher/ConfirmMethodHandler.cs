@@ -1,5 +1,6 @@
 using System.Buffers;
 using System.Collections.Concurrent;
+using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
@@ -22,9 +23,9 @@ namespace RabbitMQ.Next.Publisher
             this.responses = new ConcurrentDictionary<ulong, bool>();
         }
 
-        public async ValueTask<bool> WaitForConfirmAsync(ulong deliveryTag)
+        public async ValueTask<bool> WaitForConfirmAsync(ulong deliveryTag, CancellationToken cancellation = default)
         {
-            while(true)
+            while (!cancellation.IsCancellationRequested)
             {
                 if (this.responses.TryRemove(deliveryTag, out var confirmed))
                 {
@@ -41,8 +42,10 @@ namespace RabbitMQ.Next.Publisher
                     return false;
                 }
 
-                await this.confirmations.WaitAsync();
+                await this.confirmations.WaitAsync(100, cancellation);
             }
+
+            throw new TaskCanceledException();
         }
 
         ValueTask<bool> IMethodHandler.HandleAsync(IIncomingMethod method, IMessageProperties properties, ReadOnlySequence<byte> contentBytes)
