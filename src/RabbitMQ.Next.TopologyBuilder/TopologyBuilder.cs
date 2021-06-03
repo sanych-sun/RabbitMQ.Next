@@ -70,7 +70,7 @@ namespace RabbitMQ.Next.TopologyBuilder
         {
             if (this.Connection.State != ConnectionState.Open)
             {
-                throw new InvalidOperationException("Connection should be in Open state to use the API");
+                throw new InvalidOperationException("Connection should be in Open state to use the TopologyBuilder");
             }
 
             await this.sync.WaitAsync();

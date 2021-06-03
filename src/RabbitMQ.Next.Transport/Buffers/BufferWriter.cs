@@ -120,15 +120,8 @@ namespace RabbitMQ.Next.Transport.Buffers
 
             if (this.buffer != null)
             {
-                if (this.offset == 0)
-                {
-                    this.manager.Release(this.buffer);
-                }
-                else
-                {
-                    this.chunks ??= new List<ArraySegment<byte>>();
-                    this.chunks.Add(new ArraySegment<byte>(this.buffer, 0, this.offset));
-                }
+                this.chunks ??= new List<ArraySegment<byte>>();
+                this.chunks.Add(new ArraySegment<byte>(this.buffer, 0, this.offset));
             }
 
             this.buffer = this.manager.Rent(requestedSize);

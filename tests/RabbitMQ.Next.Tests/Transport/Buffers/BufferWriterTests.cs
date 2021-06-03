@@ -151,7 +151,7 @@ namespace RabbitMQ.Next.Tests.Transport.Buffers
             var bufferManager = Substitute.For<IBufferManager>();
             bufferManager.Rent(Arg.Any<int>()).Returns(x =>
             {
-                var requestedSize = (int) x[0];
+                var requestedSize = x.Arg<int>();
                 return (requestedSize < bufferSize) ? new byte[bufferSize] : new byte[requestedSize];
             });
 

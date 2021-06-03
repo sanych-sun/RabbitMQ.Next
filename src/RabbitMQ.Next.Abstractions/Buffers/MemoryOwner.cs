@@ -17,8 +17,8 @@ namespace RabbitMQ.Next.Abstractions.Buffers
             }
 
             this.manager = manager;
-            this.size = size;
-            this.memory = size == 0 ? Array.Empty<byte>() : this.manager.Rent(size);
+            this.memory = this.manager.Rent(size);
+            this.size = size == 0 ? this.memory.Length : size;
         }
 
         public void Dispose()

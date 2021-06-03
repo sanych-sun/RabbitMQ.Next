@@ -291,7 +291,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             var channel = new ChannelMock(syncChannel);
 
             var connection = Substitute.For<IConnection>();
-            connection.BufferPool.Returns(new BufferPool(1024));
+            connection.BufferPool.Returns(new BufferPool(new BufferManager(1024)));
             connection.State.Returns(ConnectionState.Open);
             connection.CreateChannelAsync(Arg.Any<IReadOnlyList<IMethodHandler>>())
                 .Returns(args =>

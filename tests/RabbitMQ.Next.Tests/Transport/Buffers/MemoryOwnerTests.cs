@@ -7,29 +7,16 @@ namespace RabbitMQ.Next.Tests.Transport.Buffers
 {
     public class MemoryOwnerTests
     {
-        [Fact]
-        public void MemoryRentsBuffer()
-        {
-            var bufferManager = Substitute.For<IBufferManager>();
-            bufferManager.Rent(Arg.Any<int>()).Returns(new byte[10]);
-
-            var memoryOwner = new MemoryOwner(bufferManager, 10);
-            var memory = memoryOwner.Memory;
-
-            bufferManager.Received().Rent(10);
-            Assert.Equal(10, memory.Length);
-        }
-
-        [Fact]
-        public void EmptySizeDoesNotRentBuffer()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(10)]
+        public void MemoryRentsBuffer(int size)
         {
             var bufferManager = Substitute.For<IBufferManager>();
 
-            var memoryOwner = new MemoryOwner(bufferManager, 0);
-            var memory = memoryOwner.Memory;
+            new MemoryOwner(bufferManager, size);
 
-            bufferManager.DidNotReceive().Rent(Arg.Any<int>());
-            Assert.Equal(0, memory.Length);
+            bufferManager.Received().Rent(size);
         }
 
         [Fact]

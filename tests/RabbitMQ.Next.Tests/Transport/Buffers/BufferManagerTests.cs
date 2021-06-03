@@ -31,17 +31,18 @@ namespace RabbitMQ.Next.Tests.Transport.Buffers
         }
 
         [Theory]
-        [InlineData(1)]
-        [InlineData(10)]
-        [InlineData(ProtocolConstants.FrameMinSize)]
-        [InlineData(131072)]
-        public void RentReturnsBufferCorrectSize(int bufferSize)
+        [InlineData(100, 0, 100)]
+        [InlineData(100, 10, 100)]
+        [InlineData(100, 200, 200)]
+        [InlineData(100, ProtocolConstants.FrameMinSize, ProtocolConstants.FrameMinSize)]
+        [InlineData(ProtocolConstants.FrameMinSize, 100, ProtocolConstants.FrameMinSize)]
+        public void RentReturnsBufferCorrectSize(int bufferSize, int requestedSize, int expectedSize)
         {
             var bufferManager = new BufferManager(bufferSize);
 
-            var buffer = bufferManager.Rent();
+            var buffer = bufferManager.Rent(requestedSize);
 
-            Assert.Equal(bufferSize, buffer.Length);
+            Assert.Equal(expectedSize, buffer.Length);
         }
 
         [Theory]
