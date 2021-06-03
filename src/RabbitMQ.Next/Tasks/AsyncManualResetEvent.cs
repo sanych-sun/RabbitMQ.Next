@@ -1,7 +1,6 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using RabbitMQ.Next.Transport;
 
 namespace RabbitMQ.Next.Tasks
 {
@@ -24,28 +23,31 @@ namespace RabbitMQ.Next.Tasks
             this.completionSource?.TrySetResult(true);
         }
 
-        public ValueTask<bool> WaitAsync(int milliseconds = -1, CancellationToken cancellation = default)
+        public ValueTask<bool> WaitAsync(int milliseconds = 0, CancellationToken cancellation = default)
         {
             this.CheckDisposed();
 
             if (this.completionSource == null)
             {
-                return default;
+                return new ValueTask<bool>(true);
             }
 
             if (this.completionSource.Task.IsCompleted)
             {
-                return default;
+                return new ValueTask<bool>(true);
             }
 
             var innerTask = this.completionSource.Task;
+
+
             if (milliseconds > 0)
             {
-                var delayTask = Task.Delay(milliseconds, cancellation);
+                var delayTask = Task.Delay(milliseconds);
                 innerTask = Task.WhenAny(innerTask, delayTask)
-                    .ContinueWith(t => t != delayTask);
+                    .ContinueWith(t => t.Result != delayTask);
             }
-            else if (cancellation.CanBeCanceled)
+
+            if (cancellation.CanBeCanceled)
             {
                 innerTask = innerTask.WithCancellation(cancellation);
             }

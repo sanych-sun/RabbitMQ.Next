@@ -5,23 +5,33 @@ namespace RabbitMQ.Next.Tasks
 {
     public static class TaskExtensions
     {
-        public static async Task WithCancellation(this Task task, CancellationToken token)
+        public static Task<TResult> WithCancellation<TResult>(this Task<TResult> task, CancellationToken token)
         {
-            var cancellationSource = new TaskCompletionSource<bool>();
-            await using var registration = token.Register(tcs => ((TaskCompletionSource<bool>)tcs).TrySetCanceled(), cancellationSource);
+            if (task.IsCompleted)
+            {
+                return task;
+            }
 
-            await Task.WhenAny(task, cancellationSource.Task);
-            token.ThrowIfCancellationRequested();
+            if (!token.CanBeCanceled)
+            {
+                return task;
+            }
+
+            return task.WrapTask(token);
         }
 
-        public static async Task<TResult> WithCancellation<TResult>(this Task<TResult> task, CancellationToken token)
+        private static async Task<TResult> WrapTask<TResult>(this Task<TResult> task, CancellationToken token)
         {
             var cancellationSource = new TaskCompletionSource<bool>();
             await using var registration = token.Register(tcs => ((TaskCompletionSource<bool>)tcs).TrySetCanceled(), cancellationSource);
 
             await Task.WhenAny(task, cancellationSource.Task);
 
-            token.ThrowIfCancellationRequested();
+            if (token.IsCancellationRequested)
+            {
+                throw new TaskCanceledException();
+            }
+
             return await task;
         }
     }
