@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using RabbitMQ.Next.Transport.Buffers;
+using RabbitMQ.Next.Buffers;
 
 namespace RabbitMQ.Next.Tests
 {

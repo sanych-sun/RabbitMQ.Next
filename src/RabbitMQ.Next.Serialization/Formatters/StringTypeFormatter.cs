@@ -1,9 +1,9 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.Transport;
-using RabbitMQ.Next.Transport.Buffers;
 
 namespace RabbitMQ.Next.Serialization.Formatters
 {

@@ -12,7 +12,7 @@
 // using RabbitMQ.Next.Publisher.Transformers;
 // using RabbitMQ.Next.Serialization.Abstractions;
 // using RabbitMQ.Next.Serialization.Formatters;
-// using RabbitMQ.Next.Transport;
+// using RabbitMQ.Next;
 // using Xunit;
 // using Xunit.Abstractions;
 //

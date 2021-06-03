@@ -9,11 +9,11 @@ using RabbitMQ.Next.Abstractions.Buffers;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Abstractions.Methods;
+using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Abstractions.Transformers;
 using RabbitMQ.Next.Publisher.Transformers;
 using RabbitMQ.Next.Serialization.Abstractions;
-using RabbitMQ.Next.Transport.Buffers;
 using RabbitMQ.Next.Transport.Methods.Basic;
 using RabbitMQ.Next.Transport.Methods.Confirm;
 using RabbitMQ.Next.Transport.Methods.Exchange;
@@ -164,7 +164,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             await Task.Delay(10);
             Assert.False(publishTask.IsCompleted);
 
-            mock.channel.EmulateMethodAsync(new AckMethod(1, false));
+            await mock.channel.EmulateMethodAsync(new AckMethod(1, false));
 
             var ex = await Record.ExceptionAsync(async () => await publishTask);
             Assert.Null(ex);
@@ -182,7 +182,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             await Task.Delay(10);
             Assert.False(publishTask.IsCompleted);
 
-            mock.channel.EmulateMethodAsync(new NackMethod(1, false, false));
+            await mock.channel.EmulateMethodAsync(new NackMethod(1, false, false));
 
             var ex = await Record.ExceptionAsync(async () => await publishTask);
             Assert.NotNull(ex);

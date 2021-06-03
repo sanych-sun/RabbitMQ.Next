@@ -7,7 +7,7 @@
   <ItemGroup>
     <ProjectReference Include="..\RabbitMQ.Next.Consumer.Abstractions\RabbitMQ.Next.Consumer.Abstractions.csproj" />
     <ProjectReference Include="..\RabbitMQ.Next.Serialization\RabbitMQ.Next.Serialization.csproj" />
-    <ProjectReference Include="..\RabbitMQ.Next.Transport\RabbitMQ.Next.Transport.csproj" />
+    <ProjectReference Include="..\RabbitMQ.Next\RabbitMQ.Next.csproj" />
   </ItemGroup>
 
 </Project>

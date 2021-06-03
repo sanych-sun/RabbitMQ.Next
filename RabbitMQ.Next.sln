@@ -2,7 +2,7 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{C895EE24-13DF-45C3-AF1D-B6B6EE4A10A9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMQ.Next.Transport", "src\RabbitMQ.Next.Transport\RabbitMQ.Next.Transport.csproj", "{AB00A6F3-C3E0-4E61-B302-F9CF0288819E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMQ.Next", "src\RabbitMQ.Next\RabbitMQ.Next.csproj", "{AB00A6F3-C3E0-4E61-B302-F9CF0288819E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{B0A5F08B-AC73-4D1C-BB59-983C7363E986}"
 EndProject

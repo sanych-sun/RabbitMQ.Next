@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Abstractions.Methods;
+using RabbitMQ.Next.Tasks;
 using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Methods.Basic;
 

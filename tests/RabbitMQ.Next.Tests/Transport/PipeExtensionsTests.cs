@@ -3,6 +3,7 @@ using System.Buffers;
 using System.IO.Pipelines;
 using System.Threading;
 using System.Threading.Tasks;
+using RabbitMQ.Next.Channels;
 using RabbitMQ.Next.Transport;
 using Xunit;
 
