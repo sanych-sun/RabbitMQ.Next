@@ -61,5 +61,7 @@ namespace RabbitMQ.Next.Channels
         public static ValueTask<TResult> ReadAsync<TResult>(this PipeReader reader, uint length, Func<ReadOnlySequence<byte>, TResult> parser, CancellationToken cancellation = default)
             => reader.ReadAsync(length, parser, (state, sequence) => state(sequence), cancellation);
 
+        public static ValueTask<TResult> ReadAsync<TResult>(this PipeReader reader, uint length, Func<ReadOnlySequence<byte>, ValueTask<TResult>> parser, CancellationToken cancellation = default)
+            => reader.ReadAsync(length, parser, (state, sequence) => state(sequence), cancellation);
     }
 }

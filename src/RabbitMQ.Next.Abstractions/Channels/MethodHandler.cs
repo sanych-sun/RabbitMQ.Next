@@ -1,11 +1,10 @@
 using System;
 using System.Buffers;
 using System.Threading.Tasks;
-using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Abstractions.Methods;
 
-namespace RabbitMQ.Next.Channels
+namespace RabbitMQ.Next.Abstractions.Channels
 {
     public class MethodHandler<TMethod> : IMethodHandler
         where TMethod : IIncomingMethod

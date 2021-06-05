@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 
 namespace RabbitMQ.Next.Transport
 {
-    public static class BitConverter
+    internal static class BitConverter
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static byte ComposeFlags(

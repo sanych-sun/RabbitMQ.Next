@@ -1,6 +1,6 @@
 namespace RabbitMQ.Next.Transport
 {
-    public enum FrameType : byte
+    internal enum FrameType : byte
     {
         Malformed = 0,
         Method = 1,

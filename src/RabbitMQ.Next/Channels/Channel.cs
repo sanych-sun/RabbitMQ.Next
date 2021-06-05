@@ -227,7 +227,7 @@ namespace RabbitMQ.Next.Channels
             {
                 if (!content.IsEmpty)
                 {
-                    content = content.Read(out int headerSize);
+                    content = content.Read(out uint headerSize);
                     properties = new MessageProperties(content.Slice(0, headerSize));
                     contentBody = content.Slice(headerSize);
                 }

@@ -1,7 +1,6 @@
 // using System;
 // using System.Buffers;
 // using System.Diagnostics;
-// using System.Linq;
 // using System.Threading;
 // using System.Threading.Tasks;
 // using RabbitMQ.Next.Consumer;
@@ -12,7 +11,6 @@
 // using RabbitMQ.Next.Publisher.Transformers;
 // using RabbitMQ.Next.Serialization.Abstractions;
 // using RabbitMQ.Next.Serialization.Formatters;
-// using RabbitMQ.Next;
 // using Xunit;
 // using Xunit.Abstractions;
 //
@@ -85,7 +83,7 @@
 //                     })
 //             );
 //
-//             var cancellation = new CancellationTokenSource(TimeSpan.FromMinutes(10));
+//             var cancellation = new CancellationTokenSource(TimeSpan.FromMinutes(1));
 //
 //             await consumer.ConsumeAsync(cancellation.Token);
 //
