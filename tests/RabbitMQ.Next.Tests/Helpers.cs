@@ -44,33 +44,31 @@ namespace RabbitMQ.Next.Tests
         public static IEnumerable<(string Charset, string Text, ReadOnlyMemory<byte> Bytes)> GetDummyTexts(int minBytes, int maxBytes = 0)
             => Texts.Where(i => i.Bytes.Length >= minBytes).Where(i => maxBytes == 0 || i.Bytes.Length <= maxBytes);
 
-        public static ReadOnlySequence<byte> MakeSequence(ReadOnlyMemory<byte> content, params int[] parts)
+        public static ReadOnlySequence<byte> MakeSequence(params byte[][] parts)
         {
             if (parts.Length == 0)
             {
-                return new ReadOnlySequence<byte>(content);
+                return ReadOnlySequence<byte>.Empty;
+            }
+
+            if (parts.Length == 1)
+            {
+                return new ReadOnlySequence<byte>(parts[0]);
             }
 
             MemorySegment<byte> first = null;
             MemorySegment<byte> last = null;
             foreach (var part in parts)
             {
-                var chunk = content.Slice(0, part);
                 if (first == null)
                 {
-                    first = new MemorySegment<byte>(chunk);
+                    first = new MemorySegment<byte>(part);
                     last = first;
                 }
                 else
                 {
-                    last = last.Append(chunk);
+                    last = last.Append(part);
                 }
-                content = content.Slice(part);
-            }
-
-            if (content.Length > 0)
-            {
-                last = last.Append(content);
             }
 
             return new ReadOnlySequence<byte>(first, 0, last, last.Memory.Length);

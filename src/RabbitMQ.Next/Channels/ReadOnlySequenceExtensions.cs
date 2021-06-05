@@ -8,7 +8,7 @@ namespace RabbitMQ.Next.Channels
     {
         public static ReadOnlySequence<byte> Read(this ReadOnlySequence<byte> payload, out uint data)
         {
-            if (payload.FirstSpan.Length > sizeof(uint))
+            if (payload.FirstSpan.Length >= sizeof(uint))
             {
                 payload.FirstSpan.Read(out data);
             }

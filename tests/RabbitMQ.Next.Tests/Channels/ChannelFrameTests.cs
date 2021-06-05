@@ -1,3 +1,4 @@
+using System;
 using System.Buffers;
 using RabbitMQ.Next.Channels;
 using Xunit;
@@ -21,14 +22,14 @@ namespace RabbitMQ.Next.Tests.Channels
 
         [Theory]
         [InlineData(ChannelFrameType.Unknown, 0, new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00 })]
-        [InlineData(ChannelFrameType.Unknown, 0, new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00 }, 3)]
+        [InlineData(ChannelFrameType.Unknown, 0, new byte[] { 0x00, 0x00, 0x00 }, new byte[] { 0x00, 0x00 })]
         [InlineData(ChannelFrameType.Method, 321, new byte[] { 0x01, 0x00, 0x00, 0x01, 0x41 })]
-        [InlineData(ChannelFrameType.Method, 321, new byte[] { 0x01, 0x00, 0x00, 0x01, 0x41 }, 2)]
+        [InlineData(ChannelFrameType.Method, 321, new byte[] { 0x01, 0x00}, new byte[] { 0x00, 0x01, 0x41 })]
         [InlineData(ChannelFrameType.Content, 42521, new byte[] { 0x02, 0x00, 0x00, 0xA6, 0x19 })]
-        [InlineData(ChannelFrameType.Content, 42521, new byte[] { 0x02, 0x00, 0x00, 0xA6, 0x19 }, 4)]
-        internal void ReadHeaderTests(ChannelFrameType type, uint size, byte[] bytes, params int[] parts)
+        [InlineData(ChannelFrameType.Content, 42521, new byte[] { 0x02, 0x00, 0x00, 0xA6}, new byte[] { 0x19 })]
+        internal void ReadHeaderTests(ChannelFrameType type, uint size, params byte[][] bytes)
         {
-            var buffer = Helpers.MakeSequence(bytes, parts);
+            var buffer = Helpers.MakeSequence(bytes);
 
             var header = ChannelFrame.ReadHeader(buffer);
 

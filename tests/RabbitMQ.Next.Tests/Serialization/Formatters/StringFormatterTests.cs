@@ -22,10 +22,10 @@ namespace RabbitMQ.Next.Tests.Serialization.Formatters
 
         [Theory]
         [MemberData(nameof(ParseTestCases))]
-        public void CanParse(string expected, ReadOnlyMemory<byte> content, params int[] parts)
+        public void CanParse(string expected, params byte[][] parts)
         {
             var formatter = new StringTypeFormatter();
-            var sequence = Helpers.MakeSequence(content, parts);
+            var sequence = Helpers.MakeSequence(parts);
 
             var result = formatter.Parse<string>(sequence);
 
@@ -82,10 +82,10 @@ namespace RabbitMQ.Next.Tests.Serialization.Formatters
 
             foreach (var text in texts)
             {
-                yield return new object[] { text.Text, text.Bytes };
+                yield return new object[] { text.Text, text.Bytes.ToArray() };
                 if (text.Bytes.Length > 50)
                 {
-                    yield return new object[] { text.Text, text.Bytes, 50 };
+                    yield return new object[] { text.Text, text.Bytes.Slice(0, 50).ToArray(), text.Bytes.Slice(50).ToArray() };
                 }
             }
         }
