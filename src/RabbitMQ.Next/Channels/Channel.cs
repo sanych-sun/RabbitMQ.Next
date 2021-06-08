@@ -40,7 +40,7 @@ namespace RabbitMQ.Next.Channels
             this.Writer =  pipe.Writer;
             this.senderSync = new SemaphoreSlim(1,1);
 
-            var waitFrameHandler = new WaitMethodHandler(methodRegistry, this);
+            var waitFrameHandler = new WaitMethodHandler(methodRegistry);
             this.methodHandlers = new List<IMethodHandler>(handlers) { waitFrameHandler };
             this.ChannelNumber = channelPool.Register(this);
             this.syncChannel = new SynchronizedChannel(this.ChannelNumber, frameSender, waitFrameHandler);
@@ -66,6 +66,10 @@ namespace RabbitMQ.Next.Channels
             }
 
             this.Writer.Complete();
+            for (var i = 0; i < this.methodHandlers.Count; i++)
+            {
+                this.methodHandlers[i].Dispose();
+            }
         }
 
         public async Task UseChannel(Func<ISynchronizedChannel, Task> fn, CancellationToken cancellation = default)

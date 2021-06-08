@@ -6,7 +6,7 @@ using RabbitMQ.Next.Abstractions.Methods;
 
 namespace RabbitMQ.Next.Abstractions.Channels
 {
-    public class MethodHandler<TMethod> : IMethodHandler
+    public class MethodHandler<TMethod> : IMethodHandler, IDisposable
         where TMethod : IIncomingMethod
     {
         private readonly Func<TMethod, IMessageProperties, ReadOnlySequence<byte>, ValueTask<bool>> handler;
@@ -14,6 +14,10 @@ namespace RabbitMQ.Next.Abstractions.Channels
         public MethodHandler(Func<TMethod, IMessageProperties, ReadOnlySequence<byte>, ValueTask<bool>> handler)
         {
             this.handler = handler;
+        }
+
+        public void Dispose()
+        {
         }
 
         public ValueTask<bool> HandleAsync(IIncomingMethod method, IMessageProperties properties, ReadOnlySequence<byte> contentBytes)

@@ -16,25 +16,28 @@ namespace RabbitMQ.Next.Channels
         private MethodId expectedMethodId;
         private TaskCompletionSource<IIncomingMethod> waitingTask;
 
-        public WaitMethodHandler(IMethodRegistry registry, IChannelInternal channel)
+        public WaitMethodHandler(IMethodRegistry registry)
         {
             this.registry = registry;
             this.cancellationHandler = () =>
             {
                 this.waitingTask?.SetCanceled();
             };
-            channel.Completion.ContinueWith(t =>
-            {
-                Exception ex = t.Exception?.InnerException;
-                ex ??= new InvalidOperationException();
-                this.waitingTask?.SetException(ex);
-            });
+        }
+
+        public void Dispose()
+        {
+            this.waitingTask?.SetCanceled();
         }
 
         public Task<IIncomingMethod> WaitAsync<TMethod>(CancellationToken cancellation = default)
             where TMethod : struct, IIncomingMethod
         {
-            // todo: validate state, should probably throw if in wait state already
+            if (this.expectedMethodId != 0)
+            {
+                throw new InvalidOperationException("Cannot enter wait state: already in wait state.");
+            }
+
             var methodId = this.registry.GetMethodId<TMethod>();
             this.waitingTask = new TaskCompletionSource<IIncomingMethod>();
             this.expectedMethodId = methodId;
@@ -48,17 +51,12 @@ namespace RabbitMQ.Next.Channels
 
         ValueTask<bool> IMethodHandler.HandleAsync(IIncomingMethod method, IMessageProperties properties, ReadOnlySequence<byte> contentBytes)
         {
-            if (this.waitingTask == null)
-            {
-                return new ValueTask<bool>(false);
-            }
-
-            var task = this.waitingTask;
             if (method.MethodId != this.expectedMethodId)
             {
                 return new ValueTask<bool>(false);
             }
 
+            var task = this.waitingTask;
             this.waitingTask = null;
             this.expectedMethodId = 0;
             task.SetResult(method);
