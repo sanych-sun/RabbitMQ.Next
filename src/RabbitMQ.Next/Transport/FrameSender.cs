@@ -32,7 +32,7 @@ namespace RabbitMQ.Next.Transport
         public int FrameMaxSize { get; set; }
 
         public ValueTask SendHeartBeatAsync()
-            => this.socket.SendAsync((0), async (sender, _) =>
+            => this.socket.SendAsync(0, async (sender, _) =>
             {
                 await sender(HeartbeatFrame);
                 await sender(FrameEndPayload);

@@ -1,4 +1,3 @@
-using System;
 using System.Buffers;
 using System.Threading;
 using System.Threading.Tasks;
@@ -30,7 +29,7 @@ namespace RabbitMQ.Next.Channels
             where TMethod : struct, IOutgoingMethod
         {
             await this.frameSender.SendMethodAsync(this.channelNumber, request);
-            await this.frameSender.SendContentHeaderAsync(this.channelNumber,properties, (ulong) content.Length);
+            await this.frameSender.SendContentHeaderAsync(this.channelNumber, properties, (ulong)content.Length);
             if (!content.IsEmpty)
             {
                 await this.frameSender.SendContentAsync(this.channelNumber, content);

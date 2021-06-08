@@ -33,7 +33,7 @@ namespace RabbitMQ.Next
         private readonly ConnectionDetails connectionDetails = new ConnectionDetails();
 
         private ISocket socket;
-        private IFrameSender frameSender;
+        private FrameSender frameSender;
         private CancellationTokenSource socketIoCancellation;
 
         public Connection(
@@ -99,6 +99,7 @@ namespace RabbitMQ.Next
 
             var heartbeatIntervalMs = negotiationResults.HeartbeatInterval * 1000;
             this.bufferManager.SetBufferSize((int)negotiationResults.MaxFrameSize);
+            this.frameSender.FrameMaxSize = (int) negotiationResults.MaxFrameSize;
 
             this.connectionDetails.HeartbeatInterval = negotiationResults.HeartbeatInterval;
             this.connectionDetails.FrameMaxSize = (int) negotiationResults.MaxFrameSize;
