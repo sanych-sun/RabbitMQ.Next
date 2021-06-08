@@ -9,7 +9,7 @@ namespace RabbitMQ.Next.Abstractions
 
         IConnectionBuilder VirtualHost(string vhost);
 
-        IConnectionBuilder AddEndpoint(Endpoint endpoint);
+        IConnectionBuilder AddEndpoint(string host, int port, bool useSsl = false);
 
         IConnectionBuilder ConfigureMethodRegistry(Action<IMethodRegistryBuilder> builder);
 

@@ -7,6 +7,7 @@ using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Buffers;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Events;
+using RabbitMQ.Next.Abstractions.Exceptions;
 using RabbitMQ.Next.Abstractions.Methods;
 using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Channels;
@@ -63,7 +64,7 @@ namespace RabbitMQ.Next
             // TODO: adopt authentication_failure_close capability to handle auth errors
 
             await this.ChangeStateAsync(ConnectionState.Connecting);
-            this.socket = await EndpointResolver.OpenSocketAsync(this.endpoints);
+            this.socket = await OpenSocketAsync(this.endpoints);
             this.frameSender = new FrameSender(this.socket, this.methodRegistry, this.BufferPool);
 
             await this.ChangeStateAsync(ConnectionState.Negotiating);
@@ -151,6 +152,27 @@ namespace RabbitMQ.Next
 
             this.State = newState;
             await this.stateChanged.InvokeAsync(newState);
+        }
+
+        private static async Task<ISocket> OpenSocketAsync(IReadOnlyList<Endpoint> endpoints)
+        {
+            List<Exception> exceptions = null;
+
+            foreach (var endpoint in endpoints)
+            {
+                try
+                {
+                    return await EndpointResolver.OpenSocketAsync(endpoint);
+                }
+                catch (Exception e)
+                {
+                    // todo: report exception to diagnostic source
+                    exceptions ??= new List<Exception>();
+                    exceptions.Add(new EndPointResolutionException(endpoint.ToUri(), e));
+                }
+            }
+
+            throw new AggregateException("Cannot establish connection RabbitMQ cluster. See inner exceptions for more details.", exceptions);
         }
 
         private async Task SendProtocolHeaderAsync()

@@ -33,7 +33,7 @@ namespace RabbitMQ.Next
             var parsed = uri.ParseAmqpUri();
 
             IConnectionBuilder builder = new ConnectionBuilder();
-            builder.AddEndpoint(parsed.endpoint);
+            builder.AddEndpoint(parsed.host, parsed.port, parsed.ssl);
             builder.VirtualHost(parsed.vhost);
             if (parsed.authMechanism != null)
             {
@@ -55,9 +55,9 @@ namespace RabbitMQ.Next
             return this;
         }
 
-        IConnectionBuilder IConnectionBuilder.AddEndpoint(Endpoint endpoint)
+        IConnectionBuilder IConnectionBuilder.AddEndpoint(string host, int port, bool useSsl = false)
         {
-            this.endpoints.Add(endpoint);
+            this.endpoints.Add(new Endpoint(host, port, useSsl));
             return this;
         }
 

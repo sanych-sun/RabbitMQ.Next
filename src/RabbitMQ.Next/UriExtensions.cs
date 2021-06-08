@@ -12,7 +12,10 @@ namespace RabbitMQ.Next
         private const int DefaultPort = 5672;
         private const int SslDefaultPort = 5671;
 
-        public static (Endpoint endpoint, string vhost, IAuthMechanism authMechanism) ParseAmqpUri(this Uri uri)
+        public static Uri ToUri(this Endpoint endpoint)
+            => new Uri($"amqp{(endpoint.UseSsl ? "s" : "")}://{endpoint.Host}:{endpoint.Port}");
+
+        public static (string host, int port, bool ssl, string vhost, IAuthMechanism authMechanism) ParseAmqpUri(this Uri uri)
         {
             if (uri.Scheme != DefaultSchemaName && uri.Scheme != SslSchemaName)
             {
@@ -26,7 +29,6 @@ namespace RabbitMQ.Next
                 port = ssl ? SslDefaultPort : DefaultPort;
             }
 
-            var endpoint = new Endpoint(uri.Host, port, ssl);
             var vhost = uri.GetComponents(UriComponents.Path, UriFormat.Unescaped);
             if (string.IsNullOrEmpty(vhost))
             {
@@ -54,7 +56,7 @@ namespace RabbitMQ.Next
                 authMechanism = new PlainAuthMechanism(user, password);
             }
 
-            return (endpoint, vhost, authMechanism);
+            return (uri.Host, port, ssl, vhost, authMechanism);
         }
     }
 }

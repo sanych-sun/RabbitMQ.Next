@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Auth;
 using RabbitMQ.Next.Transport;
 using Xunit;
@@ -25,11 +24,13 @@ namespace RabbitMQ.Next.Tests
 
         [Theory]
         [MemberData(nameof(CreateTestCases))]
-        public void Create(Uri uri, Endpoint endpoint, string vhost, PlainAuthMechanism authMechanism)
+        public void Create(Uri uri, string host, int port, bool ssl, string vhost, PlainAuthMechanism authMechanism)
         {
             var parsed = uri.ParseAmqpUri();
 
-            Assert.Equal(endpoint, parsed.endpoint);
+            Assert.Equal(host, parsed.host);
+            Assert.Equal(port, parsed.port);
+            Assert.Equal(ssl, parsed.ssl);
             Assert.Equal(vhost, parsed.vhost);
             if (authMechanism != null && parsed.authMechanism != null)
             {
@@ -44,54 +45,66 @@ namespace RabbitMQ.Next.Tests
             Assert.Throws<NotSupportedException>(() => new Uri("http://rabbitmq.com").ParseAmqpUri());
         }
 
+        [Theory]
+        [InlineData("localhost", 12345, false, "amqp://localhost:12345")]
+        [InlineData("localhost", 1122, true, "amqps://localhost:1122")]
+        public void ToUriTests(string host, int port, bool ssl, string expected)
+        {
+            var endpoint = new Endpoint(host, port, ssl);
+
+            var result = endpoint.ToUri();
+
+            Assert.Equal(new Uri(expected), result);
+        }
+
         public static IEnumerable<object[]> CreateTestCases()
         {
             yield return new object[]
             {
                 new Uri("amqp://user:pass@host:10000/vhost"),
-                new Endpoint("host", 10000, false), "vhost", new PlainAuthMechanism("user", "pass")
+                "host", 10000, false, "vhost", new PlainAuthMechanism("user", "pass")
             };
 
             yield return new object[]
             {
                 new Uri("amqp://user@localhost"),
-                new Endpoint("localhost", 5672, false), ProtocolConstants.DefaultVHost, new PlainAuthMechanism("user", "")
+                "localhost", 5672, false, ProtocolConstants.DefaultVHost, new PlainAuthMechanism("user", "")
             };
 
             yield return new object[]
             {
                 new Uri("amqp://localhost"),
-                new Endpoint("localhost", 5672, false), ProtocolConstants.DefaultVHost, null
+                "localhost", 5672, false, ProtocolConstants.DefaultVHost, null
             };
 
             yield return new object[]
             {
                 new Uri("amqp://[::1]"),
-                new Endpoint("[::1]", 5672, false), ProtocolConstants.DefaultVHost, null
+                "[::1]", 5672, false, ProtocolConstants.DefaultVHost, null
             };
 
             yield return new object[]
             {
                 new Uri("amqps://user:pass@host:10000/vhost"),
-                new Endpoint("host", 10000, true), "vhost", new PlainAuthMechanism("user", "pass")
+                "host", 10000, true, "vhost", new PlainAuthMechanism("user", "pass")
             };
 
             yield return new object[]
             {
                 new Uri("amqps://user@localhost"),
-                new Endpoint("localhost", 5671, true), ProtocolConstants.DefaultVHost, new PlainAuthMechanism("user", "")
+                "localhost", 5671, true, ProtocolConstants.DefaultVHost, new PlainAuthMechanism("user", "")
             };
 
             yield return new object[]
             {
                 new Uri("amqps://localhost"),
-                new Endpoint("localhost", 5671, true), ProtocolConstants.DefaultVHost, null
+                "localhost", 5671, true, ProtocolConstants.DefaultVHost, null
             };
 
             yield return new object[]
             {
                 new Uri("amqps://[::1]"),
-                new Endpoint("[::1]", 5671, true), ProtocolConstants.DefaultVHost, null
+                "[::1]", 5671, true, ProtocolConstants.DefaultVHost, null
             };
         }
 

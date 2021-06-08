@@ -1,6 +1,6 @@
-namespace RabbitMQ.Next.Abstractions
+namespace RabbitMQ.Next
 {
-    public readonly struct Endpoint
+    internal readonly struct Endpoint
     {
         public Endpoint(string host, int port, bool useSsl)
         {
