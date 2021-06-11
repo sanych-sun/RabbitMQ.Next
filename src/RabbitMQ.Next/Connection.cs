@@ -6,12 +6,10 @@ using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Buffers;
 using RabbitMQ.Next.Abstractions.Channels;
-using RabbitMQ.Next.Abstractions.Events;
 using RabbitMQ.Next.Abstractions.Exceptions;
 using RabbitMQ.Next.Abstractions.Methods;
 using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Channels;
-using RabbitMQ.Next.Events;
 using RabbitMQ.Next.Sockets;
 using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Methods.Connection;
@@ -28,7 +26,6 @@ namespace RabbitMQ.Next
         private readonly IMethodRegistry methodRegistry;
 
         private readonly ChannelPool channelPool;
-        private readonly EventSource<ConnectionState> stateChanged;
         private readonly BufferManager bufferManager;
         private readonly IBufferPool bufferPool;
         private readonly ConnectionDetails connectionDetails = new ConnectionDetails();
@@ -55,7 +52,6 @@ namespace RabbitMQ.Next
             this.State = ConnectionState.Pending;
             this.bufferManager = new BufferManager(ProtocolConstants.FrameMinSize);
             this.bufferPool = new BufferPool(this.bufferManager);
-            this.stateChanged = new EventSource<ConnectionState>();
             this.channelPool = new ChannelPool();
         }
 
@@ -103,8 +99,6 @@ namespace RabbitMQ.Next
 
         public IConnectionDetails Details => this.connectionDetails;
 
-        public IEventSource<ConnectionState> StateChanged => this.stateChanged;
-
         public async Task<IChannel> CreateChannelAsync(IReadOnlyList<IMethodHandler> handlers = null, CancellationToken cancellationToken = default)
         {
             // TODO: validate state
@@ -136,7 +130,6 @@ namespace RabbitMQ.Next
             }
 
             this.State = newState;
-            await this.stateChanged.InvokeAsync(newState);
         }
 
         private static async Task<ISocket> OpenSocketAsync(IReadOnlyList<Endpoint> endpoints)
