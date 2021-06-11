@@ -59,11 +59,11 @@ namespace RabbitMQ.Next
         {
             // TODO: adopt authentication_failure_close capability to handle auth errors
 
-            await this.ChangeStateAsync(ConnectionState.Connecting);
+            this.State = ConnectionState.Connecting;
             this.socket = await OpenSocketAsync(this.endpoints);
             this.frameSender = new FrameSender(this.socket, this.methodRegistry, this.BufferPool);
 
-            await this.ChangeStateAsync(ConnectionState.Negotiating);
+            this.State = ConnectionState.Negotiating;
             var connectionChannel = new Channel(this.channelPool, this.methodRegistry, this.frameSender, this.bufferPool, null);
 
             this.socketIoCancellation = new CancellationTokenSource();
@@ -89,8 +89,8 @@ namespace RabbitMQ.Next
             // start heartbeat
             Task.Run(() => this.HeartbeatLoop(heartbeatIntervalMs, this.socketIoCancellation.Token));
 
-            await this.ChangeStateAsync(ConnectionState.Configuring);
-            await this.ChangeStateAsync(ConnectionState.Open);
+            this.State = ConnectionState.Configuring;
+            this.State = ConnectionState.Open;
         }
 
         public ConnectionState State { get; private set; }
@@ -117,20 +117,10 @@ namespace RabbitMQ.Next
 
             this.CleanUpOnSocketClose();
 
-            await this.ChangeStateAsync(ConnectionState.Closed);
+            this.State = ConnectionState.Closed;
         }
 
         public ValueTask DisposeAsync() => new ValueTask(this.CloseAsync());
-
-        private async ValueTask ChangeStateAsync(ConnectionState newState)
-        {
-            if (this.State == newState)
-            {
-                return;
-            }
-
-            this.State = newState;
-        }
 
         private static async Task<ISocket> OpenSocketAsync(IReadOnlyList<Endpoint> endpoints)
         {

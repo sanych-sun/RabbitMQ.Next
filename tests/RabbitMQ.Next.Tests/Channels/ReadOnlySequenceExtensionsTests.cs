@@ -10,7 +10,6 @@ namespace RabbitMQ.Next.Tests.Channels
         [InlineData(0, new byte[] {0x00, 0x00}, new byte[] {0x00, 0x00})]
         [InlineData(0, new byte[] {0x00, 0x00}, new byte[] {0x00, 0x00, 0x00, 0x00})]
         [InlineData(1234, new byte[] {0x00, 0x00}, new byte[] {0x04, 0xD2})]
-        [InlineData(1234, new byte[] {0x00, 0x00}, new byte[] {0x04, 0xD2})]
         [InlineData(1234, new byte[] {0x00, 0x00}, new byte[] {0x04, 0xD2, 0x00, 0x00})]
         public void ReadUint(uint expected, params byte[][] data)
         {
