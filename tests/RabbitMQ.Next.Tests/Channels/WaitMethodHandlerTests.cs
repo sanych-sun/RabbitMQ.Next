@@ -14,30 +14,40 @@ namespace RabbitMQ.Next.Tests.Channels
     public class WaitMethodHandlerTests
     {
         [Fact]
-        public void DisposeMultiple()
+        public async Task WaitThrowsOnCompletedChannel()
         {
-            var handler = this.CreateHandler();
+            var handler = this.CreateHandler(Task.CompletedTask);
 
-            handler.Dispose();
-            var ex = Record.Exception(() => handler.Dispose());
-
-            Assert.Null(ex);
+            await Assert.ThrowsAsync<InvalidOperationException>(async() => await handler.WaitAsync<DummyMethod<int>>());
         }
 
         [Fact]
-        public void DisposeCancelsWait()
+        public async Task WaitThrowsOnChannelError()
         {
-            var handler = this.CreateHandler();
+            var tcs = new TaskCompletionSource<bool>();
+            var handler = this.CreateHandler(tcs.Task);
 
             var wait = handler.WaitAsync<DummyMethod<int>>();
-            Assert.False(wait.IsCanceled);
+            var ex = new ArgumentNullException();
+            tcs.SetException(ex);
 
-            handler.Dispose();
-            Assert.True(wait.IsCanceled);
+            await Assert.ThrowsAsync<ArgumentNullException>(async() => await wait);
         }
 
         [Fact]
-        public void CancelsOnCancellationToken()
+        public async Task WaitCancelsOnChannelCompletion()
+        {
+            var tcs = new TaskCompletionSource<bool>();
+            var handler = this.CreateHandler(tcs.Task);
+
+            var wait = handler.WaitAsync<DummyMethod<int>>();
+            tcs.SetResult(true);
+
+            await Assert.ThrowsAsync<TaskCanceledException>(async() => await wait);
+        }
+
+        [Fact]
+        public async Task CancelsOnCancellationToken()
         {
             var handler = this.CreateHandler();
             var cancellation = new CancellationTokenSource();
@@ -47,6 +57,7 @@ namespace RabbitMQ.Next.Tests.Channels
 
             cancellation.Cancel();
             Assert.True(wait.IsCanceled);
+            await Assert.ThrowsAsync<TaskCanceledException>(async() => await wait);
         }
 
         [Fact]
@@ -87,12 +98,15 @@ namespace RabbitMQ.Next.Tests.Channels
         }
 
 
-        private WaitMethodHandler CreateHandler()
+        private WaitMethodHandler CreateHandler(Task channelCompletion = null)
         {
             var registry = Substitute.For<IMethodRegistry>();
             registry.GetMethodId<DummyMethod<int>>().Returns(MethodId.BasicGetEmpty);
 
-            return new WaitMethodHandler(registry);
+            var ch = Substitute.For<IChannel>();
+            channelCompletion ??= new TaskCompletionSource<bool>().Task;
+            ch.Completion.Returns(channelCompletion);
+            return new WaitMethodHandler(registry, ch);
         }
     }
 }

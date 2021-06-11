@@ -100,7 +100,10 @@ namespace RabbitMQ.Next.Tests.Channels
         {
             var registry = Substitute.For<IMethodRegistry>();
             registry.GetMethodId<DummyMethod<int>>().Returns(MethodId.BasicGetEmpty);
-            var waitHandler = new WaitMethodHandler(registry);
+            var ch = Substitute.For<IChannel>();
+            var tcs = new TaskCompletionSource<bool>();
+            ch.Completion.Returns(tcs.Task);
+            var waitHandler = new WaitMethodHandler(registry, ch);
 
             var frameSender = Substitute.For<IFrameSender>();
 

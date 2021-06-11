@@ -13,26 +13,48 @@ namespace RabbitMQ.Next.Channels
     {
         private readonly Action cancellationHandler;
         private readonly IMethodRegistry registry;
+        private readonly IChannel channel;
         private MethodId expectedMethodId;
         private TaskCompletionSource<IIncomingMethod> waitingTask;
 
-        public WaitMethodHandler(IMethodRegistry registry)
+        public WaitMethodHandler(IMethodRegistry registry, IChannel channel)
         {
             this.registry = registry;
+            this.channel = channel;
             this.cancellationHandler = () =>
             {
                 this.waitingTask?.SetCanceled();
             };
-        }
 
-        public void Dispose()
-        {
-            this.waitingTask?.SetCanceled();
+            channel.Completion.ContinueWith(t =>
+            {
+                if (t.Exception != null)
+                {
+                    Exception ex = t.Exception;
+                    if (ex is AggregateException aggregateException && aggregateException.InnerException != null)
+                    {
+                        ex = aggregateException.InnerException;
+                    }
+
+                    this.waitingTask?.SetException(ex);
+                }
+                else
+                {
+                    this.waitingTask?.SetCanceled();
+                }
+
+                this.waitingTask = null;
+            });
         }
 
         public Task<IIncomingMethod> WaitAsync<TMethod>(CancellationToken cancellation = default)
             where TMethod : struct, IIncomingMethod
         {
+            if (this.channel.Completion.IsCompleted)
+            {
+                throw new InvalidOperationException("Cannot wait on completed channel");
+            }
+
             if (this.expectedMethodId != 0)
             {
                 throw new InvalidOperationException("Cannot enter wait state: already in wait state.");

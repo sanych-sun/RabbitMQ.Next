@@ -20,7 +20,12 @@ namespace RabbitMQ.Next
         private string locale = DefaultLocale;
 
         private ConnectionBuilder()
-        {}
+        {
+            this.clientProperties["capabilities"] = new Dictionary<string, object>
+            {
+                ["authentication_failure_close"] = true,
+            };
+        }
 
         public static IConnectionBuilder Create()
             =>  new ConnectionBuilder();

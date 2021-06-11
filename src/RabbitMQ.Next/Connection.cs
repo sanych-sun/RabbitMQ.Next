@@ -75,27 +75,12 @@ namespace RabbitMQ.Next
 
             var negotiationResults = await connectionChannel.UseChannel(async ch =>
             {
-                var startMethodTask = ch.WaitAsync<StartMethod>();
+                // connection should be forcibly closed if negotiation phase take more then 10s.
+                var cancellation = new CancellationTokenSource(10000);
+                var negotiateTask = NegotiateAsync(ch, this.virtualHost, this.locale, this.authMechanism, this.clientProperties, cancellation.Token);
                 await this.SendProtocolHeaderAsync();
-                var startMethod = await startMethodTask;
 
-                var tuneMethodTask = ch.WaitAsync<TuneMethod>();
-
-                if (!startMethod.Mechanisms.Contains(this.authMechanism.Type))
-                {
-                    throw new NotSupportedException("Provided auth mechanism does not supported by the server");
-                }
-
-                await ch.SendAsync(new StartOkMethod(this.authMechanism.Type, this.authMechanism.ToResponse(), this.locale, this.clientProperties));
-
-                var tuneMethod = await tuneMethodTask;
-
-                await ch.SendAsync(new TuneOkMethod(tuneMethod.ChannelMax, tuneMethod.MaxFrameSize, tuneMethod.HeartbeatInterval));
-
-                // todo: handle wrong vhost name
-                await ch.SendAsync<OpenMethod, OpenOkMethod>(new OpenMethod(this.virtualHost));
-
-                return (tuneMethod.ChannelMax, tuneMethod.MaxFrameSize, tuneMethod.HeartbeatInterval);
+                return await negotiateTask;
             });
 
             var heartbeatIntervalMs = negotiationResults.HeartbeatInterval * 1000;
@@ -270,6 +255,31 @@ namespace RabbitMQ.Next
             this.socket = null;
 
             this.channelPool.ReleaseAll();
+        }
+
+        private static async Task<(ushort ChannelMax, uint MaxFrameSize, ushort HeartbeatInterval)> NegotiateAsync(
+            ISynchronizedChannel channel, string vhost, string locale, IAuthMechanism auth, IReadOnlyDictionary<string, object> clientProperties,
+            CancellationToken cancellation)
+        {
+            var startMethodTask = channel.WaitAsync<StartMethod>(cancellation);
+            var startMethod = await startMethodTask;
+
+            if (!startMethod.Mechanisms.Contains(auth.Type))
+            {
+                throw new NotSupportedException("Provided auth mechanism does not supported by the server");
+            }
+
+            var tuneMethodTask = channel.WaitAsync<TuneMethod>(cancellation);
+            await channel.SendAsync(new StartOkMethod(auth.Type, auth.ToResponse(), locale, clientProperties));
+
+            var tuneMethod = await tuneMethodTask;
+
+            await channel.SendAsync(new TuneOkMethod(tuneMethod.ChannelMax, tuneMethod.MaxFrameSize, tuneMethod.HeartbeatInterval));
+
+            // todo: handle wrong vhost name
+            await channel.SendAsync<OpenMethod, OpenOkMethod>(new OpenMethod(vhost), cancellation);
+
+            return (tuneMethod.ChannelMax, tuneMethod.MaxFrameSize, tuneMethod.HeartbeatInterval);
         }
     }
 }
