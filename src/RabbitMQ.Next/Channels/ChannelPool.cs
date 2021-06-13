@@ -37,16 +37,14 @@ namespace RabbitMQ.Next.Channels
 
         public void ReleaseAll(Exception ex = null)
         {
-            this.channelsLock.EnterWriteLock();
+            for (var i = this.lastId; i >= 0; i--)
+            {
+                this.channels[i]?.SetCompleted(ex);
+            }
 
+            this.channelsLock.EnterWriteLock();
             try
             {
-                for (var i = 0; i <= this.lastId; i++)
-                {
-                    this.channels[i]?.SetCompleted(ex);
-                    this.channels[i] = null;
-                }
-
                 this.releasedItems.Clear();
                 this.lastId = -1;
             }

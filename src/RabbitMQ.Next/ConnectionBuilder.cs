@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Methods;
 using RabbitMQ.Next.Transport;
@@ -84,13 +85,19 @@ namespace RabbitMQ.Next
             return this;
         }
 
-        public IConnection Build()
-            => new Connection(
+        public async Task<IConnection> ConnectAsync()
+        {
+            var connection = new Connection(
                 this.endpoints.ToArray(),
                 this.virtualhost,
                 this.authMechanism,
                 this.locale,
                 this.clientProperties,
                 this.methodRegistry.Build());
+
+            await connection.ConnectAsync();
+
+            return connection;
+        }
     }
 }

@@ -32,6 +32,7 @@ namespace RabbitMQ.Next.Channels
             this.channelPool = channelPool;
             this.registry = methodRegistry;
             this.bufferPool = bufferPool;
+            this.ChannelNumber = channelPool.Register(this);
 
             handlers ??= Array.Empty<IMethodHandler>();
 
@@ -41,8 +42,17 @@ namespace RabbitMQ.Next.Channels
             this.senderSync = new SemaphoreSlim(1,1);
 
             var waitFrameHandler = new WaitMethodHandler(methodRegistry, this);
-            this.methodHandlers = new List<IMethodHandler>(handlers) { waitFrameHandler };
-            this.ChannelNumber = channelPool.Register(this);
+            var list = new List<IMethodHandler>(handlers) { waitFrameHandler };
+            if (this.ChannelNumber == 0)
+            {
+                list.Add(new ConnectionCloseHandler(this));
+            }
+            else
+            {
+                list.Add(new ChannelCloseHandler(this));
+            }
+
+            this.methodHandlers = list;
             this.syncChannel = new SynchronizedChannel(this.ChannelNumber, frameSender, waitFrameHandler);
 
             Task.Run(() => this.LoopAsync(pipe.Reader));
@@ -66,6 +76,7 @@ namespace RabbitMQ.Next.Channels
             }
 
             this.Writer.Complete();
+            this.channelPool.Release(this.ChannelNumber);
         }
 
         public async Task UseChannel(Func<ISynchronizedChannel, Task> fn, CancellationToken cancellation = default)
@@ -128,14 +139,16 @@ namespace RabbitMQ.Next.Channels
             }
         }
 
-        public Task CloseAsync()
-            => this.CloseAsync((ushort)ReplyCode.Success, string.Empty, MethodId.Unknown);
+        public async Task CloseAsync(Exception ex = null)
+        {
+            await this.SendAsync<CloseMethod, CloseOkMethod>(new CloseMethod((ushort) ReplyCode.Success, string.Empty, MethodId.Unknown));
+            this.SetCompleted(ex);
+        }
 
         public async Task CloseAsync(ushort statusCode, string description, MethodId failedMethodId)
         {
             await this.SendAsync<CloseMethod, CloseOkMethod>(new CloseMethod(statusCode, description, failedMethodId));
-            this.SetCompleted();
-            this.channelPool.Release(this.ChannelNumber);
+            this.SetCompleted(new ChannelException(statusCode, description, failedMethodId));
         }
 
         private async Task LoopAsync(PipeReader pipeReader)
@@ -177,13 +190,6 @@ namespace RabbitMQ.Next.Channels
                 else
                 {
                     processed = await methodHandler(methodArgs, default);
-                }
-
-                if (methodArgs is CloseMethod closeMethod)
-                {
-                    await this.syncChannel.SendAsync(new CloseOkMethod());
-                    this.SetCompleted(new ChannelException(closeMethod.StatusCode, closeMethod.Description, closeMethod.MethodId));
-                    this.channelPool.Release(this.ChannelNumber);
                 }
 
                 if (!processed)

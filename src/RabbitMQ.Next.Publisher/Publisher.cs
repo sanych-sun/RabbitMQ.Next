@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
-using RabbitMQ.Next.Channels;
 using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Abstractions.Transformers;
 using RabbitMQ.Next.Serialization.Abstractions;
@@ -135,10 +134,11 @@ namespace RabbitMQ.Next.Publisher
         {
             this.CheckDisposed();
 
-            var ch = this.channel;
-            if (ch == null || ch.Completion.IsCompleted)
+            var ch = this.channel ?? await this.OpenChannelAsync(cancellationToken);
+
+            if (ch.Completion.Exception != null)
             {
-                ch = await this.OpenChannelAsync(cancellationToken);
+                throw ch.Completion.Exception?.InnerException ?? ch.Completion.Exception;
             }
 
             return ch;
@@ -186,7 +186,7 @@ namespace RabbitMQ.Next.Publisher
                         methodHandlers.Add(this.confirms);
                     }
 
-                    this.channel = await this.connection.CreateChannelAsync(methodHandlers, cancellationToken);
+                    this.channel = await this.connection.OpenChannelAsync(methodHandlers, cancellationToken);
                     await this.channel.UseChannel(
                         (this.exchange, this.publisherConfirms),
                         async (ch, state) =>

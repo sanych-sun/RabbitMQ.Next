@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions.Methods;
 
 namespace RabbitMQ.Next.Abstractions
@@ -17,6 +18,6 @@ namespace RabbitMQ.Next.Abstractions
 
         IConnectionBuilder Locale(string locale);
 
-        IConnection Build();
+        Task<IConnection> ConnectAsync();
     }
 }

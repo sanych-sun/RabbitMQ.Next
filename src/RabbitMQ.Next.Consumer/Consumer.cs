@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
-using RabbitMQ.Next.Channels;
 using RabbitMQ.Next.Consumer.Abstractions;
 using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.Transport.Methods.Basic;
@@ -23,7 +22,6 @@ namespace RabbitMQ.Next.Consumer
         private readonly UnprocessedMessageMode onUnprocessedMessage;
         private readonly UnprocessedMessageMode onPoisonMessage;
         private readonly IMethodHandler frameHandler;
-        private readonly TaskCompletionSource<bool> consumeTcs;
 
         private IChannel channel;
         private IAcknowledger acknowledger;
@@ -46,7 +44,6 @@ namespace RabbitMQ.Next.Consumer
             this.onPoisonMessage = onPoisonMessage;
 
             this.frameHandler = new MethodHandler<DeliverMethod>(this.HandleMessageAsync);
-            this.consumeTcs = new TaskCompletionSource<bool>();
         }
 
 
@@ -56,7 +53,7 @@ namespace RabbitMQ.Next.Consumer
         public async Task ConsumeAsync(CancellationToken cancellation)
         {
             // TODO: deal with connection state here
-            this.channel = await this.connection.CreateChannelAsync(new [] { this.frameHandler }, cancellation);
+            this.channel = await this.connection.OpenChannelAsync(new [] { this.frameHandler }, cancellation);
             if (this.acknowledgerFactory != null)
             {
                 var ack = new Acknowledgement(this.channel);
@@ -68,7 +65,7 @@ namespace RabbitMQ.Next.Consumer
 
             cancellation.Register(() => this.CancelConsumeAsync());
 
-            await this.consumeTcs.Task;
+            await this.channel.Completion;
         }
 
         private async ValueTask CancelConsumeAsync(Exception ex = null)
@@ -80,19 +77,10 @@ namespace RabbitMQ.Next.Consumer
                 await this.acknowledger.DisposeAsync();
             }
 
-            await this.channel.CloseAsync();
+            await this.channel.CloseAsync(ex);
 
             this.acknowledger = null;
             this.channel = null;
-
-            if (ex == null)
-            {
-                this.consumeTcs.SetResult(true);
-            }
-            else
-            {
-                this.consumeTcs.SetException(ex);
-            }
         }
 
         private async ValueTask<bool> HandleMessageAsync(DeliverMethod method, IMessageProperties properties, ReadOnlySequence<byte> payload)

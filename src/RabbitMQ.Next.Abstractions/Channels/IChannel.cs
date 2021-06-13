@@ -16,7 +16,7 @@ namespace RabbitMQ.Next.Abstractions.Channels
 
         Task<TResult> UseChannel<TState, TResult>(TState state, Func<ISynchronizedChannel, TState, Task<TResult>> fn, CancellationToken cancellation = default);
 
-        Task CloseAsync();
+        Task CloseAsync(Exception ex = null);
 
         Task CloseAsync(ushort statusCode, string description, MethodId failedMethodId);
     }

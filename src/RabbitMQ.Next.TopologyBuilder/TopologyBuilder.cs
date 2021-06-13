@@ -77,12 +77,21 @@ namespace RabbitMQ.Next.TopologyBuilder
 
             try
             {
-                this.channel ??= await this.Connection.CreateChannelAsync();
+                this.channel ??= await this.Connection.OpenChannelAsync();
                 return this.channel;
             }
             finally
             {
                 this.sync.Release();
+            }
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            if (this.channel != null)
+            {
+                await this.channel.CloseAsync();
+                this.channel = null;
             }
         }
     }

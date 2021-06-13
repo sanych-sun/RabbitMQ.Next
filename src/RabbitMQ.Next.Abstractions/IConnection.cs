@@ -9,11 +9,7 @@ namespace RabbitMQ.Next.Abstractions
 {
     public interface IConnection : IAsyncDisposable
     {
-        Task<IChannel> CreateChannelAsync(IReadOnlyList<IMethodHandler> handlers = null, CancellationToken cancellationToken = default);
-
-        Task ConnectAsync();
-
-        Task CloseAsync();
+        Task<IChannel> OpenChannelAsync(IReadOnlyList<IMethodHandler> handlers = null, CancellationToken cancellationToken = default);
 
         ConnectionState State { get; }
 

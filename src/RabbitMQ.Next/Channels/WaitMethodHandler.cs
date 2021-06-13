@@ -28,19 +28,15 @@ namespace RabbitMQ.Next.Channels
 
             channel.Completion.ContinueWith(t =>
             {
-                if (t.Exception != null)
-                {
-                    Exception ex = t.Exception;
-                    if (ex is AggregateException aggregateException && aggregateException.InnerException != null)
-                    {
-                        ex = aggregateException.InnerException;
-                    }
+                var ex = t.Exception?.InnerException ?? t.Exception;
 
-                    this.waitingTask?.SetException(ex);
+                if (ex == null)
+                {
+                    this.waitingTask?.TrySetCanceled();
                 }
                 else
                 {
-                    this.waitingTask?.SetCanceled();
+                    this.waitingTask?.TrySetException(ex);
                 }
 
                 this.waitingTask = null;
@@ -61,7 +57,7 @@ namespace RabbitMQ.Next.Channels
             }
 
             var methodId = this.registry.GetMethodId<TMethod>();
-            this.waitingTask = new TaskCompletionSource<IIncomingMethod>();
+            this.waitingTask = new TaskCompletionSource<IIncomingMethod>(TaskCreationOptions.RunContinuationsAsynchronously);
             this.expectedMethodId = methodId;
             if (cancellation != default)
             {

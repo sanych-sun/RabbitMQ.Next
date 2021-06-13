@@ -293,7 +293,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             var connection = Substitute.For<IConnection>();
             connection.BufferPool.Returns(new BufferPool(new BufferManager(1024)));
             connection.State.Returns(ConnectionState.Open);
-            connection.CreateChannelAsync(Arg.Any<IReadOnlyList<IMethodHandler>>())
+            connection.OpenChannelAsync(Arg.Any<IReadOnlyList<IMethodHandler>>())
                 .Returns(args =>
                 {
                     channel.SetHandlers(args.Arg<IReadOnlyList<IMethodHandler>>());
@@ -330,7 +330,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             public Task<TResult> UseChannel<TState, TResult>(TState state, Func<ISynchronizedChannel, TState, Task<TResult>> fn, CancellationToken cancellation = default)
                 => fn(this.channel, state);
 
-            public Task CloseAsync()
+            public Task CloseAsync(Exception ex = null)
             {
                 this.IsClosed = true;
                 return Task.CompletedTask;

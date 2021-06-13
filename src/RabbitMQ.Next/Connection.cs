@@ -74,7 +74,7 @@ namespace RabbitMQ.Next
                 // connection should be forcibly closed if negotiation phase take more then 10s.
                 var cancellation = new CancellationTokenSource(10000);
                 var negotiateTask = NegotiateAsync(ch, this.virtualHost, this.locale, this.authMechanism, this.clientProperties, cancellation.Token);
-                await this.SendProtocolHeaderAsync();
+                await this.socket.SendAsync(ProtocolConstants.AmqpHeader);
 
                 return await negotiateTask;
             });
@@ -85,6 +85,8 @@ namespace RabbitMQ.Next
 
             this.connectionDetails.HeartbeatInterval = negotiationResults.HeartbeatInterval;
             this.connectionDetails.FrameMaxSize = (int) negotiationResults.MaxFrameSize;
+
+            connectionChannel.OnCompleted(this.ConnectionClose);
 
             // start heartbeat
             Task.Run(() => this.HeartbeatLoop(heartbeatIntervalMs, this.socketIoCancellation.Token));
@@ -99,7 +101,7 @@ namespace RabbitMQ.Next
 
         public IConnectionDetails Details => this.connectionDetails;
 
-        public async Task<IChannel> CreateChannelAsync(IReadOnlyList<IMethodHandler> handlers = null, CancellationToken cancellationToken = default)
+        public async Task<IChannel> OpenChannelAsync(IReadOnlyList<IMethodHandler> handlers = null, CancellationToken cancellationToken = default)
         {
             // TODO: validate state
 
@@ -109,18 +111,19 @@ namespace RabbitMQ.Next
             return channel;
         }
 
-        public async Task CloseAsync()
+        public async ValueTask DisposeAsync()
         {
             // todo: validate state here
 
+            if (this.State != ConnectionState.Open)
+            {
+                return;
+            }
+
             await this.channelPool[0].SendAsync<CloseMethod, CloseOkMethod>(new CloseMethod((ushort)ReplyCode.Success, "Goodbye", 0));
 
-            this.CleanUpOnSocketClose();
-
-            this.State = ConnectionState.Closed;
+            this.ConnectionClose(null);
         }
-
-        public ValueTask DisposeAsync() => new ValueTask(this.CloseAsync());
 
         private static async Task<ISocket> OpenSocketAsync(IReadOnlyList<Endpoint> endpoints)
         {
@@ -141,11 +144,6 @@ namespace RabbitMQ.Next
             }
 
             throw new AggregateException("Cannot establish connection RabbitMQ cluster. See inner exceptions for more details.", exceptions);
-        }
-
-        private async Task SendProtocolHeaderAsync()
-        {
-            await this.socket.SendAsync(ProtocolConstants.AmqpHeader);
         }
 
         private async Task HeartbeatLoop(int heartbeatIntervalMs, CancellationToken cancellationToken)
@@ -218,26 +216,27 @@ namespace RabbitMQ.Next
                     }
                 }
             }
-            catch (SocketException)
+            catch (SocketException ex)
             {
                 // todo: report to diagnostic source
 
-                this.CleanUpOnSocketClose();
+                this.ConnectionClose(ex);
             }
         }
 
-        private void CleanUpOnSocketClose()
+        private void ConnectionClose(Exception ex)
         {
             if (this.socketIoCancellation == null || this.socketIoCancellation.IsCancellationRequested)
             {
                 return;
             }
 
+            this.State = ConnectionState.Closed;
             this.socketIoCancellation.Cancel();
             this.socket.Dispose();
             this.socket = null;
 
-            this.channelPool.ReleaseAll();
+            this.channelPool.ReleaseAll(ex);
         }
 
         private static async Task<(ushort ChannelMax, uint MaxFrameSize, ushort HeartbeatInterval)> NegotiateAsync(
