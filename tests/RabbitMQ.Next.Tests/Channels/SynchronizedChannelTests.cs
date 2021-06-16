@@ -78,12 +78,11 @@ namespace RabbitMQ.Next.Tests.Channels
             var message = new DummyMethod<int>(MethodId.BasicGetEmpty, 123);
             await mock.waitHandler.HandleAsync(message, null, ReadOnlySequence<byte>.Empty);
 
-            Assert.True(wait.IsCompleted);
             Assert.Equal(message, await wait);
         }
 
         [Fact]
-        public void CanCancelWaitAsync()
+        public async Task CanCancelWaitAsync()
         {
             ushort channelNumber = 12;
             var cancellation = new CancellationTokenSource();
@@ -93,7 +92,8 @@ namespace RabbitMQ.Next.Tests.Channels
             Assert.False(wait.IsCompleted);
 
             cancellation.Cancel();
-            Assert.True(wait.IsCanceled);
+
+            await Assert.ThrowsAsync<TaskCanceledException>(async () => await wait);
         }
 
         private (SynchronizedChannel channel, IFrameSender frameSender, IMethodHandler waitHandler) CreateChannel(ushort channelNumber)

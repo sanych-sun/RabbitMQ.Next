@@ -1,4 +1,6 @@
-namespace RabbitMQ.Next
+using System;
+
+namespace RabbitMQ.Next.Transport
 {
     internal readonly struct Endpoint
     {
@@ -14,5 +16,9 @@ namespace RabbitMQ.Next
         public int Port { get; }
 
         public bool UseSsl { get; }
+
+        public Uri ToUri()
+            => new Uri($"amqp{(this.UseSsl ? "s" : "")}://{this.Host}:{this.Port}");
+
     }
 }

@@ -8,6 +8,6 @@ namespace RabbitMQ.Next.Transport.Methods.Connection
         public Span<byte> Write(Span<byte> destination, CloseMethod method) =>
             destination.Write(method.StatusCode)
                 .Write(method.Description)
-                .Write(method.FailedMethodId);
+                .Write((uint)method.FailedMethodId);
     }
 }

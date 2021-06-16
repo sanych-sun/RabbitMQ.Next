@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
+using RabbitMQ.Next.Transport;
 
 namespace RabbitMQ.Next.Sockets
 {

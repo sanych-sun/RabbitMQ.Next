@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Net;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Methods;
@@ -13,6 +12,7 @@ namespace RabbitMQ.Next
     {
         private const string DefaultLocale = "en-US";
 
+        private readonly IConnectionFactory factory;
         private readonly IMethodRegistryBuilder methodRegistry = new MethodRegistryBuilder();
         private readonly List<Endpoint> endpoints = new List<Endpoint>();
         private readonly Dictionary<string, object> clientProperties = new Dictionary<string, object>();
@@ -20,33 +20,19 @@ namespace RabbitMQ.Next
         private string virtualhost = ProtocolConstants.DefaultVHost;
         private string locale = DefaultLocale;
 
-        private ConnectionBuilder()
+        public ConnectionBuilder()
+            : this(ConnectionFactory.Default)
         {
+        }
+
+        internal ConnectionBuilder(IConnectionFactory factory)
+        {
+            this.factory = factory;
+
             this.clientProperties["capabilities"] = new Dictionary<string, object>
             {
                 ["authentication_failure_close"] = true,
             };
-        }
-
-        public static IConnectionBuilder Create()
-            =>  new ConnectionBuilder();
-
-        public static IConnectionBuilder Create(string uri)
-            => Create(new Uri(WebUtility.UrlDecode(uri)));
-
-        public static IConnectionBuilder Create(Uri uri)
-        {
-            var parsed = uri.ParseAmqpUri();
-
-            IConnectionBuilder builder = new ConnectionBuilder();
-            builder.AddEndpoint(parsed.host, parsed.port, parsed.ssl);
-            builder.VirtualHost(parsed.vhost);
-            if (parsed.authMechanism != null)
-            {
-                builder.Auth(parsed.authMechanism);
-            }
-
-            return builder;
         }
 
         IConnectionBuilder IConnectionBuilder.Auth(IAuthMechanism mechanism)
@@ -85,19 +71,13 @@ namespace RabbitMQ.Next
             return this;
         }
 
-        public async Task<IConnection> ConnectAsync()
-        {
-            var connection = new Connection(
+        public Task<IConnection> ConnectAsync()
+            => this.factory.ConnectAsync(
                 this.endpoints.ToArray(),
                 this.virtualhost,
                 this.authMechanism,
                 this.locale,
                 this.clientProperties,
                 this.methodRegistry.Build());
-
-            await connection.ConnectAsync();
-
-            return connection;
-        }
     }
 }

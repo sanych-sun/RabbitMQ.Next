@@ -101,12 +101,12 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Connection
         [Fact]
         public void CloseMethod()
         {
-            var method = new CloseMethod(504, "SomeError", 42);
+            var method = new CloseMethod(504, "SomeError", MethodId.BasicAck);
 
             Assert.Equal(MethodId.ConnectionClose, method.MethodId);
             Assert.Equal(504, method.StatusCode);
             Assert.Equal("SomeError", method.Description);
-            Assert.Equal((uint)42, method.FailedMethodId);
+            Assert.Equal(MethodId.BasicAck, method.FailedMethodId);
         }
 
         [Fact]

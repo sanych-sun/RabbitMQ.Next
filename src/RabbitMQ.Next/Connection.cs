@@ -18,11 +18,6 @@ namespace RabbitMQ.Next
 {
     internal class Connection : IConnection
     {
-        private readonly IReadOnlyList<Endpoint> endpoints;
-        private readonly string virtualHost;
-        private readonly IAuthMechanism authMechanism;
-        private readonly IReadOnlyDictionary<string, object> clientProperties;
-        private readonly string locale;
         private readonly IMethodRegistry methodRegistry;
 
         private readonly ChannelPool channelPool;
@@ -34,19 +29,8 @@ namespace RabbitMQ.Next
         private FrameSender frameSender;
         private CancellationTokenSource socketIoCancellation;
 
-        public Connection(
-            IReadOnlyList<Endpoint> endpoints,
-            string virtualHost,
-            IAuthMechanism authMechanism,
-            string locale,
-            IReadOnlyDictionary<string, object> clientProperties,
-            IMethodRegistry methodRegistry)
+        private Connection(IMethodRegistry methodRegistry)
         {
-            this.endpoints = endpoints;
-            this.virtualHost = virtualHost;
-            this.authMechanism = authMechanism;
-            this.locale = locale;
-            this.clientProperties = clientProperties;
             this.methodRegistry = methodRegistry;
 
             this.State = ConnectionState.Pending;
@@ -55,44 +39,52 @@ namespace RabbitMQ.Next
             this.channelPool = new ChannelPool();
         }
 
-        public async Task ConnectAsync()
+        public static async Task<IConnection> ConnectAsync(IReadOnlyList<Endpoint> endpoints,
+            string virtualHost,
+            IAuthMechanism authMechanism,
+            string locale,
+            IReadOnlyDictionary<string, object> clientProperties,
+            IMethodRegistry methodRegistry)
         {
+            var connection = new Connection(methodRegistry);
             // TODO: adopt authentication_failure_close capability to handle auth errors
 
-            this.State = ConnectionState.Connecting;
-            this.socket = await OpenSocketAsync(this.endpoints);
-            this.frameSender = new FrameSender(this.socket, this.methodRegistry, this.BufferPool);
+            connection.State = ConnectionState.Connecting;
+            connection.socket = await OpenSocketAsync(endpoints);
+            connection.frameSender = new FrameSender(connection.socket, connection.methodRegistry, connection.BufferPool);
 
-            this.State = ConnectionState.Negotiating;
-            var connectionChannel = new Channel(this.channelPool, this.methodRegistry, this.frameSender, this.bufferPool, null);
+            connection.State = ConnectionState.Negotiating;
+            var connectionChannel = new Channel(connection.channelPool, connection.methodRegistry, connection.frameSender, connection.bufferPool, null);
 
-            this.socketIoCancellation = new CancellationTokenSource();
-            Task.Run(() => this.ReceiveLoop(this.socketIoCancellation.Token));
+            connection.socketIoCancellation = new CancellationTokenSource();
+            Task.Run(() => connection.ReceiveLoop(connection.socketIoCancellation.Token));
 
             var negotiationResults = await connectionChannel.UseChannel(async ch =>
             {
                 // connection should be forcibly closed if negotiation phase take more then 10s.
                 var cancellation = new CancellationTokenSource(10000);
-                var negotiateTask = NegotiateAsync(ch, this.virtualHost, this.locale, this.authMechanism, this.clientProperties, cancellation.Token);
-                await this.socket.SendAsync(ProtocolConstants.AmqpHeader);
+                var negotiateTask = NegotiateAsync(ch, virtualHost, locale, authMechanism, clientProperties, cancellation.Token);
+                await connection.socket.SendAsync(ProtocolConstants.AmqpHeader);
 
                 return await negotiateTask;
             });
 
             var heartbeatIntervalMs = negotiationResults.HeartbeatInterval * 1000;
-            this.bufferManager.SetBufferSize((int)negotiationResults.MaxFrameSize);
-            this.frameSender.FrameMaxSize = (int) negotiationResults.MaxFrameSize;
+            connection.bufferManager.SetBufferSize((int)negotiationResults.MaxFrameSize);
+            connection.frameSender.FrameMaxSize = (int) negotiationResults.MaxFrameSize;
 
-            this.connectionDetails.HeartbeatInterval = negotiationResults.HeartbeatInterval;
-            this.connectionDetails.FrameMaxSize = (int) negotiationResults.MaxFrameSize;
+            connection.connectionDetails.HeartbeatInterval = negotiationResults.HeartbeatInterval;
+            connection.connectionDetails.FrameMaxSize = (int) negotiationResults.MaxFrameSize;
 
-            connectionChannel.OnCompleted(this.ConnectionClose);
+            connectionChannel.OnCompleted(connection.ConnectionClose);
 
             // start heartbeat
-            Task.Run(() => this.HeartbeatLoop(heartbeatIntervalMs, this.socketIoCancellation.Token));
+            Task.Run(() => connection.HeartbeatLoop(heartbeatIntervalMs, connection.socketIoCancellation.Token));
 
-            this.State = ConnectionState.Configuring;
-            this.State = ConnectionState.Open;
+            connection.State = ConnectionState.Configuring;
+            connection.State = ConnectionState.Open;
+
+            return connection;
         }
 
         public ConnectionState State { get; private set; }

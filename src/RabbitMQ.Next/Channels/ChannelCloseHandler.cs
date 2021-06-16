@@ -31,7 +31,7 @@ namespace RabbitMQ.Next.Channels
         {
             await this.channel.SendAsync(new CloseOkMethod());
 
-            this.channel.SetCompleted(new ChannelException(closeMethod.StatusCode, closeMethod.Description, closeMethod.MethodId));
+            this.channel.SetCompleted(new ChannelException(closeMethod.StatusCode, closeMethod.Description, closeMethod.FailedMethodId));
 
             return true;
         }

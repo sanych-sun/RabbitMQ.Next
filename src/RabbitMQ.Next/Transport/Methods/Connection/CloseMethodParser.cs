@@ -1,4 +1,5 @@
 using System;
+using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Methods;
 
 namespace RabbitMQ.Next.Transport.Methods.Connection
@@ -11,7 +12,7 @@ namespace RabbitMQ.Next.Transport.Methods.Connection
                 .Read(out string description)
                 .Read(out uint methodId);
 
-            return new CloseMethod(status, description, methodId);
+            return new CloseMethod(status, description, (MethodId)methodId);
         }
 
         public IIncomingMethod ParseMethod(ReadOnlySpan<byte> payload) => this.Parse(payload);
