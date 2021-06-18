@@ -8,7 +8,7 @@ using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Abstractions.Methods;
 
-namespace RabbitMQ.Next.Tests
+namespace RabbitMQ.Next.Tests.Mocks
 {
     internal class ChannelMock : IChannel
     {

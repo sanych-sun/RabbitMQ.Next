@@ -7,8 +7,6 @@ namespace RabbitMQ.Next.Transport
     {
         private static readonly Encoding Encoding = Encoding.UTF8;
 
-        public static int GetByteCount(string text) => Encoding.GetByteCount(text);
-
         public static int GetMaxByteCount(int chars) => Encoding.GetMaxByteCount(chars);
 
         public static int GetMaxCharCount(int bytes) => Encoding.GetMaxCharCount(bytes);

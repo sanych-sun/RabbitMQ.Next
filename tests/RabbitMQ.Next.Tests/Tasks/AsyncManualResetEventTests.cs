@@ -154,7 +154,7 @@ namespace RabbitMQ.Next.Tests.Tasks
             var evt = new AsyncManualResetEvent();
 
             var wait = evt.WaitAsync(10);
-            await Task.Delay(20);
+            await Task.Delay(50);
 
             Assert.True(wait.IsCompleted);
             Assert.False(await wait);

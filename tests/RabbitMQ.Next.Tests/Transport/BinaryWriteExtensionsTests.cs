@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using RabbitMQ.Next.Tests.Mocks;
 using RabbitMQ.Next.Transport;
 using Xunit;
 

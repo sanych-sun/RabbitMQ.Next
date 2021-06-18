@@ -20,9 +20,13 @@ namespace RabbitMQ.Next
         private string virtualhost = ProtocolConstants.DefaultVHost;
         private string locale = DefaultLocale;
 
-        public ConnectionBuilder()
+        public ConnectionBuilder(bool useDefaults = true)
             : this(ConnectionFactory.Default)
         {
+            if (useDefaults)
+            {
+                this.UseDefaults();
+            }
         }
 
         internal ConnectionBuilder(IConnectionFactory factory)

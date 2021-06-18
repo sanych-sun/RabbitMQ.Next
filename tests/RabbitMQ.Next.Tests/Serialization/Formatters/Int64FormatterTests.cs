@@ -1,6 +1,7 @@
 using System;
 using System.Buffers;
 using RabbitMQ.Next.Serialization.Formatters;
+using RabbitMQ.Next.Tests.Mocks;
 using Xunit;
 
 namespace RabbitMQ.Next.Tests.Serialization.Formatters

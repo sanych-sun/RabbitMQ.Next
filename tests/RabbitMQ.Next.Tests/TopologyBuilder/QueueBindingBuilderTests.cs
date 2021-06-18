@@ -5,6 +5,7 @@ using NSubstitute;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Exceptions;
+using RabbitMQ.Next.Tests.Mocks;
 using RabbitMQ.Next.TopologyBuilder;
 using RabbitMQ.Next.Transport.Methods.Queue;
 using Xunit;

@@ -23,7 +23,7 @@ namespace RabbitMQ.Next.Tasks
         private static async Task<TResult> WrapTask<TResult>(this Task<TResult> task, CancellationToken token)
         {
             var cancellationSource = new TaskCompletionSource<bool>();
-            await using var registration = token.Register(tcs => ((TaskCompletionSource<bool>)tcs).TrySetCanceled(), cancellationSource);
+            await using var registration = token.Register(tcs => ((TaskCompletionSource<bool>)tcs).TrySetResult(true), cancellationSource);
 
             await Task.WhenAny(task, cancellationSource.Task);
 

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using RabbitMQ.Next.Abstractions.Messaging;
 
-namespace RabbitMQ.Next.Tests
+namespace RabbitMQ.Next.Tests.Mocks
 {
     public class MessagePropertiesComparer : IEqualityComparer<IMessageProperties>
     {

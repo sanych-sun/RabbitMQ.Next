@@ -25,8 +25,7 @@ namespace RabbitMQ.Next
         private readonly IBufferPool bufferPool;
         private readonly ConnectionDetails connectionDetails = new ConnectionDetails();
 
-        private ISocket socket;
-        private FrameSender frameSender;
+        private IFrameSender frameSender;
         private CancellationTokenSource socketIoCancellation;
 
         private Connection(IMethodRegistry methodRegistry)
@@ -50,21 +49,21 @@ namespace RabbitMQ.Next
             // TODO: adopt authentication_failure_close capability to handle auth errors
 
             connection.State = ConnectionState.Connecting;
-            connection.socket = await OpenSocketAsync(endpoints);
-            connection.frameSender = new FrameSender(connection.socket, connection.methodRegistry, connection.BufferPool);
+            var socket = await OpenSocketAsync(endpoints);
+            connection.frameSender = new FrameSender(socket, connection.methodRegistry, connection.BufferPool);
 
             connection.State = ConnectionState.Negotiating;
             var connectionChannel = new Channel(connection.channelPool, connection.methodRegistry, connection.frameSender, connection.bufferPool, null);
 
             connection.socketIoCancellation = new CancellationTokenSource();
-            Task.Run(() => connection.ReceiveLoop(connection.socketIoCancellation.Token));
+            Task.Run(() => connection.ReceiveLoop(socket, connection.socketIoCancellation.Token));
 
             var negotiationResults = await connectionChannel.UseChannel(async ch =>
             {
                 // connection should be forcibly closed if negotiation phase take more then 10s.
                 var cancellation = new CancellationTokenSource(10000);
                 var negotiateTask = NegotiateAsync(ch, virtualHost, locale, authMechanism, clientProperties, cancellation.Token);
-                await connection.socket.SendAsync(ProtocolConstants.AmqpHeader);
+                await connection.frameSender.SendAmqpHeaderAsync();
 
                 return await negotiateTask;
             });
@@ -147,7 +146,7 @@ namespace RabbitMQ.Next
             }
         }
 
-        private async Task ReceiveLoop(CancellationToken cancellationToken)
+        private async Task ReceiveLoop(ISocket socket, CancellationToken cancellationToken)
         {
             var headerBuffer = new byte[ProtocolConstants.FrameHeaderSize];
             var endFrameBuffer = new byte[1];
@@ -160,7 +159,7 @@ namespace RabbitMQ.Next
                 while (!cancellationToken.IsCancellationRequested)
                 {
                     // 1. Read frame header
-                    await this.socket.FillBufferAsync(headerBuffer, cancellationToken);
+                    await socket.FillBufferAsync(headerBuffer, cancellationToken);
                     if (cancellationToken.IsCancellationRequested)
                     {
                         break;
@@ -176,11 +175,11 @@ namespace RabbitMQ.Next
                     {
                         case FrameType.Method:
                             ChannelFrame.WriteHeader(targetWriter, ChannelFrameType.Method, payloadSize);
-                            await this.socket.FillBufferAsync(targetWriter, (int) payloadSize, cancellationToken);
+                            await socket.FillBufferAsync(targetWriter, (int) payloadSize, cancellationToken);
                             await targetWriter.FlushAsync();
                             break;
                         case FrameType.ContentHeader:
-                            await this.socket.FillBufferAsync(contentHeaderCustomHeader);
+                            await socket.FillBufferAsync(contentHeaderCustomHeader);
 
                             ((ReadOnlySpan<byte>) (contentHeaderCustomHeader
                                 .Slice(4) // skip 2 obsolete shorts
@@ -190,16 +189,16 @@ namespace RabbitMQ.Next
                             ChannelFrame.WriteHeader(targetWriter, ChannelFrameType.Content, sizeof(uint) + headerSize + (uint) contentSide);
                             targetWriter.GetMemory(sizeof(int)).Span.Write((int) headerSize);
                             targetWriter.Advance(sizeof(int));
-                            await this.socket.FillBufferAsync(targetWriter, (int) headerSize);
+                            await socket.FillBufferAsync(targetWriter, (int) headerSize);
                             break;
                         case FrameType.ContentBody:
-                            await this.socket.FillBufferAsync(targetWriter, (int) payloadSize, cancellationToken);
+                            await socket.FillBufferAsync(targetWriter, (int) payloadSize, cancellationToken);
                             await targetWriter.FlushAsync();
                             break;
                     }
 
                     // 4. Ensure there is FrameEnd
-                    await this.socket.FillBufferAsync(endFrameBuffer);
+                    await socket.FillBufferAsync(endFrameBuffer);
 
                     if (endFrameBuffer[0] != ProtocolConstants.FrameEndByte)
                     {
@@ -225,8 +224,7 @@ namespace RabbitMQ.Next
 
             this.State = ConnectionState.Closed;
             this.socketIoCancellation.Cancel();
-            this.socket.Dispose();
-            this.socket = null;
+            this.frameSender?.Dispose();
 
             this.channelPool.ReleaseAll(ex);
         }

@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Text;
 using RabbitMQ.Next.Buffers;
 
-namespace RabbitMQ.Next.Tests
+namespace RabbitMQ.Next.Tests.Mocks
 {
     internal static class Helpers
     {

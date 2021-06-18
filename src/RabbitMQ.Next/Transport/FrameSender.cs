@@ -15,6 +15,7 @@ namespace RabbitMQ.Next.Transport
     {
         private static readonly byte[] FrameEndPayload = { ProtocolConstants.FrameEndByte };
         private static readonly ReadOnlyMemory<byte> HeartbeatFrame = new byte[] { (byte)FrameType.Heartbeat, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 };
+        private static readonly ReadOnlyMemory<byte> AmqpHeader = new byte[] { 0x41, 0x4D, 0x51, 0x50, 0x00, 0x00, 0x09, 0x01 };
 
         private readonly ISocket socket;
         private readonly IMethodRegistry registry;
@@ -22,6 +23,21 @@ namespace RabbitMQ.Next.Transport
 
         public FrameSender(ISocket socket, IMethodRegistry registry, IBufferPool bufferPool)
         {
+            if (socket == null)
+            {
+                throw new ArgumentNullException(nameof(socket));
+            }
+
+            if (registry == null)
+            {
+                throw new ArgumentNullException(nameof(registry));
+            }
+
+            if (bufferPool == null)
+            {
+                throw new ArgumentNullException(nameof(bufferPool));
+            }
+
             this.socket = socket;
             this.registry = registry;
             this.bufferPool = bufferPool;
@@ -37,6 +53,9 @@ namespace RabbitMQ.Next.Transport
                 await sender(HeartbeatFrame);
                 await sender(FrameEndPayload);
             });
+
+        public ValueTask SendAmqpHeaderAsync()
+            => this.socket.SendAsync(AmqpHeader);
 
         public async ValueTask SendMethodAsync<TMethod>(ushort channelNumber, TMethod method)
             where TMethod : struct, IOutgoingMethod
@@ -117,6 +136,11 @@ namespace RabbitMQ.Next.Transport
 
                 content = content.Slice(chunk.Length);
             }
+        }
+
+        public void Dispose()
+        {
+            this.socket.Dispose();
         }
     }
 }

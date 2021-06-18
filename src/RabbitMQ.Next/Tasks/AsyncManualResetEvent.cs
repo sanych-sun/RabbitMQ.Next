@@ -13,7 +13,7 @@ namespace RabbitMQ.Next.Tasks
         {
             if (!initialState)
             {
-                this.completionSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                this.Reset();
             }
         }
 
@@ -47,10 +47,7 @@ namespace RabbitMQ.Next.Tasks
                     .ContinueWith(t => t.Result != delayTask);
             }
 
-            if (cancellation.CanBeCanceled)
-            {
-                innerTask = innerTask.WithCancellation(cancellation);
-            }
+            innerTask = innerTask.WithCancellation(cancellation);
 
             return new ValueTask<bool>(innerTask);
         }

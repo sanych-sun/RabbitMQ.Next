@@ -110,7 +110,7 @@ namespace RabbitMQ.Next.Tests.Publisher
 
             await AckMessageAsync(handler, 2, false, true);
 
-            await Task.Delay(10);
+            await Task.Delay(50);
             Assert.True(wait1.IsCompleted);
             Assert.True(wait2.IsCompleted);
             Assert.False(wait3.IsCompleted);

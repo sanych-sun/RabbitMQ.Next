@@ -1,7 +1,7 @@
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Methods;
 
-namespace RabbitMQ.Next.Tests
+namespace RabbitMQ.Next.Tests.Mocks
 {
     public readonly struct DummyMethod<TData> : IIncomingMethod, IOutgoingMethod
     {

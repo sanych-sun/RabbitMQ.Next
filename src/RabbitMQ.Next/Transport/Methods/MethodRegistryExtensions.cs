@@ -11,8 +11,7 @@ namespace RabbitMQ.Next.Transport.Methods
             var formatter = methodRegistry.GetFormatter<TMethod>();
             if (formatter == null)
             {
-                // TODO: throw connection-level exception here?
-                throw new InvalidOperationException();
+                throw new NotSupportedException();
             }
 
             var resultSpan = buffer.Span

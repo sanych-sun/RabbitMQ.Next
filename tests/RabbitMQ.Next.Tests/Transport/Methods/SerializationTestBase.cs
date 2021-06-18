@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Methods;
+using RabbitMQ.Next.Tests.Mocks;
 using RabbitMQ.Next.Transport.Methods.Registry;
 using Xunit;
 
