@@ -165,7 +165,6 @@ namespace RabbitMQ.Next.Channels
                     return;
                 }
 
-                // TODO: check frame type here, it should be method frame only
                 var methodArgs = await pipeReader.ReadAsync(header.Size, methodFrameParser);
 
                 if (methodArgs == default)
@@ -182,7 +181,6 @@ namespace RabbitMQ.Next.Channels
                         return;
                     }
 
-                    // TODO: check frame type here, it should be content frame only
                     processed = await pipeReader.ReadAsync(contentHeader.Size,
                         (methodArgs, methodHandler),
                         (state, sequence) => state.methodHandler(state.methodArgs, sequence));
@@ -213,6 +211,11 @@ namespace RabbitMQ.Next.Channels
         {
             payload = payload.Read(out uint methodId);
             var parser = this.registry.GetParser((MethodId)methodId);
+
+            if (parser == null)
+            {
+                throw new NotSupportedException($"Cannot find parser for the method: {methodId}");
+            }
 
             if (payload.IsSingleSegment)
             {
