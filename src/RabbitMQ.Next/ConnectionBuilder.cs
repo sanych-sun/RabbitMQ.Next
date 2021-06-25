@@ -39,37 +39,37 @@ namespace RabbitMQ.Next
             };
         }
 
-        IConnectionBuilder IConnectionBuilder.Auth(IAuthMechanism mechanism)
+        public IConnectionBuilder Auth(IAuthMechanism mechanism)
         {
             this.authMechanism = mechanism;
             return this;
         }
 
-        IConnectionBuilder IConnectionBuilder.VirtualHost(string vhost)
+        public IConnectionBuilder VirtualHost(string vhost)
         {
             this.virtualhost = vhost;
             return this;
         }
 
-        IConnectionBuilder IConnectionBuilder.AddEndpoint(string host, int port, bool ssl)
+        public IConnectionBuilder AddEndpoint(string host, int port, bool ssl)
         {
             this.endpoints.Add(new Endpoint(host, port, ssl));
             return this;
         }
 
-        IConnectionBuilder IConnectionBuilder.ConfigureMethodRegistry(Action<IMethodRegistryBuilder> builder)
+        public IConnectionBuilder ConfigureMethodRegistry(Action<IMethodRegistryBuilder> builder)
         {
             builder?.Invoke(this.methodRegistry);
             return this;
         }
 
-        IConnectionBuilder IConnectionBuilder.ClientProperty(string key, object value)
+        public  IConnectionBuilder ClientProperty(string key, object value)
         {
             this.clientProperties[key] = value;
             return this;
         }
 
-        IConnectionBuilder IConnectionBuilder.Locale(string locale)
+        public IConnectionBuilder Locale(string locale)
         {
             this.locale = locale;
             return this;

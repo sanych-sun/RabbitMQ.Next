@@ -153,7 +153,6 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Registry
         public void ThrowsOnEmptyItems()
         {
             Assert.Throws<ArgumentNullException>(() => new MethodRegistry(null));
-            Assert.Throws<ArgumentNullException>(() => new MethodRegistry(Array.Empty<IMethodRegistration>()));
         }
     }
 }

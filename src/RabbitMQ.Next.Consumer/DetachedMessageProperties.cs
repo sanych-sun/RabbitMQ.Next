@@ -23,18 +23,18 @@ namespace RabbitMQ.Next.Consumer
             this.ApplicationId = properties.ApplicationId;
         }
 
-        public string ContentType { get; set; }
-        public string ContentEncoding { get; set; }
-        public IReadOnlyDictionary<string, object> Headers { get; set; }
-        public DeliveryMode DeliveryMode { get; set; }
-        public byte? Priority { get; set; }
-        public string CorrelationId { get; set; }
-        public string ReplyTo { get; set; }
-        public string Expiration { get; set; }
-        public string MessageId { get; set; }
-        public DateTimeOffset? Timestamp { get; set; }
-        public string Type { get; set; }
-        public string UserId { get; set; }
-        public string ApplicationId { get; set; }
+        public string ContentType { get; }
+        public string ContentEncoding { get; }
+        public IReadOnlyDictionary<string, object> Headers { get; }
+        public DeliveryMode DeliveryMode { get; }
+        public byte? Priority { get; }
+        public string CorrelationId { get; }
+        public string ReplyTo { get; }
+        public string Expiration { get; }
+        public string MessageId { get; }
+        public DateTimeOffset? Timestamp { get; }
+        public string Type { get; }
+        public string UserId { get; }
+        public string ApplicationId { get; }
     }
 }

@@ -52,7 +52,6 @@ namespace RabbitMQ.Next.Consumer
 
         public async Task ConsumeAsync(CancellationToken cancellation)
         {
-            // TODO: deal with connection state here
             this.channel = await this.connection.OpenChannelAsync(new [] { this.frameHandler }, cancellation);
             if (this.acknowledgerFactory != null)
             {
@@ -60,8 +59,9 @@ namespace RabbitMQ.Next.Consumer
                 this.acknowledger = this.acknowledgerFactory(ack);
             }
 
-            await this.channel.UseChannel(this.initializer, (ch, state)
-                => state.InitConsumerAsync(ch, CancellationToken.None));
+            await this.channel.UseChannel((this.initializer, cancellation),
+                (ch, state) => state.initializer.InitConsumerAsync(ch, state.cancellation),
+                cancellation);
 
             cancellation.Register(() => this.CancelConsumeAsync());
 
@@ -115,21 +115,25 @@ namespace RabbitMQ.Next.Consumer
             return true;
         }
 
-        private async ValueTask AckAsync(DeliveredMessage message)
+        private ValueTask AckAsync(DeliveredMessage message)
         {
-            if (this.acknowledger != null)
+            if (this.acknowledger == null)
             {
-                await this.acknowledger.AckAsync(message.DeliveryTag);
+                return default;
             }
+
+            return this.acknowledger.AckAsync(message.DeliveryTag);
         }
 
-        private async ValueTask NackAsync(DeliveredMessage message, UnprocessedMessageMode mode)
+        private ValueTask NackAsync(DeliveredMessage message, UnprocessedMessageMode mode)
         {
-            if (this.acknowledger != null)
+            if (this.acknowledger == null)
             {
-                var requeue = (mode | UnprocessedMessageMode.Requeue) == UnprocessedMessageMode.Requeue;
-                await this.acknowledger.NackAsync(message.DeliveryTag, requeue);
+                return default;
             }
+
+            var requeue = (mode | UnprocessedMessageMode.Requeue) == UnprocessedMessageMode.Requeue;
+            return this.acknowledger.NackAsync(message.DeliveryTag, requeue);
         }
 
         private async ValueTask ProcessPoisonMessageAsync(DeliveredMessage message, IMessageProperties properties, ReadOnlySequence<byte> payload, Exception ex)

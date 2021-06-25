@@ -40,13 +40,23 @@ namespace RabbitMQ.Next.Consumer
 
         IConsumerBuilder IConsumerBuilder.UseFormatter(ITypeFormatter formatter)
         {
+            if (formatter == null)
+            {
+                throw new ArgumentNullException(nameof(formatter));
+            }
+
             this.formatters ??= new List<ITypeFormatter>();
             this.formatters.Add(formatter);
             return this;
         }
 
-        IConsumerBuilder IConsumerBuilder.UserFormatterSource(IFormatterSource formatterSource)
+        IConsumerBuilder IConsumerBuilder.UseFormatterSource(IFormatterSource formatterSource)
         {
+            if (formatterSource == null)
+            {
+                throw new ArgumentNullException(nameof(formatterSource));
+            }
+
             this.formatterSources ??= new List<IFormatterSource>();
             this.formatterSources.Add(formatterSource);
             return this;
@@ -74,11 +84,16 @@ namespace RabbitMQ.Next.Consumer
 
         IConsumerBuilder IConsumerBuilder.SetAcknowledger(Func<IAcknowledgement, IAcknowledger> acknowledgerFactory)
         {
+            if (acknowledgerFactory == null)
+            {
+                throw new ArgumentNullException(nameof(acknowledgerFactory));
+            }
+
             this.AcknowledgerFactory = acknowledgerFactory;
             return this;
         }
 
-        IConsumerBuilder IConsumerBuilder.OnUnhandledMessage(UnprocessedMessageMode mode)
+        IConsumerBuilder IConsumerBuilder.OnUnprocessedMessage(UnprocessedMessageMode mode)
         {
             this.OnUnprocessedMessage = mode;
             return this;

@@ -13,7 +13,7 @@ namespace RabbitMQ.Next.Transport.Methods.Registry
 
         public MethodRegistry(IReadOnlyList<IMethodRegistration> items)
         {
-            if (items == null || items.Count == 0)
+            if (items == null)
             {
                 throw new ArgumentNullException(nameof(items));
             }

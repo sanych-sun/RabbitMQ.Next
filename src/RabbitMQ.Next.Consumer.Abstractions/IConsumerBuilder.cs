@@ -9,7 +9,7 @@ namespace RabbitMQ.Next.Consumer.Abstractions
     {
         IConsumerBuilder UseFormatter(ITypeFormatter formatter);
 
-        IConsumerBuilder UserFormatterSource(IFormatterSource formatterSource);
+        IConsumerBuilder UseFormatterSource(IFormatterSource formatterSource);
 
         IConsumerBuilder BindToQueue(string queue, Action<IQueueConsumerBuilder> builder = null);
 
@@ -19,7 +19,7 @@ namespace RabbitMQ.Next.Consumer.Abstractions
 
         IConsumerBuilder SetAcknowledger(Func<IAcknowledgement, IAcknowledger> acknowledgerFactory);
 
-        IConsumerBuilder OnUnhandledMessage(UnprocessedMessageMode mode);
+        IConsumerBuilder OnUnprocessedMessage(UnprocessedMessageMode mode);
 
         IConsumerBuilder OnPoisonMessage(UnprocessedMessageMode mode);
 
