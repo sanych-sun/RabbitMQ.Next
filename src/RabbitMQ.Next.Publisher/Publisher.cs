@@ -74,17 +74,17 @@ namespace RabbitMQ.Next.Publisher
 
             if (ch != null)
             {
-                return new ValueTask(ch.CloseAsync());
+                return ch.CloseAsync();
             }
 
             return default;
         }
 
-        public async ValueTask PublishAsync<TContent>(TContent content, string routingKey = null, IMessageProperties properties = null, PublishFlags flags = PublishFlags.None, CancellationToken cancellationToken = default)
+        public async ValueTask PublishAsync<TContent>(TContent content, string routingKey = null, MessageProperties properties = default, PublishFlags flags = PublishFlags.None, CancellationToken cancellationToken = default)
         {
             this.CheckDisposed();
 
-            await this.flowControl.WaitAsync(cancellationToken);
+            //await this.flowControl.WaitAsync(cancellationToken);
 
             try
             {
@@ -95,6 +95,7 @@ namespace RabbitMQ.Next.Publisher
                 using var bufferWriter = this.connection.BufferPool.Create();
                 this.serializer.Serialize(content, bufferWriter);
 
+                this.CheckDisposed();
                 var messageDeliveryTag = await ch.UseChannel(
                     (publisher: this, message, content: bufferWriter.ToSequence()),
                     async (sender, state) =>
@@ -102,7 +103,7 @@ namespace RabbitMQ.Next.Publisher
                         var method = new PublishMethod(state.publisher.exchange, state.message.RoutingKey, (byte) state.message.PublishFlags);
                         await sender.SendAsync(method, state.message.Properties, state.content);
 
-                        return ++this.lastDeliveryTag;
+                        return ++state.publisher.lastDeliveryTag;
                     });
 
                 if (this.confirms != null)
@@ -117,7 +118,7 @@ namespace RabbitMQ.Next.Publisher
             }
             finally
             {
-                this.flowControl.Release();
+                //this.flowControl.Release();
             }
         }
 
@@ -129,26 +130,29 @@ namespace RabbitMQ.Next.Publisher
                 throw new ObjectDisposedException(this.GetType().Name);
             }
         }
-        
-        private async ValueTask<IChannel> EnsureChannelOpenAsync(CancellationToken cancellationToken)
-        {
-            this.CheckDisposed();
 
-            var ch = this.channel ?? await this.OpenChannelAsync(cancellationToken);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private ValueTask<IChannel> EnsureChannelOpenAsync(CancellationToken cancellationToken)
+        {
+            var ch = this.channel;
+
+            if (ch == null)
+            {
+                return this.OpenChannelAsync(cancellationToken);
+            }
 
             if (ch.Completion.Exception != null)
             {
                 throw ch.Completion.Exception?.InnerException ?? ch.Completion.Exception;
             }
 
-            return ch;
+            return new ValueTask<IChannel>(ch);
         }
 
-        private (string RoutingKey, IMessageProperties Properties, PublishFlags PublishFlags) ApplyTransformers<TContent>(
-            TContent content, string routingKey, IMessageProperties properties, PublishFlags publishFlags)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private (string RoutingKey, MessageProperties Properties, PublishFlags PublishFlags) ApplyTransformers<TContent>(
+            TContent content, string routingKey, MessageProperties properties, PublishFlags publishFlags)
         {
-            this.CheckDisposed();
-
             if (this.transformers == null)
             {
                 return (routingKey, properties, publishFlags);
@@ -160,7 +164,7 @@ namespace RabbitMQ.Next.Publisher
                 this.transformers[i].Apply(content, messageBuilder);
             }
 
-            return (messageBuilder.RoutingKey, messageBuilder, messageBuilder.PublishFlags);
+            return (messageBuilder.RoutingKey, new MessageProperties(messageBuilder), messageBuilder.PublishFlags);
         }
 
         private async ValueTask<IChannel> OpenChannelAsync(CancellationToken cancellationToken)

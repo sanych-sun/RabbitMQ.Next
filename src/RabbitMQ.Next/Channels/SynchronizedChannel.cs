@@ -21,11 +21,11 @@ namespace RabbitMQ.Next.Channels
             this.waitHandler = waitHandler;
         }
 
-        public async Task SendAsync<TMethod>(TMethod request)
+        public async ValueTask SendAsync<TMethod>(TMethod request)
             where TMethod : struct, IOutgoingMethod
             => await this.frameSender.SendMethodAsync(this.channelNumber, request);
 
-        public async Task SendAsync<TMethod>(TMethod request, IMessageProperties properties, ReadOnlySequence<byte> content)
+        public async ValueTask SendAsync<TMethod>(TMethod request, MessageProperties properties, ReadOnlySequence<byte> content)
             where TMethod : struct, IOutgoingMethod
         {
             await this.frameSender.SendMethodAsync(this.channelNumber, request);
@@ -36,7 +36,7 @@ namespace RabbitMQ.Next.Channels
             }
         }
 
-        public async Task<TMethod> WaitAsync<TMethod>(CancellationToken cancellation = default)
+        public async ValueTask<TMethod> WaitAsync<TMethod>(CancellationToken cancellation = default)
             where TMethod : struct, IIncomingMethod
         {
             var result = await this.waitHandler.WaitAsync<TMethod>(cancellation);

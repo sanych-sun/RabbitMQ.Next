@@ -23,27 +23,32 @@ namespace RabbitMQ.Next.Channels
             this.channel = channel;
             this.cancellationHandler = () =>
             {
-                this.waitingTask?.SetCanceled();
+                var task = Interlocked.Exchange(ref this.waitingTask, null);
+                task?.TrySetCanceled();
             };
 
             channel.Completion.ContinueWith(t =>
             {
+                var task = Interlocked.Exchange(ref this.waitingTask, null);
+                if (task == null)
+                {
+                    return;
+                }
+
                 var ex = t.Exception?.InnerException ?? t.Exception;
 
                 if (ex == null)
                 {
-                    this.waitingTask?.TrySetCanceled();
+                    task.TrySetCanceled();
                 }
                 else
                 {
-                    this.waitingTask?.TrySetException(ex);
+                    task.TrySetException(ex);
                 }
-
-                this.waitingTask = null;
             });
         }
 
-        public Task<IIncomingMethod> WaitAsync<TMethod>(CancellationToken cancellation = default)
+        public async Task<IIncomingMethod> WaitAsync<TMethod>(CancellationToken cancellation = default)
             where TMethod : struct, IIncomingMethod
         {
             if (this.channel.Completion.IsCompleted)
@@ -57,14 +62,17 @@ namespace RabbitMQ.Next.Channels
             }
 
             var methodId = this.registry.GetMethodId<TMethod>();
-            this.waitingTask = new TaskCompletionSource<IIncomingMethod>(TaskCreationOptions.RunContinuationsAsynchronously);
+            Interlocked.Exchange(ref this.waitingTask, new TaskCompletionSource<IIncomingMethod>(TaskCreationOptions.RunContinuationsAsynchronously));
             this.expectedMethodId = methodId;
-            if (cancellation != default)
+            CancellationTokenRegistration cancellationTokenRegistration = default;
+            if (cancellation.CanBeCanceled)
             {
-                cancellation.Register(this.cancellationHandler);
+                cancellationTokenRegistration = cancellation.Register(this.cancellationHandler);
             }
 
-            return this.waitingTask.Task;
+            var result = await this.waitingTask.Task;
+            await cancellationTokenRegistration.DisposeAsync();
+            return result;
         }
 
         ValueTask<bool> IMethodHandler.HandleAsync(IIncomingMethod method, IMessageProperties properties, ReadOnlySequence<byte> contentBytes)
@@ -74,10 +82,10 @@ namespace RabbitMQ.Next.Channels
                 return new ValueTask<bool>(false);
             }
 
-            var task = this.waitingTask;
-            this.waitingTask = null;
+
             this.expectedMethodId = 0;
-            task.SetResult(method);
+            var task = Interlocked.Exchange(ref this.waitingTask, null);
+            task?.SetResult(method);
 
             return new ValueTask<bool>(true);
         }

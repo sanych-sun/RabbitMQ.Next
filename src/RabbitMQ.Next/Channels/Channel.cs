@@ -55,7 +55,7 @@ namespace RabbitMQ.Next.Channels
             this.methodHandlers = list;
             this.syncChannel = new SynchronizedChannel(this.ChannelNumber, frameSender, waitFrameHandler);
 
-            Task.Run(() => this.LoopAsync(pipe.Reader));
+            Task.Factory.StartNew(() => this.LoopAsync(pipe.Reader), TaskCreationOptions.LongRunning);
         }
 
         public ushort ChannelNumber { get; }
@@ -79,7 +79,31 @@ namespace RabbitMQ.Next.Channels
             this.channelPool.Release(this.ChannelNumber);
         }
 
-        public async Task UseChannel(Func<ISynchronizedChannel, Task> fn, CancellationToken cancellation = default)
+        public async ValueTask SendAsync<TRequest>(TRequest request, CancellationToken cancellation = default)
+            where TRequest : struct, IOutgoingMethod
+        {
+            var isSync = this.registry.IsSync(request.MethodId);
+
+            if (isSync)
+            {
+                await this.senderSync.WaitAsync(cancellation);
+            }
+
+            try
+            {
+                this.ValidateState();
+                await this.syncChannel.SendAsync(request);
+            }
+            finally
+            {
+                if (isSync)
+                {
+                    this.senderSync.Release();
+                }
+            }
+        }
+
+        public async ValueTask UseChannel(Func<ISynchronizedChannel, ValueTask> fn, CancellationToken cancellation = default)
         {
             await this.senderSync.WaitAsync(cancellation);
 
@@ -94,7 +118,7 @@ namespace RabbitMQ.Next.Channels
             }
         }
 
-        public async Task UseChannel<TState>(TState state, Func<ISynchronizedChannel, TState, Task> fn, CancellationToken cancellation = default)
+        public async ValueTask UseChannel<TState>(TState state, Func<ISynchronizedChannel, TState, ValueTask> fn, CancellationToken cancellation = default)
         {
             await this.senderSync.WaitAsync(cancellation);
 
@@ -109,7 +133,7 @@ namespace RabbitMQ.Next.Channels
             }
         }
 
-        public async Task<TResult> UseChannel<TResult>(Func<ISynchronizedChannel, Task<TResult>> fn, CancellationToken cancellation = default)
+        public async ValueTask<TResult> UseChannel<TResult>(Func<ISynchronizedChannel, ValueTask<TResult>> fn, CancellationToken cancellation = default)
         {
             await this.senderSync.WaitAsync(cancellation);
 
@@ -124,7 +148,7 @@ namespace RabbitMQ.Next.Channels
             }
         }
 
-        public async Task<TResult> UseChannel<TState, TResult>(TState state, Func<ISynchronizedChannel, TState, Task<TResult>> fn, CancellationToken cancellation = default)
+        public async ValueTask<TResult> UseChannel<TState, TResult>(TState state, Func<ISynchronizedChannel, TState, ValueTask<TResult>> fn, CancellationToken cancellation = default)
         {
             await this.senderSync.WaitAsync(cancellation);
 
@@ -139,13 +163,13 @@ namespace RabbitMQ.Next.Channels
             }
         }
 
-        public async Task CloseAsync(Exception ex = null)
+        public async ValueTask CloseAsync(Exception ex = null)
         {
             await this.SendAsync<CloseMethod, CloseOkMethod>(new CloseMethod((ushort) ReplyCode.Success, string.Empty, MethodId.Unknown));
             this.SetCompleted(ex);
         }
 
-        public async Task CloseAsync(ushort statusCode, string description, MethodId failedMethodId)
+        public async ValueTask CloseAsync(ushort statusCode, string description, MethodId failedMethodId)
         {
             await this.SendAsync<CloseMethod, CloseOkMethod>(new CloseMethod(statusCode, description, failedMethodId));
             this.SetCompleted(new ChannelException(statusCode, description, failedMethodId));
@@ -157,44 +181,51 @@ namespace RabbitMQ.Next.Channels
             Func<ReadOnlySequence<byte>, IIncomingMethod> methodFrameParser = this.ParseMethodFrame;
             Func<IIncomingMethod, ReadOnlySequence<byte>, ValueTask<bool>> methodHandler = this.HandleMethodAsync;
 
-            while (!this.Completion.IsCompleted)
+            try
             {
-                var header = await pipeReader.ReadAsync(ChannelFrame.FrameHeaderSize, headerParser);
-                if (header == default)
+                while (!this.Completion.IsCompleted)
                 {
-                    return;
-                }
-
-                var methodArgs = await pipeReader.ReadAsync(header.Size, methodFrameParser);
-
-                if (methodArgs == default)
-                {
-                    return;
-                }
-
-                bool processed;
-                if (this.registry.HasContent(methodArgs.MethodId))
-                {
-                    var contentHeader = await pipeReader.ReadAsync(ChannelFrame.FrameHeaderSize, headerParser);
+                    var header = await pipeReader.ReadAsync(ChannelFrame.FrameHeaderSize, headerParser);
                     if (header == default)
                     {
                         return;
                     }
 
-                    processed = await pipeReader.ReadAsync(contentHeader.Size,
-                        (methodArgs, methodHandler),
-                        (state, sequence) => state.methodHandler(state.methodArgs, sequence));
-                }
-                else
-                {
-                    processed = await methodHandler(methodArgs, default);
-                }
+                    var methodArgs = await pipeReader.ReadAsync(header.Size, methodFrameParser);
 
-                if (!processed)
-                {
-                    // todo: close channel on unexpected method
-                    return;
+                    if (methodArgs == default)
+                    {
+                        return;
+                    }
+
+                    bool processed;
+                    if (this.registry.HasContent(methodArgs.MethodId))
+                    {
+                        var contentHeader = await pipeReader.ReadAsync(ChannelFrame.FrameHeaderSize, headerParser);
+                        if (header == default)
+                        {
+                            return;
+                        }
+
+                        processed = await pipeReader.ReadAsync(contentHeader.Size,
+                            (methodArgs, methodHandler),
+                            (state, sequence) => state.methodHandler(state.methodArgs, sequence));
+                    }
+                    else
+                    {
+                        processed = await methodHandler(methodArgs, default);
+                    }
+
+                    if (!processed)
+                    {
+                        // todo: close channel on unexpected method
+                        return;
+                    }
                 }
+            }
+            catch (Exception e)
+            {
+                this.SetCompleted(e);
             }
         }
 
@@ -229,7 +260,7 @@ namespace RabbitMQ.Next.Channels
 
         private async ValueTask<bool> HandleMethodAsync(IIncomingMethod method, ReadOnlySequence<byte> content)
         {
-            MessageProperties properties = null;
+            LazyMessageProperties properties = null;
             ReadOnlySequence<byte> contentBody = default;
 
             try
@@ -237,7 +268,7 @@ namespace RabbitMQ.Next.Channels
                 if (!content.IsEmpty)
                 {
                     content = content.Read(out uint headerSize);
-                    properties = new MessageProperties(content.Slice(0, headerSize));
+                    properties = new LazyMessageProperties(content.Slice(0, headerSize));
                     contentBody = content.Slice(headerSize);
                 }
 

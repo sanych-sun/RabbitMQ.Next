@@ -7,16 +7,7 @@ namespace RabbitMQ.Next.Abstractions.Channels
 {
     public static class ChannelExtensions
     {
-        public static Task SendAsync<TRequest>(this IChannel channel, TRequest request, CancellationToken cancellationToken = default)
-            where TRequest : struct, IOutgoingMethod
-        {
-            return channel.UseChannel(
-                request,
-                (ch, state) => ch.SendAsync(state),
-                cancellationToken);
-        }
-
-        public static Task<TResponse> SendAsync<TRequest, TResponse>(this IChannel channel, TRequest request, CancellationToken cancellationToken = default)
+        public static ValueTask<TResponse> SendAsync<TRequest, TResponse>(this IChannel channel, TRequest request, CancellationToken cancellationToken = default)
             where TRequest : struct, IOutgoingMethod
             where TResponse : struct, IIncomingMethod
         {
@@ -26,7 +17,7 @@ namespace RabbitMQ.Next.Abstractions.Channels
                 cancellationToken);
         }
 
-        public static async Task<TResponse> SendAsync<TRequest, TResponse>(this ISynchronizedChannel channel, TRequest request, CancellationToken cancellationToken = default)
+        public static async ValueTask<TResponse> SendAsync<TRequest, TResponse>(this ISynchronizedChannel channel, TRequest request, CancellationToken cancellationToken = default)
             where TRequest : struct, IOutgoingMethod
             where TResponse : struct, IIncomingMethod
         {

@@ -24,11 +24,8 @@ namespace RabbitMQ.Next.Tests.Mocks
             return ((Memory<byte>) this.buffer)[0..this.offset];
         }
 
-        public ValueTask SendAsync(ReadOnlyMemory<byte> payload, CancellationToken cancellation = default)
+        public ValueTask SendAsync(ReadOnlyMemory<byte> payload)
             => this.WriteToBuffer(payload);
-
-        public ValueTask SendAsync<TState>(TState state, Func<Func<ReadOnlyMemory<byte>, ValueTask>, TState, ValueTask> writer, CancellationToken cancellation = default)
-            => writer.Invoke(this.WriteToBuffer, state);
 
         public ValueTask<int> ReceiveAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 

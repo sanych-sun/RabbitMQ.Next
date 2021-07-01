@@ -7,7 +7,7 @@ namespace RabbitMQ.Next.Publisher
 {
     public static class ConnectionExtensions
     {
-        public static IPublisher NewPublisher(this IConnection connection, string exchange, Action<IPublisherBuilder> builder)
+        public static IPublisher Publisher(this IConnection connection, string exchange, Action<IPublisherBuilder> builder)
         {
             if (string.IsNullOrWhiteSpace(exchange))
             {

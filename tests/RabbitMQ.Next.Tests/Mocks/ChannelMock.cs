@@ -25,28 +25,31 @@ namespace RabbitMQ.Next.Tests.Mocks
 
         public Task Completion { get; }
 
-        public Task UseChannel(Func<ISynchronizedChannel, Task> fn, CancellationToken cancellation = default)
+        public ValueTask SendAsync<TRequest>(TRequest request, CancellationToken cancellationToken = default)
+            where TRequest : struct, IOutgoingMethod => this.channel.SendAsync(request);
+
+        public ValueTask UseChannel(Func<ISynchronizedChannel, ValueTask> fn, CancellationToken cancellation = default)
             => fn(this.channel);
 
-        public Task UseChannel<TState>(TState state, Func<ISynchronizedChannel, TState, Task> fn, CancellationToken cancellation = default)
+        public ValueTask UseChannel<TState>(TState state, Func<ISynchronizedChannel, TState, ValueTask> fn, CancellationToken cancellation = default)
             => fn(this.channel, state);
 
-        public Task<TResult> UseChannel<TResult>(Func<ISynchronizedChannel, Task<TResult>> fn, CancellationToken cancellation = default)
+        public ValueTask<TResult> UseChannel<TResult>(Func<ISynchronizedChannel, ValueTask<TResult>> fn, CancellationToken cancellation = default)
             => fn(this.channel);
 
-        public Task<TResult> UseChannel<TState, TResult>(TState state, Func<ISynchronizedChannel, TState, Task<TResult>> fn, CancellationToken cancellation = default)
+        public ValueTask<TResult> UseChannel<TState, TResult>(TState state, Func<ISynchronizedChannel, TState, ValueTask<TResult>> fn, CancellationToken cancellation = default)
             => fn(this.channel, state);
 
-        public Task CloseAsync(Exception ex = null)
+        public ValueTask CloseAsync(Exception ex = null)
         {
             this.IsClosed = true;
-            return Task.CompletedTask;
+            return default;
         }
 
-        public Task CloseAsync(ushort statusCode, string description, MethodId failedMethodId)
+        public ValueTask CloseAsync(ushort statusCode, string description, MethodId failedMethodId)
         {
             this.IsClosed = true;
-            return Task.CompletedTask;
+            return default;
         }
 
         public void SetHandlers(IReadOnlyList<IMethodHandler> handlers)

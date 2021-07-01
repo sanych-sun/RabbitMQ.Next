@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using RabbitMQ.Next.Abstractions.Methods;
 
 namespace RabbitMQ.Next.Abstractions.Channels
 {
@@ -8,16 +9,19 @@ namespace RabbitMQ.Next.Abstractions.Channels
     {
         Task Completion { get; }
 
-        Task UseChannel(Func<ISynchronizedChannel, Task> fn, CancellationToken cancellation = default);
+        ValueTask SendAsync<TRequest>(TRequest request, CancellationToken cancellationToken = default)
+            where TRequest : struct, IOutgoingMethod;
 
-        Task UseChannel<TState>(TState state, Func<ISynchronizedChannel, TState, Task> fn, CancellationToken cancellation = default);
+        ValueTask UseChannel(Func<ISynchronizedChannel, ValueTask> fn, CancellationToken cancellation = default);
 
-        Task<TResult> UseChannel<TResult>(Func<ISynchronizedChannel, Task<TResult>> fn, CancellationToken cancellation = default);
+        ValueTask UseChannel<TState>(TState state, Func<ISynchronizedChannel, TState, ValueTask> fn, CancellationToken cancellation = default);
 
-        Task<TResult> UseChannel<TState, TResult>(TState state, Func<ISynchronizedChannel, TState, Task<TResult>> fn, CancellationToken cancellation = default);
+        ValueTask<TResult> UseChannel<TResult>(Func<ISynchronizedChannel, ValueTask<TResult>> fn, CancellationToken cancellation = default);
 
-        Task CloseAsync(Exception ex = null);
+        ValueTask<TResult> UseChannel<TState, TResult>(TState state, Func<ISynchronizedChannel, TState, ValueTask<TResult>> fn, CancellationToken cancellation = default);
 
-        Task CloseAsync(ushort statusCode, string description, MethodId failedMethodId);
+        ValueTask CloseAsync(Exception ex = null);
+
+        ValueTask CloseAsync(ushort statusCode, string description, MethodId failedMethodId);
     }
 }

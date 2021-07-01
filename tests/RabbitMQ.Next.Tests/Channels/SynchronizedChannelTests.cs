@@ -32,7 +32,7 @@ namespace RabbitMQ.Next.Tests.Channels
         public async Task CanSendWithContentAsync()
         {
             var method = new DummyMethod<int>(MethodId.BasicGet, 12);
-            var properties = Substitute.For<IMessageProperties>();
+            var properties = new MessageProperties();
             var content = new ReadOnlySequence<byte>(new byte[] { 0x00, 0x01, 0x02, 0x03 });
 
             ushort channelNumber = 2;
@@ -52,7 +52,7 @@ namespace RabbitMQ.Next.Tests.Channels
         public async Task CanSendWithEmptyContentAsync()
         {
             var method = new DummyMethod<int>(MethodId.BasicGet, 12);
-            var properties = Substitute.For<IMessageProperties>();
+            var properties = new MessageProperties();
             var content = ReadOnlySequence<byte>.Empty;
 
             ushort channelNumber = 3;

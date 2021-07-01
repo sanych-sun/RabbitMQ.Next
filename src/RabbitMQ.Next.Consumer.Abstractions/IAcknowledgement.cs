@@ -5,8 +5,8 @@ namespace RabbitMQ.Next.Consumer.Abstractions
 {
     public interface IAcknowledgement : IAsyncDisposable
     {
-        Task AckAsync(ulong deliveryTag, bool multiple = false);
+        ValueTask AckAsync(ulong deliveryTag, bool multiple = false);
 
-        Task NackAsync(ulong deliveryTag, bool requeue);
+        ValueTask NackAsync(ulong deliveryTag, bool requeue);
     }
 }

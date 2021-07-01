@@ -17,7 +17,7 @@ namespace RabbitMQ.Next.Transport
         ValueTask SendMethodAsync<TMethod>(ushort channelNumber, TMethod method)
             where TMethod : struct, IOutgoingMethod;
 
-        ValueTask SendContentHeaderAsync(ushort channelNumber, IMessageProperties properties, ulong contentSize);
+        ValueTask SendContentHeaderAsync(ushort channelNumber, MessageProperties properties, ulong contentSize);
 
         ValueTask SendContentAsync(ushort channelNumber, ReadOnlySequence<byte> contentBytes);
     }

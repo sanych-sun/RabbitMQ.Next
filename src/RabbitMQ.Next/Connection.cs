@@ -56,7 +56,7 @@ namespace RabbitMQ.Next
             var connectionChannel = new Channel(connection.channelPool, connection.methodRegistry, connection.frameSender, connection.bufferPool, null);
 
             connection.socketIoCancellation = new CancellationTokenSource();
-            Task.Run(() => connection.ReceiveLoop(socket, connection.socketIoCancellation.Token));
+            Task.Factory.StartNew(() => connection.ReceiveLoop(socket, connection.socketIoCancellation.Token), TaskCreationOptions.LongRunning);
 
             var negotiationResults = await connectionChannel.UseChannel(async ch =>
             {

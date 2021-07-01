@@ -1,14 +1,12 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
 using NSubstitute;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Buffers;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
-using RabbitMQ.Next.Abstractions.Methods;
 using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Abstractions.Transformers;
@@ -137,7 +135,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         [MemberData(nameof(PublishTestCases))]
         public async Task PublishAsync(
             IReadOnlyList<IMessageTransformer> transformers,
-            string exchange, string routingKey, IMessageProperties properties, PublishFlags flags,
+            string exchange, string routingKey, MessageProperties properties, PublishFlags flags,
             PublishMethod expectedMethod, IMessageProperties expectedProperties)
         {
             var mock = this.Mock();
@@ -148,7 +146,7 @@ namespace RabbitMQ.Next.Tests.Publisher
 
             await mock.sync.Received().SendAsync(
                 expectedMethod,
-                Arg.Is<IMessageProperties>(p => new MessagePropertiesComparer().Equals(p, expectedProperties)),
+                Arg.Is<MessageProperties>(p => new MessagePropertiesComparer().Equals(p, expectedProperties)),
                 Arg.Any<ReadOnlySequence<byte>>()
             );
         }
@@ -237,41 +235,41 @@ namespace RabbitMQ.Next.Tests.Publisher
             yield return new object[]
             {
                 null,
-                "myExchange", "key", null, PublishFlags.None,
+                "myExchange", "key", new MessageProperties(), PublishFlags.None,
                 new PublishMethod("myExchange", "key", 0),
-                null
+                new MessageProperties()
             };
 
             yield return new object[]
             {
                 null,
-                "myExchange", "key", null, PublishFlags.Immediate,
+                "myExchange", "key", new MessageProperties(), PublishFlags.Immediate,
                 new PublishMethod("myExchange", "key", (byte)PublishFlags.Immediate),
-                null
+                new MessageProperties()
             };
 
             yield return new object[]
             {
                 null,
-                "myExchange", "key", new MessagePropertiesMock { ApplicationId = "test"}, PublishFlags.None,
+                "myExchange", "key", new MessageProperties { ApplicationId = "test"}, PublishFlags.None,
                 new PublishMethod("myExchange", "key", 0),
-                new MessagePropertiesMock { ApplicationId = "test"}
+                new MessageProperties { ApplicationId = "test"}
             };
 
             yield return new object[]
             {
                 null,
-                "myExchange", "key", new MessagePropertiesMock { Priority = 1, Type = "test"}, PublishFlags.None,
+                "myExchange", "key", new MessageProperties { Priority = 1, Type = "test"}, PublishFlags.None,
                 new PublishMethod("myExchange", "key", 0),
-                new MessagePropertiesMock { Priority = 1, Type = "test"}
+                new MessageProperties { Priority = 1, Type = "test"}
             };
 
             yield return new object[]
             {
                 new IMessageTransformer[] { new UserIdTransformer("testUser")},
-                "exchange", "key", new MessagePropertiesMock { Priority = 1, Type = "test"}, PublishFlags.None,
+                "exchange", "key", new MessageProperties { Priority = 1, Type = "test"}, PublishFlags.None,
                 new PublishMethod("exchange", "key", 0),
-                new MessagePropertiesMock { Priority = 1, Type = "test", UserId = "testUser"}
+                new MessageProperties { Priority = 1, Type = "test", UserId = "testUser"}
             };
         }
 

@@ -14,7 +14,7 @@ namespace RabbitMQ.Next.Transport
     internal class FrameSender : IFrameSender
     {
         private static readonly byte[] FrameEndPayload = { ProtocolConstants.FrameEndByte };
-        private static readonly ReadOnlyMemory<byte> HeartbeatFrame = new byte[] { (byte)FrameType.Heartbeat, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 };
+        private static readonly ReadOnlyMemory<byte> HeartbeatFrame = new byte[] { (byte)FrameType.Heartbeat, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, ProtocolConstants.FrameEndByte };
         private static readonly ReadOnlyMemory<byte> AmqpHeader = new byte[] { 0x41, 0x4D, 0x51, 0x50, 0x00, 0x00, 0x09, 0x01 };
 
         private readonly ISocket socket;
@@ -48,11 +48,7 @@ namespace RabbitMQ.Next.Transport
         public int FrameMaxSize { get; set; }
 
         public ValueTask SendHeartBeatAsync()
-            => this.socket.SendAsync(0, async (sender, _) =>
-            {
-                await sender(HeartbeatFrame);
-                await sender(FrameEndPayload);
-            });
+            => this.socket.SendAsync(HeartbeatFrame);
 
         public ValueTask SendAmqpHeaderAsync()
             => this.socket.SendAsync(AmqpHeader);
@@ -60,62 +56,49 @@ namespace RabbitMQ.Next.Transport
         public async ValueTask SendMethodAsync<TMethod>(ushort channelNumber, TMethod method)
             where TMethod : struct, IOutgoingMethod
         {
-            using var headerBuffer = this.bufferPool.CreateMemory(ProtocolConstants.FrameHeaderSize);
-            using var payloadBuffer = this.bufferPool.CreateMemory();
+            using var buffer = this.bufferPool.CreateMemory();
 
-            var written = this.registry.FormatMessage(method, payloadBuffer.Memory);
-            var payload = payloadBuffer.Memory.Slice(0, written);
-            headerBuffer.Memory.Span.WriteFrameHeader(FrameType.Method, channelNumber, (uint)written);
+            var written = this.registry.FormatMessage(method, buffer.Memory.Slice(ProtocolConstants.FrameHeaderSize));
+            buffer.Memory.Span.WriteFrameHeader(FrameType.Method, channelNumber, (uint)written);
+            FrameEndPayload.CopyTo(buffer.Memory.Slice(ProtocolConstants.FrameHeaderSize + written));
 
-            await this.socket.SendAsync(
-                (header: headerBuffer.Memory, payload),
-                async (sender, state) =>
-                {
-                    await sender(state.header);
-                    await sender(state.payload);
-                    await sender(FrameEndPayload);
-                });
+            var payload = buffer.Memory.Slice(0, ProtocolConstants.FrameHeaderSize + written + 1);
 
+            await this.socket.SendAsync(payload);
         }
 
-        public async ValueTask SendContentHeaderAsync(ushort channelNumber, IMessageProperties properties, ulong contentSize)
+        public async ValueTask SendContentHeaderAsync(ushort channelNumber, MessageProperties properties, ulong contentSize)
         {
-            using var headerBuffer = this.bufferPool.CreateMemory(ProtocolConstants.FrameHeaderSize);
-            using var payloadBuffer = this.bufferPool.CreateMemory();
+            using var buffer = this.bufferPool.CreateMemory();
 
-            var written = payloadBuffer.Memory.Span.WriteContentHeader(properties, contentSize);
-            var payload = payloadBuffer.Memory.Slice(0, written);
-            headerBuffer.Memory.Span.WriteFrameHeader(FrameType.ContentHeader, channelNumber, (uint)written);
+            var written = buffer.Memory.Slice(ProtocolConstants.FrameHeaderSize).Span.WriteContentHeader(properties, contentSize);
+            buffer.Memory.Span.WriteFrameHeader(FrameType.ContentHeader, channelNumber, (uint)written);
+            FrameEndPayload.CopyTo(buffer.Memory.Slice(ProtocolConstants.FrameHeaderSize + written));
 
-            await this.socket.SendAsync(
-                (header: headerBuffer.Memory, payload),
-                async (sender, state) =>
-                {
-                    await sender(state.header);
-                    await sender(state.payload);
-                    await sender(FrameEndPayload);
-                });
+            var payload = buffer.Memory.Slice(0, ProtocolConstants.FrameHeaderSize + written + 1);
+
+            await this.socket.SendAsync(payload);
         }
 
         public async ValueTask SendContentAsync(ushort channelNumber, ReadOnlySequence<byte> contentBytes)
         {
-            using var frameHeaderBuffer = this.bufferPool.CreateMemory(ProtocolConstants.FrameHeaderSize);
+            using var buffer = this.bufferPool.CreateMemory();
 
             if (contentBytes.IsSingleSegment)
             {
-                await this.SendContentChunkAsync(frameHeaderBuffer.Memory, channelNumber, contentBytes.First);
+                await this.SendContentChunkAsync(buffer.Memory, channelNumber, contentBytes.First);
             }
             else
             {
                 var enumerator = new SequenceEnumerator<byte>(contentBytes);
                 while (enumerator.MoveNext())
                 {
-                    await this.SendContentChunkAsync(frameHeaderBuffer.Memory, channelNumber, enumerator.Current);
+                    await this.SendContentChunkAsync(buffer.Memory, channelNumber, enumerator.Current);
                 }
             }
         }
 
-        private async ValueTask SendContentChunkAsync(Memory<byte> headerBuffer, ushort channelNumber, ReadOnlyMemory<byte> content)
+        private async ValueTask SendContentChunkAsync(Memory<byte> buffer, ushort channelNumber, ReadOnlyMemory<byte> content)
         {
             while (content.Length > 0)
             {
@@ -125,14 +108,13 @@ namespace RabbitMQ.Next.Transport
                     chunk = content.Slice(0, this.FrameMaxSize);
                 }
 
-                headerBuffer.Span.WriteFrameHeader(FrameType.ContentBody, channelNumber, (uint)chunk.Length);
+                buffer.Span.WriteFrameHeader(FrameType.ContentBody, channelNumber, (uint)chunk.Length);
+                chunk.CopyTo(buffer.Slice(ProtocolConstants.FrameHeaderSize));
+                FrameEndPayload.CopyTo(buffer.Slice(ProtocolConstants.FrameHeaderSize + chunk.Length));
 
-                await this.socket.SendAsync(( headerBuffer, chunk), async (sender, state) =>
-                {
-                    await sender(state.headerBuffer);
-                    await sender(state.chunk);
-                    await sender(FrameEndPayload);
-                });
+                var payload = buffer.Slice(0, ProtocolConstants.FrameHeaderSize + chunk.Length + 1);
+
+                await this.socket.SendAsync(payload);
 
                 content = content.Slice(chunk.Length);
             }

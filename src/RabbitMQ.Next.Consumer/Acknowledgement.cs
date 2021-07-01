@@ -22,7 +22,7 @@ namespace RabbitMQ.Next.Consumer
             return default;
         }
 
-        public async Task AckAsync(ulong deliveryTag, bool multiple = false)
+        public async ValueTask AckAsync(ulong deliveryTag, bool multiple = false)
         {
             this.CheckDisposed();
 
@@ -30,7 +30,7 @@ namespace RabbitMQ.Next.Consumer
         }
 
 
-        public Task NackAsync(ulong deliveryTag, bool requeue)
+        public ValueTask NackAsync(ulong deliveryTag, bool requeue)
         {
             this.CheckDisposed();
 

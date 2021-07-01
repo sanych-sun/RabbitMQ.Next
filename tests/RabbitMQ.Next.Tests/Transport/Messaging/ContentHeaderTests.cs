@@ -1,8 +1,6 @@
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using RabbitMQ.Next.Abstractions.Messaging;
-using RabbitMQ.Next.Tests.Mocks;
 using RabbitMQ.Next.Transport.Messaging;
 using Xunit;
 
@@ -12,7 +10,7 @@ namespace RabbitMQ.Next.Tests.Transport.Messaging
     {
         [Theory]
         [MemberData(nameof(WriteContentHeaderTestCases))]
-        internal void WriteContentHeader(byte[] expected, IMessageProperties props, ulong size)
+        internal void WriteContentHeader(byte[] expected, MessageProperties props, ulong size)
         {
             var buffer = new byte[expected.Length];
             var result = ((Span<byte>)buffer).WriteContentHeader(props, size);
@@ -32,13 +30,13 @@ namespace RabbitMQ.Next.Tests.Transport.Messaging
             yield return new object[]
             {
                 new byte[] { 0, 60, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0b_00000000, 0b_00000000 },
-                new MessagePropertiesMock(), 1
+                new MessageProperties(), 1
             };
 
             yield return new object[]
             {
                 new byte[] { 0, 60, 0, 0, 0, 0, 0, 0, 0, 0, 0, 42, 0b_10000000, 0b_00000000, 0x04, 0x6A, 0x73, 0x6F, 0x6E},
-                new MessagePropertiesMock { ContentType = "json"}, 42
+                new MessageProperties { ContentType = "json"}, 42
             };
         }
     }

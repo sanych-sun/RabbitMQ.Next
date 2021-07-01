@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using NSubstitute;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Buffers;
+using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Abstractions.Methods;
 using RabbitMQ.Next.Sockets;
 using RabbitMQ.Next.Tests.Mocks;
@@ -101,7 +102,7 @@ namespace RabbitMQ.Next.Tests.Transport
         {
             var mock = CreateFrameSender();
 
-            await mock.Sender.SendContentHeaderAsync(5, new MessagePropertiesMock { ContentType = "json"}, 42);
+            await mock.Sender.SendContentHeaderAsync(5, new MessageProperties { ContentType = "json"}, 42);
 
             Assert.Equal(
                 new byte[]

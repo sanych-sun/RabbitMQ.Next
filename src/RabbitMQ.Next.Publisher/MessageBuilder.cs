@@ -8,7 +8,7 @@ namespace RabbitMQ.Next.Publisher
 {
     internal sealed class MessageBuilder : IMessageBuilder
     {
-        private readonly IMessageProperties baseProperties;
+        private readonly MessageProperties baseProperties;
         private string contentType;
         private string contentEncoding;
         private Dictionary<string, object> headers;
@@ -23,38 +23,38 @@ namespace RabbitMQ.Next.Publisher
         private string userId;
         private string applicationId;
 
-        public MessageBuilder(string routingKey, IMessageProperties properties, PublishFlags flags)
+        public MessageBuilder(string routingKey, MessageProperties properties, PublishFlags flags)
         {
             this.RoutingKey = routingKey;
             this.PublishFlags = flags;
             this.baseProperties = properties;
         }
 
-        public string ContentType => this.contentType ?? this.baseProperties?.ContentType;
+        public string ContentType => this.contentType ?? this.baseProperties.ContentType;
 
-        public string ContentEncoding => this.contentEncoding ?? this.baseProperties?.ContentEncoding;
+        public string ContentEncoding => this.contentEncoding ?? this.baseProperties.ContentEncoding;
 
-        public IReadOnlyDictionary<string, object> Headers => this.headers ?? this.baseProperties?.Headers;
+        public IReadOnlyDictionary<string, object> Headers => this.headers ?? this.baseProperties.Headers;
 
-        public DeliveryMode DeliveryMode => this.deliveryMode ?? this.baseProperties?.DeliveryMode ?? DeliveryMode.Unset;
+        public DeliveryMode DeliveryMode => this.deliveryMode ?? this.baseProperties.DeliveryMode;
 
-        public byte? Priority => this.priority ?? this.baseProperties?.Priority;
+        public byte? Priority => this.priority ?? this.baseProperties.Priority;
 
-        public string CorrelationId => this.correlationId ?? this.baseProperties?.CorrelationId;
+        public string CorrelationId => this.correlationId ?? this.baseProperties.CorrelationId;
 
-        public string ReplyTo => this.replyTo ?? this.baseProperties?.ReplyTo;
+        public string ReplyTo => this.replyTo ?? this.baseProperties.ReplyTo;
 
-        public string Expiration => this.expiration ?? this.baseProperties?.Expiration;
+        public string Expiration => this.expiration ?? this.baseProperties.Expiration;
 
-        public string MessageId => this.messageId ?? this.baseProperties?.MessageId;
+        public string MessageId => this.messageId ?? this.baseProperties.MessageId;
 
-        public DateTimeOffset? Timestamp => this.timestamp ?? this.baseProperties?.Timestamp;
+        public DateTimeOffset? Timestamp => this.timestamp ?? this.baseProperties.Timestamp;
 
-        public string Type => this.type ?? this.baseProperties?.Type;
+        public string Type => this.type ?? this.baseProperties.Type;
 
-        public string UserId => this.userId ?? this.baseProperties?.UserId;
+        public string UserId => this.userId ?? this.baseProperties.UserId;
 
-        public string ApplicationId => this.applicationId ?? this.baseProperties?.ApplicationId;
+        public string ApplicationId => this.applicationId ?? this.baseProperties.ApplicationId;
 
         public string RoutingKey { get; private set; }
 
@@ -68,7 +68,7 @@ namespace RabbitMQ.Next.Publisher
         {
             if (this.headers == null)
             {
-                var source = this.baseProperties?.Headers;
+                var source = this.baseProperties.Headers;
 
                 this.headers = (source == null) ? new Dictionary<string, object>() : new Dictionary<string, object>(source);
             }

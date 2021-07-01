@@ -25,9 +25,8 @@ namespace RabbitMQ.Next.Consumer
 
         public bool NoAck { get; }
 
-        public async Task InitConsumerAsync(ISynchronizedChannel channel, CancellationToken cancellation)
+        public async ValueTask InitConsumerAsync(ISynchronizedChannel channel, CancellationToken cancellation)
         {
-            await channel.SendAsync<FlowMethod, FlowOkMethod>(new FlowMethod(false), cancellation);
             await channel.SendAsync<QosMethod, QosOkMethod>(new QosMethod(this.PrefetchSize, this.PrefetchCount, false), cancellation);
 
             for (var i = 0; i < this.Queues.Count; i++)
@@ -40,11 +39,9 @@ namespace RabbitMQ.Next.Consumer
 
                 queue.ConsumerTag = response.ConsumerTag;
             }
-
-            await channel.SendAsync<FlowMethod, FlowOkMethod>(new FlowMethod(true), cancellation);
         }
 
-        public async Task CancelAsync(ISynchronizedChannel channel)
+        public async ValueTask CancelAsync(ISynchronizedChannel channel)
         {
             for (var i = 0; i < this.Queues.Count; i++)
             {

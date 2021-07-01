@@ -57,6 +57,7 @@ namespace RabbitMQ.Next.Tests.Channels
             Assert.False(wait.IsCanceled);
 
             cancellation.Cancel();
+            await Task.Delay(10);
             Assert.True(wait.IsCanceled);
             await Assert.ThrowsAsync<TaskCanceledException>(async() => await wait);
         }
@@ -91,6 +92,7 @@ namespace RabbitMQ.Next.Tests.Channels
             Assert.False(wait.IsCompleted);
 
             var handled = await ((IMethodHandler) handler).HandleAsync(new DummyMethod<int>(MethodId.BasicGetEmpty, 42), null, ReadOnlySequence<byte>.Empty);
+            await Task.Delay(10);
 
             Assert.True(handled);
             Assert.True(wait.IsCompleted);

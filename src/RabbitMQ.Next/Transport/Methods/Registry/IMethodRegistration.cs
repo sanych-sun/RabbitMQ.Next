@@ -9,6 +9,8 @@ namespace RabbitMQ.Next.Transport.Methods.Registry
 
         Type Type { get; }
 
+        bool IsSync { get; }
+
         bool HasContent { get; }
 
         object Parser { get; }

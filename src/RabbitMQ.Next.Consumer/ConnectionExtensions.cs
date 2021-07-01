@@ -7,7 +7,7 @@ namespace RabbitMQ.Next.Consumer
 {
     public static class ConnectionExtensions
     {
-        public static IConsumer NewConsumer(this IConnection connection, Action<IConsumerBuilder> builder)
+        public static IConsumer Consumer(this IConnection connection, Action<IConsumerBuilder> builder)
         {
             var consumerBuilder = new ConsumerBuilder();
             builder?.Invoke(consumerBuilder);

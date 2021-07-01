@@ -25,6 +25,7 @@ namespace RabbitMQ.Next.Consumer
 
         private IChannel channel;
         private IAcknowledger acknowledger;
+        private bool isCancelled;
 
         public Consumer(
             IConnection connection,
@@ -70,6 +71,8 @@ namespace RabbitMQ.Next.Consumer
 
         private async ValueTask CancelConsumeAsync(Exception ex = null)
         {
+            this.isCancelled = true;
+
             await this.channel.UseChannel(this.initializer, (ch, init) => init.CancelAsync(ch));
 
             if (this.acknowledger != null)
@@ -85,6 +88,11 @@ namespace RabbitMQ.Next.Consumer
 
         private async ValueTask<bool> HandleMessageAsync(DeliverMethod method, IMessageProperties properties, ReadOnlySequence<byte> payload)
         {
+            if (this.isCancelled)
+            {
+                return true;
+            }
+
             var message = new DeliveredMessage(method.Exchange, method.RoutingKey, method.Redelivered, method.ConsumerTag, method.DeliveryTag);
             var content = new Content(this.serializer, payload);
 

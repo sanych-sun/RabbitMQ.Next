@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using NSubstitute;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Publisher;
 using RabbitMQ.Next.Publisher.Abstractions;
@@ -29,20 +28,22 @@ namespace RabbitMQ.Next.Tests.Publisher
             var userId = "userId";
             var applicationId = "applicationId";
 
-            var properties = Substitute.For<IMessageProperties>();
-            properties.ContentType.Returns(contentType);
-            properties.ContentEncoding.Returns(contentEncoding);
-            properties.Headers.Returns(headers);
-            properties.DeliveryMode.Returns(deliveryMode);
-            properties.Priority.Returns(priority);
-            properties.CorrelationId.Returns(correlationId);
-            properties.ReplyTo.Returns(replyTo);
-            properties.Expiration.Returns(expiration);
-            properties.MessageId.Returns(messageId);
-            properties.Timestamp.Returns(timestamp);
-            properties.Type.Returns(type);
-            properties.UserId.Returns(userId);
-            properties.ApplicationId.Returns(applicationId);
+            var properties = new MessageProperties
+            {
+                ContentType = contentType,
+                ContentEncoding = contentEncoding,
+                Headers = headers,
+                DeliveryMode = deliveryMode,
+                Priority = priority,
+                CorrelationId = correlationId,
+                ReplyTo = replyTo,
+                Expiration = expiration,
+                MessageId = messageId,
+                Timestamp = timestamp,
+                Type = type,
+                UserId = userId,
+                ApplicationId = applicationId,
+            };
 
             var builder = new MessageBuilder(routingKey, properties, publishFlags);
 
@@ -274,20 +275,22 @@ namespace RabbitMQ.Next.Tests.Publisher
             string replyTo = null, string expiration = null, string messageId = null, DateTimeOffset? timestamp = null,
             string type = null, string userId = null, string applicationId = null)
         {
-            var properties = Substitute.For<IMessageProperties>();
-            properties.ContentType.Returns(contentType);
-            properties.ContentEncoding.Returns(contentEncoding);
-            properties.Headers.Returns(headers);
-            properties.DeliveryMode.Returns(deliveryMode);
-            properties.Priority.Returns(priority);
-            properties.CorrelationId.Returns(correlationId);
-            properties.ReplyTo.Returns(replyTo);
-            properties.Expiration.Returns(expiration);
-            properties.MessageId.Returns(messageId);
-            properties.Timestamp.Returns(timestamp);
-            properties.Type.Returns(type);
-            properties.UserId.Returns(userId);
-            properties.ApplicationId.Returns(applicationId);
+            var properties = new MessageProperties
+            {
+                ContentType = contentType,
+                ContentEncoding = contentEncoding,
+                Headers = headers,
+                DeliveryMode = deliveryMode,
+                Priority = priority,
+                CorrelationId = correlationId,
+                ReplyTo = replyTo,
+                Expiration = expiration,
+                MessageId = messageId,
+                Timestamp = timestamp,
+                Type = type,
+                UserId = userId,
+                ApplicationId = applicationId,
+            };
 
             return new MessageBuilder(routingKey, properties, publishFlags);
         }

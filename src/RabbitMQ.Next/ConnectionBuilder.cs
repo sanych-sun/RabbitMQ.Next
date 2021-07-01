@@ -20,15 +20,6 @@ namespace RabbitMQ.Next
         private string virtualhost = ProtocolConstants.DefaultVHost;
         private string locale = DefaultLocale;
 
-        public ConnectionBuilder(bool useDefaults = true)
-            : this(ConnectionFactory.Default)
-        {
-            if (useDefaults)
-            {
-                this.UseDefaults();
-            }
-        }
-
         internal ConnectionBuilder(IConnectionFactory factory)
         {
             this.factory = factory;
@@ -37,6 +28,13 @@ namespace RabbitMQ.Next
             {
                 ["authentication_failure_close"] = true,
             };
+        }
+
+        public static IConnectionBuilder Default()
+        {
+            var builder = new ConnectionBuilder(ConnectionFactory.Default);
+            builder.UseDefaults();
+            return builder;
         }
 
         public IConnectionBuilder Auth(IAuthMechanism mechanism)
