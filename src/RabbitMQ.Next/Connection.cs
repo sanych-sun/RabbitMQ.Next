@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Buffers;
@@ -13,6 +14,7 @@ using RabbitMQ.Next.Channels;
 using RabbitMQ.Next.Sockets;
 using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Methods.Connection;
+using Channel = RabbitMQ.Next.Channels.Channel;
 
 namespace RabbitMQ.Next
 {
@@ -25,6 +27,7 @@ namespace RabbitMQ.Next
         private readonly IBufferPool bufferPool;
         private readonly ConnectionDetails connectionDetails = new ConnectionDetails();
 
+        private Channel<MemoryBlock> socketChannel;
         private IFrameSender frameSender;
         private CancellationTokenSource socketIoCancellation;
 
@@ -50,13 +53,21 @@ namespace RabbitMQ.Next
 
             connection.State = ConnectionState.Connecting;
             var socket = await OpenSocketAsync(endpoints);
-            connection.frameSender = new FrameSender(socket, connection.methodRegistry, connection.BufferPool);
+            connection.socketChannel = System.Threading.Channels.Channel.CreateBounded<MemoryBlock>(new BoundedChannelOptions(100)
+            {
+                SingleReader = true,
+                SingleWriter = false,
+                AllowSynchronousContinuations = false,
+            });
+
+            connection.frameSender = new FrameSender(connection.socketChannel.Writer, connection.methodRegistry, connection.BufferPool);
 
             connection.State = ConnectionState.Negotiating;
-            var connectionChannel = new Channel(connection.channelPool, connection.methodRegistry, connection.frameSender, connection.bufferPool, null);
+            var connectionChannel = new Channel(connection.channelPool, connection.methodRegistry, connection.socketChannel.Writer, connection.frameSender, connection.bufferPool, null, ProtocolConstants.FrameMinSize);
 
             connection.socketIoCancellation = new CancellationTokenSource();
             Task.Factory.StartNew(() => connection.ReceiveLoop(socket, connection.socketIoCancellation.Token), TaskCreationOptions.LongRunning);
+            Task.Factory.StartNew(() => SendLoop(socket, connection.socketChannel.Reader), TaskCreationOptions.LongRunning);
 
             var negotiationResults = await connectionChannel.UseChannel(async ch =>
             {
@@ -69,7 +80,8 @@ namespace RabbitMQ.Next
             });
 
             var heartbeatIntervalMs = negotiationResults.HeartbeatInterval * 1000;
-            connection.bufferManager.SetBufferSize((int)negotiationResults.MaxFrameSize);
+            // set buffer size twice as frame size, so the most messages (method + header + content) will fit into single buffer
+            connection.bufferManager.SetBufferSize(2 * (int)negotiationResults.MaxFrameSize);
             connection.frameSender.FrameMaxSize = (int) negotiationResults.MaxFrameSize;
 
             connection.connectionDetails.HeartbeatInterval = negotiationResults.HeartbeatInterval;
@@ -92,11 +104,13 @@ namespace RabbitMQ.Next
 
         public IConnectionDetails Details => this.connectionDetails;
 
+        public IMethodRegistry MethodRegistry => this.methodRegistry;
+
         public async Task<IChannel> OpenChannelAsync(IReadOnlyList<IMethodHandler> handlers = null, CancellationToken cancellationToken = default)
         {
             // TODO: validate state
 
-            var channel = new Channel(this.channelPool, this.methodRegistry, this.frameSender, this.bufferPool, handlers);
+            var channel = new Channel(this.channelPool, this.methodRegistry, this.socketChannel.Writer, this.frameSender, this.bufferPool, handlers, this.Details.FrameMaxSize);
             await channel.SendAsync<Transport.Methods.Channel.OpenMethod, Transport.Methods.Channel.OpenOkMethod>(new Transport.Methods.Channel.OpenMethod(), cancellationToken);
 
             return channel;
@@ -215,6 +229,18 @@ namespace RabbitMQ.Next
             }
         }
 
+        private static async Task SendLoop(ISocket socket, ChannelReader<MemoryBlock> socketChannel)
+        {
+            while (await socketChannel.WaitToReadAsync())
+            {
+                while (socketChannel.TryRead(out var memoryBlock))
+                {
+                    socket.Send(memoryBlock.Memory);
+                    memoryBlock.Dispose();
+                }
+            }
+        }
+
         private void ConnectionClose(Exception ex)
         {
             if (this.socketIoCancellation == null || this.socketIoCancellation.IsCancellationRequested)
@@ -224,7 +250,7 @@ namespace RabbitMQ.Next
 
             this.State = ConnectionState.Closed;
             this.socketIoCancellation.Cancel();
-            this.frameSender?.Dispose();
+            this.socketChannel.Writer.TryComplete();
 
             this.channelPool.ReleaseAll(ex);
         }

@@ -24,12 +24,18 @@ namespace RabbitMQ.Next.Tests.Mocks
             return ((Memory<byte>) this.buffer)[0..this.offset];
         }
 
-        public ValueTask SendAsync(ReadOnlyMemory<byte> payload)
+        public void Send(ReadOnlyMemory<byte> payload)
             => this.WriteToBuffer(payload);
+
+        public ValueTask SendAsync(ReadOnlyMemory<byte> payload)
+        {
+            this.WriteToBuffer(payload);
+            return default;
+        }
 
         public ValueTask<int> ReceiveAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
-        private ValueTask WriteToBuffer(ReadOnlyMemory<byte> payload)
+        private void WriteToBuffer(ReadOnlyMemory<byte> payload)
         {
             var target = ((Memory<byte>) this.buffer)[this.offset..];
             if (payload.Length > target.Length)
@@ -39,7 +45,6 @@ namespace RabbitMQ.Next.Tests.Mocks
 
             payload.CopyTo(target);
             this.offset += payload.Length;
-            return default;
         }
     }
 }

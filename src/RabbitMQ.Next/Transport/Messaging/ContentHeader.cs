@@ -22,7 +22,7 @@ namespace RabbitMQ.Next.Transport.Messaging
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Span<byte> WriteMessageProperties(this Span<byte> target, MessageProperties properties)
+        public static Span<byte> WriteMessageProperties(this Span<byte> target, IMessageProperties properties)
         {
             var flagsSpan = target;
             target = target.Slice(sizeof(ushort));

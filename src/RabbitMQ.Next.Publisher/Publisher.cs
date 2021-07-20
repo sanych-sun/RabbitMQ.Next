@@ -7,10 +7,13 @@ using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
+using RabbitMQ.Next.Abstractions.Methods;
 using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Abstractions.Transformers;
 using RabbitMQ.Next.Serialization.Abstractions;
+using RabbitMQ.Next.Tasks;
 using RabbitMQ.Next.Transport.Methods.Basic;
+using RabbitMQ.Next.Transport.Methods.Channel;
 using RabbitMQ.Next.Transport.Methods.Confirm;
 using RabbitMQ.Next.Transport.Methods.Exchange;
 
@@ -18,7 +21,7 @@ namespace RabbitMQ.Next.Publisher
 {
     internal sealed class Publisher : IPublisher
     {
-        private readonly SemaphoreSlim flowControl = new SemaphoreSlim(100);
+        private readonly AsyncManualResetEvent flowControl = new AsyncManualResetEvent(true);
         private readonly SemaphoreSlim channelOpenSync = new SemaphoreSlim(1,1);
         private readonly IReadOnlyList<IReturnedMessageHandler> returnedMessageHandlers;
         private readonly IMethodHandler returnedFrameHandler;
@@ -26,7 +29,9 @@ namespace RabbitMQ.Next.Publisher
         private readonly string exchange;
         private readonly ISerializer serializer;
         private readonly IReadOnlyList<IMessageTransformer> transformers;
+        private readonly IMethodFormatter<PublishMethod> publishFormatter;
         private readonly bool publisherConfirms;
+        private readonly int maxFrameSize;
         private ConfirmMethodHandler confirms;
         private ulong lastDeliveryTag;
         private bool isDisposed;
@@ -49,6 +54,8 @@ namespace RabbitMQ.Next.Publisher
             this.returnedMessageHandlers = returnedMessageHandlers;
 
             this.returnedFrameHandler = new MethodHandler<ReturnMethod>(this.HandleReturnedMessage);
+            this.publishFormatter = connection.MethodRegistry.GetFormatter<PublishMethod>();
+            this.maxFrameSize = connection.Details.FrameMaxSize;
         }
 
         public ValueTask CompleteAsync() => this.DisposeAsync();
@@ -80,45 +87,46 @@ namespace RabbitMQ.Next.Publisher
             return default;
         }
 
+
         public async ValueTask PublishAsync<TContent>(TContent content, string routingKey = null, MessageProperties properties = default, PublishFlags flags = PublishFlags.None, CancellationToken cancellationToken = default)
         {
             this.CheckDisposed();
+            var ch = await this.EnsureChannelOpenAsync(cancellationToken);
 
-            //await this.flowControl.WaitAsync(cancellationToken);
-
-            try
+            if (!this.flowControl.IsSet())
             {
-                var ch = await this.EnsureChannelOpenAsync(cancellationToken);
-
-                var message = this.ApplyTransformers(content, routingKey, properties, flags);
-
-                using var bufferWriter = this.connection.BufferPool.Create();
-                this.serializer.Serialize(content, bufferWriter);
-
-                this.CheckDisposed();
-                var messageDeliveryTag = await ch.UseChannel(
-                    (publisher: this, message, content: bufferWriter.ToSequence()),
-                    async (sender, state) =>
-                    {
-                        var method = new PublishMethod(state.publisher.exchange, state.message.RoutingKey, (byte) state.message.PublishFlags);
-                        await sender.SendAsync(method, state.message.Properties, state.content);
-
-                        return ++state.publisher.lastDeliveryTag;
-                    });
-
-                if (this.confirms != null)
-                {
-                    var confirmed = await this.confirms.WaitForConfirmAsync(messageDeliveryTag, cancellationToken);
-                    if (!confirmed)
-                    {
-                        // todo: provide some useful info here
-                        throw new DeliveryFailedException();
-                    }
-                }
+                await this.flowControl.WaitAsync();
             }
-            finally
+
+            var message = this.ApplyTransformers(content, routingKey, properties, flags);
+
+            this.CheckDisposed();
+
+            await ch.SendAsync((message, publisher: this, content), (state, frameBuilder) =>
             {
-                //this.flowControl.Release();
+                var method = new PublishMethod(state.publisher.exchange, state.message.RoutingKey, (byte) state.message.PublishFlags);
+                var methodBuffer = frameBuilder.BeginMethodFrame(MethodId.BasicPublish);
+
+                var bb = methodBuffer.GetSpan(state.publisher.maxFrameSize - 100);
+                var written = bb.Length - state.publisher.publishFormatter.Write(bb, method).Length;
+                methodBuffer.Advance(written);
+                frameBuilder.EndFrame();
+
+                var bodyWriter = frameBuilder.BeginContentFrame(state.message.Properties);
+                state.publisher.serializer.Serialize(state.content, bodyWriter);
+                frameBuilder.EndFrame();
+            });
+
+            var messageDeliveryTag = Interlocked.Increment(ref this.lastDeliveryTag);
+
+            if (this.confirms != null)
+            {
+                var confirmed = await this.confirms.WaitForConfirmAsync(messageDeliveryTag, cancellationToken);
+                if (!confirmed)
+                {
+                    // todo: provide some useful info here
+                    throw new DeliveryFailedException();
+                }
             }
         }
 
@@ -184,6 +192,20 @@ namespace RabbitMQ.Next.Publisher
                     this.lastDeliveryTag = 0;
                     var methodHandlers = new List<IMethodHandler>();
                     methodHandlers.Add(this.returnedFrameHandler);
+                    methodHandlers.Add(new MethodHandler<FlowMethod>((flow, _, _) =>
+                    {
+                        if (flow.Active)
+                        {
+                            this.flowControl.Set();
+                        }
+                        else
+                        {
+                            this.flowControl.Reset();
+                        }
+
+                        return new ValueTask<bool>(true);
+                    }));
+
                     if (this.publisherConfirms)
                     {
                         this.confirms = new ConfirmMethodHandler();

@@ -28,6 +28,8 @@ namespace RabbitMQ.Next.Tests.Mocks
         public ValueTask SendAsync<TRequest>(TRequest request, CancellationToken cancellationToken = default)
             where TRequest : struct, IOutgoingMethod => this.channel.SendAsync(request);
 
+        public ValueTask SendAsync<TState>(TState state, Action<TState, IFrameBuilder> payload) => throw new NotImplementedException();
+
         public ValueTask UseChannel(Func<ISynchronizedChannel, ValueTask> fn, CancellationToken cancellation = default)
             => fn(this.channel);
 

@@ -4,6 +4,6 @@ namespace RabbitMQ.Next.Abstractions.Buffers
     {
         IBufferWriter Create();
 
-        MemoryOwner CreateMemory(int size = 0);
+        MemoryBlock CreateMemory(int size = 0);
     }
 }

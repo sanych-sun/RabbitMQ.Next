@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Abstractions.Methods;
 
 namespace RabbitMQ.Next.Abstractions.Channels
@@ -11,6 +12,8 @@ namespace RabbitMQ.Next.Abstractions.Channels
 
         ValueTask SendAsync<TRequest>(TRequest request, CancellationToken cancellationToken = default)
             where TRequest : struct, IOutgoingMethod;
+
+        ValueTask SendAsync<TState>(TState state, Action<TState, IFrameBuilder> payload);
 
         ValueTask UseChannel(Func<ISynchronizedChannel, ValueTask> fn, CancellationToken cancellation = default);
 

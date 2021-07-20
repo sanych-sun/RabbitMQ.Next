@@ -23,6 +23,9 @@ namespace RabbitMQ.Next.Tasks
             this.completionSource?.TrySetResult(true);
         }
 
+        public bool IsSet()
+            => this.completionSource == null || this.completionSource.Task.IsCompletedSuccessfully;
+
         public ValueTask<bool> WaitAsync(int milliseconds = 0, CancellationToken cancellation = default)
         {
             this.CheckDisposed();

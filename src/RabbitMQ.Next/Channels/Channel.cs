@@ -4,11 +4,13 @@ using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Buffers;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Exceptions;
+using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Abstractions.Methods;
 using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Messaging;
@@ -19,20 +21,24 @@ namespace RabbitMQ.Next.Channels
     internal sealed class Channel : IChannelInternal
     {
         private readonly SynchronizedChannel syncChannel;
+        private readonly ChannelWriter<MemoryBlock> socketWriter;
         private readonly SemaphoreSlim senderSync;
         private readonly ChannelPool channelPool;
         private readonly IMethodRegistry registry;
         private readonly IBufferPool bufferPool;
         private readonly TaskCompletionSource<bool> channelCompletion;
+        private readonly int frameMaxSize;
 
         private readonly IReadOnlyList<IMethodHandler> methodHandlers;
 
-        public Channel(ChannelPool channelPool, IMethodRegistry methodRegistry, IFrameSender frameSender, IBufferPool bufferPool, IReadOnlyList<IMethodHandler> handlers)
+        public Channel(ChannelPool channelPool, IMethodRegistry methodRegistry, ChannelWriter<MemoryBlock> socketWriter, IFrameSender frameSender, IBufferPool bufferPool, IReadOnlyList<IMethodHandler> handlers, int frameMaxSize)
         {
             this.channelPool = channelPool;
             this.registry = methodRegistry;
+            this.socketWriter = socketWriter;
             this.bufferPool = bufferPool;
             this.ChannelNumber = channelPool.Register(this);
+            this.frameMaxSize = frameMaxSize;
 
             handlers ??= Array.Empty<IMethodHandler>();
 
@@ -101,6 +107,23 @@ namespace RabbitMQ.Next.Channels
                     this.senderSync.Release();
                 }
             }
+        }
+
+        public ValueTask SendAsync<TState>(TState state, Action<TState, IFrameBuilder> payload)
+        {
+            var frameBuilder = new FrameBuilder(this.bufferPool, this.ChannelNumber, this.frameMaxSize);
+            payload(state, frameBuilder);
+
+            //await this.senderSync.WaitAsync();
+
+            // try
+            // {
+                return frameBuilder.WriteToAsync(this.socketWriter);
+            // }
+            // finally
+            // {
+            //     this.senderSync.Release();
+            // }
         }
 
         public async ValueTask UseChannel(Func<ISynchronizedChannel, ValueTask> fn, CancellationToken cancellation = default)

@@ -14,7 +14,7 @@ namespace RabbitMQ.Next.Buffers
         public IBufferWriter Create()
             => new BufferWriter(this.bufferManager);
 
-        public MemoryOwner CreateMemory(int minSize = 0)
-            => new MemoryOwner(this.bufferManager, minSize);
+        public MemoryBlock CreateMemory(int minSize = 0)
+            => new MemoryBlock(this.bufferManager, minSize);
     }
 }

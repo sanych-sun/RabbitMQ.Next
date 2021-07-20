@@ -27,7 +27,12 @@ namespace RabbitMQ.Next.Benchmarks
             // var bc = new PublishBenchmarks();
             // await bc.Setup();
             //
-            // await bc.PublishAsync();
+            // await Test(bc);
+        }
+
+        static Task Test(PublishBenchmarks bc)
+        {
+            return bc.PublishAsync();
         }
     }
 }

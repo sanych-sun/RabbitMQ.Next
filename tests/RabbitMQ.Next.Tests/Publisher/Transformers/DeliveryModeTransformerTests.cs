@@ -3,6 +3,7 @@ using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Publisher.Abstractions.Transformers;
 using RabbitMQ.Next.Publisher.Transformers;
 using Xunit;
+using IMessageBuilder = RabbitMQ.Next.Publisher.Abstractions.Transformers.IMessageBuilder;
 
 namespace RabbitMQ.Next.Tests.Publisher.Transformers
 {

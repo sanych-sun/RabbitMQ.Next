@@ -14,7 +14,7 @@ namespace RabbitMQ.Next.Tests.Buffers
         {
             var bufferManager = Substitute.For<IBufferManager>();
 
-            new MemoryOwner(bufferManager, size);
+            new MemoryBlock(bufferManager, size);
 
             bufferManager.Received().Rent(size);
         }
@@ -24,7 +24,7 @@ namespace RabbitMQ.Next.Tests.Buffers
         {
             var bufferManager = Substitute.For<IBufferManager>();
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => new MemoryOwner(bufferManager, -5));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new MemoryBlock(bufferManager, -5));
         }
 
         [Fact]
@@ -33,7 +33,7 @@ namespace RabbitMQ.Next.Tests.Buffers
             var bufferManager = Substitute.For<IBufferManager>();
             bufferManager.Rent(Arg.Any<int>()).Returns(new byte[10]);
 
-            var memoryOwner = new MemoryOwner(bufferManager, 10);
+            var memoryOwner = new MemoryBlock(bufferManager, 10);
             var memory = memoryOwner.Memory;
             var memory2 = memoryOwner.Memory;
 
@@ -48,7 +48,7 @@ namespace RabbitMQ.Next.Tests.Buffers
             var bufferManager = Substitute.For<IBufferManager>();
             bufferManager.Rent(Arg.Any<int>()).Returns(buffer);
 
-            var memoryOwner = new MemoryOwner(bufferManager, 10);
+            var memoryOwner = new MemoryBlock(bufferManager, 10);
 
             memoryOwner.Dispose();
 
@@ -60,7 +60,7 @@ namespace RabbitMQ.Next.Tests.Buffers
         {
             var bufferManager = Substitute.For<IBufferManager>();
 
-            var memoryOwner = new MemoryOwner(bufferManager, 10);
+            var memoryOwner = new MemoryBlock(bufferManager, 10);
             memoryOwner.Dispose();
 
             Assert.Throws<ObjectDisposedException>(() => memoryOwner.Memory);
@@ -71,7 +71,7 @@ namespace RabbitMQ.Next.Tests.Buffers
         {
             var bufferManager = Substitute.For<IBufferManager>();
 
-            var memoryOwner = new MemoryOwner(bufferManager, 10);
+            var memoryOwner = new MemoryBlock(bufferManager, 10);
 
             memoryOwner.Dispose();
 

@@ -1,6 +1,6 @@
-namespace RabbitMQ.Next.Transport
+namespace RabbitMQ.Next.Abstractions
 {
-    internal enum FrameType : byte
+    public enum FrameType : byte
     {
         Malformed = 0,
         Method = 1,
