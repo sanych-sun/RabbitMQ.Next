@@ -58,8 +58,6 @@ namespace RabbitMQ.Next.Publisher
             this.maxFrameSize = connection.Details.FrameMaxSize;
         }
 
-        public ValueTask CompleteAsync() => this.DisposeAsync();
-
         public ValueTask DisposeAsync()
         {
             if (this.isDisposed)
@@ -87,11 +85,10 @@ namespace RabbitMQ.Next.Publisher
             return default;
         }
 
-
         public async ValueTask PublishAsync<TContent>(TContent content, string routingKey = null, MessageProperties properties = default, PublishFlags flags = PublishFlags.None, CancellationToken cancellationToken = default)
         {
             this.CheckDisposed();
-            var ch = await this.EnsureChannelOpenAsync(cancellationToken);
+            this.EnsureChannel();
 
             if (!this.flowControl.IsSet())
             {
@@ -102,7 +99,7 @@ namespace RabbitMQ.Next.Publisher
 
             this.CheckDisposed();
 
-            await ch.SendAsync((message, publisher: this, content), (state, frameBuilder) =>
+            await this.channel.SendAsync((message, publisher: this, content), (state, frameBuilder) =>
             {
                 var method = new PublishMethod(state.publisher.exchange, state.message.RoutingKey, (byte) state.message.PublishFlags);
                 var methodBuffer = frameBuilder.BeginMethodFrame(MethodId.BasicPublish);
@@ -140,21 +137,12 @@ namespace RabbitMQ.Next.Publisher
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private ValueTask<IChannel> EnsureChannelOpenAsync(CancellationToken cancellationToken)
+        private void EnsureChannel()
         {
-            var ch = this.channel;
-
-            if (ch == null)
+            if (this.channel.Completion.Exception != null)
             {
-                return this.OpenChannelAsync(cancellationToken);
+                throw this.channel.Completion.Exception?.InnerException ?? this.channel.Completion.Exception;
             }
-
-            if (ch.Completion.Exception != null)
-            {
-                throw ch.Completion.Exception?.InnerException ?? ch.Completion.Exception;
-            }
-
-            return new ValueTask<IChannel>(ch);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -175,7 +163,7 @@ namespace RabbitMQ.Next.Publisher
             return (messageBuilder.RoutingKey, new MessageProperties(messageBuilder), messageBuilder.PublishFlags);
         }
 
-        private async ValueTask<IChannel> OpenChannelAsync(CancellationToken cancellationToken)
+        public async ValueTask<IChannel> OpenChannelAsync(CancellationToken cancellationToken = default)
         {
             // TODO: implement functionality to wait for Open state unless connection is closed
             if (this.connection.State != ConnectionState.Open)

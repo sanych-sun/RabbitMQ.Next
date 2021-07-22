@@ -10,14 +10,11 @@ namespace RabbitMQ.Next.Publisher
     {
         private List<IMessageTransformer> transformers;
         private List<ITypeFormatter> formatters;
-        private List<IFormatterSource> formatterSources;
         private List<IReturnedMessageHandler> returnedMessageHandlers;
 
         public IReadOnlyList<IMessageTransformer> Transformers => this.transformers;
 
         public IReadOnlyList<ITypeFormatter> Formatters => this.formatters;
-
-        public IReadOnlyList<IFormatterSource> FormatterSources => this.formatterSources;
 
         public IReadOnlyList<IReturnedMessageHandler> ReturnedMessageHandlers => this.returnedMessageHandlers;
 
@@ -32,18 +29,6 @@ namespace RabbitMQ.Next.Publisher
 
             this.formatters ??= new List<ITypeFormatter>();
             this.formatters.Add(typeFormatter);
-            return this;
-        }
-
-        IPublisherBuilder IPublisherBuilder.UseFormatterSource(IFormatterSource formatters)
-        {
-            if (formatters == null)
-            {
-                throw new ArgumentNullException(nameof(formatters));
-            }
-
-            this.formatterSources ??= new List<IFormatterSource>();
-            this.formatterSources.Add(formatters);
             return this;
         }
 

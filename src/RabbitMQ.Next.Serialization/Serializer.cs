@@ -1,16 +1,23 @@
 using System;
 using System.Buffers;
+using System.Collections.Generic;
+using System.Linq;
 using RabbitMQ.Next.Serialization.Abstractions;
 
 namespace RabbitMQ.Next.Serialization
 {
     public class Serializer : ISerializer
     {
-        private readonly IFormatterSource formatterSource;
+        private readonly ITypeFormatter[] formatters;
 
-        public Serializer(IFormatterSource formatterSource)
+        public Serializer(IEnumerable<ITypeFormatter> formatters)
         {
-            this.formatterSource = formatterSource;
+            this.formatters = formatters?.ToArray();
+
+            if (this.formatters == null || this.formatters.Length == 0)
+            {
+                throw new ArgumentNullException(nameof(formatters));
+            }
         }
 
         public void Serialize<TContent>(TContent content, IBufferWriter<byte> writer)
@@ -24,9 +31,12 @@ namespace RabbitMQ.Next.Serialization
 
         private ITypeFormatter GetFormatter<TContent>()
         {
-            if (this.formatterSource.TryGetFormatter<TContent>(out var formatter))
+            for (var i = 0; i < this.formatters.Length; i++)
             {
-                return formatter;
+                if (this.formatters[i].CanHandle(typeof(TContent)))
+                {
+                    return this.formatters[i];
+                }
             }
 
             throw new InvalidOperationException($"Cannot resolve formatter for the type: {typeof(TContent).FullName}");

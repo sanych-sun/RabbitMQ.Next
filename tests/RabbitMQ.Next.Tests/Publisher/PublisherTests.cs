@@ -101,7 +101,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             var mock = this.Mock();
 
             var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", false, this.MockSerializer(), null, null);
-            await publisher.CompleteAsync();
+            await publisher.DisposeAsync();
 
             await Assert.ThrowsAsync<ObjectDisposedException>(async () => await publisher.PublishAsync("test"));
         }

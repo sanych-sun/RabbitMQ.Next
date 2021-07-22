@@ -1,5 +1,7 @@
 using System;
 using System.Buffers;
+using System.Collections.Generic;
+using System.Linq;
 using NSubstitute;
 using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Serialization.Abstractions;
@@ -9,61 +11,65 @@ namespace RabbitMQ.Next.Tests.Serialization
 {
     public class SerializerTests
     {
-        [Fact]
-        public void SerializeCallFormatter()
+        [Theory]
+        [MemberData(nameof(EmptyFormattersTestCases))]
+        public void ThrowsOnEmptyFormatters(IEnumerable<ITypeFormatter> formatters)
         {
-            var mock = this.MockFormatterSource<string>();
-            var serializer = new Serializer(mock.Source);
-
-            serializer.Serialize("test", new ArrayBufferWriter<byte>());
-
-            mock.Source.Received().TryGetFormatter<string>(out Arg.Any<ITypeFormatter>());
-            mock.Formatter.Received().Format("test", Arg.Any<IBufferWriter<byte>>());
-        }
-
-        [Fact]
-        public void DeserializeCallFormatter()
-        {
-            var mock = this.MockFormatterSource<string>();
-            var serializer = new Serializer(mock.Source);
-
-            serializer.Deserialize<string>(ReadOnlySequence<byte>.Empty);
-
-            mock.Source.Received().TryGetFormatter<string>(out Arg.Any<ITypeFormatter>());
-            mock.Formatter.Received().Parse<string>(Arg.Any<ReadOnlySequence<byte>>());
+            Assert.Throws<ArgumentNullException>(() => new Serializer(formatters));
         }
 
         [Fact]
         public void SerializeThrowsOnNotSupportedTypes()
         {
-            var mock = this.MockFormatterSource<string>();
-            var serializer = new Serializer(mock.Source);
-
+            var serializer = new Serializer(new [] { this.MockFormatter<string>()});
             Assert.Throws<InvalidOperationException>(() => serializer.Serialize(42, new ArrayBufferWriter<byte>()));
         }
 
         [Fact]
         public void DeserializeThrowsOnNotSupportedTypes()
         {
-            var mock = this.MockFormatterSource<string>();
-            var serializer = new Serializer(mock.Source);
-
+            var serializer = new Serializer(new [] { this.MockFormatter<string>()});
             Assert.Throws<InvalidOperationException>(() => serializer.Deserialize<int>(ReadOnlySequence<byte>.Empty));
         }
 
-        private (IFormatterSource Source, ITypeFormatter Formatter) MockFormatterSource<TContent>()
+        [Fact]
+        public void SerializeChooseAppropriateFormatter()
+        {
+            var stringFormatter = this.MockFormatter<string>();
+            var intFormatter = this.MockFormatter<int>();
+            var buffer = Substitute.For<IBufferWriter<byte>>();
+            var data = "test string";
+
+            var serializer = new Serializer(new [] { intFormatter, stringFormatter });
+            serializer.Serialize(data, buffer);
+
+            stringFormatter.Received().Format(data, Arg.Any<IBufferWriter<byte>>());
+        }
+
+        [Fact]
+        public void DeserializeChooseAppropriateFormatter()
+        {
+            var stringFormatter = this.MockFormatter<string>();
+            var intFormatter = this.MockFormatter<int>();
+
+            var serializer = new Serializer(new [] { intFormatter, stringFormatter });
+            serializer.Deserialize<string>(ReadOnlySequence<byte>.Empty);
+
+            stringFormatter.Received().Parse<string>(Arg.Any<ReadOnlySequence<byte>>());
+        }
+
+        private ITypeFormatter MockFormatter<TContent>()
         {
             var formatter = Substitute.For<ITypeFormatter>();
             formatter.CanHandle(typeof(TContent)).Returns(true);
+            return formatter;
+        }
 
-            var formatterSource = Substitute.For<IFormatterSource>();
-            formatterSource.TryGetFormatter<TContent>(out Arg.Any<ITypeFormatter>())
-                .Returns(x => {
-                    x[0] = formatter;
-                    return true;
-                });
-
-            return (formatterSource, formatter);
+        public static IEnumerable<object[]> EmptyFormattersTestCases()
+        {
+            yield return new object[] { null };
+            yield return new object[] { Enumerable.Empty<ITypeFormatter>() };
+            yield return new object[] { new ITypeFormatter[0] };
         }
     }
 }

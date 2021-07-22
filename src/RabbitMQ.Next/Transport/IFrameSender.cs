@@ -9,10 +9,6 @@ namespace RabbitMQ.Next.Transport
     {
         int FrameMaxSize { get; set; }
 
-        ValueTask SendHeartBeatAsync();
-
-        ValueTask SendAmqpHeaderAsync();
-
         ValueTask SendMethodAsync<TMethod>(ushort channelNumber, TMethod method)
             where TMethod : struct, IOutgoingMethod;
 

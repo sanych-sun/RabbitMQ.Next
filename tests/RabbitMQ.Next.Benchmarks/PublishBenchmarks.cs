@@ -35,7 +35,10 @@ namespace RabbitMQ.Next.Benchmarks
             var corrIds = new string[messagesCount];
             for (var i = 0; i < messagesCount; i++)
             {
-                msg[i] = $"{i} Lorem ipsum dolor sit amet, ne putent ornatus expetendis vix. Ea sed suas accusamus. Possim prodesset maiestatis sea te, graeci tractatos evertitur ad vix, sit an sale regione facilisi. Vel cu suscipit perfecto voluptaria. Diam soleat eos ex, his liber causae saperet et. Ne ipsum congue graecis sed";
+                msg[i] = $"{i} Lorem ipsum dolor sit amet, ne putent ornatus expetendis vix. Ea sed suas accusamus. Possim prodesset maiestatis sea te, graeci tractatos evertitur ad vix, sit an sale regione facilisi. Vel cu suscipit perfecto voluptaria. Diam soleat eos ex, his liber causae saperet et. Ne ipsum congue graecis sed"
+                    + "{i} Lorem ipsum dolor sit amet, ne putent ornatus expetendis vix. Ea sed suas accusamus. Possim prodesset maiestatis sea te, graeci tractatos evertitur ad vix, sit an sale regione facilisi. Vel cu suscipit perfecto voluptaria. Diam soleat eos ex, his liber causae saperet et. Ne ipsum congue graecis sed"
+                    + "{i} Lorem ipsum dolor sit amet, ne putent ornatus expetendis vix. Ea sed suas accusamus. Possim prodesset maiestatis sea te, graeci tractatos evertitur ad vix, sit an sale regione facilisi. Vel cu suscipit perfecto voluptaria. Diam soleat eos ex, his liber causae saperet et. Ne ipsum congue graecis sed"
+                    + "{i} Lorem ipsum dolor sit amet, ne putent ornatus expetendis vix. Ea sed suas accusamus. Possim prodesset maiestatis sea te, graeci tractatos evertitur ad vix, sit an sale regione facilisi. Vel cu suscipit perfecto voluptaria. Diam soleat eos ex, his liber causae saperet et. Ne ipsum congue graecis sed";
                 corrIds[i] = Guid.NewGuid().ToString();
             }
 
@@ -50,11 +53,9 @@ namespace RabbitMQ.Next.Benchmarks
                 .AddEndpoint("amqp://test2:test2@localhost:5672/")
                 .ConnectAsync();
 
-            this.publisher = this.connection.Publisher("amq.topic",
+            this.publisher = await this.connection.CreatePublisherAsync("amq.topic",
                 builder => builder
                     .UseFormatter(new StringTypeFormatter()));
-
-            await this.publisher.PublishAsync("test");
 
             ConnectionFactory factory = new ConnectionFactory();
             factory.Uri = new Uri("amqp://test2:test2@localhost:5672/");
@@ -76,20 +77,22 @@ namespace RabbitMQ.Next.Benchmarks
         [Benchmark]
         public async Task PublishAsync()
         {
-            // await Task.WhenAll(Enumerable.Range(0, 10)
-            //     .Select(async num =>
-            //     {
-            //         for (int i = num; i < this.messages.Count; i = i + 10)
-            //         {
-            //             await this.publisher.PublishAsync(this.messages[i], properties: new MessageProperties { CorrelationId = this.corrIds[i]});
-            //         }
-            //     })
-            //     .ToArray());
+            await Task.WhenAll(Enumerable.Range(0, 10)
+                .Select(async num =>
+                {
+                    await Task.Yield();
 
-            for (int i = 0; i < this.messages.Count; i++)
-            {
-                await this.publisher.PublishAsync(this.messages[i], properties: new MessageProperties { CorrelationId = this.corrIds[i]});
-            }
+                    for (int i = num; i < this.messages.Count; i = i + 10)
+                    {
+                        await this.publisher.PublishAsync(this.messages[i]);
+                    }
+                })
+                .ToArray());
+
+            // for (int i = 0; i < this.messages.Count; i++)
+            // {
+            //     await this.publisher.PublishAsync(this.messages[i], properties: new MessageProperties { CorrelationId = this.corrIds[i]});
+            // }
 
             // var processed = 0;
             // var consumerCancellation = new CancellationTokenSource();

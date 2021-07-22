@@ -9,8 +9,6 @@ namespace RabbitMQ.Next.Consumer.Abstractions
     {
         IConsumerBuilder UseFormatter(ITypeFormatter formatter);
 
-        IConsumerBuilder UseFormatterSource(IFormatterSource formatterSource);
-
         IConsumerBuilder BindToQueue(string queue, Action<IQueueConsumerBuilder> builder = null);
 
         IConsumerBuilder PrefetchSize(uint size);

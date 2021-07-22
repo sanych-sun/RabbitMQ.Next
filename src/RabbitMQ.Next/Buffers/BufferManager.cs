@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Concurrent;
+using Microsoft.Extensions.ObjectPool;
 using RabbitMQ.Next.Abstractions.Buffers;
 
 namespace RabbitMQ.Next.Buffers
 {
     internal class BufferManager : IBufferManager
     {
+        private readonly ObjectPool<byte[]> arrayPool;
         private readonly ConcurrentBag<byte[]> releasedItems;
         private int bufferSize;
 

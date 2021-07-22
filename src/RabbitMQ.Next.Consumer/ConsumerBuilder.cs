@@ -12,7 +12,6 @@ namespace RabbitMQ.Next.Consumer
         private readonly List<QueueConsumerBuilder> queues;
         private readonly List<Func<DeliveredMessage, IMessageProperties, Content, ValueTask<bool>>> handlers;
         private List<ITypeFormatter> formatters;
-        private List<IFormatterSource> formatterSources;
 
         public ConsumerBuilder()
         {
@@ -21,8 +20,6 @@ namespace RabbitMQ.Next.Consumer
         }
 
         public IReadOnlyList<ITypeFormatter> Formatters => this.formatters;
-
-        public IReadOnlyList<IFormatterSource> FormatterSources => this.formatterSources;
 
         public IReadOnlyList<QueueConsumerBuilder> Queues => this.queues;
 
@@ -47,18 +44,6 @@ namespace RabbitMQ.Next.Consumer
 
             this.formatters ??= new List<ITypeFormatter>();
             this.formatters.Add(formatter);
-            return this;
-        }
-
-        IConsumerBuilder IConsumerBuilder.UseFormatterSource(IFormatterSource formatterSource)
-        {
-            if (formatterSource == null)
-            {
-                throw new ArgumentNullException(nameof(formatterSource));
-            }
-
-            this.formatterSources ??= new List<IFormatterSource>();
-            this.formatterSources.Add(formatterSource);
             return this;
         }
 

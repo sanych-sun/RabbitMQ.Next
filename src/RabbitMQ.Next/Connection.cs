@@ -53,7 +53,7 @@ namespace RabbitMQ.Next
 
             connection.State = ConnectionState.Connecting;
             var socket = await OpenSocketAsync(endpoints);
-            connection.socketChannel = System.Threading.Channels.Channel.CreateBounded<MemoryBlock>(new BoundedChannelOptions(100)
+            connection.socketChannel = System.Threading.Channels.Channel.CreateBounded<MemoryBlock>(new BoundedChannelOptions(1000)
             {
                 SingleReader = true,
                 SingleWriter = false,
@@ -74,7 +74,7 @@ namespace RabbitMQ.Next
                 // connection should be forcibly closed if negotiation phase take more then 10s.
                 var cancellation = new CancellationTokenSource(10000);
                 var negotiateTask = NegotiateAsync(ch, virtualHost, locale, authMechanism, clientProperties, cancellation.Token);
-                await connection.frameSender.SendAmqpHeaderAsync();
+                await connection.socketChannel.Writer.WriteAsync(new MemoryBlock(ProtocolConstants.AmqpHeader));
 
                 return await negotiateTask;
             });
@@ -156,7 +156,7 @@ namespace RabbitMQ.Next
             while (!cancellationToken.IsCancellationRequested)
             {
                 await Task.Delay(heartbeatIntervalMs, cancellationToken);
-                await this.frameSender.SendHeartBeatAsync();
+                await this.socketChannel.Writer.WriteAsync(new MemoryBlock(ProtocolConstants.HeartbeatFrame));
             }
         }
 

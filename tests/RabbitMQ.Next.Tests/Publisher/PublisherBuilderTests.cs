@@ -31,29 +31,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             
             Assert.Throws<ArgumentNullException>(() => ((IPublisherBuilder)builder).UseFormatter(null));
         }
-        
-        [Fact]
-        public void CanRegisterFormatterSources()
-        {
-            var formatter1 = Substitute.For<IFormatterSource>();
-            var formatter2 = Substitute.For<IFormatterSource>();
 
-            var builder = new PublisherBuilder();
-            ((IPublisherBuilder) builder).UseFormatterSource(formatter1);
-            ((IPublisherBuilder) builder).UseFormatterSource(formatter2);
-
-            Assert.Contains(formatter1, builder.FormatterSources);
-            Assert.Contains(formatter2, builder.FormatterSources);
-        }
-
-        [Fact]
-        public void ThrowsOnInvalidFormatterSource()
-        {
-            var builder = new PublisherBuilder();
-            
-            Assert.Throws<ArgumentNullException>(() => ((IPublisherBuilder)builder).UseFormatterSource(null));
-        }
-        
         [Fact]
         public void CanRegisterTransformers()
         {

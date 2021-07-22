@@ -14,9 +14,6 @@ namespace RabbitMQ.Next.Transport
 {
     internal class FrameSender : IFrameSender
     {
-        private static readonly byte[] HeartbeatFrame = new byte[] { (byte)FrameType.Heartbeat, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, ProtocolConstants.FrameEndByte };
-        private static readonly byte[] AmqpHeader = new byte[] { 0x41, 0x4D, 0x51, 0x50, 0x00, 0x00, 0x09, 0x01 };
-
         private readonly ChannelWriter<MemoryBlock> socketWriter;
         private readonly IMethodRegistry registry;
         private readonly IBufferPool bufferPool;
@@ -46,12 +43,6 @@ namespace RabbitMQ.Next.Transport
         }
 
         public int FrameMaxSize { get; set; }
-
-        public ValueTask SendHeartBeatAsync()
-            => this.socketWriter.WriteAsync(HeartbeatFrame);
-
-        public ValueTask SendAmqpHeaderAsync()
-            => this.socketWriter.WriteAsync(AmqpHeader);
 
         public ValueTask SendMethodAsync<TMethod>(ushort channelNumber, TMethod method)
             where TMethod : struct, IOutgoingMethod

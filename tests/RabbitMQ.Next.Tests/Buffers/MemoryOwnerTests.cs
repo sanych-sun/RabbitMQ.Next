@@ -56,17 +56,6 @@ namespace RabbitMQ.Next.Tests.Buffers
         }
 
         [Fact]
-        public void DisposedThrows()
-        {
-            var bufferManager = Substitute.For<IBufferManager>();
-
-            var memoryOwner = new MemoryBlock(bufferManager, 10);
-            memoryOwner.Dispose();
-
-            Assert.Throws<ObjectDisposedException>(() => memoryOwner.Memory);
-        }
-
-        [Fact]
         public void CanDisposeMultiple()
         {
             var bufferManager = Substitute.For<IBufferManager>();

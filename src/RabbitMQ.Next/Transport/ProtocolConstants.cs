@@ -1,4 +1,4 @@
-using System;
+using RabbitMQ.Next.Abstractions;
 
 namespace RabbitMQ.Next.Transport
 {
@@ -10,5 +10,8 @@ namespace RabbitMQ.Next.Transport
         public const byte FrameEndByte = 0xCE;
         public const byte ObsoleteField = 0x00;
         public const string DefaultVHost = "/";
+
+        public static readonly byte[] HeartbeatFrame = new byte[] { (byte)FrameType.Heartbeat, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, FrameEndByte };
+        public static readonly byte[] AmqpHeader = new byte[] { 0x41, 0x4D, 0x51, 0x50, 0x00, 0x00, 0x09, 0x01 };
     }
 }

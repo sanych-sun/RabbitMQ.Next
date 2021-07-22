@@ -7,8 +7,6 @@ namespace RabbitMQ.Next.Publisher.Abstractions
     {
         IPublisherBuilder UseFormatter(ITypeFormatter typeFormatter);
 
-        IPublisherBuilder UseFormatterSource(IFormatterSource formatters);
-
         IPublisherBuilder UseTransformer(IMessageTransformer transformer);
 
         IPublisherBuilder AddReturnedMessageHandler(IReturnedMessageHandler returnedMessageHandler);

@@ -32,28 +32,6 @@ namespace RabbitMQ.Next.Tests.Consumer
 
             Assert.Throws<ArgumentNullException>(() => ((IConsumerBuilder) consumerBuilder).UseFormatter(null));
         }
-        
-        [Fact]
-        public void UseFormatterSource()
-        {
-            var consumerBuilder = new ConsumerBuilder();
-            var formatterSource1 = Substitute.For<IFormatterSource>();
-            var formatterSource2 = Substitute.For<IFormatterSource>();
-
-            ((IConsumerBuilder) consumerBuilder).UseFormatterSource(formatterSource1);
-            ((IConsumerBuilder) consumerBuilder).UseFormatterSource(formatterSource2);
-
-            Assert.Contains(formatterSource1, consumerBuilder.FormatterSources);
-            Assert.Contains(formatterSource2, consumerBuilder.FormatterSources);
-        }
-
-        [Fact]
-        public void UseFormatterSourceThrowsOnNull()
-        {
-            var consumerBuilder = new ConsumerBuilder();
-
-            Assert.Throws<ArgumentNullException>(() => ((IConsumerBuilder) consumerBuilder).UseFormatterSource(null));
-        }
 
         [Fact]
         public void PrefetchSize()
