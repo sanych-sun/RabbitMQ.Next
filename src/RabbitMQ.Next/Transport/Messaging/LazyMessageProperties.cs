@@ -42,7 +42,6 @@ namespace RabbitMQ.Next.Transport.Messaging
                 .SplitStringProperty(out this.applicationId, flags, 3);
         }
 
-
         public string ContentType
         {
             get

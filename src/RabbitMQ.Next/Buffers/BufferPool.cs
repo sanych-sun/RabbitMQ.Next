@@ -1,20 +1,25 @@
-using RabbitMQ.Next.Abstractions.Buffers;
+using Microsoft.Extensions.ObjectPool;
 
 namespace RabbitMQ.Next.Buffers
 {
     internal class BufferPool : IBufferPool
     {
-        private readonly IBufferManager bufferManager;
+        private readonly ObjectPool<MemoryBlock> memoryPool;
 
-        public BufferPool(IBufferManager bufferManager)
+        private readonly int bufferSize = 2 * 100 * 1024; // TODO: double max frame size, make it configurable
+
+        public BufferPool()
         {
-            this.bufferManager = bufferManager;
+            this.memoryPool = new DefaultObjectPool<MemoryBlock>(
+                new ObjectPoolPolicy<MemoryBlock>(this.CreateMemoryBlock, _ => true), 100);
         }
 
-        public IBufferWriter Create()
-            => new BufferWriter(this.bufferManager);
+        public MemoryBlock CreateMemory()
+            => this.memoryPool.Get();
 
-        public MemoryBlock CreateMemory(int minSize = 0)
-            => new MemoryBlock(this.bufferManager, minSize);
+        private MemoryBlock CreateMemoryBlock()
+        {
+            return new MemoryBlock(this.memoryPool, this.bufferSize);
+        }
     }
 }

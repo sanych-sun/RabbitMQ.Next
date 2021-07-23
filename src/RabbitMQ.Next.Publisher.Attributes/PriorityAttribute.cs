@@ -1,5 +1,5 @@
 using System;
-using RabbitMQ.Next.Publisher.Abstractions.Transformers;
+using RabbitMQ.Next.Publisher.Abstractions;
 
 namespace RabbitMQ.Next.Publisher.Attributes
 {
@@ -17,7 +17,7 @@ namespace RabbitMQ.Next.Publisher.Attributes
         {
             if (!message.Priority.HasValue)
             {
-                message.SetPriority(this.Priority);
+                message.Priority = this.Priority;
             }
         }
     }

@@ -1,11 +1,11 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
-using RabbitMQ.Next.Abstractions.Buffers;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Exceptions;
 using RabbitMQ.Next.Abstractions.Methods;
@@ -20,15 +20,16 @@ namespace RabbitMQ.Next
 {
     internal class Connection : IConnection
     {
+        private static readonly StaticMemoryBlock AmqpProtocolHeader = new StaticMemoryBlock(ProtocolConstants.AmqpHeader);
+        private static readonly StaticMemoryBlock AmqpHeartbeatFrame = new StaticMemoryBlock(ProtocolConstants.HeartbeatFrame);
+
         private readonly IMethodRegistry methodRegistry;
 
         private readonly ChannelPool channelPool;
-        private readonly BufferManager bufferManager;
         private readonly IBufferPool bufferPool;
         private readonly ConnectionDetails connectionDetails = new ConnectionDetails();
 
-        private Channel<MemoryBlock> socketChannel;
-        private IFrameSender frameSender;
+        private Channel<IMemoryOwner<byte>> socketChannel;
         private CancellationTokenSource socketIoCancellation;
 
         private Connection(IMethodRegistry methodRegistry)
@@ -36,8 +37,7 @@ namespace RabbitMQ.Next
             this.methodRegistry = methodRegistry;
 
             this.State = ConnectionState.Pending;
-            this.bufferManager = new BufferManager(ProtocolConstants.FrameMinSize);
-            this.bufferPool = new BufferPool(this.bufferManager);
+            this.bufferPool = new BufferPool();
             this.channelPool = new ChannelPool();
         }
 
@@ -53,36 +53,30 @@ namespace RabbitMQ.Next
 
             connection.State = ConnectionState.Connecting;
             var socket = await OpenSocketAsync(endpoints);
-            connection.socketChannel = System.Threading.Channels.Channel.CreateBounded<MemoryBlock>(new BoundedChannelOptions(1000)
+            connection.socketChannel = System.Threading.Channels.Channel.CreateBounded<IMemoryOwner<byte>>(new BoundedChannelOptions(100)
             {
                 SingleReader = true,
                 SingleWriter = false,
                 AllowSynchronousContinuations = false,
             });
 
-            connection.frameSender = new FrameSender(connection.socketChannel.Writer, connection.methodRegistry, connection.BufferPool);
-
             connection.State = ConnectionState.Negotiating;
-            var connectionChannel = new Channel(connection.channelPool, connection.methodRegistry, connection.socketChannel.Writer, connection.frameSender, connection.bufferPool, null, ProtocolConstants.FrameMinSize);
+            var connectionChannel = new Channel(connection.channelPool, connection.methodRegistry, connection.socketChannel.Writer, connection.bufferPool, null, ProtocolConstants.FrameMinSize);
 
             connection.socketIoCancellation = new CancellationTokenSource();
             Task.Factory.StartNew(() => connection.ReceiveLoop(socket, connection.socketIoCancellation.Token), TaskCreationOptions.LongRunning);
             Task.Factory.StartNew(() => SendLoop(socket, connection.socketChannel.Reader), TaskCreationOptions.LongRunning);
 
-            var negotiationResults = await connectionChannel.UseChannel(async ch =>
-            {
-                // connection should be forcibly closed if negotiation phase take more then 10s.
-                var cancellation = new CancellationTokenSource(10000);
-                var negotiateTask = NegotiateAsync(ch, virtualHost, locale, authMechanism, clientProperties, cancellation.Token);
-                await connection.socketChannel.Writer.WriteAsync(new MemoryBlock(ProtocolConstants.AmqpHeader));
+            // connection should be forcibly closed if negotiation phase take more then 10s.
+            var cancellation = new CancellationTokenSource(10000);
+            var negotiateTask = NegotiateAsync(connectionChannel, virtualHost, locale, authMechanism, clientProperties, cancellation.Token);
+            await connection.socketChannel.Writer.WriteAsync(AmqpProtocolHeader);
 
-                return await negotiateTask;
-            });
+            var negotiationResults = await negotiateTask;
 
             var heartbeatIntervalMs = negotiationResults.HeartbeatInterval * 1000;
             // set buffer size twice as frame size, so the most messages (method + header + content) will fit into single buffer
-            connection.bufferManager.SetBufferSize(2 * (int)negotiationResults.MaxFrameSize);
-            connection.frameSender.FrameMaxSize = (int) negotiationResults.MaxFrameSize;
+            // connection.bufferManager.SetBufferSize(2 * (int)negotiationResults.MaxFrameSize);
 
             connection.connectionDetails.HeartbeatInterval = negotiationResults.HeartbeatInterval;
             connection.connectionDetails.FrameMaxSize = (int) negotiationResults.MaxFrameSize;
@@ -110,7 +104,7 @@ namespace RabbitMQ.Next
         {
             // TODO: validate state
 
-            var channel = new Channel(this.channelPool, this.methodRegistry, this.socketChannel.Writer, this.frameSender, this.bufferPool, handlers, this.Details.FrameMaxSize);
+            var channel = new Channel(this.channelPool, this.methodRegistry, this.socketChannel.Writer, this.bufferPool, handlers, this.Details.FrameMaxSize);
             await channel.SendAsync<Transport.Methods.Channel.OpenMethod, Transport.Methods.Channel.OpenOkMethod>(new Transport.Methods.Channel.OpenMethod(), cancellationToken);
 
             return channel;
@@ -156,7 +150,7 @@ namespace RabbitMQ.Next
             while (!cancellationToken.IsCancellationRequested)
             {
                 await Task.Delay(heartbeatIntervalMs, cancellationToken);
-                await this.socketChannel.Writer.WriteAsync(new MemoryBlock(ProtocolConstants.HeartbeatFrame));
+                await this.socketChannel.Writer.WriteAsync(AmqpHeartbeatFrame);
             }
         }
 
@@ -229,7 +223,7 @@ namespace RabbitMQ.Next
             }
         }
 
-        private static async Task SendLoop(ISocket socket, ChannelReader<MemoryBlock> socketChannel)
+        private static async Task SendLoop(ISocket socket, ChannelReader<IMemoryOwner<byte>> socketChannel)
         {
             while (await socketChannel.WaitToReadAsync())
             {
@@ -256,7 +250,7 @@ namespace RabbitMQ.Next
         }
 
         private static async Task<(ushort ChannelMax, uint MaxFrameSize, ushort HeartbeatInterval)> NegotiateAsync(
-            ISynchronizedChannel channel, string vhost, string locale, IAuthMechanism auth, IReadOnlyDictionary<string, object> clientProperties,
+            IChannel channel, string vhost, string locale, IAuthMechanism auth, IReadOnlyDictionary<string, object> clientProperties,
             CancellationToken cancellation)
         {
             var startMethodTask = channel.WaitAsync<StartMethod>(cancellation);

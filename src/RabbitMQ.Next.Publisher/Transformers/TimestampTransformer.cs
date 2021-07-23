@@ -1,4 +1,5 @@
 using System;
+using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Abstractions.Transformers;
 
 namespace RabbitMQ.Next.Publisher.Transformers
@@ -9,7 +10,7 @@ namespace RabbitMQ.Next.Publisher.Transformers
         {
             if (!message.Timestamp.HasValue)
             {
-                message.SetTimestamp(DateTimeOffset.UtcNow);
+                message.Timestamp = DateTimeOffset.UtcNow;
             }
         }
     }

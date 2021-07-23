@@ -77,22 +77,25 @@ namespace RabbitMQ.Next.Benchmarks
         [Benchmark]
         public async Task PublishAsync()
         {
-            await Task.WhenAll(Enumerable.Range(0, 10)
-                .Select(async num =>
+            // await Task.WhenAll(Enumerable.Range(0, 10)
+            //     .Select(async num =>
+            //     {
+            //         await Task.Yield();
+            //
+            //         for (int i = num; i < this.messages.Count; i = i + 10)
+            //         {
+            //             await this.publisher.PublishAsync(this.messages[i]);
+            //         }
+            //     })
+            //     .ToArray());
+
+            for (int i = 0; i < this.messages.Count; i++)
+            {
+                await this.publisher.PublishAsync(this.corrIds[i], this.messages[i], (state, properties) =>
                 {
-                    await Task.Yield();
-
-                    for (int i = num; i < this.messages.Count; i = i + 10)
-                    {
-                        await this.publisher.PublishAsync(this.messages[i]);
-                    }
-                })
-                .ToArray());
-
-            // for (int i = 0; i < this.messages.Count; i++)
-            // {
-            //     await this.publisher.PublishAsync(this.messages[i], properties: new MessageProperties { CorrelationId = this.corrIds[i]});
-            // }
+                    properties.CorrelationId = state;
+                });
+            }
 
             // var processed = 0;
             // var consumerCancellation = new CancellationTokenSource();

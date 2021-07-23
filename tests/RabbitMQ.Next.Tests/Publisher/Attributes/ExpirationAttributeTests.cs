@@ -1,6 +1,6 @@
 using System;
 using NSubstitute;
-using RabbitMQ.Next.Publisher.Abstractions.Transformers;
+using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Attributes;
 using Xunit;
 
@@ -27,7 +27,7 @@ namespace RabbitMQ.Next.Tests.Publisher.Attributes
 
             attr.Apply(builder);
 
-            builder.Received().SetExpiration(TimeSpan.FromSeconds(value).TotalMilliseconds.ToString());
+            builder.Received().Expiration = TimeSpan.FromSeconds(value).TotalMilliseconds.ToString();
         }
 
         [Theory]
@@ -40,7 +40,7 @@ namespace RabbitMQ.Next.Tests.Publisher.Attributes
 
             attr.Apply(builder);
 
-            builder.DidNotReceive().SetExpiration(Arg.Any<string>());
+            builder.DidNotReceive().Expiration = Arg.Any<string>();
         }
     }
 }

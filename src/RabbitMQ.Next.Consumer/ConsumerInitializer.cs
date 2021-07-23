@@ -3,7 +3,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Transport.Methods.Basic;
-using RabbitMQ.Next.Transport.Methods.Channel;
 
 namespace RabbitMQ.Next.Consumer
 {
@@ -25,7 +24,7 @@ namespace RabbitMQ.Next.Consumer
 
         public bool NoAck { get; }
 
-        public async ValueTask InitConsumerAsync(ISynchronizedChannel channel, CancellationToken cancellation)
+        public async ValueTask InitConsumerAsync(IChannel channel, CancellationToken cancellation)
         {
             await channel.SendAsync<QosMethod, QosOkMethod>(new QosMethod(this.PrefetchSize, this.PrefetchCount, false), cancellation);
 
@@ -41,7 +40,7 @@ namespace RabbitMQ.Next.Consumer
             }
         }
 
-        public async ValueTask CancelAsync(ISynchronizedChannel channel)
+        public async ValueTask CancelAsync(IChannel channel)
         {
             for (var i = 0; i < this.Queues.Count; i++)
             {

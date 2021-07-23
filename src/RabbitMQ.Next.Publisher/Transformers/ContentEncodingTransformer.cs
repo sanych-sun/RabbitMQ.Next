@@ -1,3 +1,4 @@
+using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Abstractions.Transformers;
 
 namespace RabbitMQ.Next.Publisher.Transformers
@@ -15,7 +16,7 @@ namespace RabbitMQ.Next.Publisher.Transformers
         {
             if (string.IsNullOrEmpty(message.ContentEncoding))
             {
-                message.SetContentEncoding(this.contentEncoding);
+                message.ContentEncoding = this.contentEncoding;
             }
         }
     }

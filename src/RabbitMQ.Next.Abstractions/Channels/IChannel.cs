@@ -13,15 +13,14 @@ namespace RabbitMQ.Next.Abstractions.Channels
         ValueTask SendAsync<TRequest>(TRequest request, CancellationToken cancellationToken = default)
             where TRequest : struct, IOutgoingMethod;
 
+        ValueTask<TResponse> SendAsync<TRequest, TResponse>(TRequest request, CancellationToken cancellationToken = default)
+            where TRequest : struct, IOutgoingMethod
+            where TResponse : struct, IIncomingMethod;
+
         ValueTask SendAsync<TState>(TState state, Action<TState, IFrameBuilder> payload);
 
-        ValueTask UseChannel(Func<ISynchronizedChannel, ValueTask> fn, CancellationToken cancellation = default);
-
-        ValueTask UseChannel<TState>(TState state, Func<ISynchronizedChannel, TState, ValueTask> fn, CancellationToken cancellation = default);
-
-        ValueTask<TResult> UseChannel<TResult>(Func<ISynchronizedChannel, ValueTask<TResult>> fn, CancellationToken cancellation = default);
-
-        ValueTask<TResult> UseChannel<TState, TResult>(TState state, Func<ISynchronizedChannel, TState, ValueTask<TResult>> fn, CancellationToken cancellation = default);
+        ValueTask<TMethod> WaitAsync<TMethod>(CancellationToken cancellation = default)
+            where TMethod : struct, IIncomingMethod;
 
         ValueTask CloseAsync(Exception ex = null);
 

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using NSubstitute;
-using RabbitMQ.Next.Publisher.Abstractions.Transformers;
+using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Attributes;
 using Xunit;
 
@@ -23,11 +23,12 @@ namespace RabbitMQ.Next.Tests.Publisher.Attributes
         {
             var attr = new HeaderAttribute(header, value);
             var builder = Substitute.For<IMessageBuilder>();
-            builder.Headers.Returns(new Dictionary<string, object>());
+            var headers = new Dictionary<string, object>();
+            builder.Headers.Returns(headers);
 
             attr.Apply(builder);
 
-            builder.Received().SetHeader(header, value);
+            Assert.Equal(value, headers[header]);
         }
 
         [Theory]
@@ -36,11 +37,12 @@ namespace RabbitMQ.Next.Tests.Publisher.Attributes
         {
             var attr = new HeaderAttribute(header, value);
             var builder = Substitute.For<IMessageBuilder>();
-            builder.Headers.Returns(new Dictionary<string, object> { [header] = builderValue });
+            var headers = new Dictionary<string, object> {[header] = builderValue};
+            builder.Headers.Returns(headers);
 
             attr.Apply(builder);
 
-            builder.DidNotReceive().SetHeader(header, Arg.Any<string>());
+            Assert.Equal(builderValue, headers[header]);
         }
     }
 }

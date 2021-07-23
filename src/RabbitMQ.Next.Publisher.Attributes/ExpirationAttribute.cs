@@ -1,6 +1,6 @@
 using System;
 using System.Globalization;
-using RabbitMQ.Next.Publisher.Abstractions.Transformers;
+using RabbitMQ.Next.Publisher.Abstractions;
 
 namespace RabbitMQ.Next.Publisher.Attributes
 {
@@ -21,7 +21,7 @@ namespace RabbitMQ.Next.Publisher.Attributes
         {
             if (string.IsNullOrEmpty(message.Expiration))
             {
-                message.SetExpiration(this.expirationText);
+                message.Expiration = this.expirationText;
             }
         }
     }

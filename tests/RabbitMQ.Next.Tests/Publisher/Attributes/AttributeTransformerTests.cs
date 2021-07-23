@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using NSubstitute;
-using RabbitMQ.Next.Publisher.Abstractions.Transformers;
+using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Attributes;
 using Xunit;
 
@@ -18,7 +18,7 @@ namespace RabbitMQ.Next.Tests.Publisher.Attributes
 
             attributeTransformer.Apply(new AssemblyAttributesData(), message);
 
-            message.Received().SetApplicationId("unitTest");
+            message.Received().ApplicationId = "unitTest";
         }
 
         [Fact]
@@ -29,7 +29,7 @@ namespace RabbitMQ.Next.Tests.Publisher.Attributes
 
             attributeTransformer.Apply(new RoutingKeyAttributeData(), message);
 
-            message.Received().SetRoutingKey("route");
+            message.Received().RoutingKey = "route";
         }
 
         [Fact]
@@ -41,8 +41,8 @@ namespace RabbitMQ.Next.Tests.Publisher.Attributes
 
             attributeTransformer.Apply(new HeaderAttributeData(), message);
 
-            message.Received().SetHeader("headerA", "value1");
-            message.Received().SetHeader("headerB", "value2");
+            message.Received().Headers["headerA"] = "value1";
+            message.Received().Headers["headerB"] = "value2";
         }
 
         [Fact]
@@ -53,8 +53,8 @@ namespace RabbitMQ.Next.Tests.Publisher.Attributes
 
             attributeTransformer.Apply(new MultipleAttributesData(), message);
 
-            message.Received().SetRoutingKey("route");
-            message.Received().SetPriority(7);
+            message.Received().RoutingKey = "route";
+            message.Received().Priority = 7;
         }
 
         private class AssemblyAttributesData

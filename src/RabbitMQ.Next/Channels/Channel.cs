@@ -6,13 +6,12 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using Microsoft.Extensions.ObjectPool;
 using RabbitMQ.Next.Abstractions;
-using RabbitMQ.Next.Abstractions.Buffers;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Exceptions;
-using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Abstractions.Methods;
-using RabbitMQ.Next.Transport;
+using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Transport.Messaging;
 using RabbitMQ.Next.Transport.Methods.Channel;
 
@@ -20,8 +19,8 @@ namespace RabbitMQ.Next.Channels
 {
     internal sealed class Channel : IChannelInternal
     {
-        private readonly SynchronizedChannel syncChannel;
-        private readonly ChannelWriter<MemoryBlock> socketWriter;
+        private readonly ObjectPool<FrameBuilder> frameBuilderPool;
+        private readonly ChannelWriter<IMemoryOwner<byte>> socketWriter;
         private readonly SemaphoreSlim senderSync;
         private readonly ChannelPool channelPool;
         private readonly IMethodRegistry registry;
@@ -29,9 +28,10 @@ namespace RabbitMQ.Next.Channels
         private readonly TaskCompletionSource<bool> channelCompletion;
         private readonly int frameMaxSize;
 
+        private readonly WaitMethodHandler waitHandler;
         private readonly IReadOnlyList<IMethodHandler> methodHandlers;
 
-        public Channel(ChannelPool channelPool, IMethodRegistry methodRegistry, ChannelWriter<MemoryBlock> socketWriter, IFrameSender frameSender, IBufferPool bufferPool, IReadOnlyList<IMethodHandler> handlers, int frameMaxSize)
+        public Channel(ChannelPool channelPool, IMethodRegistry methodRegistry, ChannelWriter<IMemoryOwner<byte>> socketWriter, IBufferPool bufferPool, IReadOnlyList<IMethodHandler> handlers, int frameMaxSize)
         {
             this.channelPool = channelPool;
             this.registry = methodRegistry;
@@ -40,6 +40,9 @@ namespace RabbitMQ.Next.Channels
             this.ChannelNumber = channelPool.Register(this);
             this.frameMaxSize = frameMaxSize;
 
+            this.frameBuilderPool = new DefaultObjectPool<FrameBuilder>(
+                new ObjectPoolPolicy<FrameBuilder>(this.CreateFrameBuilder, ResetFrameBuilder), 100);
+
             handlers ??= Array.Empty<IMethodHandler>();
 
             this.channelCompletion = new TaskCompletionSource<bool>();
@@ -47,8 +50,8 @@ namespace RabbitMQ.Next.Channels
             this.Writer =  pipe.Writer;
             this.senderSync = new SemaphoreSlim(1,1);
 
-            var waitFrameHandler = new WaitMethodHandler(methodRegistry, this);
-            var list = new List<IMethodHandler>(handlers) { waitFrameHandler };
+            this.waitHandler = new WaitMethodHandler(methodRegistry, this);
+            var list = new List<IMethodHandler>(handlers) { this.waitHandler };
             if (this.ChannelNumber == 0)
             {
                 list.Add(new ConnectionCloseHandler(this));
@@ -59,7 +62,6 @@ namespace RabbitMQ.Next.Channels
             }
 
             this.methodHandlers = list;
-            this.syncChannel = new SynchronizedChannel(this.ChannelNumber, frameSender, waitFrameHandler);
 
             Task.Factory.StartNew(() => this.LoopAsync(pipe.Reader), TaskCreationOptions.LongRunning);
         }
@@ -85,106 +87,68 @@ namespace RabbitMQ.Next.Channels
             this.channelPool.Release(this.ChannelNumber);
         }
 
+        public async ValueTask<TResponse> SendAsync<TRequest, TResponse>(TRequest request, CancellationToken cancellationToken = default)
+            where TRequest : struct, IOutgoingMethod
+            where TResponse : struct, IIncomingMethod
+        {
+            var waitTask = this.WaitAsync<TResponse>(cancellationToken);
+            await this.SendAsync(request);
+            return await waitTask;
+        }
+
         public async ValueTask SendAsync<TRequest>(TRequest request, CancellationToken cancellation = default)
             where TRequest : struct, IOutgoingMethod
         {
-            var isSync = this.registry.IsSync(request.MethodId);
+            this.ValidateState();
+            var frameBuilder = this.frameBuilderPool.Get();
+            var buffer = frameBuilder.BeginMethodFrame(request.MethodId);
 
-            if (isSync)
-            {
-                await this.senderSync.WaitAsync(cancellation);
-            }
+            var formatter = this.registry.GetFormatter<TRequest>();
+
+            var bb = buffer.GetMemory();
+            var written = bb.Length - formatter.Write(bb.Span, request).Length;
+            buffer.Advance(written);
+            frameBuilder.EndFrame();
+
+            await this.senderSync.WaitAsync();
 
             try
             {
-                this.ValidateState();
-                await this.syncChannel.SendAsync(request);
+                await frameBuilder.WriteToAsync(this.socketWriter);
             }
             finally
             {
-                if (isSync)
-                {
-                    this.senderSync.Release();
-                }
+                this.senderSync.Release();
+                this.frameBuilderPool.Return(frameBuilder);
             }
         }
 
-        public ValueTask SendAsync<TState>(TState state, Action<TState, IFrameBuilder> payload)
+        public async ValueTask SendAsync<TState>(TState state, Action<TState, IFrameBuilder> payload)
         {
-            var frameBuilder = new FrameBuilder(this.bufferPool, this.ChannelNumber, this.frameMaxSize);
+            this.ValidateState();
+            var frameBuilder = this.frameBuilderPool.Get();
             payload(state, frameBuilder);
 
-            //await this.senderSync.WaitAsync();
-
-            // try
-            // {
-                return frameBuilder.WriteToAsync(this.socketWriter);
-            // }
-            // finally
-            // {
-            //     this.senderSync.Release();
-            // }
-        }
-
-        public async ValueTask UseChannel(Func<ISynchronizedChannel, ValueTask> fn, CancellationToken cancellation = default)
-        {
-            await this.senderSync.WaitAsync(cancellation);
+            await this.senderSync.WaitAsync();
 
             try
             {
-                this.ValidateState();
-                await fn(this.syncChannel);
+                await frameBuilder.WriteToAsync(this.socketWriter);
             }
             finally
             {
                 this.senderSync.Release();
+                this.frameBuilderPool.Return(frameBuilder);
             }
         }
 
-        public async ValueTask UseChannel<TState>(TState state, Func<ISynchronizedChannel, TState, ValueTask> fn, CancellationToken cancellation = default)
+        public async ValueTask<TMethod> WaitAsync<TMethod>(CancellationToken cancellation = default)
+            where TMethod : struct, IIncomingMethod
         {
-            await this.senderSync.WaitAsync(cancellation);
-
-            try
-            {
-                this.ValidateState();
-                await fn(this.syncChannel, state);
-            }
-            finally
-            {
-                this.senderSync.Release();
-            }
+            var result = await this.waitHandler.WaitAsync<TMethod>(cancellation);
+            return (TMethod) result;
         }
 
-        public async ValueTask<TResult> UseChannel<TResult>(Func<ISynchronizedChannel, ValueTask<TResult>> fn, CancellationToken cancellation = default)
-        {
-            await this.senderSync.WaitAsync(cancellation);
-
-            try
-            {
-                this.ValidateState();
-                return await fn(this.syncChannel);
-            }
-            finally
-            {
-                this.senderSync.Release();
-            }
-        }
-
-        public async ValueTask<TResult> UseChannel<TState, TResult>(TState state, Func<ISynchronizedChannel, TState, ValueTask<TResult>> fn, CancellationToken cancellation = default)
-        {
-            await this.senderSync.WaitAsync(cancellation);
-
-            try
-            {
-                this.ValidateState();
-                return await fn(this.syncChannel, state);
-            }
-            finally
-            {
-                this.senderSync.Release();
-            }
-        }
 
         public async ValueTask CloseAsync(Exception ex = null)
         {
@@ -276,7 +240,7 @@ namespace RabbitMQ.Next.Channels
                 return parser.ParseMethod(payload.FirstSpan);
             }
 
-            using var buffer = this.bufferPool.CreateMemory((int)payload.Length);
+            using var buffer = this.bufferPool.CreateMemory();
             payload.CopyTo(buffer.Memory.Span);
             return parser.ParseMethod(buffer.Memory.Span);
         }
@@ -310,6 +274,15 @@ namespace RabbitMQ.Next.Channels
             }
 
             return false;
+        }
+
+        private FrameBuilder CreateFrameBuilder()
+            => new FrameBuilder(this.bufferPool, this.ChannelNumber, this.frameMaxSize);
+
+        private static bool ResetFrameBuilder(FrameBuilder fr)
+        {
+            fr.Reset();
+            return true;
         }
     }
 }

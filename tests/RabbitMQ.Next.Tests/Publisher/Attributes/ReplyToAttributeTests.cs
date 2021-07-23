@@ -1,5 +1,5 @@
 using NSubstitute;
-using RabbitMQ.Next.Publisher.Abstractions.Transformers;
+using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Attributes;
 using Xunit;
 
@@ -26,7 +26,7 @@ namespace RabbitMQ.Next.Tests.Publisher.Attributes
 
             attr.Apply(builder);
 
-            builder.Received().SetReplyTo(value);
+            builder.Received().ReplyTo = value;
         }
 
         [Theory]
@@ -39,7 +39,7 @@ namespace RabbitMQ.Next.Tests.Publisher.Attributes
 
             attr.Apply(builder);
 
-            builder.DidNotReceive().SetReplyTo(Arg.Any<string>());
+            builder.DidNotReceive().ReplyTo = Arg.Any<string>();
         }
     }
 }

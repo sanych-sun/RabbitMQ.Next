@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using NSubstitute;
-using RabbitMQ.Next.Publisher.Abstractions.Transformers;
+using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Transformers;
 using Xunit;
 
@@ -14,24 +14,26 @@ namespace RabbitMQ.Next.Tests.Publisher.Transformers
         {
             var transformer = new HeaderTransformer(header, value);
             var message = Substitute.For<IMessageBuilder>();
-            message.Headers.Returns(new Dictionary<string, object>());
+            var headers = new Dictionary<string, object>();
+            message.Headers.Returns(headers);
 
             transformer.Apply(string.Empty, message);
 
-            message.Received().SetHeader(header, value);
+            Assert.Equal(value, headers[header]);
         }
 
         [Theory]
-        [InlineData("key", "value")]
-        public void HeaderTransformerDoesNotOverride(string header, string value)
+        [InlineData("key", "value", "123")]
+        public void HeaderTransformerDoesNotOverride(string header, string value, string builderValue)
         {
             var transformer = new HeaderTransformer(header, value);
             var message = Substitute.For<IMessageBuilder>();
-            message.Headers.Returns(new Dictionary<string, object>() {["key"] = "123"});
+            var headers = new Dictionary<string, object>() {[header] = builderValue};
+            message.Headers.Returns(headers);
 
             transformer.Apply(string.Empty, message);
 
-            message.DidNotReceive().SetHeader(Arg.Any<string>(), Arg.Any<object>());
+            Assert.Equal(builderValue, headers[header]);
         }
     }
 }

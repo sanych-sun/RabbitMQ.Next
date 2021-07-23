@@ -10,7 +10,7 @@ namespace RabbitMQ.Next.Transport.Messaging
     internal static class ContentHeader
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int WriteContentHeader(this Span<byte> target, MessageProperties properties, ulong contentSize)
+        public static int WriteContentHeader(this Span<byte> target, IMessageProperties properties, ulong contentSize)
         {
             var result = target
                 .Write((ushort) ClassId.Basic)
@@ -29,6 +29,8 @@ namespace RabbitMQ.Next.Transport.Messaging
 
             var flags = (ushort)0;
 
+            if (properties != null)
+            {
                 target = target
                     .WriteProperty(properties.ContentType, ref flags, 15)
                     .WriteProperty(properties.ContentEncoding, ref flags, 14)
@@ -43,6 +45,7 @@ namespace RabbitMQ.Next.Transport.Messaging
                     .WriteProperty(properties.Type, ref flags, 5)
                     .WriteProperty(properties.UserId, ref flags, 4)
                     .WriteProperty(properties.ApplicationId, ref flags, 3);
+            }
 
             flagsSpan.Write(flags);
 
@@ -200,7 +203,7 @@ namespace RabbitMQ.Next.Transport.Messaging
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Span<byte> WriteProperty(this Span<byte> target, IReadOnlyDictionary<string, object> value, ref ushort flags, byte bitNumber)
         {
-            if (value == null)
+            if (value == null || value.Count == 0)
             {
                 return target;
             }

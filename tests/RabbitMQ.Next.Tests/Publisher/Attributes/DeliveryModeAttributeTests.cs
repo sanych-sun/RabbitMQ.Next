@@ -1,9 +1,8 @@
 using NSubstitute;
 using RabbitMQ.Next.Abstractions.Messaging;
-using RabbitMQ.Next.Publisher.Abstractions.Transformers;
+using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Attributes;
 using Xunit;
-using IMessageBuilder = RabbitMQ.Next.Publisher.Abstractions.Transformers.IMessageBuilder;
 
 namespace RabbitMQ.Next.Tests.Publisher.Attributes
 {
@@ -30,7 +29,7 @@ namespace RabbitMQ.Next.Tests.Publisher.Attributes
 
             attr.Apply(builder);
 
-            builder.Received().SetDeliveryMode(value);
+            builder.Received().DeliveryMode = value;
         }
 
         [Theory]
@@ -43,7 +42,7 @@ namespace RabbitMQ.Next.Tests.Publisher.Attributes
 
             attr.Apply(builder);
 
-            builder.DidNotReceive().SetDeliveryMode(Arg.Any<DeliveryMode>());
+            builder.DidNotReceive().DeliveryMode = Arg.Any<DeliveryMode>();
         }
     }
 }

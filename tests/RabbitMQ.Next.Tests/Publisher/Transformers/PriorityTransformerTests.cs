@@ -1,5 +1,5 @@
 using NSubstitute;
-using RabbitMQ.Next.Publisher.Abstractions.Transformers;
+using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Transformers;
 using Xunit;
 
@@ -17,7 +17,7 @@ namespace RabbitMQ.Next.Tests.Publisher.Transformers
 
             transformer.Apply(string.Empty, message);
 
-            message.Received().SetPriority(value);
+            message.Received().Priority = value;
         }
 
         [Theory]
@@ -31,7 +31,7 @@ namespace RabbitMQ.Next.Tests.Publisher.Transformers
 
             transformer.Apply(string.Empty, message);
 
-            message.DidNotReceive().SetPriority(Arg.Any<byte>());
+            message.DidNotReceive().Priority = Arg.Any<byte>();
         }
     }
 }

@@ -1,5 +1,5 @@
 using NSubstitute;
-using RabbitMQ.Next.Publisher.Abstractions.Transformers;
+using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Transformers;
 using Xunit;
 
@@ -18,7 +18,7 @@ namespace RabbitMQ.Next.Tests.Publisher.Transformers
 
             transformer.Apply(string.Empty, message);
 
-            message.Received().SetContentType(value);
+            message.Received().ContentType = value;
         }
 
         [Theory]
@@ -31,7 +31,7 @@ namespace RabbitMQ.Next.Tests.Publisher.Transformers
 
             transformer.Apply(string.Empty, message);
 
-            message.DidNotReceive().SetContentType(Arg.Any<string>());
+            message.DidNotReceive().ContentType = Arg.Any<string>();
         }
     }
 }

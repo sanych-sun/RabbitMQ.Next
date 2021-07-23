@@ -7,7 +7,6 @@
 // using RabbitMQ.Next.Consumer.Abstractions;
 // using RabbitMQ.Next.Publisher;
 // using RabbitMQ.Next.Abstractions;
-// using RabbitMQ.Next.Publisher.Abstractions;
 // using RabbitMQ.Next.Publisher.Attributes;
 // using RabbitMQ.Next.Publisher.Transformers;
 // using RabbitMQ.Next.Serialization.Abstractions;
@@ -35,7 +34,7 @@
 //                 .UseDefaults()
 //                 .ConnectAsync();
 //
-//             var publisher = connection.Publisher("amq.topic",
+//             var publisher = await connection.CreatePublisherAsync("amq.topic",
 //                 builder => builder
 //                     .UseTransformer(new ApplicationIdTransformer("unittest"))
 //                     .UseAttributesTransformer()
@@ -44,12 +43,12 @@
 //
 //             var sw = Stopwatch.StartNew();
 //
-//             for (var i = 0; i < 100000; i++)
+//             for (var i = 0; i < 1000; i++)
 //             {
 //                 await publisher.PublishAsync($"a");
 //             }
 //
-//             await publisher.CompleteAsync();
+//             await publisher.DisposeAsync();
 //
 //             sw.Stop();
 //

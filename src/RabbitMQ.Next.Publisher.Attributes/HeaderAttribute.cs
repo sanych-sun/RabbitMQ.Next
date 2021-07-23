@@ -1,5 +1,5 @@
 using System;
-using RabbitMQ.Next.Publisher.Abstractions.Transformers;
+using RabbitMQ.Next.Publisher.Abstractions;
 
 namespace RabbitMQ.Next.Publisher.Attributes
 {
@@ -20,7 +20,7 @@ namespace RabbitMQ.Next.Publisher.Attributes
         {
             if (message.Headers == null || !message.Headers.TryGetValue(this.Name, out var _))
             {
-                message.SetHeader(this.Name, this.Value);
+                message.Headers[this.Name] = this.Value;
             }
         }
     }

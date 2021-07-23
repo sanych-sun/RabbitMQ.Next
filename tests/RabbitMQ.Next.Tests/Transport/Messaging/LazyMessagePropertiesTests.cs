@@ -5,6 +5,7 @@ using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Tests.Mocks;
 using RabbitMQ.Next.Transport.Messaging;
 using Xunit;
+using MessageProperties = RabbitMQ.Next.Tests.Mocks.MessageProperties;
 
 namespace RabbitMQ.Next.Tests.Transport.Messaging
 {
@@ -74,7 +75,7 @@ namespace RabbitMQ.Next.Tests.Transport.Messaging
             yield return new object[]
             {
                 new byte[] { 0b_00100000, 0b_00000000, 0x00, 0x00, 0x00, 0x0E, 0x03, 0x6B, 0x65, 0x79, 0x53, 0x00, 0x00, 0x00, 0x05, 0x76, 0x61, 0x6C, 0x75, 0x65 },
-                new MessageProperties { Headers = new Dictionary<string, object> {["key"] = "value"} }
+                new MessageProperties { Headers = new Dictionary<string, object> { ["key"] = "value"}}
             };
 
             yield return new object[]
@@ -158,14 +159,14 @@ namespace RabbitMQ.Next.Tests.Transport.Messaging
                  {
                      ContentType = "json",
                      ContentEncoding = "utf8",
-                     Headers = new Dictionary<string, object> {["key"] = "value"},
                      DeliveryMode = DeliveryMode.Persistent,
                      Priority = 5,
+                     Headers = new Dictionary<string, object> {["key"] = "value"},
                      CorrelationId = "correlationId",
                      ReplyTo = "replyTo",
                      Expiration = "expiration",
                      MessageId = "messageId",
-                     Timestamp = new DateTimeOffset(1983, 09,28, 0, 0, 0, TimeSpan.Zero),
+                     Timestamp = new DateTimeOffset(1983, 09, 28, 0, 0, 0, TimeSpan.Zero),
                      Type = "type",
                      UserId = "userId",
                      ApplicationId = "appId"

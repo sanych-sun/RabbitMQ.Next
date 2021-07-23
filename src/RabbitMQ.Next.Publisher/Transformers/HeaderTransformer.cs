@@ -1,3 +1,4 @@
+using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Abstractions.Transformers;
 
 namespace RabbitMQ.Next.Publisher.Transformers
@@ -17,7 +18,7 @@ namespace RabbitMQ.Next.Publisher.Transformers
         {
             if (message.Headers == null || !message.Headers.ContainsKey(this.key))
             {
-                message.SetHeader(this.key, this.value);
+                message.Headers[this.key] = this.value;
             }
         }
     }

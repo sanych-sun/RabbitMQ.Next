@@ -5,19 +5,20 @@ using System.Runtime.CompilerServices;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
-using RabbitMQ.Next.Abstractions.Buffers;
 using RabbitMQ.Next.Abstractions.Messaging;
+using RabbitMQ.Next.Buffers;
+using RabbitMQ.Next.Transport;
+using RabbitMQ.Next.Transport.Messaging;
 
-namespace RabbitMQ.Next.Transport.Messaging
+namespace RabbitMQ.Next.Channels
 {
-    // TODO: make the object reusable and pool them to reduce allocation
     internal class FrameBuilder : IFrameBuilder, IBufferWriter<byte>
     {
         private readonly IBufferPool pool;
         private readonly ushort channelNumber;
         private readonly int frameMaxSize;
         private readonly int singleFrameSize;
-        private List<MemoryBlock> chunks;
+        private readonly List<IMemoryOwner<byte>> chunks;
         private MemoryBlock buffer;
         private int offset;
         private int currentFrameSize;
@@ -28,6 +29,7 @@ namespace RabbitMQ.Next.Transport.Messaging
 
         public FrameBuilder(IBufferPool pool, ushort channelNumber, int frameMaxSize)
         {
+            this.chunks = new List<IMemoryOwner<byte>>();
             this.pool = pool;
             this.channelNumber = channelNumber;
             this.frameMaxSize = frameMaxSize;
@@ -57,7 +59,7 @@ namespace RabbitMQ.Next.Transport.Messaging
             return this;
         }
 
-        public IBufferWriter<byte> BeginContentFrame(MessageProperties properties)
+        public IBufferWriter<byte> BeginContentFrame(IMessageProperties properties)
         {
             if (this.currentFrameType != FrameType.Malformed)
             {
@@ -104,9 +106,9 @@ namespace RabbitMQ.Next.Transport.Messaging
             this.currentFrameSize = 0;
         }
 
-        public ValueTask WriteToAsync(ChannelWriter<MemoryBlock> channel)
+        public ValueTask WriteToAsync(ChannelWriter<IMemoryOwner<byte>> channel)
         {
-            if (this.chunks == null)
+            if (this.chunks.Count > 0)
             {
                 this.buffer.Slice(this.offset);
                 var single = this.buffer;
@@ -115,10 +117,18 @@ namespace RabbitMQ.Next.Transport.Messaging
             }
 
             this.FinalizeCurrentBuffer();
-            var copy = this.chunks;
-            this.chunks = null;
+            return WriteMultipleChunksAsync(channel, this.chunks);
+        }
 
-            return WriteMultipleChunksAsync(channel, copy);
+        public void Reset()
+        {
+            this.chunks.Clear();
+            this.offset = 0;
+            this.currentFrameType = FrameType.Malformed;
+            this.currentFrameSize = 0;
+            this.totalContentSize = 0;
+            this.contentSizeBlock = default;
+            this.currentFrameHeader = default;
         }
 
         void IBufferWriter<byte>.Advance(int count)
@@ -134,22 +144,27 @@ namespace RabbitMQ.Next.Transport.Messaging
 
         Memory<byte> IBufferWriter<byte>.GetMemory(int sizeHint)
         {
-            this.ExpandIfRequired(sizeHint);
-            return this.buffer.Memory.Slice(this.offset, sizeHint);
+            var size = this.ExpandIfRequired(sizeHint);
+            return this.buffer.Memory.Slice(this.offset, size);
         }
 
         Span<byte> IBufferWriter<byte>.GetSpan(int sizeHint)
         {
-            this.ExpandIfRequired(sizeHint);
-            return this.buffer.Memory.Span.Slice(this.offset, sizeHint);
+            var size = this.ExpandIfRequired(sizeHint);
+            return this.buffer.Memory.Span.Slice(this.offset, size);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void ExpandIfRequired(int requestedSize)
+        private int ExpandIfRequired(int requestedSize)
         {
+            if (requestedSize == 0)
+            {
+                requestedSize = this.frameMaxSize - this.currentFrameSize;
+            }
+
             if (this.currentFrameSize + requestedSize <= this.frameMaxSize)
             {
-                return;
+                return requestedSize;
             }
 
             this.EndFrame();
@@ -158,12 +173,13 @@ namespace RabbitMQ.Next.Transport.Messaging
             this.EnsureBuffer();
             this.currentFrameHeader = this.buffer.Memory.Slice(this.offset, ProtocolConstants.FrameHeaderSize);
             this.offset += ProtocolConstants.FrameHeaderSize;
+            return this.frameMaxSize;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void EnsureBuffer()
         {
-            if (this.buffer.Memory.IsEmpty)
+            if (this.buffer == null)
             {
                 this.buffer = this.pool.CreateMemory();
             }
@@ -177,7 +193,6 @@ namespace RabbitMQ.Next.Transport.Messaging
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void FinalizeCurrentBuffer()
         {
-            this.chunks ??= new List<MemoryBlock>();
             this.buffer.Slice(this.offset);
             this.chunks.Add(this.buffer);
             this.offset = 0;
@@ -185,7 +200,7 @@ namespace RabbitMQ.Next.Transport.Messaging
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ValueTask WriteChunkAsync(ChannelWriter<MemoryBlock> channel, MemoryBlock chunk)
+        private static ValueTask WriteChunkAsync(ChannelWriter<IMemoryOwner<byte>> channel, IMemoryOwner<byte> chunk)
         {
             if (channel.TryWrite(chunk))
             {
@@ -195,7 +210,7 @@ namespace RabbitMQ.Next.Transport.Messaging
             return channel.WriteAsync(chunk);
         }
 
-        private static async ValueTask WriteMultipleChunksAsync(ChannelWriter<MemoryBlock> channel, IReadOnlyList<MemoryBlock> chunks)
+        private static async ValueTask WriteMultipleChunksAsync(ChannelWriter<IMemoryOwner<byte>> channel, IReadOnlyList<IMemoryOwner<byte>> chunks)
         {
             for(var i = 0; i < chunks.Count; i++)
             {

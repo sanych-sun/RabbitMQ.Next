@@ -18,7 +18,7 @@ namespace RabbitMQ.Next.Benchmarks
                     {
                         Run =
                         {
-                            RunStrategy = RunStrategy.Monitoring, IterationCount = 10, WarmupCount = 1,
+                            RunStrategy = RunStrategy.Monitoring, IterationCount = 5, WarmupCount = 1,
                         }
                     })
                     .AddLogicalGroupRules(BenchmarkLogicalGroupRule.ByCategory)
@@ -27,6 +27,7 @@ namespace RabbitMQ.Next.Benchmarks
             // var bc = new PublishBenchmarks();
             // await bc.Setup();
             //
+            // await Task.Yield();
             // await Test(bc);
         }
 

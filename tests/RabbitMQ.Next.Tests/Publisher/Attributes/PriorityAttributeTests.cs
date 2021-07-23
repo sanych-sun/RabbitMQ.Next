@@ -1,6 +1,5 @@
-using System;
 using NSubstitute;
-using RabbitMQ.Next.Publisher.Abstractions.Transformers;
+using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Attributes;
 using Xunit;
 
@@ -26,7 +25,7 @@ namespace RabbitMQ.Next.Tests.Publisher.Attributes
 
             attr.Apply(builder);
 
-            builder.Received().SetPriority(value);
+            builder.Received().Priority = value;
         }
 
         [Theory]
@@ -40,7 +39,7 @@ namespace RabbitMQ.Next.Tests.Publisher.Attributes
 
             attr.Apply(builder);
 
-            builder.DidNotReceive().SetPriority(Arg.Any<byte>());
+            builder.DidNotReceive().Priority = Arg.Any<byte>();
         }
     }
 }

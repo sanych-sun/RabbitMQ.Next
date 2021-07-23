@@ -60,9 +60,7 @@ namespace RabbitMQ.Next.Consumer
                 this.acknowledger = this.acknowledgerFactory(ack);
             }
 
-            await this.channel.UseChannel((this.initializer, cancellation),
-                (ch, state) => state.initializer.InitConsumerAsync(ch, state.cancellation),
-                cancellation);
+            await this.initializer.InitConsumerAsync(this.channel, cancellation);
 
             cancellation.Register(() => this.CancelConsumeAsync());
 
@@ -73,7 +71,7 @@ namespace RabbitMQ.Next.Consumer
         {
             this.isCancelled = true;
 
-            await this.channel.UseChannel(this.initializer, (ch, init) => init.CancelAsync(ch));
+            await this.initializer.CancelAsync(this.channel);
 
             if (this.acknowledger != null)
             {

@@ -1,6 +1,6 @@
 using RabbitMQ.Next.Abstractions.Messaging;
+using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Abstractions.Transformers;
-using IMessageBuilder = RabbitMQ.Next.Publisher.Abstractions.Transformers.IMessageBuilder;
 
 namespace RabbitMQ.Next.Publisher.Transformers
 {
@@ -17,7 +17,7 @@ namespace RabbitMQ.Next.Publisher.Transformers
         {
             if (message.DeliveryMode == DeliveryMode.Unset)
             {
-                message.SetDeliveryMode(this.deliveryMode);
+                message.DeliveryMode = this.deliveryMode;
             }
         }
     }

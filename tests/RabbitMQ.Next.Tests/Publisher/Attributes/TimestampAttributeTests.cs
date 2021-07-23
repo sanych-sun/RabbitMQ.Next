@@ -1,6 +1,6 @@
 using System;
 using NSubstitute;
-using RabbitMQ.Next.Publisher.Abstractions.Transformers;
+using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Attributes;
 using Xunit;
 
@@ -17,7 +17,7 @@ namespace RabbitMQ.Next.Tests.Publisher.Attributes
 
             attr.Apply(builder);
 
-            builder.Received().SetTimestamp(Arg.Any<DateTimeOffset>());
+            builder.Received().Timestamp = Arg.Any<DateTimeOffset>();
         }
 
         [Fact]
@@ -29,7 +29,7 @@ namespace RabbitMQ.Next.Tests.Publisher.Attributes
 
             attr.Apply(builder);
 
-            builder.DidNotReceive().SetTimestamp(Arg.Any<DateTimeOffset>());
+            builder.DidNotReceive().Timestamp = Arg.Any<DateTimeOffset>();
         }
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Abstractions.Transformers;
 
 namespace RabbitMQ.Next.Publisher.Transformers
@@ -17,7 +18,7 @@ namespace RabbitMQ.Next.Publisher.Transformers
         {
             if (string.IsNullOrEmpty(message.Expiration))
             {
-                message.SetExpiration(this.expiration.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+                message.Expiration = this.expiration.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
             }
         }
     }

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.ObjectPool;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
@@ -11,9 +12,7 @@ using RabbitMQ.Next.Abstractions.Methods;
 using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Abstractions.Transformers;
 using RabbitMQ.Next.Serialization.Abstractions;
-using RabbitMQ.Next.Tasks;
 using RabbitMQ.Next.Transport.Methods.Basic;
-using RabbitMQ.Next.Transport.Methods.Channel;
 using RabbitMQ.Next.Transport.Methods.Confirm;
 using RabbitMQ.Next.Transport.Methods.Exchange;
 
@@ -21,7 +20,7 @@ namespace RabbitMQ.Next.Publisher
 {
     internal sealed class Publisher : IPublisher
     {
-        private readonly AsyncManualResetEvent flowControl = new AsyncManualResetEvent(true);
+        private readonly ObjectPool<MessageBuilder> messagePropsPool;
         private readonly SemaphoreSlim channelOpenSync = new SemaphoreSlim(1,1);
         private readonly IReadOnlyList<IReturnedMessageHandler> returnedMessageHandlers;
         private readonly IMethodHandler returnedFrameHandler;
@@ -31,7 +30,6 @@ namespace RabbitMQ.Next.Publisher
         private readonly IReadOnlyList<IMessageTransformer> transformers;
         private readonly IMethodFormatter<PublishMethod> publishFormatter;
         private readonly bool publisherConfirms;
-        private readonly int maxFrameSize;
         private ConfirmMethodHandler confirms;
         private ulong lastDeliveryTag;
         private bool isDisposed;
@@ -46,6 +44,10 @@ namespace RabbitMQ.Next.Publisher
             IReadOnlyList<IMessageTransformer> transformers,
             IReadOnlyList<IReturnedMessageHandler> returnedMessageHandlers)
         {
+            this.messagePropsPool = new DefaultObjectPool<MessageBuilder>(
+                new MessageBuilderPoolPolicy(),
+                100);
+
             this.connection = connection;
             this.exchange = exchange;
             this.publisherConfirms = publisherConfirms;
@@ -55,7 +57,6 @@ namespace RabbitMQ.Next.Publisher
 
             this.returnedFrameHandler = new MethodHandler<ReturnMethod>(this.HandleReturnedMessage);
             this.publishFormatter = connection.MethodRegistry.GetFormatter<PublishMethod>();
-            this.maxFrameSize = connection.Details.FrameMaxSize;
         }
 
         public ValueTask DisposeAsync()
@@ -85,35 +86,42 @@ namespace RabbitMQ.Next.Publisher
             return default;
         }
 
-        public async ValueTask PublishAsync<TContent>(TContent content, string routingKey = null, MessageProperties properties = default, PublishFlags flags = PublishFlags.None, CancellationToken cancellationToken = default)
+        public ValueTask PublishAsync<TContent>(TContent content, Action<IMessageBuilder> propertiesBuilder = null, PublishFlags flags = PublishFlags.None, CancellationToken cancellationToken = default)
+        {
+            var properties = this.messagePropsPool.Get();
+            propertiesBuilder?.Invoke(properties);
+            return this.InternalPublishAsync(content, properties, flags, cancellationToken);
+        }
+
+        public ValueTask PublishAsync<TState, TContent>(TState state, TContent content, Action<TState, IMessageBuilder> propertiesBuilder, PublishFlags flags = PublishFlags.None, CancellationToken cancellationToken = default)
+        {
+            var properties = this.messagePropsPool.Get();
+            propertiesBuilder?.Invoke(state, properties);
+            return this.InternalPublishAsync(content, properties, flags, cancellationToken);
+        }
+
+        private async ValueTask InternalPublishAsync<TContent>(TContent content, MessageBuilder builder, PublishFlags flags, CancellationToken cancellationToken)
         {
             this.CheckDisposed();
             this.EnsureChannel();
+            this.ApplyTransformers(content, builder);
 
-            if (!this.flowControl.IsSet())
+            await this.channel.SendAsync((properties: builder, flags, publisher: this, content), (state, frameBuilder) =>
             {
-                await this.flowControl.WaitAsync();
-            }
-
-            var message = this.ApplyTransformers(content, routingKey, properties, flags);
-
-            this.CheckDisposed();
-
-            await this.channel.SendAsync((message, publisher: this, content), (state, frameBuilder) =>
-            {
-                var method = new PublishMethod(state.publisher.exchange, state.message.RoutingKey, (byte) state.message.PublishFlags);
+                var method = new PublishMethod(state.publisher.exchange, state.properties.RoutingKey, (byte) state.flags);
                 var methodBuffer = frameBuilder.BeginMethodFrame(MethodId.BasicPublish);
 
-                var bb = methodBuffer.GetSpan(state.publisher.maxFrameSize - 100);
+                var bb = methodBuffer.GetSpan();
                 var written = bb.Length - state.publisher.publishFormatter.Write(bb, method).Length;
                 methodBuffer.Advance(written);
                 frameBuilder.EndFrame();
 
-                var bodyWriter = frameBuilder.BeginContentFrame(state.message.Properties);
+                var bodyWriter = frameBuilder.BeginContentFrame(state.properties);
                 state.publisher.serializer.Serialize(state.content, bodyWriter);
                 frameBuilder.EndFrame();
             });
 
+            this.messagePropsPool.Return(builder);
             var messageDeliveryTag = Interlocked.Increment(ref this.lastDeliveryTag);
 
             if (this.confirms != null)
@@ -146,21 +154,17 @@ namespace RabbitMQ.Next.Publisher
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private (string RoutingKey, MessageProperties Properties, PublishFlags PublishFlags) ApplyTransformers<TContent>(
-            TContent content, string routingKey, MessageProperties properties, PublishFlags publishFlags)
+        private void ApplyTransformers<TContent>(TContent content, IMessageBuilder properties)
         {
             if (this.transformers == null)
             {
-                return (routingKey, properties, publishFlags);
+                return;
             }
 
-            var messageBuilder = new MessageBuilder(routingKey, properties, publishFlags);
             for (var i = 0; i <= this.transformers.Count - 1; i++)
             {
-                this.transformers[i].Apply(content, messageBuilder);
+                this.transformers[i].Apply(content, properties);
             }
-
-            return (messageBuilder.RoutingKey, new MessageProperties(messageBuilder), messageBuilder.PublishFlags);
         }
 
         public async ValueTask<IChannel> OpenChannelAsync(CancellationToken cancellationToken = default)
@@ -180,19 +184,6 @@ namespace RabbitMQ.Next.Publisher
                     this.lastDeliveryTag = 0;
                     var methodHandlers = new List<IMethodHandler>();
                     methodHandlers.Add(this.returnedFrameHandler);
-                    methodHandlers.Add(new MethodHandler<FlowMethod>((flow, _, _) =>
-                    {
-                        if (flow.Active)
-                        {
-                            this.flowControl.Set();
-                        }
-                        else
-                        {
-                            this.flowControl.Reset();
-                        }
-
-                        return new ValueTask<bool>(true);
-                    }));
 
                     if (this.publisherConfirms)
                     {
@@ -201,16 +192,11 @@ namespace RabbitMQ.Next.Publisher
                     }
 
                     this.channel = await this.connection.OpenChannelAsync(methodHandlers, cancellationToken);
-                    await this.channel.UseChannel(
-                        (this.exchange, this.publisherConfirms),
-                        async (ch, state) =>
-                        {
-                            await ch.SendAsync<DeclareMethod, DeclareOkMethod>(new DeclareMethod(state.exchange));
-                            if (state.publisherConfirms)
-                            {
-                                await ch.SendAsync<SelectMethod, SelectOkMethod>(new SelectMethod(false));
-                            }
-                        }, cancellationToken);
+                    await this.channel.SendAsync<DeclareMethod, DeclareOkMethod>(new DeclareMethod(this.exchange), cancellationToken);
+                    if (this.publisherConfirms)
+                    {
+                        await this.channel.SendAsync<SelectMethod, SelectOkMethod>(new SelectMethod(false), cancellationToken);
+                    }
                 }
 
                 return this.channel;

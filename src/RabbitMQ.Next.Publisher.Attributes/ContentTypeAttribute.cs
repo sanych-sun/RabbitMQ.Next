@@ -1,5 +1,5 @@
 using System;
-using RabbitMQ.Next.Publisher.Abstractions.Transformers;
+using RabbitMQ.Next.Publisher.Abstractions;
 
 namespace RabbitMQ.Next.Publisher.Attributes
 {
@@ -17,7 +17,7 @@ namespace RabbitMQ.Next.Publisher.Attributes
         {
             if (string.IsNullOrEmpty(message.ContentType))
             {
-                message.SetContentType(this.ContentType);
+                message.ContentType = this.ContentType;
             }
         }
     }
