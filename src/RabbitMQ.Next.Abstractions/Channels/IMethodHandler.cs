@@ -1,4 +1,3 @@
-using System;
 using System.Buffers;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions.Messaging;

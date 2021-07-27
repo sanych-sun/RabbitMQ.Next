@@ -17,7 +17,6 @@ namespace RabbitMQ.Next.Channels
         private readonly IBufferPool pool;
         private readonly ushort channelNumber;
         private readonly int frameMaxSize;
-        private readonly int singleFrameSize;
         private readonly List<IMemoryOwner<byte>> chunks;
         private MemoryBlock buffer;
         private int offset;
@@ -33,7 +32,6 @@ namespace RabbitMQ.Next.Channels
             this.pool = pool;
             this.channelNumber = channelNumber;
             this.frameMaxSize = frameMaxSize;
-            this.singleFrameSize = ProtocolConstants.FrameHeaderSize + frameMaxSize + 1;
         }
 
         public IBufferWriter<byte> BeginMethodFrame(MethodId methodId)
@@ -77,7 +75,6 @@ namespace RabbitMQ.Next.Channels
             this.EndFrame();
 
             this.currentFrameType = FrameType.ContentBody;
-            this.EnsureBuffer();
             this.currentFrameHeader = this.buffer.Memory.Slice(this.offset, ProtocolConstants.FrameHeaderSize);
             this.offset += ProtocolConstants.FrameHeaderSize;
 
@@ -159,7 +156,8 @@ namespace RabbitMQ.Next.Channels
         {
             if (requestedSize == 0)
             {
-                requestedSize = this.frameMaxSize - this.currentFrameSize;
+                requestedSize = this.buffer.BufferCapacity - this.offset - 1; // current buffer available space: capacity - already written bytes - frame end
+                return Math.Min(requestedSize, this.frameMaxSize - this.currentFrameSize);
             }
 
             if (this.currentFrameSize + requestedSize <= this.frameMaxSize)
@@ -168,9 +166,10 @@ namespace RabbitMQ.Next.Channels
             }
 
             this.EndFrame();
+            this.FinalizeCurrentBuffer();
 
             this.currentFrameType = FrameType.ContentBody;
-            this.EnsureBuffer();
+            this.buffer = this.pool.CreateMemory();
             this.currentFrameHeader = this.buffer.Memory.Slice(this.offset, ProtocolConstants.FrameHeaderSize);
             this.offset += ProtocolConstants.FrameHeaderSize;
             return this.frameMaxSize;
@@ -179,15 +178,7 @@ namespace RabbitMQ.Next.Channels
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void EnsureBuffer()
         {
-            if (this.buffer == null)
-            {
-                this.buffer = this.pool.CreateMemory();
-            }
-            else if (this.buffer.Memory.Length - this.offset < this.singleFrameSize)
-            {
-                this.FinalizeCurrentBuffer();
-                this.buffer = this.pool.CreateMemory();
-            }
+            this.buffer ??= this.pool.CreateMemory();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

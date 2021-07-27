@@ -24,7 +24,8 @@ namespace RabbitMQ.Next.Tests
 
             await factory.Received().ConnectAsync(
                 Arg.Any<IReadOnlyList<Endpoint>>(), Arg.Any<string>(), auth,
-                Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, object>>(), Arg.Any<IMethodRegistry>());
+                Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, object>>(),
+                Arg.Any<IMethodRegistry>(), Arg.Any<int>());
         }
 
         [Fact]
@@ -40,7 +41,8 @@ namespace RabbitMQ.Next.Tests
 
             await factory.Received().ConnectAsync(
                 Arg.Any<IReadOnlyList<Endpoint>>(), virtualHost, Arg.Any<IAuthMechanism>(),
-                Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, object>>(), Arg.Any<IMethodRegistry>());
+                Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, object>>(),
+                Arg.Any<IMethodRegistry>(), Arg.Any<int>());
         }
 
         [Theory]
@@ -60,7 +62,8 @@ namespace RabbitMQ.Next.Tests
             await factory.Received().ConnectAsync(
                 Arg.Is<IReadOnlyList<Endpoint>>(x => endpoints.All(i => x.Count(e => e.Host == i.host && e.Port == i.port && e.UseSsl == i.ssl) == 1)),
                 Arg.Any<string>(), Arg.Any<IAuthMechanism>(),
-                Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, object>>(), Arg.Any<IMethodRegistry>());
+                Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, object>>(),
+                Arg.Any<IMethodRegistry>(), Arg.Any<int>());
         }
 
         [Fact]
@@ -76,7 +79,8 @@ namespace RabbitMQ.Next.Tests
 
             await factory.Received().ConnectAsync(
                 Arg.Any<IReadOnlyList<Endpoint>>(), Arg.Any<string>(), Arg.Any<IAuthMechanism>(),
-                locale, Arg.Any<IReadOnlyDictionary<string, object>>(), Arg.Any<IMethodRegistry>());
+                locale, Arg.Any<IReadOnlyDictionary<string, object>>(),
+                Arg.Any<IMethodRegistry>(), Arg.Any<int>());
         }
 
         [Theory]
@@ -97,7 +101,7 @@ namespace RabbitMQ.Next.Tests
                 Arg.Any<IReadOnlyList<Endpoint>>(), Arg.Any<string>(), Arg.Any<IAuthMechanism>(),
                 Arg.Any<string>(),
                 Arg.Is<IReadOnlyDictionary<string, object>>(x => properties.All(p => x.Count(i => p.key == i.Key && p.value == i.Value) == 1)),
-                Arg.Any<IMethodRegistry>());
+                Arg.Any<IMethodRegistry>(), Arg.Any<int>());
         }
 
         public static IEnumerable<object[]> AddEndpointTestCases()

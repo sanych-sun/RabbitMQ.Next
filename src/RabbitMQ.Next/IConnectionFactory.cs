@@ -14,6 +14,7 @@ namespace RabbitMQ.Next
             IAuthMechanism authMechanism,
             string locale,
             IReadOnlyDictionary<string, object> clientProperties,
-            IMethodRegistry methodRegistry);
+            IMethodRegistry methodRegistry,
+            int frameSize);
     }
 }

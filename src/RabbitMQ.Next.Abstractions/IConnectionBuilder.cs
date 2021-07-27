@@ -18,6 +18,8 @@ namespace RabbitMQ.Next.Abstractions
 
         IConnectionBuilder Locale(string locale);
 
+        IConnectionBuilder FrameSize(int sizeBytes);
+
         Task<IConnection> ConnectAsync();
     }
 }

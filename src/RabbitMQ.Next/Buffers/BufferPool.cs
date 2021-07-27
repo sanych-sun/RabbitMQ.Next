@@ -5,13 +5,13 @@ namespace RabbitMQ.Next.Buffers
     internal class BufferPool : IBufferPool
     {
         private readonly ObjectPool<MemoryBlock> memoryPool;
+        private readonly int bufferSize;
 
-        private readonly int bufferSize = 2 * 100 * 1024; // TODO: double max frame size, make it configurable
-
-        public BufferPool()
+        public BufferPool(int bufferSize, int poolSize)
         {
+            this.bufferSize = bufferSize;
             this.memoryPool = new DefaultObjectPool<MemoryBlock>(
-                new ObjectPoolPolicy<MemoryBlock>(this.CreateMemoryBlock, _ => true), 100);
+                new ObjectPoolPolicy<MemoryBlock>(this.CreateMemoryBlock, _ => true), poolSize);
         }
 
         public MemoryBlock CreateMemory()

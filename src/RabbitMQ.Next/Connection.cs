@@ -32,12 +32,12 @@ namespace RabbitMQ.Next
         private Channel<IMemoryOwner<byte>> socketChannel;
         private CancellationTokenSource socketIoCancellation;
 
-        private Connection(IMethodRegistry methodRegistry)
+        private Connection(IMethodRegistry methodRegistry, IBufferPool bufferPool)
         {
             this.methodRegistry = methodRegistry;
 
             this.State = ConnectionState.Pending;
-            this.bufferPool = new BufferPool();
+            this.bufferPool = bufferPool;
             this.channelPool = new ChannelPool();
         }
 
@@ -46,9 +46,13 @@ namespace RabbitMQ.Next
             IAuthMechanism authMechanism,
             string locale,
             IReadOnlyDictionary<string, object> clientProperties,
-            IMethodRegistry methodRegistry)
+            IMethodRegistry methodRegistry,
+            int frameSize)
         {
-            var connection = new Connection(methodRegistry);
+            var bufferSize = ProtocolConstants.FrameHeaderSize + frameSize + 1; // frame header + frame + frame-end
+            var bufferPool = new BufferPool(bufferSize, 100);
+
+            var connection = new Connection(methodRegistry, bufferPool);
             // TODO: adopt authentication_failure_close capability to handle auth errors
 
             connection.State = ConnectionState.Connecting;
@@ -69,7 +73,7 @@ namespace RabbitMQ.Next
 
             // connection should be forcibly closed if negotiation phase take more then 10s.
             var cancellation = new CancellationTokenSource(10000);
-            var negotiateTask = NegotiateAsync(connectionChannel, virtualHost, locale, authMechanism, clientProperties, cancellation.Token);
+            var negotiateTask = NegotiateAsync(connectionChannel, virtualHost, locale, authMechanism, frameSize, clientProperties, cancellation.Token);
             await connection.socketChannel.Writer.WriteAsync(AmqpProtocolHeader);
 
             var negotiationResults = await negotiateTask;
@@ -79,7 +83,7 @@ namespace RabbitMQ.Next
             // connection.bufferManager.SetBufferSize(2 * (int)negotiationResults.MaxFrameSize);
 
             connection.connectionDetails.HeartbeatInterval = negotiationResults.HeartbeatInterval;
-            connection.connectionDetails.FrameMaxSize = (int) negotiationResults.MaxFrameSize;
+            connection.connectionDetails.FrameMaxSize = negotiationResults.FrameSize;
 
             connectionChannel.OnCompleted(connection.ConnectionClose);
 
@@ -93,8 +97,6 @@ namespace RabbitMQ.Next
         }
 
         public ConnectionState State { get; private set; }
-
-        public IBufferPool BufferPool => this.bufferPool;
 
         public IConnectionDetails Details => this.connectionDetails;
 
@@ -249,8 +251,9 @@ namespace RabbitMQ.Next
             this.channelPool.ReleaseAll(ex);
         }
 
-        private static async Task<(ushort ChannelMax, uint MaxFrameSize, ushort HeartbeatInterval)> NegotiateAsync(
-            IChannel channel, string vhost, string locale, IAuthMechanism auth, IReadOnlyDictionary<string, object> clientProperties,
+        private static async Task<(ushort ChannelMax, int FrameSize, ushort HeartbeatInterval)> NegotiateAsync(
+            IChannel channel, string vhost, string locale, IAuthMechanism auth,
+            int frameSize, IReadOnlyDictionary<string, object> clientProperties,
             CancellationToken cancellation)
         {
             var startMethodTask = channel.WaitAsync<StartMethod>(cancellation);
@@ -266,12 +269,13 @@ namespace RabbitMQ.Next
 
             var tuneMethod = await tuneMethodTask;
 
-            await channel.SendAsync(new TuneOkMethod(tuneMethod.ChannelMax, tuneMethod.MaxFrameSize, tuneMethod.HeartbeatInterval));
+            frameSize = Math.Min(frameSize, (int)tuneMethod.MaxFrameSize);
+            await channel.SendAsync(new TuneOkMethod(tuneMethod.ChannelMax, (uint)frameSize, tuneMethod.HeartbeatInterval));
 
             // todo: handle wrong vhost name
             await channel.SendAsync<OpenMethod, OpenOkMethod>(new OpenMethod(vhost), cancellation);
 
-            return (tuneMethod.ChannelMax, tuneMethod.MaxFrameSize, tuneMethod.HeartbeatInterval);
+            return (tuneMethod.ChannelMax, frameSize, tuneMethod.HeartbeatInterval);
         }
     }
 }

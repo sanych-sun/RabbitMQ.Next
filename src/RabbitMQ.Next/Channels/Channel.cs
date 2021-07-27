@@ -110,7 +110,7 @@ namespace RabbitMQ.Next.Channels
             buffer.Advance(written);
             frameBuilder.EndFrame();
 
-            await this.senderSync.WaitAsync();
+            await this.senderSync.WaitAsync(cancellation);
 
             try
             {

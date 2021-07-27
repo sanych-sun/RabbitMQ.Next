@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Methods;
+using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Methods.Registry;
 
@@ -19,6 +20,8 @@ namespace RabbitMQ.Next
         private IAuthMechanism authMechanism;
         private string virtualhost = ProtocolConstants.DefaultVHost;
         private string locale = DefaultLocale;
+        private int frameSize = 102_400;
+        private int bufferPoolSize = 100;
 
         internal ConnectionBuilder(IConnectionFactory factory)
         {
@@ -73,13 +76,27 @@ namespace RabbitMQ.Next
             return this;
         }
 
+        public IConnectionBuilder FrameSize(int sizeBytes)
+        {
+            if (sizeBytes < ProtocolConstants.FrameMinSize)
+            {
+                throw new ArgumentException("FrameSize cannot be smaller then minimal frame size", nameof(sizeBytes));
+            }
+
+            this.frameSize = sizeBytes;
+            return this;
+        }
+
         public Task<IConnection> ConnectAsync()
-            => this.factory.ConnectAsync(
+        {
+            return this.factory.ConnectAsync(
                 this.endpoints.ToArray(),
                 this.virtualhost,
                 this.authMechanism,
                 this.locale,
                 this.clientProperties,
-                this.methodRegistry.Build());
+                this.methodRegistry.Build(),
+                this.frameSize);
+        }
     }
 }
