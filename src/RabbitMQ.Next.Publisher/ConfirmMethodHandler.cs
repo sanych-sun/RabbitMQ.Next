@@ -73,7 +73,7 @@ namespace RabbitMQ.Next.Publisher
                 if (nack.Multiple)
                 {
                     Interlocked.Exchange(ref this.lastMultipleNack, nack.DeliveryTag);
-                    this.AckMultiple(nack.DeliveryTag, true);
+                    this.AckMultiple(nack.DeliveryTag, false);
                 }
                 else
                 {
