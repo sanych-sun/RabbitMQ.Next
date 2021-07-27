@@ -126,7 +126,7 @@ namespace RabbitMQ.Next.Publisher
 
             if (this.confirms != null)
             {
-                var confirmed = await this.confirms.WaitForConfirmAsync(messageDeliveryTag, cancellationToken);
+                var confirmed = await this.confirms.WaitForConfirmAsync(messageDeliveryTag);
                 if (!confirmed)
                 {
                     // todo: provide some useful info here

@@ -55,12 +55,14 @@ namespace RabbitMQ.Next.Benchmarks
 
             this.publisher = await this.connection.CreatePublisherAsync("amq.topic",
                 builder => builder
+                    .PublisherConfirms()
                     .UseFormatter(new StringTypeFormatter()));
 
             ConnectionFactory factory = new ConnectionFactory();
             factory.Uri = new Uri("amqp://test2:test2@localhost:5672/");
 
             this.model = factory.CreateConnection().CreateModel();
+            this.model.ConfirmSelect();
         }
 
         [Benchmark(Baseline = true)]
@@ -71,6 +73,7 @@ namespace RabbitMQ.Next.Benchmarks
                 var props = this.model.CreateBasicProperties();
                 props.CorrelationId = this.corrIds[i];
                 this.model.BasicPublish("amq.topic", "", props, Encoding.UTF8.GetBytes(this.messages[i]));
+                this.model.WaitForConfirms();
             }
         }
 

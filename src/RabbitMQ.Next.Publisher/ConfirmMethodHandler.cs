@@ -1,51 +1,54 @@
 using System.Buffers;
 using System.Collections.Concurrent;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Abstractions.Methods;
-using RabbitMQ.Next.Tasks;
 using RabbitMQ.Next.Transport.Methods.Basic;
 
 namespace RabbitMQ.Next.Publisher
 {
     internal class ConfirmMethodHandler : IMethodHandler
     {
-        private readonly AsyncManualResetEvent confirmations;
-        private readonly ConcurrentDictionary<ulong, bool> responses;
-        private ulong lastMultipleAckTag;
-        private ulong lastMultipleNackTag;
+        private static readonly TaskCompletionSource<bool> PositiveCompletedTcs;
+        private static readonly TaskCompletionSource<bool> NegativeCompletedTcs;
+        private ulong lastMultipleAck;
+        private ulong lastMultipleNack;
+
+        static ConfirmMethodHandler()
+        {
+            PositiveCompletedTcs = new TaskCompletionSource<bool>();
+            PositiveCompletedTcs.SetResult(true);
+
+            NegativeCompletedTcs = new TaskCompletionSource<bool>();
+            NegativeCompletedTcs.SetResult(false);
+        }
+
+        private readonly ConcurrentDictionary<ulong, TaskCompletionSource<bool>> pendingConfirms;
 
         public ConfirmMethodHandler()
         {
-            this.confirmations = new AsyncManualResetEvent();
-            this.responses = new ConcurrentDictionary<ulong, bool>();
+            this.pendingConfirms = new ConcurrentDictionary<ulong, TaskCompletionSource<bool>>();
         }
 
-        public async ValueTask<bool> WaitForConfirmAsync(ulong deliveryTag, CancellationToken cancellation = default)
+        public ValueTask<bool> WaitForConfirmAsync(ulong deliveryTag)
         {
-            while (!cancellation.IsCancellationRequested)
+            var lastMultNack = Interlocked.Read(ref this.lastMultipleNack);
+            if (deliveryTag <= lastMultNack)
             {
-                if (this.responses.TryRemove(deliveryTag, out var confirmed))
-                {
-                    return confirmed;
-                }
-
-                if (deliveryTag <= this.lastMultipleAckTag)
-                {
-                    return true;
-                }
-
-                if (deliveryTag <= this.lastMultipleNackTag)
-                {
-                    return false;
-                }
-
-                await this.confirmations.WaitAsync(100, cancellation);
+                return new ValueTask<bool>(false);
             }
 
-            throw new TaskCanceledException();
+            var lastMultAck = Interlocked.Read(ref this.lastMultipleAck);
+            if (deliveryTag <= lastMultAck)
+            {
+                return new ValueTask<bool>(true);
+            }
+
+            var tcs = this.pendingConfirms.GetOrAdd(deliveryTag, _ => new TaskCompletionSource<bool>());
+            return new ValueTask<bool>(tcs.Task);
         }
 
         ValueTask<bool> IMethodHandler.HandleAsync(IIncomingMethod method, IMessageProperties properties, ReadOnlySequence<byte> contentBytes)
@@ -54,15 +57,13 @@ namespace RabbitMQ.Next.Publisher
             {
                 if (ack.Multiple)
                 {
-                    this.lastMultipleAckTag = ack.DeliveryTag;
+                    Interlocked.Exchange(ref this.lastMultipleAck, ack.DeliveryTag);
+                    this.AckMultiple(ack.DeliveryTag, true);
                 }
                 else
                 {
-                    this.responses.TryAdd(ack.DeliveryTag, true);
+                    this.AckSingle(ack.DeliveryTag, true);
                 }
-
-                this.confirmations.Set();
-                this.confirmations.Reset();
 
                 return new ValueTask<bool>(true);
             }
@@ -71,15 +72,13 @@ namespace RabbitMQ.Next.Publisher
             {
                 if (nack.Multiple)
                 {
-                    this.lastMultipleNackTag = nack.DeliveryTag;
+                    Interlocked.Exchange(ref this.lastMultipleNack, nack.DeliveryTag);
+                    this.AckMultiple(nack.DeliveryTag, true);
                 }
                 else
                 {
-                    this.responses.TryAdd(nack.DeliveryTag, false);
+                    this.AckSingle(nack.DeliveryTag, false);
                 }
-
-                this.confirmations.Set();
-                this.confirmations.Reset();
 
                 return new ValueTask<bool>(true);
             }
@@ -87,9 +86,31 @@ namespace RabbitMQ.Next.Publisher
             return new ValueTask<bool>(false);
         }
 
+        private void AckSingle(ulong deliveryTag, bool isPositive)
+        {
+            TaskCompletionSource<bool> tcs;
+
+            if (!this.pendingConfirms.TryRemove(deliveryTag, out tcs))
+            {
+                tcs = this.pendingConfirms.GetOrAdd(deliveryTag, isPositive ? PositiveCompletedTcs : NegativeCompletedTcs);
+            }
+
+            tcs.TrySetResult(isPositive);
+        }
+
+        private void AckMultiple(ulong deliveryTag, bool isPositive)
+        {
+            var items = this.pendingConfirms.Where(t => t.Key <= deliveryTag).ToArray();
+
+            foreach (var item in items)
+            {
+                item.Value.TrySetResult(isPositive);
+                this.pendingConfirms.TryRemove(item.Key, out var _);
+            }
+        }
+
         public void Dispose()
         {
-            this.confirmations?.Dispose();
         }
     }
 }
