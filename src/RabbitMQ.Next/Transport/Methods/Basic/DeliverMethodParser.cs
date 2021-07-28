@@ -5,7 +5,7 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
 {
     internal class DeliverMethodParser : IMethodParser<DeliverMethod>
     {
-        public DeliverMethod Parse(ReadOnlySpan<byte> payload)
+        public DeliverMethod Parse(ReadOnlyMemory<byte> payload)
         {
             payload
                 .Read(out string consumerTag)
@@ -17,7 +17,7 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
             return new DeliverMethod(exchange, routingKey, consumerTag, deliveryTag, redelivered);
         }
 
-        public IIncomingMethod ParseMethod(ReadOnlySpan<byte> payload)
+        public IIncomingMethod ParseMethod(ReadOnlyMemory<byte> payload)
             => this.Parse(payload);
     }
 }

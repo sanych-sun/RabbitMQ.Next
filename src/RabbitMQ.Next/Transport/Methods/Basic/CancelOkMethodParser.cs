@@ -5,14 +5,14 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
 {
     internal class CancelOkMethodParser : IMethodParser<CancelOkMethod>
     {
-        public CancelOkMethod Parse(ReadOnlySpan<byte> payload)
+        public CancelOkMethod Parse(ReadOnlyMemory<byte> payload)
         {
             payload.Read(out string consumerTag);
 
             return new CancelOkMethod(consumerTag);
         }
 
-        public IIncomingMethod ParseMethod(ReadOnlySpan<byte> payload)
+        public IIncomingMethod ParseMethod(ReadOnlyMemory<byte> payload)
             => this.Parse(payload);
     }
 }

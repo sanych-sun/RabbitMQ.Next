@@ -5,10 +5,14 @@ namespace RabbitMQ.Next.Transport.Methods.Connection
 {
     internal class OpenMethodFormatter : IMethodFormatter<OpenMethod>
     {
-        public Span<byte> Write(Span<byte> destination, OpenMethod method) =>
-            destination
+        public int Write(Memory<byte> destination, OpenMethod method)
+        {
+            var result = destination
                 .Write(method.VirtualHost)
                 .Write(ProtocolConstants.ObsoleteField)
                 .Write(ProtocolConstants.ObsoleteField);
+
+            return destination.Length - result.Length;
+        }
     }
 }

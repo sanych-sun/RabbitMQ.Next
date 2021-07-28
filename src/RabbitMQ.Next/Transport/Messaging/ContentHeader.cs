@@ -9,7 +9,7 @@ namespace RabbitMQ.Next.Transport.Messaging
     internal static class ContentHeader
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int WriteContentHeader(this Span<byte> target, IMessageProperties properties, ulong contentSize)
+        public static int WriteContentHeader(this Memory<byte> target, IMessageProperties properties, ulong contentSize)
         {
             var result = target
                 .Write((ushort) ClassId.Basic)
@@ -21,7 +21,7 @@ namespace RabbitMQ.Next.Transport.Messaging
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Span<byte> WriteMessageProperties(this Span<byte> target, IMessageProperties properties)
+        public static Memory<byte> WriteMessageProperties(this Memory<byte> target, IMessageProperties properties)
         {
             var flagsSpan = target;
             target = target.Slice(sizeof(ushort));
@@ -59,7 +59,7 @@ namespace RabbitMQ.Next.Transport.Messaging
                 return source;
             }
 
-            source.Span.Read(out byte size);
+            source.Read(out byte size);
 
             value = source.Slice(sizeof(byte), size);
             return source.Slice(sizeof(byte) + size);
@@ -73,7 +73,7 @@ namespace RabbitMQ.Next.Transport.Messaging
                 return source;
             }
 
-            source.Span.Read(out uint size);
+            source.Read(out uint size);
 
             value = source.Slice(0, sizeof(uint) + (int)size);
             return source.Slice(sizeof(uint) + (int)size);
@@ -91,15 +91,8 @@ namespace RabbitMQ.Next.Transport.Messaging
             return source.Slice(size);
         }
 
-        public static ReadOnlyMemory<byte> Read(this ReadOnlyMemory<byte> source, out ushort value)
-        {
-            source.Span.Read(out value);
-            return source.Slice(sizeof(ushort));
-        }
-
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Span<byte> WriteProperty(this Span<byte> target, string value, ref ushort flags, byte bitNumber)
+        private static Memory<byte> WriteProperty(this Memory<byte> target, string value, ref ushort flags, byte bitNumber)
         {
             if (string.IsNullOrEmpty(value))
             {
@@ -112,7 +105,7 @@ namespace RabbitMQ.Next.Transport.Messaging
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Span<byte> WriteProperty(this Span<byte> target, IReadOnlyDictionary<string, object> value, ref ushort flags, byte bitNumber)
+        private static Memory<byte> WriteProperty(this Memory<byte> target, IReadOnlyDictionary<string, object> value, ref ushort flags, byte bitNumber)
         {
             if (value == null || value.Count == 0)
             {
@@ -125,7 +118,7 @@ namespace RabbitMQ.Next.Transport.Messaging
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Span<byte> WriteProperty(this Span<byte> target, byte? value, ref ushort flags, byte bitNumber)
+        private static Memory<byte> WriteProperty(this Memory<byte> target, byte? value, ref ushort flags, byte bitNumber)
         {
             if (!value.HasValue)
             {
@@ -136,7 +129,7 @@ namespace RabbitMQ.Next.Transport.Messaging
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Span<byte> WriteProperty(this Span<byte> target, byte value, ref ushort flags, byte bitNumber)
+        private static Memory<byte> WriteProperty(this Memory<byte> target, byte value, ref ushort flags, byte bitNumber)
         {
             if (value == default)
             {
@@ -149,7 +142,7 @@ namespace RabbitMQ.Next.Transport.Messaging
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Span<byte> WriteProperty(this Span<byte> target, DateTimeOffset? value, ref ushort flags, byte bitNumber)
+        private static Memory<byte> WriteProperty(this Memory<byte> target, DateTimeOffset? value, ref ushort flags, byte bitNumber)
         {
             if (!value.HasValue)
             {

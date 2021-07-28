@@ -5,13 +5,13 @@ namespace RabbitMQ.Next.Transport.Methods.Connection
 {
     internal class BlockedMethodParser : IMethodParser<BlockedMethod>
     {
-        public BlockedMethod Parse(ReadOnlySpan<byte> payload)
+        public BlockedMethod Parse(ReadOnlyMemory<byte> payload)
         {
             payload.Read(out string reason);
 
             return new BlockedMethod(reason);
         }
 
-        public IIncomingMethod ParseMethod(ReadOnlySpan<byte> payload) => this.Parse(payload);
+        public IIncomingMethod ParseMethod(ReadOnlyMemory<byte> payload) => this.Parse(payload);
     }
 }

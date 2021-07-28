@@ -13,10 +13,10 @@ namespace RabbitMQ.Next.Tests.Mocks
             this.payload = payload;
         }
 
-        public Span<byte> Write(Span<byte> destination, TMessage method)
+        public int Write(Memory<byte> destination, TMessage method)
         {
             this.payload.CopyTo(destination);
-            return destination.Slice(this.payload.Length);
+            return this.payload.Length;
         }
     }
 }

@@ -5,7 +5,7 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
 {
     internal class ReturnMethodParser : IMethodParser<ReturnMethod>
     {
-        public ReturnMethod Parse(ReadOnlySpan<byte> payload)
+        public ReturnMethod Parse(ReadOnlyMemory<byte> payload)
         {
             payload
                 .Read(out ushort replyCode)
@@ -16,6 +16,6 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
             return new ReturnMethod(exchange, routingKey, replyCode, replyText);
         }
 
-        public IIncomingMethod ParseMethod(ReadOnlySpan<byte> payload) => this.Parse(payload);
+        public IIncomingMethod ParseMethod(ReadOnlyMemory<byte> payload) => this.Parse(payload);
     }
 }

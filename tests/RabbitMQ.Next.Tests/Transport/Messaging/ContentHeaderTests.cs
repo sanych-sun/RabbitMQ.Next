@@ -13,7 +13,7 @@ namespace RabbitMQ.Next.Tests.Transport.Messaging
         internal void WriteContentHeader(byte[] expected, MessageProperties props, ulong size)
         {
             var buffer = new byte[expected.Length];
-            var result = ((Span<byte>)buffer).WriteContentHeader(props, size);
+            var result = ((Memory<byte>)buffer).WriteContentHeader(props, size);
 
             Assert.Equal(expected, buffer);
             Assert.Equal(expected.Length, result);

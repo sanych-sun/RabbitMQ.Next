@@ -5,10 +5,14 @@ namespace RabbitMQ.Next.Transport.Methods.Queue
 {
     internal class DeleteMethodFormatter : IMethodFormatter<DeleteMethod>
     {
-        public Span<byte> Write(Span<byte> destination, DeleteMethod method)
-            => destination
+        public int Write(Memory<byte> destination, DeleteMethod method)
+        {
+            var result = destination
                 .Write((short) ProtocolConstants.ObsoleteField)
                 .Write(method.Queue)
                 .Write(BitConverter.ComposeFlags(method.UnusedOnly, method.EmptyOnly));
+
+            return destination.Length - result.Length;
+        }
     }
 }

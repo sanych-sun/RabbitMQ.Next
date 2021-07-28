@@ -5,9 +5,13 @@ namespace RabbitMQ.Next.Transport.Methods.Connection
 {
     internal class CloseMethodFormatter : IMethodFormatter<CloseMethod>
     {
-        public Span<byte> Write(Span<byte> destination, CloseMethod method) =>
-            destination.Write(method.StatusCode)
+        public int Write(Memory<byte> destination, CloseMethod method)
+        {
+            var result = destination.Write(method.StatusCode)
                 .Write(method.Description)
-                .Write((uint)method.FailedMethodId);
+                .Write((uint) method.FailedMethodId);
+
+            return destination.Length - result.Length;
+        }
     }
 }

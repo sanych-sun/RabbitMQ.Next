@@ -5,7 +5,11 @@ namespace RabbitMQ.Next.Transport.Methods.Confirm
 {
     internal class SelectMethodFormatter : IMethodFormatter<SelectMethod>
     {
-        public Span<byte> Write(Span<byte> destination, SelectMethod method)
-            => destination.Write(method.NoWait);
+        public int Write(Memory<byte> destination, SelectMethod method)
+        {
+            var result = destination.Write(method.NoWait);
+
+            return destination.Length - result.Length;
+        }
     }
 }

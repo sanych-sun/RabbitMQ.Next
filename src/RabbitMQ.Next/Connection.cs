@@ -88,7 +88,7 @@ namespace RabbitMQ.Next
             connectionChannel.OnCompleted(connection.ConnectionClose);
 
             // start heartbeat
-            Task.Run(() => connection.HeartbeatLoop(heartbeatIntervalMs, connection.socketIoCancellation.Token));
+            Task.Factory.StartNew(() => connection.HeartbeatLoop(heartbeatIntervalMs, connection.socketIoCancellation.Token), TaskCreationOptions.LongRunning);
 
             connection.State = ConnectionState.Configuring;
             connection.State = ConnectionState.Open;
@@ -171,7 +171,7 @@ namespace RabbitMQ.Next
                         break;
                     }
 
-                    ((ReadOnlySpan<byte>) headerBuffer).ReadFrameHeader(out FrameType frameType, out ushort channel, out uint payloadSize);
+                    ((ReadOnlyMemory<byte>) headerBuffer).ReadFrameHeader(out FrameType frameType, out ushort channel, out uint payloadSize);
 
                     // 2. Get buffer
                     var buffer = this.bufferPool.CreateMemory();

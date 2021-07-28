@@ -5,7 +5,7 @@ namespace RabbitMQ.Next.Transport.Methods.Connection
 {
     internal class TuneMethodParser : IMethodParser<TuneMethod>
     {
-        public TuneMethod Parse(ReadOnlySpan<byte> payload)
+        public TuneMethod Parse(ReadOnlyMemory<byte> payload)
         {
             payload.Read(out ushort channels)
                 .Read(out uint frameMax)
@@ -14,6 +14,6 @@ namespace RabbitMQ.Next.Transport.Methods.Connection
             return new TuneMethod(channels, frameMax, heartbeatInterval);
         }
 
-        public IIncomingMethod ParseMethod(ReadOnlySpan<byte> payload) => this.Parse(payload);
+        public IIncomingMethod ParseMethod(ReadOnlyMemory<byte> payload) => this.Parse(payload);
     }
 }

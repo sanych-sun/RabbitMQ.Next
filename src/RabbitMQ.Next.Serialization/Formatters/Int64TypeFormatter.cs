@@ -33,8 +33,8 @@ namespace RabbitMQ.Next.Serialization.Formatters
 
         private void FormatInternal(long content, IBufferWriter<byte> writer)
         {
-            var span = writer.GetSpan(sizeof(long));
-            span.Write(content);
+            var target = writer.GetMemory(sizeof(long));
+            target.Write(content);
             writer.Advance(sizeof(long));
         }
 
@@ -48,13 +48,14 @@ namespace RabbitMQ.Next.Serialization.Formatters
             long result;
             if (bytes.IsSingleSegment)
             {
-                bytes.FirstSpan.Read(out result);
+                bytes.First.Read(out result);
             }
             else
             {
-                Span<byte> buffer = stackalloc byte[sizeof(long)];
+                // It's unlikely to get here, but it's safer to have fallback
+                var buffer = new byte[sizeof(long)];
                 bytes.CopyTo(buffer);
-                ((ReadOnlySpan<byte>) buffer).Read(out result);
+                ((ReadOnlyMemory<byte>)buffer).Read(out result);
             }
 
             return result;

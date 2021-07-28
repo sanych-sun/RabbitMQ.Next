@@ -100,7 +100,7 @@ namespace RabbitMQ.Next.Publisher
             return this.InternalPublishAsync(content, properties, flags, cancellationToken);
         }
 
-        private async ValueTask InternalPublishAsync<TContent>(TContent content, MessageBuilder builder, PublishFlags flags, CancellationToken cancellationToken)
+        private async ValueTask InternalPublishAsync<TContent>(TContent content, MessageBuilder builder, PublishFlags flags)
         {
             this.CheckDisposed();
             this.EnsureChannel();
@@ -111,8 +111,7 @@ namespace RabbitMQ.Next.Publisher
                 var method = new PublishMethod(state.publisher.exchange, state.properties.RoutingKey, (byte) state.flags);
                 var methodBuffer = frameBuilder.BeginMethodFrame(MethodId.BasicPublish);
 
-                var bb = methodBuffer.GetSpan();
-                var written = bb.Length - state.publisher.publishFormatter.Write(bb, method).Length;
+                var written = state.publisher.publishFormatter.Write(methodBuffer.GetMemory(), method);
                 methodBuffer.Advance(written);
                 frameBuilder.EndFrame();
 

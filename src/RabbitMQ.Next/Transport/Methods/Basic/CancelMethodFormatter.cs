@@ -5,9 +5,13 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
 {
     internal class CancelMethodFormatter : IMethodFormatter<CancelMethod>
     {
-        public Span<byte> Write(Span<byte> destination, CancelMethod method)
-            => destination
+        public int Write(Memory<byte> destination, CancelMethod method)
+        {
+            var result = destination
                 .Write(method.ConsumerTag)
                 .Write(method.NoWait);
+
+            return destination.Length - result.Length;
+        }
     }
 }

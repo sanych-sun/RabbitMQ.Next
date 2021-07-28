@@ -5,7 +5,11 @@ namespace RabbitMQ.Next.Transport.Methods.Channel
 {
     internal class FlowMethodFormatter : IMethodFormatter<FlowMethod>
     {
-        public Span<byte> Write(Span<byte> destination, FlowMethod method)
-            => destination.Write(method.Active);
+        public int Write(Memory<byte> destination, FlowMethod method)
+        {
+            var result = destination.Write(method.Active);
+
+            return destination.Length - result.Length;
+        }
     }
 }

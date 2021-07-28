@@ -198,7 +198,7 @@ namespace RabbitMQ.Next.Transport.Messaging
                 return null;
             }
 
-            data.Span.Read(out DateTimeOffset val);
+            data.Read(out DateTimeOffset val);
             return val;
         }
 
@@ -210,7 +210,7 @@ namespace RabbitMQ.Next.Transport.Messaging
                 return null;
             }
 
-            data.Span.Read(out Dictionary<string, object> val);
+            data.Read(out Dictionary<string, object> val);
             return val;
         }
 
@@ -222,7 +222,7 @@ namespace RabbitMQ.Next.Transport.Messaging
                 return null;
             }
 
-            data.Span.Read(out byte val);
+            data.Read(out byte val);
             return val;
         }
     }

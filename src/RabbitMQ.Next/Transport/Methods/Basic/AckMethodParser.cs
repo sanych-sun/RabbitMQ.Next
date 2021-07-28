@@ -5,7 +5,7 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
 {
     internal class AckMethodParser : IMethodParser<AckMethod>
     {
-        public AckMethod Parse(ReadOnlySpan<byte> payload)
+        public AckMethod Parse(ReadOnlyMemory<byte> payload)
         {
             payload
                 .Read(out ulong deliveryTag)
@@ -14,6 +14,6 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
             return new AckMethod(deliveryTag, multiple);
         }
 
-        public IIncomingMethod ParseMethod(ReadOnlySpan<byte> payload) => this.Parse(payload);
+        public IIncomingMethod ParseMethod(ReadOnlyMemory<byte> payload) => this.Parse(payload);
     }
 }

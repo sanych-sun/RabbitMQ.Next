@@ -7,7 +7,7 @@ namespace RabbitMQ.Next.Transport
     internal static class Framing
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ReadFrameHeader(this ReadOnlySpan<byte> data, out FrameType type, out ushort channel, out uint payloadSize)
+        public static void ReadFrameHeader(this ReadOnlyMemory<byte> data, out FrameType type, out ushort channel, out uint payloadSize)
         {
             data = data.Read(out byte typeRaw);
 
@@ -30,7 +30,7 @@ namespace RabbitMQ.Next.Transport
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int WriteFrameHeader(this Span<byte> target, FrameType type, ushort channel, uint payloadSize)
+        public static int WriteFrameHeader(this Memory<byte> target, FrameType type, ushort channel, uint payloadSize)
         {
             var result = target.Write((byte)type)
                 .Write(channel)

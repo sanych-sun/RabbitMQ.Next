@@ -15,7 +15,7 @@ namespace RabbitMQ.Next.Tests.Transport
         [InlineData(byte.MaxValue, new byte[] { 0b_11111111 })]
         public void WriteByte(byte data, byte[] expected)
         {
-            Span<byte> buffer = stackalloc byte[expected.Length];
+            Memory<byte> buffer = new byte[expected.Length];
             buffer.Write(data);
 
             Assert.Equal(expected, buffer.ToArray());
@@ -29,7 +29,7 @@ namespace RabbitMQ.Next.Tests.Transport
         [InlineData(-42, new byte[] { 0b_11010110 })]
         public void WriteSByte(sbyte data, byte[] expected)
         {
-            Span<byte> buffer = stackalloc byte[expected.Length];
+            Memory<byte> buffer = new byte[expected.Length];
             buffer.Write(data);
 
             Assert.Equal(expected, buffer.ToArray());
@@ -40,7 +40,7 @@ namespace RabbitMQ.Next.Tests.Transport
         [InlineData(true, new byte[] { 0b_00000001 })]
         public void WriteBool(bool data, byte[] expected)
         {
-            Span<byte> buffer = stackalloc byte[expected.Length];
+            Memory<byte> buffer = new byte[expected.Length];
             buffer.Write(data);
 
             Assert.Equal(expected, buffer.ToArray());
@@ -54,7 +54,7 @@ namespace RabbitMQ.Next.Tests.Transport
         [InlineData(ushort.MaxValue, new byte[] { 0b_11111111, 0b_11111111 })]
         public void WriteUShort(ushort data, byte[] expected)
         {
-            Span<byte> buffer = stackalloc byte[expected.Length];
+            Memory<byte> buffer = new byte[expected.Length];
             buffer.Write(data);
 
             Assert.Equal(expected, buffer.ToArray());
@@ -68,7 +68,7 @@ namespace RabbitMQ.Next.Tests.Transport
         [InlineData(-42, new byte[] { 0b_11111111, 0b_11010110 })]
         public void WriteShort(short data, byte[] expected)
         {
-            Span<byte> buffer = stackalloc byte[expected.Length];
+            Memory<byte> buffer = new byte[expected.Length];
             buffer.Write(data);
 
             Assert.Equal(expected, buffer.ToArray());
@@ -81,7 +81,7 @@ namespace RabbitMQ.Next.Tests.Transport
         [InlineData(uint.MaxValue, new byte[] { 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111 })]
         public void WriteUInt(uint data, byte[] expected)
         {
-            Span<byte> buffer = stackalloc byte[expected.Length];
+            Memory<byte> buffer = new byte[expected.Length];
             buffer.Write(data);
 
             Assert.Equal(expected, buffer.ToArray());
@@ -95,7 +95,7 @@ namespace RabbitMQ.Next.Tests.Transport
         [InlineData(-42, new byte[] { 0b_11111111, 0b_11111111, 0b_11111111, 0b_11010110 })]
         public void WriteInt(int data, byte[] expected)
         {
-            Span<byte> buffer = stackalloc byte[expected.Length];
+            Memory<byte> buffer = new byte[expected.Length];
             buffer.Write(data);
 
             Assert.Equal(expected, buffer.ToArray());
@@ -109,7 +109,7 @@ namespace RabbitMQ.Next.Tests.Transport
 
         public void WriteULong(ulong data, byte[] expected)
         {
-            Span<byte> buffer = stackalloc byte[expected.Length];
+            Memory<byte> buffer = new byte[expected.Length];
             buffer.Write(data);
             
             Assert.Equal(expected, buffer.ToArray());
@@ -123,7 +123,7 @@ namespace RabbitMQ.Next.Tests.Transport
         [InlineData(-42, new byte[] { 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11010110 })]
         public void WriteLong(long data, byte[] expected)
         {
-            Span<byte> buffer = stackalloc byte[expected.Length];
+            Memory<byte> buffer = new byte[expected.Length];
             buffer.Write(data);
 
             Assert.Equal(expected, buffer.ToArray());
@@ -134,7 +134,7 @@ namespace RabbitMQ.Next.Tests.Transport
         [InlineData(1E-45, new byte[] { 1, 0, 0, 0 })]
         public void WriteFloat(float data, byte[] expected)
         {
-            Span<byte> buffer = stackalloc byte[expected.Length];
+            Memory<byte> buffer = new byte[expected.Length];
             buffer.Write(data);
 
             Assert.Equal(expected, buffer.ToArray());
@@ -145,7 +145,7 @@ namespace RabbitMQ.Next.Tests.Transport
         [InlineData(5E-324, new byte[] { 1, 0, 0, 0, 0, 0, 0, 0 })]
         public void WriteDouble(double data, byte[] expected)
         {
-            Span<byte> buffer = stackalloc byte[expected.Length];
+            Memory<byte> buffer = new byte[expected.Length];
             buffer.Write(data);
 
             Assert.Equal(expected, buffer.ToArray());
@@ -156,7 +156,7 @@ namespace RabbitMQ.Next.Tests.Transport
         [InlineData(0.32d, new byte[] { 0, 0, 2, 0, 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0 })]
         public void WriteDecimal(decimal data, byte[] expected)
         {
-            Span<byte> buffer = stackalloc byte[expected.Length];
+            Memory<byte> buffer = new byte[expected.Length];
             buffer.Write(data);
 
             Assert.Equal(expected, buffer.ToArray());
@@ -174,7 +174,7 @@ namespace RabbitMQ.Next.Tests.Transport
         [InlineData("Hello", true, new byte[] { 0, 0, 0, 5, 72, 101, 108, 108, 111 })]
         public void WriteString(string data, bool isLong, byte[] expected)
         {
-            Span<byte> buffer = stackalloc byte[expected.Length];
+            Memory<byte> buffer = new byte[expected.Length];
             buffer.Write(data, isLong);
 
             Assert.Equal(expected, buffer.ToArray());
@@ -186,7 +186,7 @@ namespace RabbitMQ.Next.Tests.Transport
         public void WriteDateTime(long data, byte[] expected)
         {
             var dt = DateTimeOffset.FromUnixTimeSeconds(data);
-            Span<byte> buffer = stackalloc byte[expected.Length];
+            Memory<byte> buffer = new byte[expected.Length];
             buffer.Write(dt);
 
             Assert.Equal(expected, buffer.ToArray());
@@ -198,7 +198,7 @@ namespace RabbitMQ.Next.Tests.Transport
         [InlineData(new byte[] { 1, 2, 3, 4, 5 }, new byte[] { 0, 0, 0, 5, 1, 2, 3, 4, 5 })]
         public void WriteBinary(byte[] data, byte[] expected)
         {
-            Span<byte> buffer = stackalloc byte[expected.Length];
+            Memory<byte> buffer = new byte[expected.Length];
             buffer.Write(data);
 
             Assert.Equal(expected, buffer.ToArray());
@@ -208,7 +208,7 @@ namespace RabbitMQ.Next.Tests.Transport
         [MemberData(nameof(WriteFieldTestCases))]
         public void WriteField(object value, byte[] expected)
         {
-            Span<byte> buffer = stackalloc byte[expected.Length];
+            Memory<byte> buffer = new byte[expected.Length];
             buffer.WriteField(value);
 
             Assert.Equal(expected, buffer.ToArray());
@@ -218,7 +218,7 @@ namespace RabbitMQ.Next.Tests.Transport
         [MemberData(nameof(WriteDictionaryTestCases))]
         public void WriteDictionary(IReadOnlyDictionary<string, object> value, byte[] expected)
         {
-            Span<byte> buffer = stackalloc byte[expected.Length];
+            Memory<byte> buffer = new byte[expected.Length];
             buffer.Write(value);
 
             Assert.Equal(expected, buffer.ToArray());
@@ -228,7 +228,7 @@ namespace RabbitMQ.Next.Tests.Transport
         [MemberData(nameof(WriteArrayTestCases))]
         public void WriteArray(object[] value, byte[] expected)
         {
-            Span<byte> buffer = stackalloc byte[expected.Length];
+            Memory<byte> buffer = new byte[expected.Length];
             buffer.Write(value);
 
             Assert.Equal(expected, buffer.ToArray());
@@ -240,7 +240,7 @@ namespace RabbitMQ.Next.Tests.Transport
         {
             Assert.Throws<ArgumentException>(() =>
             {
-                Span<byte> buffer = stackalloc byte[1000];
+                Memory<byte> buffer = new byte[1000];
                 buffer.Write(text, false);
             });
         }
@@ -252,7 +252,7 @@ namespace RabbitMQ.Next.Tests.Transport
         {
             Assert.Throws<NotSupportedException>(() =>
             {
-                Span<byte> buffer = stackalloc byte[1000];
+                Memory<byte> buffer = new byte[1000];
                 buffer.WriteField(value);
             });
         }

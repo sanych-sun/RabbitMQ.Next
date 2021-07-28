@@ -15,7 +15,7 @@ namespace RabbitMQ.Next.Tests.Transport
         [InlineData(42, new byte[] { 0b_00101010, 2, 3 }, new byte[] { 2, 3 })]
         public void ReadByte(byte expectedData, byte[] source, byte[] expected)
         {
-            var result = ((ReadOnlySpan<byte>)source).Read(out byte data);
+            var result = ((ReadOnlyMemory<byte>)source).Read(out byte data);
 
             Assert.Equal(expectedData, data);
             Assert.Equal(expected, result.ToArray());
@@ -30,7 +30,7 @@ namespace RabbitMQ.Next.Tests.Transport
         [InlineData(42, new byte[] { 0b_00101010, 2, 3 }, new byte[] { 2, 3 })]
         public void ReadSByte(sbyte expectedData, byte[] source, byte[] expected)
         {
-            var result = ((ReadOnlySpan<byte>)source).Read(out sbyte data);
+            var result = ((ReadOnlyMemory<byte>)source).Read(out sbyte data);
 
             Assert.Equal(expectedData, data);
             Assert.Equal(expected, result.ToArray());
@@ -43,7 +43,7 @@ namespace RabbitMQ.Next.Tests.Transport
         [InlineData(true, new byte[] { 0b_00000001, 2, 3 }, new byte[] { 2, 3 })]
         public void ReadBool(bool expectedData, byte[] source, byte[] expected)
         {
-            var result = ((ReadOnlySpan<byte>)source).Read(out bool data);
+            var result = ((ReadOnlyMemory<byte>)source).Read(out bool data);
 
             Assert.Equal(expectedData, data);
             Assert.Equal(expected, result.ToArray());
@@ -58,7 +58,7 @@ namespace RabbitMQ.Next.Tests.Transport
         [InlineData(256, new byte[] { 0b_00000001, 0b_00000000, 3 }, new byte[] { 3 })]
         public void ReadUShort(ushort expectedData, byte[] source, byte[] expected)
         {
-            var result = ((ReadOnlySpan<byte>)source).Read(out ushort data);
+            var result = ((ReadOnlyMemory<byte>)source).Read(out ushort data);
 
             Assert.Equal(expectedData, data);
             Assert.Equal(expected, result.ToArray());
@@ -73,7 +73,7 @@ namespace RabbitMQ.Next.Tests.Transport
         [InlineData(42, new byte[] { 0b_00000000, 0b_00101010, 2, 3 }, new byte[] { 2, 3 })]
         public void ReadShort(short expectedData, byte[] source, byte[] expected)
         {
-            var result = ((ReadOnlySpan<byte>)source).Read(out short data);
+            var result = ((ReadOnlyMemory<byte>)source).Read(out short data);
 
             Assert.Equal(expectedData, data);
             Assert.Equal(expected, result.ToArray());
@@ -87,7 +87,7 @@ namespace RabbitMQ.Next.Tests.Transport
         [InlineData(42, new byte[] { 0b_00000000, 0b_00000000, 0b_00000000, 0b_00101010, 2, 3 }, new byte[] { 2, 3 })]
         public void ReadUInt(uint expectedData, byte[] source, byte[] expected)
         {
-            var result = ((ReadOnlySpan<byte>)source).Read(out uint data);
+            var result = ((ReadOnlyMemory<byte>)source).Read(out uint data);
 
             Assert.Equal(expectedData, data);
             Assert.Equal(expected, result.ToArray());
@@ -102,7 +102,7 @@ namespace RabbitMQ.Next.Tests.Transport
         [InlineData(42, new byte[] { 0b_00000000, 0b_00000000, 0b_00000000, 0b_00101010, 2, 3 }, new byte[] { 2, 3 })]
         public void ReadInt(int expectedData, byte[] source, byte[] expected)
         {
-            var result = ((ReadOnlySpan<byte>)source).Read(out int data);
+            var result = ((ReadOnlyMemory<byte>)source).Read(out int data);
 
             Assert.Equal(expectedData, data);
             Assert.Equal(expected, result.ToArray());
@@ -116,7 +116,7 @@ namespace RabbitMQ.Next.Tests.Transport
         [InlineData(42, new byte[] { 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00101010, 2 }, new byte[] { 2 })]
         public void ReadULong(ulong expectedData, byte[] source, byte[] expected)
         {
-            var result = ((ReadOnlySpan<byte>)source).Read(out ulong data);
+            var result = ((ReadOnlyMemory<byte>)source).Read(out ulong data);
 
             Assert.Equal(expectedData, data);
             Assert.Equal(expected, result.ToArray());
@@ -131,7 +131,7 @@ namespace RabbitMQ.Next.Tests.Transport
         [InlineData(42, new byte[] { 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00000000, 0b_00101010, 2 }, new byte[] { 2 })]
         public void ReadLong(long expectedData, byte[] source, byte[] expected)
         {
-            var result = ((ReadOnlySpan<byte>)source).Read(out long data);
+            var result = ((ReadOnlyMemory<byte>)source).Read(out long data);
 
             Assert.Equal(expectedData, data);
             Assert.Equal(expected, result.ToArray());
@@ -143,7 +143,7 @@ namespace RabbitMQ.Next.Tests.Transport
         [InlineData(new byte[] { 1, 0, 0, 0, 2 }, 1E-45, new byte[] { 2 })]
         public void ReadFloat(byte[] source, float expectedData, byte[] expected)
         {
-            var result = ((ReadOnlySpan<byte>)source).Read(out float data);
+            var result = ((ReadOnlyMemory<byte>)source).Read(out float data);
 
             Assert.Equal(expectedData, data);
             Assert.Equal(expected, result.ToArray());
@@ -155,7 +155,7 @@ namespace RabbitMQ.Next.Tests.Transport
         [InlineData(new byte[] { 1, 0, 0, 0, 0, 0, 0, 0, 2 }, 5E-324, new byte[] { 2 })]
         public void ReadDouble(byte[] source, double expectedData, byte[] expected)
         {
-            var result = ((ReadOnlySpan<byte>)source).Read(out double data);
+            var result = ((ReadOnlyMemory<byte>)source).Read(out double data);
 
             Assert.Equal(expectedData, data);
             Assert.Equal(expected, result.ToArray());
@@ -167,7 +167,7 @@ namespace RabbitMQ.Next.Tests.Transport
         [InlineData(new byte[] { 0, 0, 2, 0, 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0, 2}, 0.32d, new byte[] { 2 })]
         public void ReadDecimal(byte[] source, decimal expectedData, byte[] expected)
         {
-            var result = ((ReadOnlySpan<byte>)source).Read(out decimal data);
+            var result = ((ReadOnlyMemory<byte>)source).Read(out decimal data);
 
             Assert.Equal(expectedData, data);
             Assert.Equal(expected, result.ToArray());
@@ -192,7 +192,7 @@ namespace RabbitMQ.Next.Tests.Transport
         [InlineData(new byte[] { 0, 0, 0, 5, 72, 101, 108, 108, 111, 2 }, true, "Hello", new byte[] { 2 })]
         public void ReadString(byte[] source, bool isLongString, string expectedData, byte[] expected)
         {
-            var result = ((ReadOnlySpan<byte>)source).Read(out string data, isLongString);
+            var result = ((ReadOnlyMemory<byte>)source).Read(out string data, isLongString);
 
             Assert.Equal(expectedData, data);
             Assert.Equal(expected, result.ToArray());
@@ -205,7 +205,7 @@ namespace RabbitMQ.Next.Tests.Transport
         public void ReadDateTime(byte[] source, long expectedData, byte[] expected)
         {
             var expectedDate = DateTimeOffset.FromUnixTimeSeconds(expectedData);
-            var result = ((ReadOnlySpan<byte>)source).Read(out DateTimeOffset data);
+            var result = ((ReadOnlyMemory<byte>)source).Read(out DateTimeOffset data);
 
             Assert.Equal(expectedDate, data);
             Assert.Equal(expected, result.ToArray());
@@ -218,7 +218,7 @@ namespace RabbitMQ.Next.Tests.Transport
         [InlineData(new byte[] { 0, 0, 0, 5, 1, 2, 3, 4, 5, 6 ,7 }, new byte[] { 1, 2, 3, 4, 5 }, new byte[] {6, 7})]
         public void ReadBinary(byte[] source, byte[] expectedData, byte[] expected)
         {
-            var result = ((ReadOnlySpan<byte>)source).Read(out byte[] data);
+            var result = ((ReadOnlyMemory<byte>)source).Read(out byte[] data);
 
             Assert.Equal(expectedData, data);
             Assert.Equal(expected, result.ToArray());
@@ -228,7 +228,7 @@ namespace RabbitMQ.Next.Tests.Transport
         [MemberData(nameof(ReadFieldTestCases))]
         public void ReadField(byte[] source, object expectedData, byte[] expected)
         {
-            var result = ((ReadOnlySpan<byte>)source).ReadField(out object data);
+            var result = ((ReadOnlyMemory<byte>)source).ReadField(out object data);
 
             Assert.Equal(expectedData, data);
             Assert.Equal(expected, result.ToArray());
@@ -238,7 +238,7 @@ namespace RabbitMQ.Next.Tests.Transport
         [MemberData(nameof(ReadDictionaryTestCases))]
         public void ReadDictionary(byte[] source, IReadOnlyDictionary<string, object> expectedData, byte[] expected)
         {
-            var result = ((ReadOnlySpan<byte>)source).Read(out Dictionary<string,object> data);
+            var result = ((ReadOnlyMemory<byte>)source).Read(out Dictionary<string,object> data);
 
             Assert.Equal(expectedData, data);
             Assert.Equal(expected, result.ToArray());
@@ -248,7 +248,7 @@ namespace RabbitMQ.Next.Tests.Transport
         [MemberData(nameof(ReadArrayTestCases))]
         public void ReadArray(byte[] source, object[] expectedData, byte[] expected)
         {
-            var result = ((ReadOnlySpan<byte>)source).Read(out object[] data);
+            var result = ((ReadOnlyMemory<byte>)source).Read(out object[] data);
 
             Assert.Equal(expectedData, data);
             Assert.Equal(expected, result.ToArray());
@@ -259,7 +259,7 @@ namespace RabbitMQ.Next.Tests.Transport
         {
             var source = new byte[] {1, 2, 3};
 
-            Assert.Throws<NotSupportedException>(() => ((ReadOnlySpan<byte>)source).ReadField(out _));
+            Assert.Throws<NotSupportedException>(() => ((ReadOnlyMemory<byte>)source).ReadField(out _));
         }
 
         public static IEnumerable<object[]> ReadFieldTestCases()

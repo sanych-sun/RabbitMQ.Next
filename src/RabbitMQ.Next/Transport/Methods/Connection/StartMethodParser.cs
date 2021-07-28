@@ -6,7 +6,7 @@ namespace RabbitMQ.Next.Transport.Methods.Connection
 {
     internal class StartMethodParser : IMethodParser<StartMethod>
     {
-        public StartMethod Parse(ReadOnlySpan<byte> payload)
+        public StartMethod Parse(ReadOnlyMemory<byte> payload)
         {
             payload.Read(out byte major)
                 .Read(out byte minor)
@@ -17,6 +17,6 @@ namespace RabbitMQ.Next.Transport.Methods.Connection
             return new StartMethod(major, minor, mechanisms, locales, properties);
         }
 
-        public IIncomingMethod ParseMethod(ReadOnlySpan<byte> payload) => this.Parse(payload);
+        public IIncomingMethod ParseMethod(ReadOnlyMemory<byte> payload) => this.Parse(payload);
     }
 }

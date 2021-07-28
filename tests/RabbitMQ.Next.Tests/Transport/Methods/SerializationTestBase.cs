@@ -30,10 +30,11 @@ namespace RabbitMQ.Next.Tests.Transport.Methods
             var formatter = this.Registry.GetFormatter<TMethod>();
             var expected = Helpers.GetFileContent(payloadResName);
 
-            Span<byte> payload = stackalloc byte[expected.Length];
-            formatter.Write(payload, method);
+            Memory<byte> payload = new byte[expected.Length];
+            var written = formatter.Write(payload, method);
 
             Assert.Equal(expected, payload.ToArray());
+            Assert.Equal(expected.Length, written);
         }
 
         protected void TestParser<TMethod>(TMethod method, IEqualityComparer<TMethod> comparer = null)

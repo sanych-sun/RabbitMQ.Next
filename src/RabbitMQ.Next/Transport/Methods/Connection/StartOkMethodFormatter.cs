@@ -5,11 +5,15 @@ namespace RabbitMQ.Next.Transport.Methods.Connection
 {
     internal class StartOkMethodFormatter : IMethodFormatter<StartOkMethod>
     {
-        public Span<byte> Write(Span<byte> destination, StartOkMethod method) =>
-            destination
+        public int Write(Memory<byte> destination, StartOkMethod method)
+        {
+            var result = destination
                 .Write(method.ClientProperties)
                 .Write(method.Mechanism)
                 .Write(method.Response, true)
                 .Write(method.Locale);
+
+            return destination.Length - result.Length;
+        }
     }
 }

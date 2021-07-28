@@ -110,8 +110,7 @@ namespace RabbitMQ.Next.Channels
 
             var formatter = this.registry.GetFormatter<TRequest>();
 
-            var bb = buffer.GetMemory();
-            var written = bb.Length - formatter.Write(bb.Span, request).Length;
+            var written = formatter.Write(buffer.GetMemory(), request);
             buffer.Advance(written);
             frameBuilder.EndFrame();
 
@@ -188,7 +187,7 @@ namespace RabbitMQ.Next.Channels
                     }
 
                     // 2. Parse methdd
-                    var method = this.ParseMethodFrame(methodFrame.Payload.Memory.Span);
+                    var method = this.ParseMethodFrame(methodFrame.Payload.Memory);
                     methodFrame.Payload.Dispose();
 
                     bool processed;
@@ -234,7 +233,7 @@ namespace RabbitMQ.Next.Channels
             }
         }
 
-        private IIncomingMethod ParseMethodFrame(ReadOnlySpan<byte> payload)
+        private IIncomingMethod ParseMethodFrame(ReadOnlyMemory<byte> payload)
         {
             payload = payload.Read(out uint methodId);
             var parser = this.registry.GetParser((MethodId)methodId);
@@ -250,7 +249,7 @@ namespace RabbitMQ.Next.Channels
         private (long contentSize, LazyMessageProperties props) ParseContentHeader(ReadOnlyMemory<byte> payload)
         {
             payload.Slice(4) // skip 2 obsolete shorts
-                .Span.Read(out ulong contentSide);
+                .Read(out ulong contentSide);
 
             payload = payload.Slice(4 + sizeof(ulong));
 

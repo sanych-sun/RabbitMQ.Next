@@ -9,104 +9,92 @@ namespace RabbitMQ.Next.Transport
     public static class BinaryReadExtensions
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<byte> Read(this ReadOnlySpan<byte> source, out byte result)
+        public static ReadOnlyMemory<byte> Read(this ReadOnlyMemory<byte> source, out byte result)
         {
-            var data = source.Slice(0, sizeof(byte));
-            result = data[0];
+            result = source.Span[0];
             return source.Slice(sizeof(byte));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<byte> Read(this ReadOnlySpan<byte> source, out sbyte result)
+        public static ReadOnlyMemory<byte> Read(this ReadOnlyMemory<byte> source, out sbyte result)
         {
-            var data = source.Slice(0, sizeof(sbyte));
-            result = (sbyte)data[0];
+            result = (sbyte)source.Span[0];
             return source.Slice(sizeof(sbyte));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<byte> Read(this ReadOnlySpan<byte> source, out bool result)
+        public static ReadOnlyMemory<byte> Read(this ReadOnlyMemory<byte> source, out bool result)
         {
-            var data = source.Slice(0, sizeof(byte));
-            result = (data[0] != 0);
+            result = (source.Span[0] != 0);
             return source.Slice(sizeof(byte));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<byte> Read(this ReadOnlySpan<byte> source, out ushort result)
+        public static ReadOnlyMemory<byte> Read(this ReadOnlyMemory<byte> source, out ushort result)
         {
-            var data = source.Slice(0, sizeof(ushort));
-            result = BinaryPrimitives.ReadUInt16BigEndian(data);
+            result = BinaryPrimitives.ReadUInt16BigEndian(source.Span);
             return source.Slice(sizeof(ushort));
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<byte> Read(this ReadOnlySpan<byte> source, out short result)
+        public static ReadOnlyMemory<byte> Read(this ReadOnlyMemory<byte> source, out short result)
         {
-            var data = source.Slice(0, sizeof(short));
-            result = BinaryPrimitives.ReadInt16BigEndian(data);
+            result = BinaryPrimitives.ReadInt16BigEndian(source.Span);
             return source.Slice(sizeof(short));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<byte> Read(this ReadOnlySpan<byte> source, out uint result)
+        public static ReadOnlyMemory<byte> Read(this ReadOnlyMemory<byte> source, out uint result)
         {
-            var data = source.Slice(0, sizeof(uint));
-            result = BinaryPrimitives.ReadUInt32BigEndian(data);
+            result = BinaryPrimitives.ReadUInt32BigEndian(source.Span);
             return source.Slice(sizeof(uint));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<byte> Read(this ReadOnlySpan<byte> source, out int result)
+        public static ReadOnlyMemory<byte> Read(this ReadOnlyMemory<byte> source, out int result)
         {
-            var data = source.Slice(0, sizeof(int));
-            result = BinaryPrimitives.ReadInt32BigEndian(data);
+            result = BinaryPrimitives.ReadInt32BigEndian(source.Span);
             return source.Slice(sizeof(int));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<byte> Read(this ReadOnlySpan<byte> source, out ulong result)
+        public static ReadOnlyMemory<byte> Read(this ReadOnlyMemory<byte> source, out ulong result)
         {
-            var data = source.Slice(0, sizeof(ulong));
-            result = BinaryPrimitives.ReadUInt64BigEndian(data);
+            result = BinaryPrimitives.ReadUInt64BigEndian(source.Span);
             return source.Slice(sizeof(ulong));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<byte> Read(this ReadOnlySpan<byte> source, out long result)
+        public static ReadOnlyMemory<byte> Read(this ReadOnlyMemory<byte> source, out long result)
         {
-            var data = source.Slice(0, sizeof(long));
-            result = BinaryPrimitives.ReadInt64BigEndian(data);
+            result = BinaryPrimitives.ReadInt64BigEndian(source.Span);
             return source.Slice(sizeof(long));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<byte> Read(this ReadOnlySpan<byte> source, out float result)
+        public static ReadOnlyMemory<byte> Read(this ReadOnlyMemory<byte> source, out float result)
         {
-            var data = source.Slice(0, sizeof(float));
-            result = MemoryMarshal.Read<float>(data);
+            result = MemoryMarshal.Read<float>(source.Span);
             return source.Slice(sizeof(float));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<byte> Read(this ReadOnlySpan<byte> source, out decimal result)
+        public static ReadOnlyMemory<byte> Read(this ReadOnlyMemory<byte> source, out decimal result)
         {
-            var data = source.Slice(0, sizeof(decimal));
-            result = MemoryMarshal.Read<decimal>(data);
+            result = MemoryMarshal.Read<decimal>(source.Span);
             return source.Slice(sizeof(decimal));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<byte> Read(this ReadOnlySpan<byte> source, out double result)
+        public static ReadOnlyMemory<byte> Read(this ReadOnlyMemory<byte> source, out double result)
         {
-            var data = source.Slice(0, sizeof(double));
-            result = MemoryMarshal.Read<double>(data);
+            result = MemoryMarshal.Read<double>(source.Span);
             return source.Slice(sizeof(double));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<byte> Read(this ReadOnlySpan<byte> source, out string result, bool isLongString = false)
+        public static ReadOnlyMemory<byte> Read(this ReadOnlyMemory<byte> source, out string result, bool isLongString = false)
         {
             int len;
             if (isLongString)
@@ -126,7 +114,7 @@ namespace RabbitMQ.Next.Transport
             }
             else
             {
-                var data = source.Slice(0, len);
+                var data = source.Span.Slice(0, len);
                 result = TextEncoding.GetString(data);
             }
 
@@ -134,7 +122,7 @@ namespace RabbitMQ.Next.Transport
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<byte> Read(this ReadOnlySpan<byte> source, out DateTimeOffset result)
+        public static ReadOnlyMemory<byte> Read(this ReadOnlyMemory<byte> source, out DateTimeOffset result)
         {
             source = source.Read(out long timestamp);
             result = DateTimeOffset.FromUnixTimeSeconds(timestamp);
@@ -142,7 +130,7 @@ namespace RabbitMQ.Next.Transport
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<byte> Read(this ReadOnlySpan<byte> source, out byte[] result)
+        public static ReadOnlyMemory<byte> Read(this ReadOnlyMemory<byte> source, out byte[] result)
         {
             source = source.Read(out uint size);
             result = source.Slice(0, (int)size).ToArray();
@@ -150,7 +138,7 @@ namespace RabbitMQ.Next.Transport
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<byte> ReadField(this ReadOnlySpan<byte> source, out object result)
+        public static ReadOnlyMemory<byte> ReadField(this ReadOnlyMemory<byte> source, out object result)
         {
             source = source.Read(out byte fieldType);
 
@@ -227,7 +215,7 @@ namespace RabbitMQ.Next.Transport
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<byte> Read(this ReadOnlySpan<byte> source, out Dictionary<string, object> result)
+        public static ReadOnlyMemory<byte> Read(this ReadOnlyMemory<byte> source, out Dictionary<string, object> result)
         {
             source = source.Read(out uint tableLen);
             if (tableLen == 0)
@@ -251,7 +239,7 @@ namespace RabbitMQ.Next.Transport
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<byte> Read(this ReadOnlySpan<byte> source, out object[] result)
+        public static ReadOnlyMemory<byte> Read(this ReadOnlyMemory<byte> source, out object[] result)
         {
             source = source.Read(out uint size);
             if (size == 0)
