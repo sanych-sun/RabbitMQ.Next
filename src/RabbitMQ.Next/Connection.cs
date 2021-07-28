@@ -156,20 +156,16 @@ namespace RabbitMQ.Next
             }
         }
 
-        private async Task ReceiveLoop(ISocket socket, CancellationToken cancellationToken)
+        private void ReceiveLoop(ISocket socket, CancellationToken cancellationToken)
         {
             var headerBuffer = new byte[ProtocolConstants.FrameHeaderSize];
-            var endFrameBuffer = new byte[1];
-
-            const int customHeaderSize = 12;
-            Memory<byte> contentHeaderCustomHeader = new byte[customHeaderSize];
 
             try
             {
                 while (!cancellationToken.IsCancellationRequested)
                 {
                     // 1. Read frame header
-                    await socket.FillBufferAsync(headerBuffer, cancellationToken);
+                    socket.FillBuffer(headerBuffer);
                     if (cancellationToken.IsCancellationRequested)
                     {
                         break;
@@ -177,43 +173,28 @@ namespace RabbitMQ.Next
 
                     ((ReadOnlySpan<byte>) headerBuffer).ReadFrameHeader(out FrameType frameType, out ushort channel, out uint payloadSize);
 
-                    // 2. Choose appropriate channel to forward the data
-                    var targetWriter = this.channelPool[channel].Writer;
+                    // 2. Get buffer
+                    var buffer = this.bufferPool.CreateMemory();
 
-                    // 3. Read frame payload into the channel
-                    switch (frameType)
-                    {
-                        case FrameType.Method:
-                            ChannelFrame.WriteHeader(targetWriter, ChannelFrameType.Method, payloadSize);
-                            await socket.FillBufferAsync(targetWriter, (int) payloadSize, cancellationToken);
-                            await targetWriter.FlushAsync();
-                            break;
-                        case FrameType.ContentHeader:
-                            await socket.FillBufferAsync(contentHeaderCustomHeader);
+                    // 3. Read payload into the buffer, allocate extra byte for FrameEndByte
+                    socket.FillBuffer(buffer.Memory[0..((int)payloadSize + 1)]);
 
-                            ((ReadOnlySpan<byte>) (contentHeaderCustomHeader
-                                .Slice(4) // skip 2 obsolete shorts
-                                .Span)).Read(out ulong contentSide);
-
-                            var headerSize = payloadSize - customHeaderSize;
-                            ChannelFrame.WriteHeader(targetWriter, ChannelFrameType.Content, sizeof(uint) + headerSize + (uint) contentSide);
-                            targetWriter.GetMemory(sizeof(int)).Span.Write((int) headerSize);
-                            targetWriter.Advance(sizeof(int));
-                            await socket.FillBufferAsync(targetWriter, (int) headerSize);
-                            break;
-                        case FrameType.ContentBody:
-                            await socket.FillBufferAsync(targetWriter, (int) payloadSize, cancellationToken);
-                            await targetWriter.FlushAsync();
-                            break;
-                    }
-
-                    // 4. Ensure there is FrameEnd
-                    await socket.FillBufferAsync(endFrameBuffer);
-
-                    if (endFrameBuffer[0] != ProtocolConstants.FrameEndByte)
+                    // 4. Ensure there is FrameEnd at last position
+                    if (buffer.Memory.Span[(int)payloadSize] != ProtocolConstants.FrameEndByte)
                     {
                         // TODO: throw connection exception here
                         throw new InvalidOperationException();
+                    }
+
+                    // 5. Shrink buffer to the data size
+                    buffer.Slice((int)payloadSize);
+
+                    // 5. Write frame to appropriate channel
+                    var targetChannel = this.channelPool[channel].FrameWriter;
+                    if (!targetChannel.TryWrite((frameType, buffer)))
+                    {
+                        // should never get here, as channel suppose to be unbounded.
+                        throw new InvalidOperationException("Cannot write frame into the target channel");
                     }
                 }
             }

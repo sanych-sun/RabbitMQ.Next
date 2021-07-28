@@ -34,6 +34,9 @@ namespace RabbitMQ.Next.Buffers
         public Memory<byte> Memory
             => this.memory;
 
+        public Span<byte> Span
+            => this.memory.Span;
+
         public void Slice(int length)
         {
             this.memory = this.memory.Slice(0, length);

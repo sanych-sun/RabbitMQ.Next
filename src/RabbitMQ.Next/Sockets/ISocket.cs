@@ -1,6 +1,4 @@
 using System;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace RabbitMQ.Next.Sockets
 {
@@ -8,8 +6,6 @@ namespace RabbitMQ.Next.Sockets
     {
         void Send(ReadOnlyMemory<byte> payload);
 
-        ValueTask SendAsync(ReadOnlyMemory<byte> payload);
-
-        ValueTask<int> ReceiveAsync(Memory<byte> buffer, CancellationToken cancellationToken = default);
+        int Receive(Memory<byte> buffer);
     }
 }

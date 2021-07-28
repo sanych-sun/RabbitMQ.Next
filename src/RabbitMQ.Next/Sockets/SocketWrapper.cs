@@ -32,17 +32,14 @@ namespace RabbitMQ.Next.Sockets
             }
         }
 
-        public ValueTask SendAsync(ReadOnlyMemory<byte> payload)
-            => this.stream.WriteAsync(payload);
-
         public void Send(ReadOnlyMemory<byte> payload)
         {
             this.stream.Write(payload.Span);
         }
 
-        public async ValueTask<int> ReceiveAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        public int Receive(Memory<byte> buffer)
         {
-            var result = await this.stream.ReadAsync(buffer, cancellationToken);
+            var result = this.stream.Read(buffer.Span);
 
             if (result == 0 && this.IsConnectionClosedByServer())
             {

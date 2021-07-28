@@ -39,6 +39,7 @@
 //                     .UseTransformer(new ApplicationIdTransformer("unittest"))
 //                     .UseAttributesTransformer()
 //                     .UseFormatter(new StringTypeFormatter())
+//                     .PublisherConfirms()
 //                 );
 //
 //             var sw = Stopwatch.StartNew();

@@ -1,7 +1,6 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
-using System.IO.Pipelines;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Channels;
@@ -12,6 +11,7 @@ using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Exceptions;
 using RabbitMQ.Next.Abstractions.Methods;
 using RabbitMQ.Next.Buffers;
+using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Messaging;
 using RabbitMQ.Next.Transport.Methods.Channel;
 
@@ -46,8 +46,13 @@ namespace RabbitMQ.Next.Channels
             handlers ??= Array.Empty<IMethodHandler>();
 
             this.channelCompletion = new TaskCompletionSource<bool>();
-            var pipe = new Pipe();
-            this.Writer =  pipe.Writer;
+            var receiveChannel = System.Threading.Channels.Channel.CreateUnbounded<(FrameType Type, MemoryBlock Payload)>(new UnboundedChannelOptions
+            {
+                SingleReader = true,
+                SingleWriter = true,
+                AllowSynchronousContinuations = false,
+            });
+            this.FrameWriter = receiveChannel.Writer;
             this.senderSync = new SemaphoreSlim(1,1);
 
             this.waitHandler = new WaitMethodHandler(methodRegistry, this);
@@ -63,14 +68,14 @@ namespace RabbitMQ.Next.Channels
 
             this.methodHandlers = list;
 
-            Task.Factory.StartNew(() => this.LoopAsync(pipe.Reader), TaskCreationOptions.LongRunning);
+            Task.Factory.StartNew(() => this.LoopAsync(receiveChannel.Reader), TaskCreationOptions.LongRunning);
         }
 
         public ushort ChannelNumber { get; }
 
-        public PipeWriter Writer { get; }
-
         public Task Completion => this.channelCompletion.Task;
+
+        public ChannelWriter<(FrameType Type, MemoryBlock Payload)> FrameWriter { get; }
 
         public void SetCompleted(Exception ex = null)
         {
@@ -83,7 +88,7 @@ namespace RabbitMQ.Next.Channels
                 this.channelCompletion.SetResult(true);
             }
 
-            this.Writer.Complete();
+            this.FrameWriter.Complete();
             this.channelPool.Release(this.ChannelNumber);
         }
 
@@ -162,45 +167,49 @@ namespace RabbitMQ.Next.Channels
             this.SetCompleted(new ChannelException(statusCode, description, failedMethodId));
         }
 
-        private async Task LoopAsync(PipeReader pipeReader)
+        private async Task LoopAsync(ChannelReader<(FrameType Type, MemoryBlock Payload)> reader)
         {
-            Func<ReadOnlySequence<byte>, (ChannelFrameType Type, uint Size)> headerParser = ChannelFrame.ReadHeader;
-            Func<ReadOnlySequence<byte>, IIncomingMethod> methodFrameParser = this.ParseMethodFrame;
-            Func<IIncomingMethod, ReadOnlySequence<byte>, ValueTask<bool>> methodHandler = this.HandleMethodAsync;
+            var contentChunks = new List<MemoryBlock>();
 
             try
             {
-                while (!this.Completion.IsCompleted)
+                while (!reader.Completion.IsCompleted)
                 {
-                    var header = await pipeReader.ReadAsync(ChannelFrame.FrameHeaderSize, headerParser);
-                    if (header == default)
+                    if (!reader.TryRead(out var methodFrame))
                     {
-                        return;
+                        methodFrame = await reader.ReadAsync();
                     }
 
-                    var methodArgs = await pipeReader.ReadAsync(header.Size, methodFrameParser);
-
-                    if (methodArgs == default)
+                    // 1. Expect method frame here
+                    if (methodFrame.Type != FrameType.Method)
                     {
-                        return;
+                        // TODO: connection exception?
+                        throw new InvalidOperationException($"Unexpected frame type: {methodFrame.Type}");
                     }
+
+                    // 2. Parse methdd
+                    var method = this.ParseMethodFrame(methodFrame.Payload.Memory.Span);
+                    methodFrame.Payload.Dispose();
 
                     bool processed;
-                    if (this.registry.HasContent(methodArgs.MethodId))
+                    if (this.registry.HasContent(method.MethodId))
                     {
-                        var contentHeader = await pipeReader.ReadAsync(ChannelFrame.FrameHeaderSize, headerParser);
-                        if (header == default)
+                        var contentHeaderFrame = await reader.ReadAsync();
+                        var contentHeader = this.ParseContentHeader(contentHeaderFrame.Payload.Memory);
+
+                        long receivedContent = 0;
+                        while (receivedContent < contentHeader.contentSize)
                         {
-                            return;
+                            var frame = await reader.ReadAsync();
+                            contentChunks.Add(frame.Payload);
+                            receivedContent += frame.Payload.Memory.Length;
                         }
 
-                        processed = await pipeReader.ReadAsync(contentHeader.Size,
-                            (methodArgs, methodHandler),
-                            (state, sequence) => state.methodHandler(state.methodArgs, sequence));
+                        processed = await this.HandleMethodAsync(method, contentHeader.props, contentChunks.ToSequence());
                     }
                     else
                     {
-                        processed = await methodHandler(methodArgs, default);
+                        processed = await this.HandleMethodAsync(method, null, default);
                     }
 
                     if (!processed)
@@ -225,7 +234,7 @@ namespace RabbitMQ.Next.Channels
             }
         }
 
-        private IIncomingMethod ParseMethodFrame(ReadOnlySequence<byte> payload)
+        private IIncomingMethod ParseMethodFrame(ReadOnlySpan<byte> payload)
         {
             payload = payload.Read(out uint methodId);
             var parser = this.registry.GetParser((MethodId)methodId);
@@ -235,33 +244,27 @@ namespace RabbitMQ.Next.Channels
                 throw new NotSupportedException($"Cannot find parser for the method: {methodId}");
             }
 
-            if (payload.IsSingleSegment)
-            {
-                return parser.ParseMethod(payload.FirstSpan);
-            }
-
-            using var buffer = this.bufferPool.CreateMemory();
-            payload.CopyTo(buffer.Memory.Span);
-            return parser.ParseMethod(buffer.Memory.Span);
+            return parser.ParseMethod(payload);
         }
 
-        private async ValueTask<bool> HandleMethodAsync(IIncomingMethod method, ReadOnlySequence<byte> content)
+        private (long contentSize, LazyMessageProperties props) ParseContentHeader(ReadOnlyMemory<byte> payload)
         {
-            LazyMessageProperties properties = null;
-            ReadOnlySequence<byte> contentBody = default;
+            payload.Slice(4) // skip 2 obsolete shorts
+                .Span.Read(out ulong contentSide);
 
+            payload = payload.Slice(4 + sizeof(ulong));
+
+            var props = new LazyMessageProperties(payload);
+            return ((long)contentSide, props);
+        }
+
+        private async ValueTask<bool> HandleMethodAsync(IIncomingMethod method, LazyMessageProperties props, ReadOnlySequence<byte> content)
+        {
             try
             {
-                if (!content.IsEmpty)
-                {
-                    content = content.Read(out uint headerSize);
-                    properties = new LazyMessageProperties(content.Slice(0, headerSize));
-                    contentBody = content.Slice(headerSize);
-                }
-
                 for (var i = 0; i < this.methodHandlers.Count; i++)
                 {
-                    var handled = await this.methodHandlers[i].HandleAsync(method, properties, contentBody);
+                    var handled = await this.methodHandlers[i].HandleAsync(method, props, content);
                     if (handled)
                     {
                         return true;
@@ -270,7 +273,7 @@ namespace RabbitMQ.Next.Channels
             }
             finally
             {
-                properties?.Dispose();
+                props?.Dispose();
             }
 
             return false;

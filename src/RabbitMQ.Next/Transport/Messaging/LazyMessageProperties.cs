@@ -1,5 +1,4 @@
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using RabbitMQ.Next.Abstractions.Messaging;
@@ -8,23 +7,23 @@ namespace RabbitMQ.Next.Transport.Messaging
 {
     internal sealed class LazyMessageProperties : IMessageProperties, IDisposable
     {
-        private readonly ReadOnlySequence<byte> contentType;
-        private readonly ReadOnlySequence<byte> contentEncoding;
-        private readonly ReadOnlySequence<byte> headers;
-        private readonly ReadOnlySequence<byte> deliveryMode;
-        private readonly ReadOnlySequence<byte> priority;
-        private readonly ReadOnlySequence<byte> correlationId;
-        private readonly ReadOnlySequence<byte> replyTo;
-        private readonly ReadOnlySequence<byte> expiration;
-        private readonly ReadOnlySequence<byte> messageId;
-        private readonly ReadOnlySequence<byte> timestamp;
-        private readonly ReadOnlySequence<byte> type;
-        private readonly ReadOnlySequence<byte> userId;
-        private readonly ReadOnlySequence<byte> applicationId;
+        private readonly ReadOnlyMemory<byte> contentType;
+        private readonly ReadOnlyMemory<byte> contentEncoding;
+        private readonly ReadOnlyMemory<byte> headers;
+        private readonly ReadOnlyMemory<byte> deliveryMode;
+        private readonly ReadOnlyMemory<byte> priority;
+        private readonly ReadOnlyMemory<byte> correlationId;
+        private readonly ReadOnlyMemory<byte> replyTo;
+        private readonly ReadOnlyMemory<byte> expiration;
+        private readonly ReadOnlyMemory<byte> messageId;
+        private readonly ReadOnlyMemory<byte> timestamp;
+        private readonly ReadOnlyMemory<byte> type;
+        private readonly ReadOnlyMemory<byte> userId;
+        private readonly ReadOnlyMemory<byte> applicationId;
 
         private bool isDisposed;
 
-        public LazyMessageProperties(ReadOnlySequence<byte> buffer)
+        public LazyMessageProperties(ReadOnlyMemory<byte> buffer)
         {
             buffer.Read(out ushort flags)
                 .SplitStringProperty(out this.contentType, flags, 15)
@@ -181,78 +180,49 @@ namespace RabbitMQ.Next.Transport.Messaging
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private string DecodeString(ReadOnlySequence<byte> data)
+        private string DecodeString(ReadOnlyMemory<byte> data)
         {
             if (data.IsEmpty)
             {
                 return null;
             }
 
-            if (data.IsSingleSegment)
-            {
-                return TextEncoding.GetString(data.FirstSpan);
-            }
-
-            Span<byte> buffer = stackalloc byte[(int)data.Length];
-            data.CopyTo(buffer);
-            return TextEncoding.GetString(buffer);
+            return TextEncoding.GetString(data.Span);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private DateTimeOffset? DecodeTimestamp(ReadOnlySequence<byte> data)
+        private DateTimeOffset? DecodeTimestamp(ReadOnlyMemory<byte> data)
         {
             if (data.IsEmpty)
             {
                 return null;
             }
 
-            DateTimeOffset val;
-            if (data.IsSingleSegment)
-            {
-                data.FirstSpan.Read(out val);
-            }
-            else
-            {
-                Span<byte> buffer = stackalloc byte[(int)data.Length];
-                data.CopyTo(buffer);
-                ((ReadOnlySpan<byte>)buffer).Read(out val);
-            }
-
+            data.Span.Read(out DateTimeOffset val);
             return val;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private IReadOnlyDictionary<string, object> DecodeTable(ReadOnlySequence<byte> data)
+        private IReadOnlyDictionary<string, object> DecodeTable(ReadOnlyMemory<byte> data)
         {
             if (data.IsEmpty)
             {
                 return null;
             }
 
-            Dictionary<string, object> val;
-            if (data.IsSingleSegment)
-            {
-                data.FirstSpan.Read(out val);
-            }
-            else
-            {
-                Span<byte> buffer = stackalloc byte[(int)data.Length];
-                data.CopyTo(buffer);
-                ((ReadOnlySpan<byte>)buffer).Read(out val);
-            }
-
+            data.Span.Read(out Dictionary<string, object> val);
             return val;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private byte? DecodeByte(ReadOnlySequence<byte> data)
+        private byte? DecodeByte(ReadOnlyMemory<byte> data)
         {
             if (data.IsEmpty)
             {
                 return null;
             }
 
-            data.FirstSpan.Read(out byte val);
+            data.Span.Read(out byte val);
             return val;
         }
     }

@@ -1,5 +1,4 @@
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using RabbitMQ.Next.Abstractions;
@@ -52,117 +51,39 @@ namespace RabbitMQ.Next.Transport.Messaging
             return target;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static ReadOnlyMemory<byte> ReadProperty(this ReadOnlyMemory<byte> source, out StringProperty value, ushort flags, byte bitNumber)
+        public static ReadOnlyMemory<byte> SplitStringProperty(this ReadOnlyMemory<byte> source, out ReadOnlyMemory<byte> value, ushort flags, byte bitNumber)
         {
             if (!BitConverter.IsFlagSet(flags, bitNumber))
             {
-                value = new StringProperty(ReadOnlyMemory<byte>.Empty);
+                value = ReadOnlyMemory<byte>.Empty;
                 return source;
             }
 
             source.Span.Read(out byte size);
-            value = new StringProperty(source.Slice(0, size + sizeof(byte)));
-
-            return source.Slice(size + sizeof(byte));
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static ReadOnlyMemory<byte> ReadProperty(this ReadOnlyMemory<byte> source, out TableProperty value, ushort flags, byte bitNumber)
-        {
-            if (!BitConverter.IsFlagSet(flags, bitNumber))
-            {
-                value = new TableProperty(ReadOnlyMemory<byte>.Empty);
-                return source;
-            }
-
-            source.Span.Read(out uint size);
-            value = new TableProperty(source.Slice(0, (int)size + sizeof(uint)));
-            return source.Slice((int)size + sizeof(uint));
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static ReadOnlyMemory<byte> ReadProperty(this ReadOnlyMemory<byte> source, out byte? value, ushort flags, byte bitNumber)
-        {
-            if (!BitConverter.IsFlagSet(flags, bitNumber))
-            {
-                value = default;
-                return source;
-            }
-
-            source.Span.Read(out byte data);
-            value = data;
-            return source.Slice(sizeof(byte));
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static ReadOnlyMemory<byte> ReadProperty(this ReadOnlyMemory<byte> source, out DateTimeOffset? value, ushort flags, byte bitNumber)
-        {
-            if (!BitConverter.IsFlagSet(flags, bitNumber))
-            {
-                value = null;
-                return source;
-            }
-
-            source.Span.Read(out DateTimeOffset val);
-            value = val;
-            return source.Slice(sizeof(long));
-        }
-
-
-        public static ReadOnlySequence<byte> SplitStringProperty(this ReadOnlySequence<byte> source, out ReadOnlySequence<byte> value, ushort flags, byte bitNumber)
-        {
-            if (!BitConverter.IsFlagSet(flags, bitNumber))
-            {
-                value = ReadOnlySequence<byte>.Empty;
-                return source;
-            }
-
-            byte size;
-            if (source.FirstSpan.Length >= sizeof(byte))
-            {
-                source.FirstSpan.Read(out size);
-            }
-            else
-            {
-                Span<byte> buffer = stackalloc byte[sizeof(byte)];
-                source.Slice(0, sizeof(byte)).CopyTo(buffer);
-                ((ReadOnlySpan<byte>) buffer).Read(out size);
-            }
 
             value = source.Slice(sizeof(byte), size);
             return source.Slice(sizeof(byte) + size);
         }
 
-        public static ReadOnlySequence<byte> SplitTableProperty(this ReadOnlySequence<byte> source, out ReadOnlySequence<byte> value, ushort flags, byte bitNumber)
+        public static ReadOnlyMemory<byte> SplitTableProperty(this ReadOnlyMemory<byte> source, out ReadOnlyMemory<byte> value, ushort flags, byte bitNumber)
         {
             if (!BitConverter.IsFlagSet(flags, bitNumber))
             {
-                value = ReadOnlySequence<byte>.Empty;
+                value = ReadOnlyMemory<byte>.Empty;
                 return source;
             }
 
-            uint size;
-            if (source.FirstSpan.Length >= sizeof(uint))
-            {
-                source.FirstSpan.Read(out size);
-            }
-            else
-            {
-                Span<byte> buffer = stackalloc byte[sizeof(uint)];
-                source.Slice(0, sizeof(uint)).CopyTo(buffer);
-                ((ReadOnlySpan<byte>) buffer).Read(out size);
-            }
+            source.Span.Read(out uint size);
 
-            value = source.Slice(0, sizeof(uint) + size);
-            return source.Slice(sizeof(uint) + size);
+            value = source.Slice(0, sizeof(uint) + (int)size);
+            return source.Slice(sizeof(uint) + (int)size);
         }
 
-        public static ReadOnlySequence<byte> SplitFixedSizeProperty(this ReadOnlySequence<byte> source, out ReadOnlySequence<byte> value, ushort flags, byte bitNumber, int size)
+        public static ReadOnlyMemory<byte> SplitFixedSizeProperty(this ReadOnlyMemory<byte> source, out ReadOnlyMemory<byte> value, ushort flags, byte bitNumber, int size)
         {
             if (!BitConverter.IsFlagSet(flags, bitNumber))
             {
-                value = ReadOnlySequence<byte>.Empty;
+                value = ReadOnlyMemory<byte>.Empty;
                 return source;
             }
 
@@ -170,19 +91,9 @@ namespace RabbitMQ.Next.Transport.Messaging
             return source.Slice(size);
         }
 
-        public static ReadOnlySequence<byte> Read(this ReadOnlySequence<byte> source, out ushort value)
+        public static ReadOnlyMemory<byte> Read(this ReadOnlyMemory<byte> source, out ushort value)
         {
-            if (source.FirstSpan.Length > sizeof(ushort))
-            {
-                source.FirstSpan.Read(out value);
-            }
-            else
-            {
-                Span<byte> buffer = stackalloc byte[sizeof(ushort)];
-                source.Slice(0, sizeof(ushort)).CopyTo(buffer);
-                ((ReadOnlySpan<byte>) buffer).Read(out value);
-            }
-
+            source.Span.Read(out value);
             return source.Slice(sizeof(ushort));
         }
 

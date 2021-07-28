@@ -78,20 +78,28 @@ namespace RabbitMQ.Next.Benchmarks
         }
 
         [Benchmark]
+        public async Task PublishParallelAsync()
+        {
+            await Task.WhenAll(Enumerable.Range(0, 10)
+                .Select(async num =>
+                {
+                    await Task.Yield();
+
+                    for (int i = num; i < this.messages.Count; i = i + 10)
+                    {
+                        await this.publisher.PublishAsync(this.corrIds[i], this.messages[i], (state, properties) =>
+                        {
+                            properties.CorrelationId = state;
+                        });
+
+                    }
+                })
+                .ToArray());
+        }
+
+        [Benchmark]
         public async Task PublishAsync()
         {
-            // await Task.WhenAll(Enumerable.Range(0, 10)
-            //     .Select(async num =>
-            //     {
-            //         await Task.Yield();
-            //
-            //         for (int i = num; i < this.messages.Count; i = i + 10)
-            //         {
-            //             await this.publisher.PublishAsync(this.messages[i]);
-            //         }
-            //     })
-            //     .ToArray());
-
             for (int i = 0; i < this.messages.Count; i++)
             {
                 await this.publisher.PublishAsync(this.corrIds[i], this.messages[i], (state, properties) =>

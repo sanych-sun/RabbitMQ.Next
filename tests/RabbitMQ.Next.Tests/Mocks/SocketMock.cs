@@ -1,6 +1,4 @@
 using System;
-using System.Threading;
-using System.Threading.Tasks;
 using RabbitMQ.Next.Sockets;
 
 namespace RabbitMQ.Next.Tests.Mocks
@@ -27,13 +25,7 @@ namespace RabbitMQ.Next.Tests.Mocks
         public void Send(ReadOnlyMemory<byte> payload)
             => this.WriteToBuffer(payload);
 
-        public ValueTask SendAsync(ReadOnlyMemory<byte> payload)
-        {
-            this.WriteToBuffer(payload);
-            return default;
-        }
-
-        public ValueTask<int> ReceiveAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public int Receive(Memory<byte> buffer) => throw new NotImplementedException();
 
         private void WriteToBuffer(ReadOnlyMemory<byte> payload)
         {
