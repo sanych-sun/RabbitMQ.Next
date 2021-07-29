@@ -21,7 +21,7 @@ namespace RabbitMQ.Next.Publisher
     internal sealed class Publisher : IPublisher
     {
         private readonly ObjectPool<MessageBuilder> messagePropsPool;
-        private readonly SemaphoreSlim channelOpenSync = new SemaphoreSlim(1,1);
+        private readonly SemaphoreSlim channelOpenSync = new(1,1);
         private readonly IReadOnlyList<IReturnedMessageHandler> returnedMessageHandlers;
         private readonly IMethodHandler returnedFrameHandler;
         private readonly IConnection connection;
@@ -90,14 +90,14 @@ namespace RabbitMQ.Next.Publisher
         {
             var properties = this.messagePropsPool.Get();
             propertiesBuilder?.Invoke(properties);
-            return this.InternalPublishAsync(content, properties, flags, cancellationToken);
+            return this.InternalPublishAsync(content, properties, flags);
         }
 
         public ValueTask PublishAsync<TState, TContent>(TState state, TContent content, Action<TState, IMessageBuilder> propertiesBuilder, PublishFlags flags = PublishFlags.None, CancellationToken cancellationToken = default)
         {
             var properties = this.messagePropsPool.Get();
             propertiesBuilder?.Invoke(state, properties);
-            return this.InternalPublishAsync(content, properties, flags, cancellationToken);
+            return this.InternalPublishAsync(content, properties, flags);
         }
 
         private async ValueTask InternalPublishAsync<TContent>(TContent content, MessageBuilder builder, PublishFlags flags)
@@ -181,8 +181,7 @@ namespace RabbitMQ.Next.Publisher
                 if (this.channel == null || this.channel.Completion.IsCompleted)
                 {
                     this.lastDeliveryTag = 0;
-                    var methodHandlers = new List<IMethodHandler>();
-                    methodHandlers.Add(this.returnedFrameHandler);
+                    var methodHandlers = new List<IMethodHandler> { this.returnedFrameHandler };
 
                     if (this.publisherConfirms)
                     {

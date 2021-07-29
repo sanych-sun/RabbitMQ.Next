@@ -9,8 +9,8 @@ namespace RabbitMQ.Next.Publisher.Attributes
 {
     internal sealed class AttributeTransformer : IMessageTransformer
     {
-        private readonly ConcurrentDictionary<Assembly, IReadOnlyList<MessageAttributeBase>> assemblyAttributesMap = new ConcurrentDictionary<Assembly, IReadOnlyList<MessageAttributeBase>>();
-        private readonly ConcurrentDictionary<Type, IReadOnlyList<MessageAttributeBase>> typeAttributesMap = new ConcurrentDictionary<Type, IReadOnlyList<MessageAttributeBase>>();
+        private readonly ConcurrentDictionary<Assembly, IReadOnlyList<MessageAttributeBase>> assemblyAttributesMap = new();
+        private readonly ConcurrentDictionary<Type, IReadOnlyList<MessageAttributeBase>> typeAttributesMap = new();
 
         private static readonly Func<Type, IReadOnlyList<MessageAttributeBase>> TypeAttributesFactory = type =>
         {

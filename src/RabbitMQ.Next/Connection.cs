@@ -20,8 +20,8 @@ namespace RabbitMQ.Next
 {
     internal class Connection : IConnection
     {
-        private static readonly StaticMemoryBlock AmqpProtocolHeader = new StaticMemoryBlock(ProtocolConstants.AmqpHeader);
-        private static readonly StaticMemoryBlock AmqpHeartbeatFrame = new StaticMemoryBlock(ProtocolConstants.HeartbeatFrame);
+        private static readonly StaticMemoryBlock AmqpProtocolHeader = new(ProtocolConstants.AmqpHeader);
+        private static readonly StaticMemoryBlock AmqpHeartbeatFrame = new(ProtocolConstants.HeartbeatFrame);
 
         private readonly IMethodRegistry methodRegistry;
 
@@ -177,7 +177,7 @@ namespace RabbitMQ.Next
                     var buffer = this.bufferPool.CreateMemory();
 
                     // 3. Read payload into the buffer, allocate extra byte for FrameEndByte
-                    socket.FillBuffer(buffer.Memory[0..((int)payloadSize + 1)]);
+                    socket.FillBuffer(buffer.Memory[..((int)payloadSize + 1)]);
 
                     // 4. Ensure there is FrameEnd at last position
                     if (buffer.Memory.Span[(int)payloadSize] != ProtocolConstants.FrameEndByte)

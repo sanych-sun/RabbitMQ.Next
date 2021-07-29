@@ -3,7 +3,7 @@ using RabbitMQ.Next.Publisher.Abstractions;
 
 namespace RabbitMQ.Next.Publisher.Attributes
 {
-    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Class)]
     public class TypeAttribute : MessageAttributeBase
     {
         public TypeAttribute(string type)

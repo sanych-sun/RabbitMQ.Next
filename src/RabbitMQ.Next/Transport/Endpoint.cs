@@ -17,8 +17,7 @@ namespace RabbitMQ.Next.Transport
 
         public bool UseSsl { get; }
 
-        public Uri ToUri()
-            => new Uri($"amqp{(this.UseSsl ? "s" : "")}://{this.Host}:{this.Port}");
+        public Uri ToUri() => new($"amqp{(this.UseSsl ? "s" : "")}://{this.Host}:{this.Port}");
 
     }
 }

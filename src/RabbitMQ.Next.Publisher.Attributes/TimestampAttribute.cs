@@ -3,15 +3,12 @@ using RabbitMQ.Next.Publisher.Abstractions;
 
 namespace RabbitMQ.Next.Publisher.Attributes
 {
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Assembly, AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Assembly)]
     public class TimestampAttribute : MessageAttributeBase
     {
         public override void Apply(IMessageBuilder message)
         {
-            if (!message.Timestamp.HasValue)
-            {
-                message.Timestamp = DateTimeOffset.UtcNow;
-            }
+            message.Timestamp ??= DateTimeOffset.UtcNow;
         }
     }
 }

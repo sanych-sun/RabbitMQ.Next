@@ -2,8 +2,6 @@ using System;
 using System.IO;
 using System.Net.Security;
 using System.Net.Sockets;
-using System.Threading;
-using System.Threading.Tasks;
 using RabbitMQ.Next.Transport;
 
 namespace RabbitMQ.Next.Sockets

@@ -12,21 +12,21 @@ namespace RabbitMQ.Next.Transport
         public static Memory<byte> Write(this Memory<byte> target, byte data)
         {
             target.Span[0] = data;
-            return target.Slice(sizeof(byte));
+            return target[sizeof(byte)..];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Memory<byte> Write(this Memory<byte> target, sbyte data)
         {
             target.Span[0] = (byte)data;
-            return target.Slice(sizeof(sbyte));
+            return target[sizeof(sbyte)..];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Memory<byte> Write(this Memory<byte> target, bool data)
         {
             target.Span[0] = data ? (byte) 1 : (byte) 0;
-            return target.Slice(sizeof(byte));
+            return target[sizeof(byte)..];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -40,56 +40,56 @@ namespace RabbitMQ.Next.Transport
         public static Memory<byte> Write(this Memory<byte> target, short data)
         {
             BinaryPrimitives.WriteInt16BigEndian(target.Span, data);
-            return target.Slice(sizeof(short));
+            return target[sizeof(short)..];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Memory<byte> Write(this Memory<byte> target, uint data)
         {
             BinaryPrimitives.WriteUInt32BigEndian(target.Span, data);
-            return target.Slice(sizeof(uint));
+            return target[sizeof(uint)..];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Memory<byte> Write(this Memory<byte> target, int data)
         {
             BinaryPrimitives.WriteInt32BigEndian(target.Span, data);
-            return target.Slice(sizeof(int));
+            return target[sizeof(int)..];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Memory<byte> Write(this Memory<byte> target, ulong data)
         {
             BinaryPrimitives.WriteUInt64BigEndian(target.Span, data);
-            return target.Slice(sizeof(ulong));
+            return target[sizeof(ulong)..];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Memory<byte> Write(this Memory<byte> target, long data)
         {
             BinaryPrimitives.WriteInt64BigEndian(target.Span, data);
-            return target.Slice(sizeof(long));
+            return target[sizeof(long)..];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Memory<byte> Write(this Memory<byte> target, float data)
         {
             MemoryMarshal.Write(target.Span, ref data);
-            return target.Slice(sizeof(float));
+            return target[sizeof(float)..];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Memory<byte> Write(this Memory<byte> target, decimal data)
         {
             MemoryMarshal.Write(target.Span, ref data);
-            return target.Slice(sizeof(decimal));
+            return target[sizeof(decimal)..];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Memory<byte> Write(this Memory<byte> target, double data)
         {
             MemoryMarshal.Write(target.Span, ref data);
-            return target.Slice(sizeof(double));
+            return target[sizeof(double)..];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -97,8 +97,7 @@ namespace RabbitMQ.Next.Transport
         {
             target = target.Write((uint)data.Length);
             data.CopyTo(target);
-            target.Slice(data.Length);
-            return target;
+            return target[data.Length..];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -220,7 +219,7 @@ namespace RabbitMQ.Next.Transport
 
             var lenPosition = target;
 
-            target = target.Slice(sizeof(uint));
+            target = target[sizeof(uint)..];
             var before = target.Length;
             foreach (var item in value)
             {
@@ -244,7 +243,7 @@ namespace RabbitMQ.Next.Transport
 
             var lenPosition = target;
 
-            target = target.Slice(sizeof(uint));
+            target = target[sizeof(uint)..];
             var before = target.Length;
 
             for (var i = 0; i < value.Length; i++)

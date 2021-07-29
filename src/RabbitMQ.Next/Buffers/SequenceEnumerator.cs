@@ -23,14 +23,7 @@ namespace RabbitMQ.Next.Buffers
         {
             this.CheckDisposed();
 
-            if (!this.remaining.HasValue)
-            {
-                this.remaining = this.source;
-            }
-            else
-            {
-                this.remaining = this.remaining.Value.Slice(this.remaining.Value.First.Length);
-            }
+            this.remaining = this.remaining?.Slice(this.remaining.Value.First.Length) ?? this.source;
 
             return !this.remaining.Value.IsEmpty;
         }

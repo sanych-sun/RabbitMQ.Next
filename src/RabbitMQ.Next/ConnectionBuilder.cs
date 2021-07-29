@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Methods;
-using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Methods.Registry;
 
@@ -15,13 +14,12 @@ namespace RabbitMQ.Next
 
         private readonly IConnectionFactory factory;
         private readonly IMethodRegistryBuilder methodRegistry = new MethodRegistryBuilder();
-        private readonly List<Endpoint> endpoints = new List<Endpoint>();
-        private readonly Dictionary<string, object> clientProperties = new Dictionary<string, object>();
+        private readonly List<Endpoint> endpoints = new();
+        private readonly Dictionary<string, object> clientProperties = new();
         private IAuthMechanism authMechanism;
         private string virtualhost = ProtocolConstants.DefaultVHost;
         private string locale = DefaultLocale;
         private int frameSize = 102_400;
-        private int bufferPoolSize = 100;
 
         internal ConnectionBuilder(IConnectionFactory factory)
         {

@@ -14,10 +14,7 @@ namespace RabbitMQ.Next.Publisher.Transformers
 
         public void Apply<TPayload>(TPayload payload, IMessageBuilder message)
         {
-            if (message.Priority == default)
-            {
-                message.Priority = this.priority;
-            }
+            message.Priority ??= this.priority;
         }
     }
 }

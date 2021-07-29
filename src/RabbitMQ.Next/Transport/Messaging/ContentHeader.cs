@@ -24,7 +24,7 @@ namespace RabbitMQ.Next.Transport.Messaging
         public static Memory<byte> WriteMessageProperties(this Memory<byte> target, IMessageProperties properties)
         {
             var flagsSpan = target;
-            target = target.Slice(sizeof(ushort));
+            target = target[sizeof(ushort)..];
 
             var flags = (ushort)0;
 
@@ -62,7 +62,7 @@ namespace RabbitMQ.Next.Transport.Messaging
             source.Read(out byte size);
 
             value = source.Slice(sizeof(byte), size);
-            return source.Slice(sizeof(byte) + size);
+            return source[(sizeof(byte) + size)..];
         }
 
         public static ReadOnlyMemory<byte> SplitTableProperty(this ReadOnlyMemory<byte> source, out ReadOnlyMemory<byte> value, ushort flags, byte bitNumber)
@@ -75,8 +75,8 @@ namespace RabbitMQ.Next.Transport.Messaging
 
             source.Read(out uint size);
 
-            value = source.Slice(0, sizeof(uint) + (int)size);
-            return source.Slice(sizeof(uint) + (int)size);
+            value = source[..(sizeof(uint) + (int)size)];
+            return source[(sizeof(uint) + (int)size)..];
         }
 
         public static ReadOnlyMemory<byte> SplitFixedSizeProperty(this ReadOnlyMemory<byte> source, out ReadOnlyMemory<byte> value, ushort flags, byte bitNumber, int size)
@@ -87,8 +87,8 @@ namespace RabbitMQ.Next.Transport.Messaging
                 return source;
             }
 
-            value = source.Slice(0, size);
-            return source.Slice(size);
+            value = source[..size];
+            return source[size..];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

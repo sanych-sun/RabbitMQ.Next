@@ -49,7 +49,7 @@ namespace RabbitMQ.Next.Channels
             this.offset += ProtocolConstants.FrameHeaderSize;
             
             // write methodId
-            this.buffer.Memory.Slice(this.offset).Write((uint) methodId);
+            this.buffer.Memory[this.offset..].Write((uint) methodId);
             this.offset += sizeof(uint);
             this.currentFrameSize += sizeof(uint);
             
@@ -70,7 +70,7 @@ namespace RabbitMQ.Next.Channels
             this.currentFrameHeader = this.buffer.Memory.Slice(this.offset, ProtocolConstants.FrameHeaderSize);
             this.offset += ProtocolConstants.FrameHeaderSize;
             this.contentSizeBlock = this.buffer.Memory.Slice(this.offset + 4, 8);
-            this.currentFrameSize = this.buffer.Memory.Slice(this.offset).WriteContentHeader(properties, 0);
+            this.currentFrameSize = this.buffer.Memory[this.offset..].WriteContentHeader(properties, 0);
             this.offset += this.currentFrameSize;
             this.EndFrame();
 
@@ -97,7 +97,7 @@ namespace RabbitMQ.Next.Channels
             }
 
             this.currentFrameHeader.WriteFrameHeader(this.currentFrameType, this.channelNumber, (uint)this.currentFrameSize);
-            this.buffer.Memory.Slice(this.offset).Write(ProtocolConstants.FrameEndByte);
+            this.buffer.Memory[this.offset..].Write(ProtocolConstants.FrameEndByte);
             this.offset++;
             this.currentFrameType = FrameType.Malformed;
             this.currentFrameSize = 0;

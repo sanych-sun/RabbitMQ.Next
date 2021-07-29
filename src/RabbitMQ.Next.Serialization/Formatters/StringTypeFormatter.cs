@@ -59,7 +59,7 @@ namespace RabbitMQ.Next.Serialization.Formatters
                     var buffer = writer.GetSpan(MinBufferSize);
                     encoder.Convert(remaining, buffer, true, out var charsUsed, out var bytesUsed, out bool _);
                     writer.Advance(bytesUsed);
-                    remaining = remaining.Slice(charsUsed);
+                    remaining = remaining[charsUsed..];
                 } while (remaining.Length > 0);
             }
         }
@@ -99,7 +99,7 @@ namespace RabbitMQ.Next.Serialization.Formatters
                     {
                         var chunk = items[i];
                         chunk.AsSpan().CopyTo(span);
-                        span = span.Slice(chunk.Count);
+                        span = span[chunk.Count..];
                     }
                 });
             }

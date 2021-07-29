@@ -3,7 +3,7 @@ using RabbitMQ.Next.Publisher.Abstractions;
 
 namespace RabbitMQ.Next.Publisher.Attributes
 {
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Assembly, AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Assembly)]
     public class ApplicationIdAttribute : MessageAttributeBase
     {
         public ApplicationIdAttribute(string applicationId)

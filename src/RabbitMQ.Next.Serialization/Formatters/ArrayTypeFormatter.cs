@@ -40,12 +40,12 @@ namespace RabbitMQ.Next.Serialization.Formatters
                 var chunk = source;
                 if (source.Length > target.Length)
                 {
-                    chunk = source.Slice(0, target.Length);
+                    chunk = source[..target.Length];
                 }
 
                 chunk.CopyTo(target);
                 writer.Advance(chunk.Length);
-                source = source.Slice(chunk.Length);
+                source = source[chunk.Length..];
 
             } while (source.Length > 0);
         }

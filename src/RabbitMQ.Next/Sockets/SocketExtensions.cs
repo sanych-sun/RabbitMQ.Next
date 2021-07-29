@@ -9,7 +9,7 @@ namespace RabbitMQ.Next.Sockets
             while (buffer.Length > 0)
             {
                 var received = socket.Receive(buffer);
-                buffer = buffer.Slice(received);
+                buffer = buffer[received..];
             }
         }
     }

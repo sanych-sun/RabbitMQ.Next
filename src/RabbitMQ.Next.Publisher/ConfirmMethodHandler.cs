@@ -88,9 +88,7 @@ namespace RabbitMQ.Next.Publisher
 
         private void AckSingle(ulong deliveryTag, bool isPositive)
         {
-            TaskCompletionSource<bool> tcs;
-
-            if (!this.pendingConfirms.TryRemove(deliveryTag, out tcs))
+            if (!this.pendingConfirms.TryRemove(deliveryTag, out var tcs))
             {
                 tcs = this.pendingConfirms.GetOrAdd(deliveryTag, isPositive ? PositiveCompletedTcs : NegativeCompletedTcs);
             }
@@ -107,10 +105,6 @@ namespace RabbitMQ.Next.Publisher
                 item.Value.TrySetResult(isPositive);
                 this.pendingConfirms.TryRemove(item.Key, out var _);
             }
-        }
-
-        public void Dispose()
-        {
         }
     }
 }

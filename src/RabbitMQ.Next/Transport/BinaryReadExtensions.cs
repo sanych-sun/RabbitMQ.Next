@@ -12,28 +12,28 @@ namespace RabbitMQ.Next.Transport
         public static ReadOnlyMemory<byte> Read(this ReadOnlyMemory<byte> source, out byte result)
         {
             result = source.Span[0];
-            return source.Slice(sizeof(byte));
+            return source[sizeof(byte)..];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ReadOnlyMemory<byte> Read(this ReadOnlyMemory<byte> source, out sbyte result)
         {
             result = (sbyte)source.Span[0];
-            return source.Slice(sizeof(sbyte));
+            return source[sizeof(sbyte)..];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ReadOnlyMemory<byte> Read(this ReadOnlyMemory<byte> source, out bool result)
         {
             result = (source.Span[0] != 0);
-            return source.Slice(sizeof(byte));
+            return source[sizeof(byte)..];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ReadOnlyMemory<byte> Read(this ReadOnlyMemory<byte> source, out ushort result)
         {
             result = BinaryPrimitives.ReadUInt16BigEndian(source.Span);
-            return source.Slice(sizeof(ushort));
+            return source[sizeof(ushort)..];
         }
 
 
@@ -41,56 +41,56 @@ namespace RabbitMQ.Next.Transport
         public static ReadOnlyMemory<byte> Read(this ReadOnlyMemory<byte> source, out short result)
         {
             result = BinaryPrimitives.ReadInt16BigEndian(source.Span);
-            return source.Slice(sizeof(short));
+            return source[sizeof(short)..];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ReadOnlyMemory<byte> Read(this ReadOnlyMemory<byte> source, out uint result)
         {
             result = BinaryPrimitives.ReadUInt32BigEndian(source.Span);
-            return source.Slice(sizeof(uint));
+            return source[sizeof(uint)..];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ReadOnlyMemory<byte> Read(this ReadOnlyMemory<byte> source, out int result)
         {
             result = BinaryPrimitives.ReadInt32BigEndian(source.Span);
-            return source.Slice(sizeof(int));
+            return source[sizeof(int)..];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ReadOnlyMemory<byte> Read(this ReadOnlyMemory<byte> source, out ulong result)
         {
             result = BinaryPrimitives.ReadUInt64BigEndian(source.Span);
-            return source.Slice(sizeof(ulong));
+            return source[sizeof(ulong)..];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ReadOnlyMemory<byte> Read(this ReadOnlyMemory<byte> source, out long result)
         {
             result = BinaryPrimitives.ReadInt64BigEndian(source.Span);
-            return source.Slice(sizeof(long));
+            return source[sizeof(long)..];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ReadOnlyMemory<byte> Read(this ReadOnlyMemory<byte> source, out float result)
         {
             result = MemoryMarshal.Read<float>(source.Span);
-            return source.Slice(sizeof(float));
+            return source[sizeof(float)..];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ReadOnlyMemory<byte> Read(this ReadOnlyMemory<byte> source, out decimal result)
         {
             result = MemoryMarshal.Read<decimal>(source.Span);
-            return source.Slice(sizeof(decimal));
+            return source[sizeof(decimal)..];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ReadOnlyMemory<byte> Read(this ReadOnlyMemory<byte> source, out double result)
         {
             result = MemoryMarshal.Read<double>(source.Span);
-            return source.Slice(sizeof(double));
+            return source[sizeof(double)..];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -114,11 +114,11 @@ namespace RabbitMQ.Next.Transport
             }
             else
             {
-                var data = source.Span.Slice(0, len);
+                var data = source.Span[..len];
                 result = TextEncoding.GetString(data);
             }
 
-            return source.Slice(len);
+            return source[len..];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -224,7 +224,7 @@ namespace RabbitMQ.Next.Transport
                 return source;
             }
 
-            var tableData = source.Slice(0, (int)tableLen);
+            var tableData = source[..(int)tableLen];
 
             var data = new Dictionary<string, object>();
             while (tableData.Length > 0)
@@ -235,7 +235,7 @@ namespace RabbitMQ.Next.Transport
             }
 
             result = data;
-            return source.Slice((int)tableLen);
+            return source[(int)tableLen..];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -248,7 +248,7 @@ namespace RabbitMQ.Next.Transport
                 return source;
             }
 
-            var arrayData = source.Slice(0, (int)size);
+            var arrayData = source[..(int)size];
 
             var list = new List<object>();
 
@@ -259,7 +259,7 @@ namespace RabbitMQ.Next.Transport
             }
 
             result = list.ToArray();
-            return source.Slice((int)size);
+            return source[(int)size..];
         }
     }
 }

@@ -7,7 +7,7 @@ namespace RabbitMQ.Next.Publisher
 {
     public class MessageBuilder : IMessageBuilder, IMessageProperties
     {
-        private Dictionary<string, object> headers = new Dictionary<string, object>();
+        private readonly Dictionary<string, object> headers = new();
 
         public string RoutingKey { get; set; }
         public string ContentType { get; set; }

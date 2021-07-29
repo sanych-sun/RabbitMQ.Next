@@ -29,8 +29,7 @@ namespace RabbitMQ.Next.TopologyBuilder
             this.arguments[key] = value;
         }
 
-        public DeclareMethod ToMethod()
-            => new DeclareMethod(this.Name, (byte)this.Flags, this.arguments);
+        public DeclareMethod ToMethod() => new(this.Name, (byte)this.Flags, this.arguments);
 
         public async Task ApplyAsync(IChannel channel)
         {

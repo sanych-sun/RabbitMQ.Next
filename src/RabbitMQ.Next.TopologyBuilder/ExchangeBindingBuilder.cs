@@ -31,8 +31,7 @@ namespace RabbitMQ.Next.TopologyBuilder
             this.arguments[key] = value;
         }
 
-        public BindMethod ToMethod()
-            => new BindMethod(this.Destination, this.Source, this.RoutingKey, this.arguments);
+        public BindMethod ToMethod() => new(this.Destination, this.Source, this.RoutingKey, this.arguments);
 
         public async Task ApplyAsync(IChannel channel)
         {

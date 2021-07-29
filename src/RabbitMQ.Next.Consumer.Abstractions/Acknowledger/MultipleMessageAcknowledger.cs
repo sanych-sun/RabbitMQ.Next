@@ -57,7 +57,7 @@ namespace RabbitMQ.Next.Consumer.Abstractions.Acknowledger
                     this.pendingSendTask = Task.Run(async () =>
                     {
                         await Task.Delay(this.timeoutMs, this.cts.Token)
-                            .ContinueWith(c => { }); // use empty continuation to suppress the TaskCancelledException
+                            .ContinueWith(_ => { }); // use empty continuation to suppress the TaskCancelledException
                         if (!this.cts.Token.IsCancellationRequested)
                         {
                             await this.SendPendingAck();

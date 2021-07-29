@@ -17,9 +17,6 @@ namespace RabbitMQ.Next.Buffers
         public MemoryBlock CreateMemory()
             => this.memoryPool.Get();
 
-        private MemoryBlock CreateMemoryBlock()
-        {
-            return new MemoryBlock(this.memoryPool, this.bufferSize);
-        }
+        private MemoryBlock CreateMemoryBlock() => new(this.memoryPool, this.bufferSize);
     }
 }

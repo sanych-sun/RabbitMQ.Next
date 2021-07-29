@@ -8,10 +8,7 @@ namespace RabbitMQ.Next.Publisher.Transformers
     {
         public void Apply<TPayload>(TPayload payload, IMessageBuilder message)
         {
-            if (!message.Timestamp.HasValue)
-            {
-                message.Timestamp = DateTimeOffset.UtcNow;
-            }
+            message.Timestamp ??= DateTimeOffset.UtcNow;
         }
     }
 }

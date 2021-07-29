@@ -186,7 +186,7 @@ namespace RabbitMQ.Next.Channels
                         throw new InvalidOperationException($"Unexpected frame type: {methodFrame.Type}");
                     }
 
-                    // 2. Parse methdd
+                    // 2. Parse method
                     var method = this.ParseMethodFrame(methodFrame.Payload.Memory);
                     methodFrame.Payload.Dispose();
 
@@ -248,10 +248,10 @@ namespace RabbitMQ.Next.Channels
 
         private (long contentSize, LazyMessageProperties props) ParseContentHeader(ReadOnlyMemory<byte> payload)
         {
-            payload.Slice(4) // skip 2 obsolete shorts
+            payload[4..] // skip 2 obsolete shorts
                 .Read(out ulong contentSide);
 
-            payload = payload.Slice(4 + sizeof(ulong));
+            payload = payload[(4 + sizeof(ulong))..];
 
             var props = new LazyMessageProperties(payload);
             return ((long)contentSide, props);
@@ -278,8 +278,7 @@ namespace RabbitMQ.Next.Channels
             return false;
         }
 
-        private FrameBuilder CreateFrameBuilder()
-            => new FrameBuilder(this.bufferPool, this.ChannelNumber, this.frameMaxSize);
+        private FrameBuilder CreateFrameBuilder() => new(this.bufferPool, this.ChannelNumber, this.frameMaxSize);
 
         private static bool ResetFrameBuilder(FrameBuilder fr)
         {

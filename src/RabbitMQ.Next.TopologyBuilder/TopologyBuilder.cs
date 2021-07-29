@@ -9,7 +9,7 @@ namespace RabbitMQ.Next.TopologyBuilder
 {
     internal class TopologyBuilder : ITopologyBuilder
     {
-        private readonly SemaphoreSlim sync = new SemaphoreSlim(1,1);
+        private readonly SemaphoreSlim sync = new(1,1);
         private IChannel channel;
 
         public TopologyBuilder(IConnection connection)
