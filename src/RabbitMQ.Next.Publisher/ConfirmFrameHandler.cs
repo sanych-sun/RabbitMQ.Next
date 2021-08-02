@@ -1,8 +1,10 @@
+using System;
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Abstractions.Methods;
@@ -10,14 +12,17 @@ using RabbitMQ.Next.Transport.Methods.Basic;
 
 namespace RabbitMQ.Next.Publisher
 {
-    internal class ConfirmMethodHandler : IMethodHandler
+    internal class ConfirmFrameHandler : IFrameHandler
     {
         private static readonly TaskCompletionSource<bool> PositiveCompletedTcs;
         private static readonly TaskCompletionSource<bool> NegativeCompletedTcs;
+
+        private readonly IMethodParser<AckMethod> ackMethodParser;
+        private readonly IMethodParser<NackMethod> nackMethodParser;
         private ulong lastMultipleAck;
         private ulong lastMultipleNack;
 
-        static ConfirmMethodHandler()
+        static ConfirmFrameHandler()
         {
             PositiveCompletedTcs = new TaskCompletionSource<bool>();
             PositiveCompletedTcs.SetResult(true);
@@ -28,9 +33,11 @@ namespace RabbitMQ.Next.Publisher
 
         private readonly ConcurrentDictionary<ulong, TaskCompletionSource<bool>> pendingConfirms;
 
-        public ConfirmMethodHandler()
+        public ConfirmFrameHandler(IMethodRegistry registry)
         {
             this.pendingConfirms = new ConcurrentDictionary<ulong, TaskCompletionSource<bool>>();
+            this.ackMethodParser = registry.GetParser<AckMethod>();
+            this.nackMethodParser = registry.GetParser<NackMethod>();
         }
 
         public ValueTask<bool> WaitForConfirmAsync(ulong deliveryTag)
@@ -51,10 +58,11 @@ namespace RabbitMQ.Next.Publisher
             return new ValueTask<bool>(tcs.Task);
         }
 
-        ValueTask<bool> IMethodHandler.HandleAsync(IIncomingMethod method, IMessageProperties properties, ReadOnlySequence<byte> contentBytes)
+        ValueTask<bool> IFrameHandler.HandleMethodFrameAsync(MethodId methodId, ReadOnlyMemory<byte> payload)
         {
-            if (method is AckMethod ack)
+            if (methodId == MethodId.BasicAck)
             {
+                var ack = this.ackMethodParser.Parse(payload);
                 if (ack.Multiple)
                 {
                     Interlocked.Exchange(ref this.lastMultipleAck, ack.DeliveryTag);
@@ -65,11 +73,12 @@ namespace RabbitMQ.Next.Publisher
                     this.AckSingle(ack.DeliveryTag, true);
                 }
 
-                return new ValueTask<bool>(true);
+                return new (true);
             }
 
-            if (method is NackMethod nack)
+            if (methodId == MethodId.BasicNack)
             {
+                var nack = this.nackMethodParser.Parse(payload);
                 if (nack.Multiple)
                 {
                     Interlocked.Exchange(ref this.lastMultipleNack, nack.DeliveryTag);
@@ -85,6 +94,9 @@ namespace RabbitMQ.Next.Publisher
 
             return new ValueTask<bool>(false);
         }
+
+        ValueTask<bool> IFrameHandler.HandleContentAsync(IMessageProperties properties, ReadOnlySequence<byte> contentBytes)
+            => new(false);
 
         private void AckSingle(ulong deliveryTag, bool isPositive)
         {

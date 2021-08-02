@@ -19,7 +19,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         [Fact]
         public async Task HandlesAckMethod()
         {
-            IMethodHandler handler = new ConfirmMethodHandler();
+            IFrameHandler handler = new ConfirmFrameHandler();
             var handled = await handler.HandleAsync(new AckMethod(1, false), null, ReadOnlySequence<byte>.Empty);
             Assert.True(handled);
         }
@@ -27,7 +27,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         [Fact]
         public async Task HandlesNackMethod()
         {
-            IMethodHandler handler = new ConfirmMethodHandler();
+            IFrameHandler handler = new ConfirmFrameHandler();
             var handled = await handler.HandleAsync(new NackMethod(1, false, false), null, ReadOnlySequence<byte>.Empty);
             Assert.True(handled);
         }
@@ -36,7 +36,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         [MemberData(nameof(IgnoreMethodsTestCases))]
         public async Task IgnoresOtherMethods(IIncomingMethod method)
         {
-            IMethodHandler handler = new ConfirmMethodHandler();
+            IFrameHandler handler = new ConfirmFrameHandler();
             var handled = await handler.HandleAsync(method, null, ReadOnlySequence<byte>.Empty);
             Assert.False(handled);
         }
@@ -44,7 +44,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         [Fact]
         public async Task AskSingleMessage()
         {
-            var handler = new ConfirmMethodHandler();
+            var handler = new ConfirmFrameHandler();
 
             var wait = handler.WaitForConfirmAsync(1);
             await Task.Delay(10);
@@ -59,7 +59,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         [Fact]
         public async Task AskMultipleMessages()
         {
-            var handler = new ConfirmMethodHandler();
+            var handler = new ConfirmFrameHandler();
 
             var wait1 = handler.WaitForConfirmAsync(1);
             var wait2 = handler.WaitForConfirmAsync(2);
@@ -83,7 +83,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         [Fact]
         public async Task NackSingleMessage()
         {
-            var handler = new ConfirmMethodHandler();
+            var handler = new ConfirmFrameHandler();
 
             var wait = handler.WaitForConfirmAsync(1);
             await Task.Yield();
@@ -98,7 +98,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         [Fact]
         public async Task NackMultipleMessages()
         {
-            var handler = new ConfirmMethodHandler();
+            var handler = new ConfirmFrameHandler();
 
             var wait1 = handler.WaitForConfirmAsync(1);
             var wait2 = handler.WaitForConfirmAsync(2);
@@ -124,7 +124,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         [InlineData(1000, 10)]
         public async Task AckConcurrent(int messages, int threads)
         {
-            var handler = new ConfirmMethodHandler();
+            var handler = new ConfirmFrameHandler();
 
             var waitTasks = Enumerable.Range(1, messages)
                 .Select(i => handler.WaitForConfirmAsync((ulong)i).AsTask())
@@ -148,7 +148,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             Assert.True(results.All(r => r));
         }
 
-        private static ValueTask<bool> AckMessageAsync(IMethodHandler handler, ulong deliveryTag, bool ack, bool multiple = false)
+        private static ValueTask<bool> AckMessageAsync(IFrameHandler handler, ulong deliveryTag, bool ack, bool multiple = false)
         {
             if (ack)
             {

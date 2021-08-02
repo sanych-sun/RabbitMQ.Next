@@ -1,5 +1,4 @@
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -7,7 +6,6 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.ObjectPool;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
-using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Abstractions.Methods;
 using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Abstractions.Transformers;
@@ -23,14 +21,13 @@ namespace RabbitMQ.Next.Publisher
         private readonly ObjectPool<MessageBuilder> messagePropsPool;
         private readonly SemaphoreSlim channelOpenSync = new(1,1);
         private readonly IReadOnlyList<IReturnedMessageHandler> returnedMessageHandlers;
-        private readonly IMethodHandler returnedFrameHandler;
         private readonly IConnection connection;
         private readonly string exchange;
         private readonly ISerializer serializer;
         private readonly IReadOnlyList<IMessageTransformer> transformers;
         private readonly IMethodFormatter<PublishMethod> publishFormatter;
         private readonly bool publisherConfirms;
-        private ConfirmMethodHandler confirms;
+        private ConfirmFrameHandler confirms;
         private ulong lastDeliveryTag;
         private bool isDisposed;
 
@@ -55,7 +52,6 @@ namespace RabbitMQ.Next.Publisher
             this.transformers = transformers;
             this.returnedMessageHandlers = returnedMessageHandlers;
 
-            this.returnedFrameHandler = new MethodHandler<ReturnMethod>(this.HandleReturnedMessage);
             this.publishFormatter = connection.MethodRegistry.GetFormatter<PublishMethod>();
         }
 
@@ -181,11 +177,14 @@ namespace RabbitMQ.Next.Publisher
                 if (this.channel == null || this.channel.Completion.IsCompleted)
                 {
                     this.lastDeliveryTag = 0;
-                    var methodHandlers = new List<IMethodHandler> { this.returnedFrameHandler };
+                    var methodHandlers = new List<IFrameHandler>
+                    {
+                        new ReturnFrameHandler(this.serializer, this.returnedMessageHandlers, this.connection.MethodRegistry),
+                    };
 
                     if (this.publisherConfirms)
                     {
-                        this.confirms = new ConfirmMethodHandler();
+                        this.confirms = new ConfirmFrameHandler(this.connection.MethodRegistry);
                         methodHandlers.Add(this.confirms);
                     }
 
@@ -203,27 +202,6 @@ namespace RabbitMQ.Next.Publisher
             {
                 this.channelOpenSync.Release();
             }
-        }
-
-        private async ValueTask<bool> HandleReturnedMessage(ReturnMethod method, IMessageProperties properties, ReadOnlySequence<byte> contentBytes)
-        {
-            if (this.returnedMessageHandlers.Count == 0)
-            {
-                return true;
-            }
-
-            var message = new ReturnedMessage(method.Exchange, method.RoutingKey, method.ReplyCode, method.ReplyText);
-            var content = new Content(this.serializer, contentBytes);
-
-            for (var i = 0; i < this.returnedMessageHandlers.Count; i++)
-            {
-                if (await this.returnedMessageHandlers[i].TryHandleAsync(message, properties, content))
-                {
-                    break;
-                }
-            }
-
-            return true;
         }
     }
 }

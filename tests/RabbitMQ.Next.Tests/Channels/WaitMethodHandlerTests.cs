@@ -77,7 +77,7 @@ namespace RabbitMQ.Next.Tests.Channels
             var handler = this.CreateHandler();
             var wait = handler.WaitAsync<DummyMethod<int>>();
 
-            var handled = await ((IMethodHandler) handler).HandleAsync(new DummyMethod<string>(MethodId.BasicDeliver, "test"), null, ReadOnlySequence<byte>.Empty);
+            var handled = await ((IFrameHandler) handler).HandleAsync(new DummyMethod<string>(MethodId.BasicDeliver, "test"), null, ReadOnlySequence<byte>.Empty);
 
             Assert.False(handled);
             Assert.False(wait.IsCompleted);
@@ -91,7 +91,7 @@ namespace RabbitMQ.Next.Tests.Channels
 
             Assert.False(wait.IsCompleted);
 
-            var handled = await ((IMethodHandler) handler).HandleAsync(new DummyMethod<int>(MethodId.BasicGetEmpty, 42), null, ReadOnlySequence<byte>.Empty);
+            var handled = await ((IFrameHandler) handler).HandleAsync(new DummyMethod<int>(MethodId.BasicGetEmpty, 42), null, ReadOnlySequence<byte>.Empty);
             await Task.Delay(10);
 
             Assert.True(handled);
@@ -101,7 +101,7 @@ namespace RabbitMQ.Next.Tests.Channels
         }
 
 
-        private WaitMethodHandler CreateHandler(Task channelCompletion = null)
+        private WaitFrameHandler CreateHandler(Task channelCompletion = null)
         {
             var registry = Substitute.For<IMethodRegistry>();
             registry.GetMethodId<DummyMethod<int>>().Returns(MethodId.BasicGetEmpty);
@@ -109,7 +109,7 @@ namespace RabbitMQ.Next.Tests.Channels
             var ch = Substitute.For<IChannel>();
             channelCompletion ??= new TaskCompletionSource<bool>().Task;
             ch.Completion.Returns(channelCompletion);
-            return new WaitMethodHandler(registry, ch);
+            return new WaitFrameHandler(registry, ch);
         }
     }
 }

@@ -102,7 +102,7 @@ namespace RabbitMQ.Next
 
         public IMethodRegistry MethodRegistry => this.methodRegistry;
 
-        public async Task<IChannel> OpenChannelAsync(IReadOnlyList<IMethodHandler> handlers = null, CancellationToken cancellationToken = default)
+        public async Task<IChannel> OpenChannelAsync(IReadOnlyList<IFrameHandler> handlers = null, CancellationToken cancellationToken = default)
         {
             // TODO: validate state
 

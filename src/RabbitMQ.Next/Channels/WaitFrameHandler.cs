@@ -9,7 +9,7 @@ using RabbitMQ.Next.Abstractions.Methods;
 
 namespace RabbitMQ.Next.Channels
 {
-    internal class WaitMethodHandler : IMethodHandler
+    internal class WaitFrameHandler : IFrameHandler
     {
         private readonly Action cancellationHandler;
         private readonly IMethodRegistry registry;
@@ -17,7 +17,7 @@ namespace RabbitMQ.Next.Channels
         private MethodId expectedMethodId;
         private TaskCompletionSource<IIncomingMethod> waitingTask;
 
-        public WaitMethodHandler(IMethodRegistry registry, IChannel channel)
+        public WaitFrameHandler(IMethodRegistry registry, IChannel channel)
         {
             this.registry = registry;
             this.channel = channel;
@@ -75,19 +75,22 @@ namespace RabbitMQ.Next.Channels
             return result;
         }
 
-        ValueTask<bool> IMethodHandler.HandleAsync(IIncomingMethod method, IMessageProperties properties, ReadOnlySequence<byte> contentBytes)
+        public ValueTask<bool> HandleMethodFrameAsync(MethodId methodId, ReadOnlyMemory<byte> payload)
         {
-            if (method.MethodId != this.expectedMethodId)
+            if (methodId != this.expectedMethodId)
             {
-                return new ValueTask<bool>(false);
+                return new(false);
             }
-
 
             this.expectedMethodId = 0;
             var task = Interlocked.Exchange(ref this.waitingTask, null);
+            var method = this.registry.GetParser(methodId).ParseMethod(payload);
             task?.SetResult(method);
 
             return new ValueTask<bool>(true);
         }
+
+        public ValueTask<bool> HandleContentAsync(IMessageProperties properties, ReadOnlySequence<byte> contentBytes)
+            => new(false);
     }
 }

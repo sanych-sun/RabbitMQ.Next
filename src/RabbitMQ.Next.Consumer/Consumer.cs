@@ -21,7 +21,6 @@ namespace RabbitMQ.Next.Consumer
         private readonly Func<IAcknowledgement, IAcknowledger> acknowledgerFactory;
         private readonly UnprocessedMessageMode onUnprocessedMessage;
         private readonly UnprocessedMessageMode onPoisonMessage;
-        private readonly IMethodHandler frameHandler;
 
         private IChannel channel;
         private IAcknowledger acknowledger;
@@ -43,8 +42,6 @@ namespace RabbitMQ.Next.Consumer
             this.acknowledgerFactory = acknowledgerFactory;
             this.onUnprocessedMessage = onUnprocessedMessage;
             this.onPoisonMessage = onPoisonMessage;
-
-            this.frameHandler = new MethodHandler<DeliverMethod>(this.HandleMessageAsync);
         }
 
 
@@ -53,7 +50,11 @@ namespace RabbitMQ.Next.Consumer
 
         public async Task ConsumeAsync(CancellationToken cancellation)
         {
-            this.channel = await this.connection.OpenChannelAsync(new [] { this.frameHandler }, cancellation);
+            this.channel = await this.connection.OpenChannelAsync(new []
+            {
+                new DeliverFrameHandler(this.serializer, this.connection.MethodRegistry, this.HandleMessageAsync)
+            }, cancellation);
+
             if (this.acknowledgerFactory != null)
             {
                 var ack = new Acknowledgement(this.channel);
