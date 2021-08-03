@@ -1,77 +1,85 @@
 using System;
 using System.Buffers;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using NSubstitute;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
+using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Abstractions.Methods;
 using RabbitMQ.Next.Publisher;
-using RabbitMQ.Next.Transport.Methods.Basic;
-using RabbitMQ.Next.Transport.Methods.Channel;
+using RabbitMQ.Next.Transport;
+using RabbitMQ.Next.Transport.Methods;
+using RabbitMQ.Next.Transport.Methods.Registry;
 using Xunit;
+using BitConverter = RabbitMQ.Next.Transport.BitConverter;
 
 namespace RabbitMQ.Next.Tests.Publisher
 {
     public class ConfirmMethodHandlerTests
     {
+        private readonly IMethodRegistry registry = new MethodRegistryBuilder().AddBasicMethods().Build();
+
         [Fact]
         public async Task HandlesAckMethod()
         {
-            IFrameHandler handler = new ConfirmFrameHandler();
-            var handled = await handler.HandleAsync(new AckMethod(1, false), null, ReadOnlySequence<byte>.Empty);
+            IFrameHandler handler = new ConfirmFrameHandler(this.registry);
+            var handled = await AckMessageAsync(handler, 1, true);
             Assert.True(handled);
         }
 
         [Fact]
         public async Task HandlesNackMethod()
         {
-            IFrameHandler handler = new ConfirmFrameHandler();
-            var handled = await handler.HandleAsync(new NackMethod(1, false, false), null, ReadOnlySequence<byte>.Empty);
+            IFrameHandler handler = new ConfirmFrameHandler(this.registry);
+            var handled = await AckMessageAsync(handler, 1, false);
             Assert.True(handled);
         }
 
-        [Theory]
-        [MemberData(nameof(IgnoreMethodsTestCases))]
-        public async Task IgnoresOtherMethods(IIncomingMethod method)
+        [Fact]
+        public async Task IgnoresOtherMethods()
         {
-            IFrameHandler handler = new ConfirmFrameHandler();
-            var handled = await handler.HandleAsync(method, null, ReadOnlySequence<byte>.Empty);
+            IFrameHandler handler = new ConfirmFrameHandler(this.registry);
+            var handled = await handler.HandleMethodFrameAsync(MethodId.BasicDeliver, ReadOnlyMemory<byte>.Empty);
             Assert.False(handled);
         }
 
         [Fact]
-        public async Task AskSingleMessage()
+        public async Task IgnoresContent()
         {
-            var handler = new ConfirmFrameHandler();
+            IFrameHandler handler = new ConfirmFrameHandler(this.registry);
+            var handled = await handler.HandleContentAsync(Substitute.For<IMessageProperties>(), ReadOnlySequence<byte>.Empty);
+            Assert.False(handled);
+        }
+
+        [Fact]
+        public async Task AckSingleMessage()
+        {
+            var handler = new ConfirmFrameHandler(this.registry);
 
             var wait = handler.WaitForConfirmAsync(1);
-            await Task.Delay(10);
             Assert.False(wait.IsCompleted);
 
             await AckMessageAsync(handler, 1, true);
 
-            await Task.Delay(10);
             Assert.True(await wait);
         }
 
         [Fact]
-        public async Task AskMultipleMessages()
+        public async Task AckMultipleMessages()
         {
-            var handler = new ConfirmFrameHandler();
+            var handler = new ConfirmFrameHandler(this.registry);
 
             var wait1 = handler.WaitForConfirmAsync(1);
             var wait2 = handler.WaitForConfirmAsync(2);
             var wait3 = handler.WaitForConfirmAsync(3);
-            await Task.Delay(10);
             Assert.False(wait1.IsCompleted);
             Assert.False(wait2.IsCompleted);
             Assert.False(wait3.IsCompleted);
 
             await AckMessageAsync(handler, 2, true, true);
 
-            await Task.Delay(10);
             Assert.True(wait1.IsCompleted);
             Assert.True(wait2.IsCompleted);
             Assert.False(wait3.IsCompleted);
@@ -83,7 +91,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         [Fact]
         public async Task NackSingleMessage()
         {
-            var handler = new ConfirmFrameHandler();
+            var handler = new ConfirmFrameHandler(this.registry);
 
             var wait = handler.WaitForConfirmAsync(1);
             await Task.Yield();
@@ -91,26 +99,24 @@ namespace RabbitMQ.Next.Tests.Publisher
 
             await AckMessageAsync(handler, 1, false);
 
-            await Task.Delay(10);
             Assert.False(await wait);
         }
 
         [Fact]
         public async Task NackMultipleMessages()
         {
-            var handler = new ConfirmFrameHandler();
+            var handler = new ConfirmFrameHandler(this.registry);
 
             var wait1 = handler.WaitForConfirmAsync(1);
             var wait2 = handler.WaitForConfirmAsync(2);
             var wait3 = handler.WaitForConfirmAsync(3);
-            await Task.Delay(10);
+
             Assert.False(wait1.IsCompleted);
             Assert.False(wait2.IsCompleted);
             Assert.False(wait3.IsCompleted);
 
             await AckMessageAsync(handler, 2, false, true);
 
-            await Task.Delay(50);
             Assert.True(wait1.IsCompleted);
             Assert.True(wait2.IsCompleted);
             Assert.False(wait3.IsCompleted);
@@ -124,7 +130,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         [InlineData(1000, 10)]
         public async Task AckConcurrent(int messages, int threads)
         {
-            var handler = new ConfirmFrameHandler();
+            var handler = new ConfirmFrameHandler(this.registry);
 
             var waitTasks = Enumerable.Range(1, messages)
                 .Select(i => handler.WaitForConfirmAsync((ulong)i).AsTask())
@@ -150,21 +156,21 @@ namespace RabbitMQ.Next.Tests.Publisher
 
         private static ValueTask<bool> AckMessageAsync(IFrameHandler handler, ulong deliveryTag, bool ack, bool multiple = false)
         {
+            var memory = new byte[9];
+
             if (ack)
             {
-                return handler.HandleAsync(new AckMethod(deliveryTag, multiple), null, ReadOnlySequence<byte>.Empty);
+                ((Memory<byte>) memory)
+                    .Write(deliveryTag)
+                    .Write(multiple);
+                return handler.HandleMethodFrameAsync(MethodId.BasicAck, memory);
             }
 
-            return handler.HandleAsync(new NackMethod(deliveryTag, multiple, false), null, ReadOnlySequence<byte>.Empty);
-        }
+            ((Memory<byte>) memory)
+                .Write(deliveryTag)
+                .Write(BitConverter.ComposeFlags(multiple, false));
 
-        public static IEnumerable<object[]> IgnoreMethodsTestCases()
-        {
-            yield return new Object[] {new GetOkMethod("a", null, 1, false, 10)};
-
-            yield return new Object[] {new GetEmptyMethod()};
-
-            yield return new Object[] {new CloseMethod(200, null, MethodId.Unknown)};
+            return handler.HandleMethodFrameAsync(MethodId.BasicNack, memory);
         }
     }
 }

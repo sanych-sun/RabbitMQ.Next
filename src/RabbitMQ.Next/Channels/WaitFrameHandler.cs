@@ -48,7 +48,7 @@ namespace RabbitMQ.Next.Channels
             });
         }
 
-        public async Task<IIncomingMethod> WaitAsync<TMethod>(CancellationToken cancellation = default)
+        public Task<IIncomingMethod> WaitAsync<TMethod>(CancellationToken cancellation = default)
             where TMethod : struct, IIncomingMethod
         {
             if (this.channel.Completion.IsCompleted)
@@ -70,9 +70,9 @@ namespace RabbitMQ.Next.Channels
                 cancellationTokenRegistration = cancellation.Register(this.cancellationHandler);
             }
 
-            var result = await this.waitingTask.Task;
-            await cancellationTokenRegistration.DisposeAsync();
-            return result;
+            this.waitingTask.Task.ContinueWith(x => cancellationTokenRegistration.Dispose());
+            return this.waitingTask.Task;
+
         }
 
         public ValueTask<bool> HandleMethodFrameAsync(MethodId methodId, ReadOnlyMemory<byte> payload)
