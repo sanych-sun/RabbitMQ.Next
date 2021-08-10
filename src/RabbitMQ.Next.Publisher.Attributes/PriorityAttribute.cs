@@ -14,8 +14,6 @@ namespace RabbitMQ.Next.Publisher.Attributes
         public byte Priority { get; }
 
         public override void Apply(IMessageBuilder message)
-        {
-            message.Priority ??= this.Priority;
-        }
+            => message.Priority(this.Priority);
     }
 }

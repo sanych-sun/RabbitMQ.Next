@@ -1,3 +1,4 @@
+using System;
 using NSubstitute;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Publisher.Abstractions;
@@ -11,7 +12,6 @@ namespace RabbitMQ.Next.Tests.Publisher.Attributes
         [Theory]
         [InlineData(DeliveryMode.Persistent)]
         [InlineData(DeliveryMode.NonPersistent)]
-        [InlineData(DeliveryMode.Unset)]
         public void DeliveryModeAttribute(DeliveryMode deliveryMode)
         {
             var attr = new DeliveryModeAttribute(deliveryMode);
@@ -19,30 +19,23 @@ namespace RabbitMQ.Next.Tests.Publisher.Attributes
         }
 
         [Theory]
-        [InlineData(DeliveryMode.Persistent, DeliveryMode.Unset)]
-        [InlineData(DeliveryMode.NonPersistent, DeliveryMode.Unset)]
-        public void CanTransform(DeliveryMode value, DeliveryMode builderValue)
+        [InlineData(DeliveryMode.Unset)]
+        public void ThrowsOnInvalidValue(DeliveryMode value)
         {
-            var attr = new DeliveryModeAttribute(value);
-            var builder = Substitute.For<IMessageBuilder>();
-            builder.DeliveryMode.Returns(builderValue);
-
-            attr.Apply(builder);
-
-            builder.Received().DeliveryMode = value;
+            Assert.Throws<ArgumentOutOfRangeException>(() => new DeliveryModeAttribute(value));
         }
 
         [Theory]
-        [InlineData(DeliveryMode.NonPersistent, DeliveryMode.Persistent)]
-        public void DoesNotOverrideExistingValue(DeliveryMode value, DeliveryMode builderValue)
+        [InlineData(DeliveryMode.Persistent)]
+        public void CanTransform(DeliveryMode value)
         {
             var attr = new DeliveryModeAttribute(value);
             var builder = Substitute.For<IMessageBuilder>();
-            builder.DeliveryMode.Returns(builderValue);
 
             attr.Apply(builder);
 
-            builder.DidNotReceive().DeliveryMode = Arg.Any<DeliveryMode>();
+            builder.Received().DeliveryMode(value);
         }
+
     }
 }

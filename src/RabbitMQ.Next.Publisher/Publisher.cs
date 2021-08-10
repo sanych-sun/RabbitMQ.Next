@@ -8,7 +8,6 @@ using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Methods;
 using RabbitMQ.Next.Publisher.Abstractions;
-using RabbitMQ.Next.Publisher.Abstractions.Transformers;
 using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.Transport.Methods.Basic;
 using RabbitMQ.Next.Transport.Methods.Confirm;
@@ -24,7 +23,7 @@ namespace RabbitMQ.Next.Publisher
         private readonly IConnection connection;
         private readonly string exchange;
         private readonly ISerializer serializer;
-        private readonly IReadOnlyList<IMessageTransformer> transformers;
+        private readonly IReadOnlyList<IMessageInitializer> transformers;
         private readonly IMethodFormatter<PublishMethod> publishFormatter;
         private readonly bool publisherConfirms;
         private ConfirmFrameHandler confirms;
@@ -38,7 +37,7 @@ namespace RabbitMQ.Next.Publisher
             string exchange,
             bool publisherConfirms,
             ISerializer serializer,
-            IReadOnlyList<IMessageTransformer> transformers,
+            IReadOnlyList<IMessageInitializer> transformers,
             IReadOnlyList<IReturnedMessageHandler> returnedMessageHandlers)
         {
             this.messagePropsPool = new DefaultObjectPool<MessageBuilder>(
@@ -85,6 +84,7 @@ namespace RabbitMQ.Next.Publisher
         public ValueTask PublishAsync<TContent>(TContent content, Action<IMessageBuilder> propertiesBuilder = null, PublishFlags flags = PublishFlags.None, CancellationToken cancellationToken = default)
         {
             var properties = this.messagePropsPool.Get();
+            this.ApplyInitializers(content, properties);
             propertiesBuilder?.Invoke(properties);
             return this.InternalPublishAsync(content, properties, flags);
         }
@@ -92,6 +92,7 @@ namespace RabbitMQ.Next.Publisher
         public ValueTask PublishAsync<TState, TContent>(TState state, TContent content, Action<TState, IMessageBuilder> propertiesBuilder, PublishFlags flags = PublishFlags.None, CancellationToken cancellationToken = default)
         {
             var properties = this.messagePropsPool.Get();
+            this.ApplyInitializers(content, properties);
             propertiesBuilder?.Invoke(state, properties);
             return this.InternalPublishAsync(content, properties, flags);
         }
@@ -100,7 +101,6 @@ namespace RabbitMQ.Next.Publisher
         {
             this.CheckDisposed();
             this.EnsureChannel();
-            this.ApplyTransformers(content, builder);
 
             await this.channel.SendAsync((properties: builder, flags, publisher: this, content), (state, frameBuilder) =>
             {
@@ -149,7 +149,7 @@ namespace RabbitMQ.Next.Publisher
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void ApplyTransformers<TContent>(TContent content, IMessageBuilder properties)
+        private void ApplyInitializers<TContent>(TContent content, IMessageBuilder properties)
         {
             if (this.transformers == null)
             {
@@ -164,7 +164,6 @@ namespace RabbitMQ.Next.Publisher
 
         public async ValueTask<IChannel> OpenChannelAsync(CancellationToken cancellationToken = default)
         {
-            // TODO: implement functionality to wait for Open state unless connection is closed
             if (this.connection.State != ConnectionState.Open)
             {
                 throw new InvalidOperationException("Connection should be in Open state to use the API");
@@ -174,7 +173,7 @@ namespace RabbitMQ.Next.Publisher
 
             try
             {
-                if (this.channel == null || this.channel.Completion.IsCompleted)
+                if (this.channel == null)
                 {
                     this.lastDeliveryTag = 0;
                     var methodHandlers = new List<IFrameHandler>

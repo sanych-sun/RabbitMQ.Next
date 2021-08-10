@@ -1,3 +1,4 @@
+using System;
 using NSubstitute;
 using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Attributes;
@@ -16,30 +17,24 @@ namespace RabbitMQ.Next.Tests.Publisher.Attributes
         }
 
         [Theory]
-        [InlineData("myType", null)]
-        [InlineData("myType", "")]
-        public void CanTransform(string value, string builderValue)
+        [InlineData("")]
+        [InlineData(" ")]
+        [InlineData(null)]
+        public void ThrowsOnInvalidValue(string value)
         {
-            var attr = new TypeAttribute(value);
-            var builder = Substitute.For<IMessageBuilder>();
-            builder.Type.Returns(builderValue);
-
-            attr.Apply(builder);
-
-            builder.Received().Type = value;
+            Assert.Throws<ArgumentNullException>(() => new TypeAttribute(value));
         }
 
         [Theory]
-        [InlineData("myType", "value")]
-        public void DoesNotOverrideExistingValue(string value, string builderValue)
+        [InlineData("myType")]
+        public void CanTransform(string value)
         {
             var attr = new TypeAttribute(value);
             var builder = Substitute.For<IMessageBuilder>();
-            builder.Type.Returns(builderValue);
 
             attr.Apply(builder);
 
-            builder.DidNotReceive().Type = Arg.Any<string>();
+            builder.Received().Type(value);
         }
     }
 }

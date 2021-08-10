@@ -8,17 +8,17 @@ namespace RabbitMQ.Next.Publisher.Attributes
     {
         public TypeAttribute(string type)
         {
+            if (string.IsNullOrWhiteSpace(type))
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+
             this.Type = type;
         }
 
         public string Type { get; }
 
         public override void Apply(IMessageBuilder message)
-        {
-            if (string.IsNullOrEmpty(message.Type))
-            {
-                message.Type = this.Type;
-            }
-        }
+            => message.Type(this.Type);
     }
 }

@@ -8,17 +8,17 @@ namespace RabbitMQ.Next.Publisher.Attributes
     {
         public ContentEncodingAttribute(string contentEncoding)
         {
+            if (string.IsNullOrWhiteSpace(contentEncoding))
+            {
+                throw new ArgumentNullException(nameof(contentEncoding));
+            }
+
             this.ContentEncoding = contentEncoding;
         }
 
         public string ContentEncoding { get; }
 
         public override void Apply(IMessageBuilder message)
-        {
-            if (string.IsNullOrEmpty(message.ContentEncoding))
-            {
-                message.ContentEncoding = this.ContentEncoding;
-            }
-        }
+            => message.ContentEncoding(this.ContentEncoding);
     }
 }

@@ -1,3 +1,4 @@
+using System;
 using NSubstitute;
 using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Attributes;
@@ -16,30 +17,24 @@ namespace RabbitMQ.Next.Tests.Publisher.Attributes
         }
 
         [Theory]
-        [InlineData("routeKey", null)]
-        [InlineData("routeKey", "")]
-        public void CanTransform(string value, string builderValue)
+        [InlineData("")]
+        [InlineData(" ")]
+        [InlineData(null)]
+        public void ThrowsOnInvalidValue(string value)
         {
-            var attr = new RoutingKeyAttribute(value);
-            var builder = Substitute.For<IMessageBuilder>();
-            builder.RoutingKey.Returns(builderValue);
-
-            attr.Apply(builder);
-
-            builder.Received().RoutingKey = value;
+            Assert.Throws<ArgumentNullException>(() => new RoutingKeyAttribute(value));
         }
 
         [Theory]
-        [InlineData("routeKey", "value")]
-        public void DoesNotOverrideExistingValue(string value, string builderValue)
+        [InlineData("routeKey")]
+        public void CanTransform(string value)
         {
             var attr = new RoutingKeyAttribute(value);
             var builder = Substitute.For<IMessageBuilder>();
-            builder.RoutingKey.Returns(builderValue);
 
             attr.Apply(builder);
 
-            builder.DidNotReceive().RoutingKey = Arg.Any<string>();
+            builder.Received().RoutingKey(value);
         }
     }
 }

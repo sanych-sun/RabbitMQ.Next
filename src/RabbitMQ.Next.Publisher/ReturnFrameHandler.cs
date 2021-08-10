@@ -64,8 +64,6 @@ namespace RabbitMQ.Next.Publisher
                         break;
                     }
                 }
-
-                // todo: throw if not handled?
             }
             finally
             {

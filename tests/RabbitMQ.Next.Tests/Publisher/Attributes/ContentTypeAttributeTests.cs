@@ -1,3 +1,4 @@
+using System;
 using NSubstitute;
 using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Attributes;
@@ -16,30 +17,24 @@ namespace RabbitMQ.Next.Tests.Publisher.Attributes
         }
 
         [Theory]
-        [InlineData("application/json", null)]
-        [InlineData("application/json", "")]
-        public void CanTransform(string value, string builderValue)
+        [InlineData("")]
+        [InlineData(" ")]
+        [InlineData(null)]
+        public void ThrowsOnInvalidValue(string value)
         {
-            var attr = new ContentTypeAttribute(value);
-            var builder = Substitute.For<IMessageBuilder>();
-            builder.ContentType.Returns(builderValue);
-
-            attr.Apply(builder);
-
-            builder.Received().ContentType = value;
+            Assert.Throws<ArgumentNullException>(() => new ContentTypeAttribute(value));
         }
 
         [Theory]
-        [InlineData("application/json", "value")]
-        public void DoesNotOverrideExistingValue(string value, string builderValue)
+        [InlineData("application/json")]
+        public void CanTransform(string value)
         {
             var attr = new ContentTypeAttribute(value);
             var builder = Substitute.For<IMessageBuilder>();
-            builder.ContentType.Returns(builderValue);
 
             attr.Apply(builder);
 
-            builder.DidNotReceive().ContentType = Arg.Any<string>();
+            builder.Received().ContentType(value);
         }
     }
 }

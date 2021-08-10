@@ -8,17 +8,17 @@ namespace RabbitMQ.Next.Publisher.Attributes
     {
         public ReplyToAttribute(string replyTo)
         {
+            if (string.IsNullOrWhiteSpace(replyTo))
+            {
+                throw new ArgumentNullException(nameof(replyTo));
+            }
+
             this.ReplyTo = replyTo;
         }
 
         public string ReplyTo { get; }
 
         public override void Apply(IMessageBuilder message)
-        {
-            if (string.IsNullOrEmpty(message.ReplyTo))
-            {
-                message.ReplyTo = this.ReplyTo;
-            }
-        }
+            => message.ReplyTo(this.ReplyTo);
     }
 }

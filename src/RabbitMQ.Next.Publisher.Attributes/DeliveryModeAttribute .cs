@@ -9,17 +9,17 @@ namespace RabbitMQ.Next.Publisher.Attributes
     {
         public DeliveryModeAttribute(DeliveryMode deliveryMode)
         {
+            if (deliveryMode == DeliveryMode.Unset)
+            {
+                throw new ArgumentOutOfRangeException(nameof(deliveryMode));
+            }
+
             this.DeliveryMode = deliveryMode;
         }
 
         public DeliveryMode DeliveryMode { get; }
 
         public override void Apply(IMessageBuilder message)
-        {
-            if (message.DeliveryMode == DeliveryMode.Unset)
-            {
-                message.DeliveryMode = this.DeliveryMode;
-            }
-        }
+            => message.DeliveryMode(this.DeliveryMode);
     }
 }

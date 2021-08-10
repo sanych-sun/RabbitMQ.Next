@@ -67,6 +67,18 @@ namespace RabbitMQ.Next.Tests.Publisher
         }
 
         [Fact]
+        public async Task AckSingleMessageBeforeWait()
+        {
+            var handler = new ConfirmFrameHandler(this.registry);
+
+            await AckMessageAsync(handler, 1, true);
+
+            var wait = handler.WaitForConfirmAsync(1);
+            Assert.True(wait.IsCompleted);
+            Assert.True(await wait);
+        }
+
+        [Fact]
         public async Task AckMultipleMessages()
         {
             var handler = new ConfirmFrameHandler(this.registry);
@@ -89,16 +101,45 @@ namespace RabbitMQ.Next.Tests.Publisher
         }
 
         [Fact]
+        public async Task AckMultipleMessagesBeforeWait()
+        {
+            var handler = new ConfirmFrameHandler(this.registry);
+
+            await AckMessageAsync(handler, 2, true, true);
+
+            var wait1 = handler.WaitForConfirmAsync(1);
+            var wait2 = handler.WaitForConfirmAsync(2);
+            var wait3 = handler.WaitForConfirmAsync(3);
+            Assert.True(wait1.IsCompleted);
+            Assert.True(wait2.IsCompleted);
+            Assert.False(wait3.IsCompleted);
+
+            Assert.True(await wait1);
+            Assert.True(await wait2);
+        }
+
+        [Fact]
         public async Task NackSingleMessage()
         {
             var handler = new ConfirmFrameHandler(this.registry);
 
             var wait = handler.WaitForConfirmAsync(1);
-            await Task.Yield();
             Assert.False(wait.IsCompleted);
 
             await AckMessageAsync(handler, 1, false);
 
+            Assert.False(await wait);
+        }
+
+        [Fact]
+        public async Task NackSingleMessageBeforeWait()
+        {
+            var handler = new ConfirmFrameHandler(this.registry);
+
+            await AckMessageAsync(handler, 1, false);
+
+            var wait = handler.WaitForConfirmAsync(1);
+            Assert.True(wait.IsCompleted);
             Assert.False(await wait);
         }
 
@@ -116,6 +157,25 @@ namespace RabbitMQ.Next.Tests.Publisher
             Assert.False(wait3.IsCompleted);
 
             await AckMessageAsync(handler, 2, false, true);
+
+            Assert.True(wait1.IsCompleted);
+            Assert.True(wait2.IsCompleted);
+            Assert.False(wait3.IsCompleted);
+
+            Assert.False(await wait1);
+            Assert.False(await wait2);
+        }
+
+        [Fact]
+        public async Task NackMultipleMessagesBeforeWait()
+        {
+            var handler = new ConfirmFrameHandler(this.registry);
+
+            await AckMessageAsync(handler, 2, false, true);
+
+            var wait1 = handler.WaitForConfirmAsync(1);
+            var wait2 = handler.WaitForConfirmAsync(2);
+            var wait3 = handler.WaitForConfirmAsync(3);
 
             Assert.True(wait1.IsCompleted);
             Assert.True(wait2.IsCompleted);

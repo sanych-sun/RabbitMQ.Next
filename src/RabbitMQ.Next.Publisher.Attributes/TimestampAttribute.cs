@@ -7,8 +7,6 @@ namespace RabbitMQ.Next.Publisher.Attributes
     public class TimestampAttribute : MessageAttributeBase
     {
         public override void Apply(IMessageBuilder message)
-        {
-            message.Timestamp ??= DateTimeOffset.UtcNow;
-        }
+            => message.Timestamp(DateTimeOffset.UtcNow);
     }
 }

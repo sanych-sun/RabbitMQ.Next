@@ -2,7 +2,6 @@ using System;
 using NSubstitute;
 using RabbitMQ.Next.Publisher;
 using RabbitMQ.Next.Publisher.Abstractions;
-using RabbitMQ.Next.Publisher.Abstractions.Transformers;
 using RabbitMQ.Next.Serialization.Abstractions;
 using Xunit;
 
@@ -35,8 +34,8 @@ namespace RabbitMQ.Next.Tests.Publisher
         [Fact]
         public void CanRegisterTransformers()
         {
-            var transformer1 = Substitute.For<IMessageTransformer>();
-            var transformer2 = Substitute.For<IMessageTransformer>();
+            var transformer1 = Substitute.For<IMessageInitializer>();
+            var transformer2 = Substitute.For<IMessageInitializer>();
 
             var builder = new PublisherBuilder();
             ((IPublisherBuilder) builder).UseTransformer(transformer1);

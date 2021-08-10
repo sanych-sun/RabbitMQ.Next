@@ -1,3 +1,4 @@
+using System;
 using NSubstitute;
 using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Attributes;
@@ -16,30 +17,24 @@ namespace RabbitMQ.Next.Tests.Publisher.Attributes
         }
 
         [Theory]
-        [InlineData("app", null)]
-        [InlineData("app", "")]
-        public void CanTransform(string value, string builderValue)
+        [InlineData("")]
+        [InlineData(" ")]
+        [InlineData(null)]
+        public void ThrowsOnInvalidValue(string value)
         {
-            var attr = new ApplicationIdAttribute(value);
-            var builder = Substitute.For<IMessageBuilder>();
-            builder.ApplicationId.Returns(builderValue);
-
-            attr.Apply(builder);
-
-            builder.Received().ApplicationId = value;
+            Assert.Throws<ArgumentNullException>(() => new ApplicationIdAttribute(value));
         }
 
         [Theory]
-        [InlineData("app", "value")]
-        public void DoesNotOverrideExistingValue(string value, string builderValue)
+        [InlineData("app")]
+        public void CanTransform(string value)
         {
             var attr = new ApplicationIdAttribute(value);
             var builder = Substitute.For<IMessageBuilder>();
-            builder.ApplicationId.Returns(builderValue);
 
             attr.Apply(builder);
 
-            builder.DidNotReceive().ApplicationId = Arg.Any<string>();
+            builder.Received().ApplicationId(value);
         }
     }
 }

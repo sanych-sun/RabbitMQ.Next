@@ -1,18 +1,17 @@
 using System;
 using System.Collections.Generic;
 using RabbitMQ.Next.Publisher.Abstractions;
-using RabbitMQ.Next.Publisher.Abstractions.Transformers;
 using RabbitMQ.Next.Serialization.Abstractions;
 
 namespace RabbitMQ.Next.Publisher
 {
     internal sealed class PublisherBuilder : IPublisherBuilder
     {
-        private List<IMessageTransformer> transformers;
+        private List<IMessageInitializer> transformers;
         private List<ITypeFormatter> formatters;
         private List<IReturnedMessageHandler> returnedMessageHandlers;
 
-        public IReadOnlyList<IMessageTransformer> Transformers => this.transformers;
+        public IReadOnlyList<IMessageInitializer> Transformers => this.transformers;
 
         public IReadOnlyList<ITypeFormatter> Formatters => this.formatters;
 
@@ -32,15 +31,15 @@ namespace RabbitMQ.Next.Publisher
             return this;
         }
 
-        IPublisherBuilder IPublisherBuilder.UseTransformer(IMessageTransformer transformer)
+        IPublisherBuilder IPublisherBuilder.UseTransformer(IMessageInitializer initializer)
         {
-            if (transformer == null)
+            if (initializer == null)
             {
-                throw new ArgumentNullException(nameof(transformer));
+                throw new ArgumentNullException(nameof(initializer));
             }
 
-            this.transformers ??= new List<IMessageTransformer>();
-            this.transformers.Add(transformer);
+            this.transformers ??= new List<IMessageInitializer>();
+            this.transformers.Add(initializer);
             return this;
         }
 

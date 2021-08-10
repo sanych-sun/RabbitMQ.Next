@@ -1,4 +1,3 @@
-using RabbitMQ.Next.Publisher.Abstractions.Transformers;
 using RabbitMQ.Next.Serialization.Abstractions;
 
 namespace RabbitMQ.Next.Publisher.Abstractions
@@ -7,7 +6,7 @@ namespace RabbitMQ.Next.Publisher.Abstractions
     {
         IPublisherBuilder UseFormatter(ITypeFormatter typeFormatter);
 
-        IPublisherBuilder UseTransformer(IMessageTransformer transformer);
+        IPublisherBuilder UseTransformer(IMessageInitializer initializer);
 
         IPublisherBuilder AddReturnedMessageHandler(IReturnedMessageHandler returnedMessageHandler);
 

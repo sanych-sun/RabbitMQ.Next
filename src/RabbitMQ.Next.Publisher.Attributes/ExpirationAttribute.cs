@@ -11,6 +11,11 @@ namespace RabbitMQ.Next.Publisher.Attributes
 
         public ExpirationAttribute(int seconds)
         {
+            if (seconds <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(seconds));
+            }
+
             this.Expiration = TimeSpan.FromSeconds(seconds);
             this.expirationText = this.Expiration.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
         }
@@ -18,11 +23,6 @@ namespace RabbitMQ.Next.Publisher.Attributes
         public TimeSpan Expiration { get; }
 
         public override void Apply(IMessageBuilder message)
-        {
-            if (string.IsNullOrEmpty(message.Expiration))
-            {
-                message.Expiration = this.expirationText;
-            }
-        }
+            => message.Expiration(this.expirationText);
     }
 }

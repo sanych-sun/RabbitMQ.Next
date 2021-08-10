@@ -12,9 +12,9 @@ namespace RabbitMQ.Next.Tests.Publisher.Attributes
         {
             var publisherBuilder = Substitute.For<IPublisherBuilder>();
 
-            publisherBuilder.UseAttributesTransformer();
+            publisherBuilder.UseAttributesInitializer();
 
-            publisherBuilder.Received().UseTransformer(Arg.Any<AttributeTransformer>());
+            publisherBuilder.Received().UseTransformer(Arg.Any<AttributeInitializer>());
         }
     }
 }

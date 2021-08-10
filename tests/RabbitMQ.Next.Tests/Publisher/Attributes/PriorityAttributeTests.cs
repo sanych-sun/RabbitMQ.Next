@@ -16,30 +16,15 @@ namespace RabbitMQ.Next.Tests.Publisher.Attributes
         }
 
         [Theory]
-        [InlineData(42, null)]
-        public void CanTransform(byte value, byte? builderValue)
+        [InlineData(42)]
+        public void CanTransform(byte value)
         {
             var attr = new PriorityAttribute(value);
             var builder = Substitute.For<IMessageBuilder>();
-            builder.Priority.Returns(builderValue);
 
             attr.Apply(builder);
 
-            builder.Received().Priority = value;
-        }
-
-        [Theory]
-        [InlineData(42, (byte)0)]
-        [InlineData(42, (byte)5)]
-        public void DoesNotOverrideExistingValue(byte value, byte? builderValue)
-        {
-            var attr = new PriorityAttribute(value);
-            var builder = Substitute.For<IMessageBuilder>();
-            builder.Priority.Returns(builderValue);
-
-            attr.Apply(builder);
-
-            builder.DidNotReceive().Priority = Arg.Any<byte>();
+            builder.Received().Priority(value);
         }
     }
 }

@@ -17,30 +17,23 @@ namespace RabbitMQ.Next.Tests.Publisher.Attributes
         }
 
         [Theory]
-        [InlineData(42, null)]
-        [InlineData(42, "")]
-        public void CanTransform(int value, string builderValue)
+        [InlineData(0)]
+        [InlineData(-5)]
+        public void ThrowsOnInvalidValue(int value)
         {
-            var attr = new ExpirationAttribute(value);
-            var builder = Substitute.For<IMessageBuilder>();
-            builder.Expiration.Returns(builderValue);
-
-            attr.Apply(builder);
-
-            builder.Received().Expiration = TimeSpan.FromSeconds(value).TotalMilliseconds.ToString();
+            Assert.Throws<ArgumentOutOfRangeException>(() => new ExpirationAttribute(value));
         }
 
         [Theory]
-        [InlineData(42, "111")]
-        public void DoesNotOverrideExistingValue(int value, string builderValue)
+        [InlineData(42)]
+        public void CanTransform(int value)
         {
             var attr = new ExpirationAttribute(value);
             var builder = Substitute.For<IMessageBuilder>();
-            builder.Expiration.Returns(builderValue);
 
             attr.Apply(builder);
 
-            builder.DidNotReceive().Expiration = Arg.Any<string>();
+            builder.Received().Expiration(TimeSpan.FromSeconds(value).TotalMilliseconds.ToString());
         }
     }
 }

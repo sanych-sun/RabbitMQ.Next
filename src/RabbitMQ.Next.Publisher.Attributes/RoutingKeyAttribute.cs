@@ -8,17 +8,17 @@ namespace RabbitMQ.Next.Publisher.Attributes
     {
         public RoutingKeyAttribute(string routingKey)
         {
+            if (string.IsNullOrWhiteSpace(routingKey))
+            {
+                throw new ArgumentNullException(nameof(routingKey));
+            }
+
             this.RoutingKey = routingKey;
         }
         
         public string RoutingKey { get; }
 
         public override void Apply(IMessageBuilder message)
-        {
-            if (string.IsNullOrEmpty(message.RoutingKey))
-            {
-                message.RoutingKey = this.RoutingKey;
-            }
-        }
+            => message.RoutingKey(this.RoutingKey);
     }
 }

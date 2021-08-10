@@ -87,10 +87,8 @@ namespace RabbitMQ.Next.Benchmarks
 
                     for (int i = num; i < this.messages.Count; i = i + 10)
                     {
-                        await this.publisher.PublishAsync(this.corrIds[i], this.messages[i], (state, properties) =>
-                        {
-                            properties.CorrelationId = state;
-                        });
+                        await this.publisher.PublishAsync(this.corrIds[i], this.messages[i],
+                            (state, message) => message.RoutingKey(state));
 
                     }
                 })
@@ -102,10 +100,8 @@ namespace RabbitMQ.Next.Benchmarks
         {
             for (int i = 0; i < this.messages.Count; i++)
             {
-                await this.publisher.PublishAsync(this.corrIds[i], this.messages[i], (state, properties) =>
-                {
-                    properties.CorrelationId = state;
-                });
+                await this.publisher.PublishAsync(this.corrIds[i], this.messages[i],
+                    (state, message) => message.RoutingKey(state));
             }
 
             // var processed = 0;

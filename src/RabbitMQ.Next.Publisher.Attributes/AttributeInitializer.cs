@@ -3,11 +3,10 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
 using RabbitMQ.Next.Publisher.Abstractions;
-using RabbitMQ.Next.Publisher.Abstractions.Transformers;
 
 namespace RabbitMQ.Next.Publisher.Attributes
 {
-    internal sealed class AttributeTransformer : IMessageTransformer
+    internal sealed class AttributeInitializer : IMessageInitializer
     {
         private readonly ConcurrentDictionary<Assembly, IReadOnlyList<MessageAttributeBase>> assemblyAttributesMap = new();
         private readonly ConcurrentDictionary<Type, IReadOnlyList<MessageAttributeBase>> typeAttributesMap = new();

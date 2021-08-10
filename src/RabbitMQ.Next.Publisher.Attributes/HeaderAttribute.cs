@@ -8,6 +8,11 @@ namespace RabbitMQ.Next.Publisher.Attributes
     {
         public HeaderAttribute(string name, string value)
         {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
             this.Name = name;
             this.Value = value;
         }
@@ -17,11 +22,6 @@ namespace RabbitMQ.Next.Publisher.Attributes
         public string Value { get; }
 
         public override void Apply(IMessageBuilder message)
-        {
-            if (message.Headers == null || !message.Headers.TryGetValue(this.Name, out var _))
-            {
-                message.Headers[this.Name] = this.Value;
-            }
-        }
+            => message.SetHeader(this.Name, this.Value);
     }
 }

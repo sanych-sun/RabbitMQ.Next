@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using NSubstitute;
 using RabbitMQ.Next.Publisher.Abstractions;
@@ -10,39 +11,32 @@ namespace RabbitMQ.Next.Tests.Publisher.Attributes
     {
         [Theory]
         [InlineData("header", "value")]
-        public void HeaderAttribute(string header, string value)
+        public void HeaderAttribute(string key, string value)
         {
-            var attr = new HeaderAttribute(header, value);
-            Assert.Equal(header, attr.Name);
+            var attr = new HeaderAttribute(key, value);
+            Assert.Equal(key, attr.Name);
             Assert.Equal(value, attr.Value);
         }
 
         [Theory]
-        [InlineData("header", "value")]
-        public void CanTransform(string header, string value)
+        [InlineData("", "value")]
+        [InlineData(" ", "value")]
+        [InlineData(null, "value")]
+        public void ThrowsOnInvalidValue(string key, string value)
         {
-            var attr = new HeaderAttribute(header, value);
-            var builder = Substitute.For<IMessageBuilder>();
-            var headers = new Dictionary<string, object>();
-            builder.Headers.Returns(headers);
-
-            attr.Apply(builder);
-
-            Assert.Equal(value, headers[header]);
+            Assert.Throws<ArgumentNullException>(() => new HeaderAttribute(key, value));
         }
 
         [Theory]
-        [InlineData("header", "value", "existing value")]
-        public void DoesNotOverrideExistingValue(string header, string value, string builderValue)
+        [InlineData("header", "value")]
+        public void CanTransform(string key, string value)
         {
-            var attr = new HeaderAttribute(header, value);
+            var attr = new HeaderAttribute(key, value);
             var builder = Substitute.For<IMessageBuilder>();
-            var headers = new Dictionary<string, object> {[header] = builderValue};
-            builder.Headers.Returns(headers);
 
             attr.Apply(builder);
 
-            Assert.Equal(builderValue, headers[header]);
+            builder.Received().SetHeader(key, value);
         }
     }
 }

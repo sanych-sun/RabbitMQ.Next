@@ -8,17 +8,17 @@ namespace RabbitMQ.Next.Publisher.Attributes
     {
         public UserIdAttribute(string userId)
         {
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                throw new ArgumentNullException(nameof(userId));
+            }
+
             this.UserId = userId;
         }
 
         public string UserId { get; }
 
         public override void Apply(IMessageBuilder message)
-        {
-            if (string.IsNullOrEmpty(message.UserId))
-            {
-                message.UserId = this.UserId;
-            }
-        }
+            => message.UserId(this.UserId);
     }
 }
