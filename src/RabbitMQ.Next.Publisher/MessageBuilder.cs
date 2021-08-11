@@ -30,7 +30,7 @@ namespace RabbitMQ.Next.Publisher
         public string RoutingKey { get; private set; }
         public string ContentType { get; private set; }
         public string ContentEncoding { get; private set; }
-        IReadOnlyDictionary<string, object> IMessageProperties.Headers => this.headers;
+        public IReadOnlyDictionary<string, object> Headers => this.headers;
         public DeliveryMode DeliveryMode { get; private set; }
         public byte? Priority { get; private set; }
         public string CorrelationId { get; private set; }
@@ -62,6 +62,11 @@ namespace RabbitMQ.Next.Publisher
 
         public IMessageBuilder SetHeader(string key, object value)
         {
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
             this.headers[key] = value;
             return this;
         }
@@ -72,7 +77,7 @@ namespace RabbitMQ.Next.Publisher
             return this;
         }
 
-        IMessageBuilder IMessageBuilder.Priority(byte priority)
+        IMessageBuilder IMessageBuilder.Priority(byte? priority)
         {
             this.Priority = priority;
             return this;
@@ -102,7 +107,7 @@ namespace RabbitMQ.Next.Publisher
             return this;
         }
 
-        IMessageBuilder IMessageBuilder.Timestamp(DateTimeOffset timestamp)
+        IMessageBuilder IMessageBuilder.Timestamp(DateTimeOffset? timestamp)
         {
             this.Timestamp = timestamp;
             return this;

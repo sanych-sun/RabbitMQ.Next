@@ -7,7 +7,6 @@ using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
-using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Initializers;
 using RabbitMQ.Next.Serialization.Abstractions;
