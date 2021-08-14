@@ -6,9 +6,9 @@ namespace RabbitMQ.Next.Publisher.Abstractions
 {
     internal class ReturnedMessageDelegateHandler : IReturnedMessageHandler
     {
-        private Func<ReturnedMessage, IMessageProperties, Content, ValueTask<bool>> wrapped;
+        private Func<ReturnedMessage, IMessageProperties, IContentAccessor, ValueTask<bool>> wrapped;
 
-        public ReturnedMessageDelegateHandler(Func<ReturnedMessage, IMessageProperties, Content, ValueTask<bool>> handler)
+        public ReturnedMessageDelegateHandler(Func<ReturnedMessage, IMessageProperties, IContentAccessor, ValueTask<bool>> handler)
         {
             if (handler == null)
             {
@@ -23,7 +23,7 @@ namespace RabbitMQ.Next.Publisher.Abstractions
             this.wrapped = null;
         }
 
-        public ValueTask<bool> TryHandleAsync(ReturnedMessage message, IMessageProperties properties, Content content)
+        public ValueTask<bool> TryHandleAsync(ReturnedMessage message, IMessageProperties properties, IContentAccessor content)
         {
             if (this.wrapped == null)
             {

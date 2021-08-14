@@ -169,6 +169,7 @@ namespace RabbitMQ.Next.Channels
         private async Task LoopAsync(ChannelReader<(FrameType Type, MemoryBlock Payload)> reader)
         {
             var contentChunks = new List<MemoryBlock>();
+            var messageProperty = new LazyMessageProperties();
 
             try
             {
@@ -192,17 +193,32 @@ namespace RabbitMQ.Next.Channels
                     if (this.registry.HasContent(methodId))
                     {
                         var contentHeaderFrame = await reader.ReadAsync();
-                        var contentHeader = this.ParseContentHeader(contentHeaderFrame.Payload.Memory);
+                        var payload = ((ReadOnlyMemory<byte>)contentHeaderFrame.Payload.Memory[4..]) // skip 2 obsolete shorts
+                            .Read(out ulong contentSize);
 
-                        long receivedContent = 0;
-                        while (receivedContent < contentHeader.contentSize)
+                        try
                         {
-                            var frame = await reader.ReadAsync();
-                            contentChunks.Add(frame.Payload);
-                            receivedContent += frame.Payload.Memory.Length;
-                        }
+                            messageProperty.Set(payload);
 
-                        await this.ProcessContentAsync(contentHeader.props, contentChunks);
+                            long receivedContent = 0;
+                            while (receivedContent < (long)contentSize)
+                            {
+                                var frame = await reader.ReadAsync();
+                                contentChunks.Add(frame.Payload);
+                                receivedContent += frame.Payload.Memory.Length;
+                            }
+
+                            await this.ProcessContentAsync(messageProperty, contentChunks);
+                        }
+                        finally
+                        {
+                            messageProperty.Reset();
+                            for (var i = 0; i < contentChunks.Count; i++)
+                            {
+                                contentChunks[i].Dispose();
+                            }
+                            contentChunks.Clear();
+                        }
                     }
                 }
             }
@@ -219,17 +235,6 @@ namespace RabbitMQ.Next.Channels
             {
                 throw new InvalidOperationException("Cannot perform operation on closed channel");
             }
-        }
-
-        private (long contentSize, LazyMessageProperties props) ParseContentHeader(ReadOnlyMemory<byte> payload)
-        {
-            payload[4..] // skip 2 obsolete shorts
-                .Read(out ulong contentSide);
-
-            payload = payload[(4 + sizeof(ulong))..];
-
-            var props = new LazyMessageProperties(payload);
-            return ((long)contentSide, props);
         }
 
         private async ValueTask<MethodId> ProcessMethodFrameAsync(MemoryBlock payload)
@@ -261,28 +266,15 @@ namespace RabbitMQ.Next.Channels
         {
             var content = contentFrames.ToSequence();
 
-            try
+            for (var i = 0; i < this.methodHandlers.Count; i++)
             {
-                for (var i = 0; i < this.methodHandlers.Count; i++)
+                var handled = await this.methodHandlers[i].HandleContentAsync(props, content);
+                if (handled)
                 {
-                    var handled = await this.methodHandlers[i].HandleContentAsync(props, content);
-                    if (handled)
-                    {
-                        return;
-                    }
-                }
-
-                // todo: throw if not processed?
-            }
-            finally
-            {
-                props.Dispose();
-                for (var i = 0; i < contentFrames.Count; i++)
-                {
-                    contentFrames[i].Dispose();
+                    return;
                 }
             }
-
+            // todo: throw if not processed?
         }
 
         private FrameBuilder CreateFrameBuilder() => new(this.bufferPool, this.ChannelNumber, this.frameMaxSize);

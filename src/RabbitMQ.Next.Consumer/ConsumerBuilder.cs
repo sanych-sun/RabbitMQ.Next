@@ -10,20 +10,20 @@ namespace RabbitMQ.Next.Consumer
     internal class ConsumerBuilder : IConsumerBuilder
     {
         private readonly List<QueueConsumerBuilder> queues;
-        private readonly List<Func<DeliveredMessage, IMessageProperties, Content, ValueTask<bool>>> handlers;
+        private readonly List<Func<DeliveredMessage, IMessageProperties, IContentAccessor, ValueTask<bool>>> handlers;
         private List<ITypeFormatter> formatters;
 
         public ConsumerBuilder()
         {
             this.queues = new List<QueueConsumerBuilder>();
-            this.handlers = new List<Func<DeliveredMessage, IMessageProperties, Content, ValueTask<bool>>>();
+            this.handlers = new List<Func<DeliveredMessage, IMessageProperties, IContentAccessor, ValueTask<bool>>>();
         }
 
         public IReadOnlyList<ITypeFormatter> Formatters => this.formatters;
 
         public IReadOnlyList<QueueConsumerBuilder> Queues => this.queues;
 
-        public List<Func<DeliveredMessage, IMessageProperties, Content, ValueTask<bool>>> Handlers => this.handlers;
+        public List<Func<DeliveredMessage, IMessageProperties, IContentAccessor, ValueTask<bool>>> Handlers => this.handlers;
 
         public uint PrefetchSize { get; private set; }
 
@@ -90,7 +90,7 @@ namespace RabbitMQ.Next.Consumer
             return this;
         }
 
-        IConsumerBuilder IConsumerBuilder.AddMessageHandler(Func<DeliveredMessage, IMessageProperties, Content, ValueTask<bool>> handler)
+        IConsumerBuilder IConsumerBuilder.AddMessageHandler(Func<DeliveredMessage, IMessageProperties, IContentAccessor, ValueTask<bool>> handler)
         {
             if (handler == null)
             {

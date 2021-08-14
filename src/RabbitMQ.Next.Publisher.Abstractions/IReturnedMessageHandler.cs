@@ -6,6 +6,6 @@ namespace RabbitMQ.Next.Publisher.Abstractions
 {
     public interface IReturnedMessageHandler : IDisposable
     {
-        ValueTask<bool> TryHandleAsync(ReturnedMessage message, IMessageProperties properties, Content content);
+        ValueTask<bool> TryHandleAsync(ReturnedMessage message, IMessageProperties properties, IContentAccessor content);
     }
 }

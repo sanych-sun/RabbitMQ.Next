@@ -5,7 +5,7 @@ namespace RabbitMQ.Next.Consumer.Abstractions
 {
     public class PoisonMessageException : Exception
     {
-        public PoisonMessageException(DeliveredMessage message, IMessageProperties properties, Content content, Exception inner)
+        public PoisonMessageException(DeliveredMessage message, IMessageProperties properties, IContentAccessor content, Exception inner)
             : base("Failed to handle the delivered message", inner)
         {
             this.DeliveredMessage = message;
@@ -17,6 +17,6 @@ namespace RabbitMQ.Next.Consumer.Abstractions
 
         public IMessageProperties Properties { get; }
 
-        public Content Content { get; }
+        public IContentAccessor Content { get; }
     }
 }

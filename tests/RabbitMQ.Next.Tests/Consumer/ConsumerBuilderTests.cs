@@ -100,8 +100,8 @@ namespace RabbitMQ.Next.Tests.Consumer
         public void AddMessageHandler()
         {
             var consumerBuilder = new ConsumerBuilder();
-            var handler1 = Substitute.For<Func<DeliveredMessage, IMessageProperties, Content, ValueTask<bool>>>();
-            var handler2 = Substitute.For<Func<DeliveredMessage, IMessageProperties, Content, ValueTask<bool>>>();
+            var handler1 = Substitute.For<Func<DeliveredMessage, IMessageProperties, IContentAccessor, ValueTask<bool>>>();
+            var handler2 = Substitute.For<Func<DeliveredMessage, IMessageProperties, IContentAccessor, ValueTask<bool>>>();
 
             ((IConsumerBuilder) consumerBuilder).AddMessageHandler(handler1);
             ((IConsumerBuilder) consumerBuilder).AddMessageHandler(handler2);

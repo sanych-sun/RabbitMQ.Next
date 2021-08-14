@@ -16,11 +16,12 @@ namespace RabbitMQ.Next.Consumer
     {
         private readonly IConnection connection;
         private readonly ISerializer serializer;
-        private readonly List<Func<DeliveredMessage, IMessageProperties, Content, ValueTask<bool>>> handlers;
+        private readonly List<Func<DeliveredMessage, IMessageProperties, IContentAccessor, ValueTask<bool>>> handlers;
         private readonly ConsumerInitializer initializer;
         private readonly Func<IAcknowledgement, IAcknowledger> acknowledgerFactory;
         private readonly UnprocessedMessageMode onUnprocessedMessage;
         private readonly UnprocessedMessageMode onPoisonMessage;
+        private readonly ContentAccessor contentAccessor;
 
         private IChannel channel;
         private IAcknowledger acknowledger;
@@ -29,7 +30,7 @@ namespace RabbitMQ.Next.Consumer
         public Consumer(
             IConnection connection,
             ISerializer serializer,
-            List<Func<DeliveredMessage, IMessageProperties, Content, ValueTask<bool>>> handlers,
+            List<Func<DeliveredMessage, IMessageProperties, IContentAccessor, ValueTask<bool>>> handlers,
             ConsumerInitializer initializer,
             Func<IAcknowledgement, IAcknowledger> acknowledgerFactory,
             UnprocessedMessageMode onUnprocessedMessage,
@@ -42,6 +43,8 @@ namespace RabbitMQ.Next.Consumer
             this.acknowledgerFactory = acknowledgerFactory;
             this.onUnprocessedMessage = onUnprocessedMessage;
             this.onPoisonMessage = onPoisonMessage;
+
+            this.contentAccessor = new ContentAccessor(serializer);
         }
 
 
@@ -52,7 +55,7 @@ namespace RabbitMQ.Next.Consumer
         {
             this.channel = await this.connection.OpenChannelAsync(new []
             {
-                new DeliverFrameHandler(this.serializer, this.connection.MethodRegistry, this.HandleMessageAsync)
+                new DeliverFrameHandler(this.connection.MethodRegistry, this.HandleMessageAsync)
             }, cancellation);
 
             if (this.acknowledgerFactory != null)
@@ -93,13 +96,13 @@ namespace RabbitMQ.Next.Consumer
             }
 
             var message = new DeliveredMessage(method.Exchange, method.RoutingKey, method.Redelivered, method.ConsumerTag, method.DeliveryTag);
-            var content = new Content(this.serializer, payload);
+            this.contentAccessor.Set(payload);
 
             try
             {
                 for (var i = 0; i < this.handlers.Count; i++)
                 {
-                    var handled = await this.handlers[i].Invoke(message, properties, content);
+                    var handled = await this.handlers[i].Invoke(message, properties, this.contentAccessor);
 
                     if (handled)
                     {
@@ -115,7 +118,7 @@ namespace RabbitMQ.Next.Consumer
             }
             finally
             {
-                content.Dispose();
+                this.contentAccessor.Reset();
             }
 
             await this.ProcessUnprocessedMessageAsync(message, properties, payload);
@@ -161,11 +164,13 @@ namespace RabbitMQ.Next.Consumer
             }
         }
 
-        private Content MakeDetachedContent(ReadOnlySequence<byte> payload)
+        private IContentAccessor MakeDetachedContent(ReadOnlySequence<byte> payload)
         {
             var detachedPayload = new byte[payload.Length];
             payload.CopyTo(detachedPayload);
-            return new Content(this.serializer, new ReadOnlySequence<byte>(detachedPayload));
+            var content = new ContentAccessor(this.serializer);
+            content.Set(new ReadOnlySequence<byte>(detachedPayload));
+            return content;
         }
     }
 }

@@ -14,18 +14,18 @@ namespace RabbitMQ.Next.Publisher
 {
     internal sealed class ReturnFrameHandler : IFrameHandler
     {
-        private readonly ISerializer serializer;
         private readonly IReadOnlyList<IReturnedMessageHandler> returnedMessageHandlers;
         private readonly IMethodParser<ReturnMethod> returnMethodParser;
+        private readonly ContentAccessor contentAccessor;
 
         private bool expectContent;
         private ReturnMethod currentMethod;
 
         public ReturnFrameHandler(ISerializer serializer, IReadOnlyList<IReturnedMessageHandler> returnedMessageHandlers, IMethodRegistry registry)
         {
-            this.serializer = serializer;
             this.returnedMessageHandlers = returnedMessageHandlers;
             this.returnMethodParser = registry.GetParser<ReturnMethod>();
+            this.contentAccessor = new ContentAccessor(serializer);
         }
 
         public ValueTask<bool> HandleMethodFrameAsync(MethodId methodId, ReadOnlyMemory<byte> payload)
@@ -53,13 +53,13 @@ namespace RabbitMQ.Next.Publisher
         private async ValueTask<bool> HandleReturnedMessageAsync(IMessageProperties properties, ReadOnlySequence<byte> contentBytes)
         {
             var message = new ReturnedMessage(this.currentMethod.Exchange, this.currentMethod.RoutingKey, this.currentMethod.ReplyCode, this.currentMethod.ReplyText);
-            var content = new Content(this.serializer, contentBytes);
+            this.contentAccessor.Set(contentBytes);
 
             try
             {
                 for (var i = 0; i < this.returnedMessageHandlers.Count; i++)
                 {
-                    if (await this.returnedMessageHandlers[i].TryHandleAsync(message, properties, content))
+                    if (await this.returnedMessageHandlers[i].TryHandleAsync(message, properties, this.contentAccessor))
                     {
                         break;
                     }
@@ -69,7 +69,7 @@ namespace RabbitMQ.Next.Publisher
             {
                 this.expectContent = false;
                 this.currentMethod = default;
-                content.Dispose();
+                this.contentAccessor.Reset();
             }
 
             return true;

@@ -44,7 +44,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             ((IMessageBuilder)messageBuilder).RoutingKey("val");
             messageBuilder.Reset();
 
-            Assert.Equal(null, messageBuilder.RoutingKey);
+            Assert.Null(messageBuilder.RoutingKey);
         }
         
         [Theory]
@@ -82,7 +82,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             ((IMessageBuilder)messageBuilder).ContentType("val");
             messageBuilder.Reset();
 
-            Assert.Equal(null, messageBuilder.ContentType);
+            Assert.Null(messageBuilder.ContentType);
         }
         
         [Theory]
@@ -120,7 +120,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             ((IMessageBuilder)messageBuilder).ContentEncoding("val");
             messageBuilder.Reset();
 
-            Assert.Equal(null, messageBuilder.ContentEncoding);
+            Assert.Null(messageBuilder.ContentEncoding);
         }
 
         [Theory]
@@ -258,7 +258,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             ((IMessageBuilder)messageBuilder).Priority(42);
             messageBuilder.Reset();
 
-            Assert.Equal(null, messageBuilder.Priority);
+            Assert.Null(messageBuilder.Priority);
         }
         
         [Theory]
@@ -296,7 +296,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             ((IMessageBuilder)messageBuilder).CorrelationId("val");
             messageBuilder.Reset();
 
-            Assert.Equal(null, messageBuilder.CorrelationId);
+            Assert.Null(messageBuilder.CorrelationId);
         }
         
         [Theory]
@@ -334,7 +334,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             ((IMessageBuilder)messageBuilder).ReplyTo("val");
             messageBuilder.Reset();
 
-            Assert.Equal(null, messageBuilder.ReplyTo);
+            Assert.Null(messageBuilder.ReplyTo);
         }
         
         [Theory]
@@ -372,7 +372,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             ((IMessageBuilder)messageBuilder).Expiration("val");
             messageBuilder.Reset();
 
-            Assert.Equal(null, messageBuilder.Expiration);
+            Assert.Null(messageBuilder.Expiration);
         }
         
         [Theory]
@@ -410,7 +410,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             ((IMessageBuilder)messageBuilder).MessageId("val");
             messageBuilder.Reset();
 
-            Assert.Equal(null, messageBuilder.MessageId);
+            Assert.Null(messageBuilder.MessageId);
         }
         
         [Fact]
@@ -453,7 +453,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             ((IMessageBuilder)messageBuilder).Timestamp(DateTimeOffset.UtcNow);
             messageBuilder.Reset();
 
-            Assert.Equal(null, messageBuilder.Timestamp);
+            Assert.Null(messageBuilder.Timestamp);
         }
         
         [Theory]
@@ -491,7 +491,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             ((IMessageBuilder)messageBuilder).Type("val");
             messageBuilder.Reset();
 
-            Assert.Equal(null, messageBuilder.Type);
+            Assert.Null(messageBuilder.Type);
         }
         
         [Theory]
@@ -529,7 +529,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             ((IMessageBuilder)messageBuilder).UserId("val");
             messageBuilder.Reset();
 
-            Assert.Equal(null, messageBuilder.UserId);
+            Assert.Null(messageBuilder.UserId);
         }
         
         [Theory]
@@ -567,7 +567,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             ((IMessageBuilder)messageBuilder).ApplicationId("val");
             messageBuilder.Reset();
 
-            Assert.Equal(null, messageBuilder.ApplicationId);
+            Assert.Null(messageBuilder.ApplicationId);
         }
     }
 }

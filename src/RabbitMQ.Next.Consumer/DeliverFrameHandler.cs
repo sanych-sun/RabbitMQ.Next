@@ -5,23 +5,20 @@ using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Abstractions.Methods;
-using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.Transport.Methods.Basic;
 
 namespace RabbitMQ.Next.Consumer
 {
     internal sealed class DeliverFrameHandler : IFrameHandler
     {
-        private readonly ISerializer serializer;
         private readonly IMethodParser<DeliverMethod> deliverMethodParser;
         private readonly Func<DeliverMethod, IMessageProperties, ReadOnlySequence<byte>, ValueTask<bool>> methodHandler;
 
         private bool expectContent;
         private DeliverMethod currentMethod;
 
-        public DeliverFrameHandler(ISerializer serializer, IMethodRegistry registry, Func<DeliverMethod, IMessageProperties, ReadOnlySequence<byte>, ValueTask<bool>> methodHandler)
+        public DeliverFrameHandler(IMethodRegistry registry, Func<DeliverMethod, IMessageProperties, ReadOnlySequence<byte>, ValueTask<bool>> methodHandler)
         {
-            this.serializer = serializer;
             this.deliverMethodParser = registry.GetParser<DeliverMethod>();
             this.methodHandler = methodHandler;
         }

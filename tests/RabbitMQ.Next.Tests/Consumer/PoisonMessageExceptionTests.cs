@@ -16,7 +16,7 @@ namespace RabbitMQ.Next.Tests.Consumer
             var message = new DeliveredMessage();
             var properties = Substitute.For<IMessageProperties>();
             var serializer = Substitute.For<ISerializer>();
-            var content = new Content(serializer, ReadOnlySequence<byte>.Empty);
+            var content = Substitute.For<IContentAccessor>();
             var ex = new Exception();
 
             var exception = new PoisonMessageException(message, properties, content, ex);

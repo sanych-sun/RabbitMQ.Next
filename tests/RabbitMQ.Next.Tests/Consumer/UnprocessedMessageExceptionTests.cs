@@ -15,7 +15,7 @@ namespace RabbitMQ.Next.Tests.Consumer
             var message = new DeliveredMessage();
             var properties = Substitute.For<IMessageProperties>();
             var serializer = Substitute.For<ISerializer>();
-            var content = new Content(serializer, ReadOnlySequence<byte>.Empty);
+            var content = Substitute.For<IContentAccessor>();
 
             var exception = new UnprocessedMessageException(message, properties, content);
 

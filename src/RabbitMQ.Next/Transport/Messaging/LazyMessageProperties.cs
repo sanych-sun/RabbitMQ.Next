@@ -5,25 +5,23 @@ using RabbitMQ.Next.Abstractions.Messaging;
 
 namespace RabbitMQ.Next.Transport.Messaging
 {
-    internal sealed class LazyMessageProperties : IMessageProperties, IDisposable
+    internal sealed class LazyMessageProperties : IMessageProperties
     {
-        private readonly ReadOnlyMemory<byte> contentType;
-        private readonly ReadOnlyMemory<byte> contentEncoding;
-        private readonly ReadOnlyMemory<byte> headers;
-        private readonly ReadOnlyMemory<byte> deliveryMode;
-        private readonly ReadOnlyMemory<byte> priority;
-        private readonly ReadOnlyMemory<byte> correlationId;
-        private readonly ReadOnlyMemory<byte> replyTo;
-        private readonly ReadOnlyMemory<byte> expiration;
-        private readonly ReadOnlyMemory<byte> messageId;
-        private readonly ReadOnlyMemory<byte> timestamp;
-        private readonly ReadOnlyMemory<byte> type;
-        private readonly ReadOnlyMemory<byte> userId;
-        private readonly ReadOnlyMemory<byte> applicationId;
+        private ReadOnlyMemory<byte> contentType;
+        private ReadOnlyMemory<byte> contentEncoding;
+        private ReadOnlyMemory<byte> headers;
+        private ReadOnlyMemory<byte> deliveryMode;
+        private ReadOnlyMemory<byte> priority;
+        private ReadOnlyMemory<byte> correlationId;
+        private ReadOnlyMemory<byte> replyTo;
+        private ReadOnlyMemory<byte> expiration;
+        private ReadOnlyMemory<byte> messageId;
+        private ReadOnlyMemory<byte> timestamp;
+        private ReadOnlyMemory<byte> type;
+        private ReadOnlyMemory<byte> userId;
+        private ReadOnlyMemory<byte> applicationId;
 
-        private bool isDisposed;
-
-        public LazyMessageProperties(ReadOnlyMemory<byte> buffer)
+        public void Set(ReadOnlyMemory<byte> buffer)
         {
             buffer.Read(out ushort flags)
                 .SplitStringProperty(out this.contentType, flags, 15)
@@ -41,38 +39,33 @@ namespace RabbitMQ.Next.Transport.Messaging
                 .SplitStringProperty(out this.applicationId, flags, 3);
         }
 
-        public string ContentType
+        public void Reset()
         {
-            get
-            {
-                this.CheckDisposed();
-                return this.DecodeString(this.contentType);
-            }
+            this.contentType = ReadOnlyMemory<byte>.Empty;
+            this.contentEncoding = ReadOnlyMemory<byte>.Empty;
+            this.headers = ReadOnlyMemory<byte>.Empty;
+            this.deliveryMode = ReadOnlyMemory<byte>.Empty;
+            this.priority = ReadOnlyMemory<byte>.Empty;
+            this.correlationId = ReadOnlyMemory<byte>.Empty;
+            this.replyTo = ReadOnlyMemory<byte>.Empty;
+            this.expiration = ReadOnlyMemory<byte>.Empty;
+            this.messageId = ReadOnlyMemory<byte>.Empty;
+            this.timestamp = ReadOnlyMemory<byte>.Empty;
+            this.type = ReadOnlyMemory<byte>.Empty;
+            this.userId = ReadOnlyMemory<byte>.Empty;
+            this.applicationId = ReadOnlyMemory<byte>.Empty;
         }
 
-        public string ContentEncoding
-        {
-            get
-            {
-                this.CheckDisposed();
-                return this.DecodeString(this.contentEncoding);
-            }
-        }
+        public string ContentType => this.DecodeString(this.contentType);
 
-        public IReadOnlyDictionary<string, object> Headers
-        {
-            get
-            {
-                this.CheckDisposed();
-                return this.DecodeTable(this.headers);
-            }
-        }
+        public string ContentEncoding => this.DecodeString(this.contentEncoding);
+
+        public IReadOnlyDictionary<string, object> Headers => this.DecodeTable(this.headers);
 
         public DeliveryMode DeliveryMode
         {
             get
             {
-                this.CheckDisposed();
                 var vl = this.DecodeByte(this.deliveryMode);
                 if (vl.HasValue)
                 {
@@ -83,101 +76,23 @@ namespace RabbitMQ.Next.Transport.Messaging
             }
         }
 
-        public byte? Priority
-        {
-            get
-            {
-                this.CheckDisposed();
-                return this.DecodeByte(this.priority);
-            }
-        }
+        public byte? Priority => this.DecodeByte(this.priority);
 
-        public string CorrelationId
-        {
-            get
-            {
-                this.CheckDisposed();
-                return this.DecodeString(this.correlationId);
-            }
-        }
+        public string CorrelationId => this.DecodeString(this.correlationId);
 
-        public string ReplyTo
-        {
-            get
-            {
-                this.CheckDisposed();
-                return this.DecodeString(this.replyTo);
-            }
-        }
+        public string ReplyTo => this.DecodeString(this.replyTo);
 
-        public string Expiration
-        {
-            get
-            {
-                this.CheckDisposed();
-                return this.DecodeString(this.expiration);
-            }
-        }
+        public string Expiration => this.DecodeString(this.expiration);
 
-        public string MessageId
-        {
-            get
-            {
-                this.CheckDisposed();
-                return this.DecodeString(this.messageId);
-            }
-        }
+        public string MessageId => this.DecodeString(this.messageId);
 
-        public DateTimeOffset? Timestamp
-        {
-            get
-            {
-                this.CheckDisposed();
-                return this.DecodeTimestamp(this.timestamp);
-            }
-        }
+        public DateTimeOffset? Timestamp => this.DecodeTimestamp(this.timestamp);
 
-        public string Type
-        {
-            get
-            {
-                this.CheckDisposed();
-                return this.DecodeString(this.type);
-            }
-        }
+        public string Type => this.DecodeString(this.type);
 
-        public string UserId
-        {
-            get
-            {
-                this.CheckDisposed();
-                return this.DecodeString(this.userId);
-            }
-        }
+        public string UserId => this.DecodeString(this.userId);
 
-        public string ApplicationId
-        {
-            get
-            {
-                this.CheckDisposed();
-                return this.DecodeString(this.applicationId);
-            }
-        }
-
-        public void Dispose()
-        {
-            this.isDisposed = true;
-        }
-
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void CheckDisposed()
-        {
-            if (this.isDisposed)
-            {
-                throw new ObjectDisposedException(nameof(LazyMessageProperties));
-            }
-        }
+        public string ApplicationId => this.DecodeString(this.applicationId);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private string DecodeString(ReadOnlyMemory<byte> data)
