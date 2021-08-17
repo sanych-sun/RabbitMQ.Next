@@ -4,7 +4,7 @@ using RabbitMQ.Next.Abstractions;
 
 namespace RabbitMQ.Next.TopologyBuilder.Abstractions
 {
-    public interface ITopologyBuilder : IAsyncDisposable
+    public interface ITopologyBuilder
     {
         IConnection Connection { get; }
 

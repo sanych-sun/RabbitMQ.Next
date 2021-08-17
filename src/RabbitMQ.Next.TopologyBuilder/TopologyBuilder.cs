@@ -1,5 +1,4 @@
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
@@ -9,9 +8,6 @@ namespace RabbitMQ.Next.TopologyBuilder
 {
     internal class TopologyBuilder : ITopologyBuilder
     {
-        private readonly SemaphoreSlim sync = new(1,1);
-        private IChannel channel;
-
         public TopologyBuilder(IConnection connection)
         {
             this.Connection = connection;
@@ -19,79 +15,57 @@ namespace RabbitMQ.Next.TopologyBuilder
 
         public IConnection Connection { get; }
 
-        public async Task DeclareExchangeAsync(string name, string type, Action<IExchangeBuilder> builder = null)
+        public Task DeclareExchangeAsync(string name, string type, Action<IExchangeBuilder> builder = null)
         {
             var exchangeBuilder = new ExchangeBuilder(name, type);
             builder?.Invoke(exchangeBuilder);
 
-            var ch = await this.GetChannelAsync();
-            await exchangeBuilder.ApplyAsync(ch);
+            return this.UseChannelAsync(exchangeBuilder, (b, c) => b.ApplyAsync(c));
         }
 
-        public async Task BindExchangeAsync(string destination, string source, Action<IExchangeBindingBuilder> builder = null)
+        public Task BindExchangeAsync(string destination, string source, Action<IExchangeBindingBuilder> builder = null)
         {
             var exchangeBindingBuilder = new ExchangeBindingBuilder(destination, source);
             builder?.Invoke(exchangeBindingBuilder);
 
-            var ch = await this.GetChannelAsync();
-            await exchangeBindingBuilder.ApplyAsync(ch);
+            return this.UseChannelAsync(exchangeBindingBuilder, (b, c) => b.ApplyAsync(c));
         }
 
-        public async Task DeclareQueueAsync(string name, Action<IQueueBuilder> builder = null)
+        public Task DeclareQueueAsync(string name, Action<IQueueBuilder> builder = null)
         {
             var queueBuilder = new QueueBuilder(name);
             builder?.Invoke(queueBuilder);
 
-            var ch = await this.GetChannelAsync();
-            await queueBuilder.ApplyAsync(ch);
+            return this.UseChannelAsync(queueBuilder, (b, c) => b.ApplyAsync(c));
         }
 
-        public async Task BindQueueAsync(string queue, string exchange, Action<IQueueBindingBuilder> builder = null)
+        public Task BindQueueAsync(string queue, string exchange, Action<IQueueBindingBuilder> builder = null)
         {
             var queueBindingBuilder = new QueueBindingBuilder(queue, exchange);
             builder?.Invoke(queueBindingBuilder);
 
-            var ch = await this.GetChannelAsync();
-            await queueBindingBuilder.ApplyAsync(ch);
+            return this.UseChannelAsync(queueBindingBuilder, (b, c) => b.ApplyAsync(c));
         }
 
-        private ValueTask<IChannel> GetChannelAsync()
-        {
-            var ch = this.channel;
-            if (ch == null || ch.Completion.IsCompleted)
-            {
-                return this.OpenChannelAsync();
-            }
-
-            return new ValueTask<IChannel>(ch);
-        }
-
-        private async ValueTask<IChannel> OpenChannelAsync()
+        private async Task UseChannelAsync<TState>(TState state, Func<TState, IChannel, Task> fn)
         {
             if (this.Connection.State != ConnectionState.Open)
             {
                 throw new InvalidOperationException("Connection should be in Open state to use the TopologyBuilder");
             }
 
-            await this.sync.WaitAsync();
-
+            IChannel channel = null;
             try
             {
-                this.channel ??= await this.Connection.OpenChannelAsync();
-                return this.channel;
+                channel = await this.Connection.OpenChannelAsync();
+                await fn(state, channel);
             }
             finally
             {
-                this.sync.Release();
-            }
-        }
-
-        public async ValueTask DisposeAsync()
-        {
-            if (this.channel != null)
-            {
-                await this.channel.CloseAsync();
-                this.channel = null;
+                if (channel != null && !channel.Completion.IsCompleted)
+                {
+                    await channel.CloseAsync();
+                }
             }
         }
     }
