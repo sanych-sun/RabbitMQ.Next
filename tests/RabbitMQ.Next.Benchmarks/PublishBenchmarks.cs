@@ -49,7 +49,7 @@ namespace RabbitMQ.Next.Benchmarks
         [GlobalSetup]
         public async Task Setup()
         {
-            this.connection = await ConnectionBuilder.Default()
+            this.connection = await ConnectionBuilder.Default
                 .AddEndpoint("amqp://test2:test2@localhost:5672/")
                 .ConnectAsync();
 

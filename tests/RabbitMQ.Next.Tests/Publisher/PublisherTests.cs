@@ -27,7 +27,7 @@ namespace RabbitMQ.Next.Tests.Publisher
 
             var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", false, this.MockSerializer(), null, null);
 
-            await publisher.OpenChannelAsync();
+            await publisher.InitializeAsync();
 
             await mock.channel.Received().SendAsync<DeclareMethod, DeclareOkMethod>(new DeclareMethod("exchange"));
         }
@@ -41,7 +41,7 @@ namespace RabbitMQ.Next.Tests.Publisher
 
             var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", false, this.MockSerializer(), null, null);
 
-            await Assert.ThrowsAsync<ChannelClosedException>(async () => await publisher.OpenChannelAsync());
+            await Assert.ThrowsAsync<ChannelClosedException>(async () => await publisher.InitializeAsync());
         }
 
         [Fact]
@@ -51,7 +51,7 @@ namespace RabbitMQ.Next.Tests.Publisher
 
             var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", true, this.MockSerializer(), null, null);
 
-            await publisher.OpenChannelAsync();
+            await publisher.InitializeAsync();
 
             await mock.channel.Received().SendAsync<SelectMethod, SelectOkMethod>(Arg.Any<SelectMethod>());
         }
@@ -63,7 +63,7 @@ namespace RabbitMQ.Next.Tests.Publisher
 
             var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", false, this.MockSerializer(), null, null);
 
-            await publisher.OpenChannelAsync();
+            await publisher.InitializeAsync();
 
             await mock.channel.DidNotReceive().SendAsync<SelectMethod, SelectOkMethod>( Arg.Any<SelectMethod>());
         }
@@ -76,7 +76,7 @@ namespace RabbitMQ.Next.Tests.Publisher
 
             var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", false, this.MockSerializer(), null, null);
 
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await publisher.OpenChannelAsync());
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await publisher.InitializeAsync());
         }
 
         [Fact]
@@ -122,7 +122,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             var mock = this.Mock();
 
             var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", false, this.MockSerializer(), null, null);
-            await publisher.OpenChannelAsync();
+            await publisher.InitializeAsync();
             await publisher.DisposeAsync();
 
             await mock.channel.Received().CloseAsync();

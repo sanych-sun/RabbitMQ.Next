@@ -31,7 +31,7 @@ namespace RabbitMQ.Next.Publisher
             return this;
         }
 
-        IPublisherBuilder IPublisherBuilder.UseTransformer(IMessageInitializer initializer)
+        IPublisherBuilder IPublisherBuilder.UseMessageInitializer(IMessageInitializer initializer)
         {
             if (initializer == null)
             {

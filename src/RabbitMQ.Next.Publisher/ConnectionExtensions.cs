@@ -21,7 +21,7 @@ namespace RabbitMQ.Next.Publisher
             var serializer = new Serializer(publisherBuilder.Formatters);
 
             var publisher = new Publisher(connection, exchange, publisherBuilder.PublisherConfirms, serializer, publisherBuilder.Transformers, publisherBuilder.ReturnedMessageHandlers);
-            await publisher.OpenChannelAsync();
+            await publisher.InitializeAsync();
 
             return publisher;
         }

@@ -162,7 +162,7 @@ namespace RabbitMQ.Next.Publisher
             }
         }
 
-        public async ValueTask<IChannel> OpenChannelAsync(CancellationToken cancellationToken = default)
+        public async ValueTask<IChannel> InitializeAsync(CancellationToken cancellationToken = default)
         {
             if (this.connection.State != ConnectionState.Open)
             {

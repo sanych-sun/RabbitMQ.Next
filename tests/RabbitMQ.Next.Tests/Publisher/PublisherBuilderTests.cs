@@ -38,8 +38,8 @@ namespace RabbitMQ.Next.Tests.Publisher
             var transformer2 = Substitute.For<IMessageInitializer>();
 
             var builder = new PublisherBuilder();
-            ((IPublisherBuilder) builder).UseTransformer(transformer1);
-            ((IPublisherBuilder) builder).UseTransformer(transformer2);
+            ((IPublisherBuilder) builder).UseMessageInitializer(transformer1);
+            ((IPublisherBuilder) builder).UseMessageInitializer(transformer2);
 
             Assert.Contains(transformer1, builder.Transformers);
             Assert.Contains(transformer2, builder.Transformers);
@@ -50,7 +50,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         {
             var builder = new PublisherBuilder();
             
-            Assert.Throws<ArgumentNullException>(() => ((IPublisherBuilder)builder).UseTransformer(null));
+            Assert.Throws<ArgumentNullException>(() => ((IPublisherBuilder)builder).UseMessageInitializer(null));
         }
         
         [Fact]

@@ -21,21 +21,24 @@ namespace RabbitMQ.Next
         private string locale = DefaultLocale;
         private int frameSize = 102_400;
 
+        public ConnectionBuilder()
+            : this(ConnectionFactory.Default)
+        {
+        }
+
         internal ConnectionBuilder(IConnectionFactory factory)
         {
             this.factory = factory;
-
-            this.clientProperties["capabilities"] = new Dictionary<string, object>
-            {
-                ["authentication_failure_close"] = true,
-            };
         }
 
-        public static IConnectionBuilder Default()
+        public static IConnectionBuilder Default
         {
-            var builder = new ConnectionBuilder(ConnectionFactory.Default);
-            builder.UseDefaults();
-            return builder;
+            get
+            {
+                var builder = new ConnectionBuilder();
+                builder.UseDefaults();
+                return builder;
+            }
         }
 
         public IConnectionBuilder Auth(IAuthMechanism mechanism)

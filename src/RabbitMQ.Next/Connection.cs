@@ -251,7 +251,7 @@ namespace RabbitMQ.Next
             var tuneMethod = await tuneMethodTask;
 
             frameSize = Math.Min(frameSize, (int)tuneMethod.MaxFrameSize);
-            await channel.SendAsync(new TuneOkMethod(tuneMethod.ChannelMax, (uint)frameSize, tuneMethod.HeartbeatInterval));
+            await channel.SendAsync(new TuneOkMethod(tuneMethod.ChannelMax, (uint)frameSize, tuneMethod.HeartbeatInterval), cancellation);
 
             // todo: handle wrong vhost name
             await channel.SendAsync<OpenMethod, OpenOkMethod>(new OpenMethod(vhost), cancellation);

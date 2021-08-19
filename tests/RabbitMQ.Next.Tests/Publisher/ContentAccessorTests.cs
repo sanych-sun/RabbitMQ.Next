@@ -30,5 +30,23 @@ namespace RabbitMQ.Next.Tests.Publisher
             serializer.Received().Deserialize<string>(data);
             Assert.Equal("OK", result);
         }
+
+        [Fact]
+        public void CanReset()
+        {
+            var data = new ReadOnlySequence<byte>(new byte[] {0x01, 0x02});
+            var serializer = Substitute.For<ISerializer>();
+
+            var content = new ContentAccessor(serializer);
+            content.Set(data);
+            content.GetContent<string>();
+
+            serializer.Received().Deserialize<string>(data);
+
+            content.Reset();
+            content.GetContent<string>();
+
+            serializer.Received().Deserialize<string>(ReadOnlySequence<byte>.Empty);
+        }
     }
 }

@@ -14,7 +14,7 @@ namespace RabbitMQ.Next.Tests.Publisher.Attributes
 
             publisherBuilder.UseAttributesInitializer();
 
-            publisherBuilder.Received().UseTransformer(Arg.Any<AttributeInitializer>());
+            publisherBuilder.Received().UseMessageInitializer(Arg.Any<AttributeInitializer>());
         }
     }
 }
