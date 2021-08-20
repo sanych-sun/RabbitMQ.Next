@@ -212,6 +212,7 @@ namespace RabbitMQ.Next.Channels
                         }
                         finally
                         {
+                            contentHeaderFrame.Payload.Dispose();
                             messageProperty.Reset();
                             for (var i = 0; i < contentChunks.Count; i++)
                             {

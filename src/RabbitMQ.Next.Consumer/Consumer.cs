@@ -149,19 +149,13 @@ namespace RabbitMQ.Next.Consumer
         private async ValueTask ProcessPoisonMessageAsync(DeliveredMessage message, IMessageProperties properties, ReadOnlySequence<byte> payload, Exception ex)
         {
             await this.NackAsync(message, this.onPoisonMessage);
-            if ((this.onPoisonMessage | UnprocessedMessageMode.StopConsumer) == UnprocessedMessageMode.StopConsumer)
-            {
-                await this.CancelConsumeAsync(new PoisonMessageException(message, new DetachedMessageProperties(properties), this.MakeDetachedContent(payload), ex));
-            }
+            // TODO: report to diagnostic source
         }
 
         private async ValueTask ProcessUnprocessedMessageAsync(DeliveredMessage message, IMessageProperties properties, ReadOnlySequence<byte> payload)
         {
             await this.NackAsync(message, this.onUnprocessedMessage);
-            if ((this.onUnprocessedMessage | UnprocessedMessageMode.StopConsumer) == UnprocessedMessageMode.StopConsumer)
-            {
-                await this.CancelConsumeAsync(new UnprocessedMessageException(message, new DetachedMessageProperties(properties), this.MakeDetachedContent(payload)));
-            }
+            // TODO: report to diagnostic source
         }
 
         private IContentAccessor MakeDetachedContent(ReadOnlySequence<byte> payload)

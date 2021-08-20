@@ -17,6 +17,8 @@ namespace RabbitMQ.Next.Consumer
         {
             this.queues = new List<QueueConsumerBuilder>();
             this.handlers = new List<Func<DeliveredMessage, IMessageProperties, IContentAccessor, ValueTask<bool>>>();
+
+            this.EachMessageAcknowledgement();
         }
 
         public IReadOnlyList<ITypeFormatter> Formatters => this.formatters;
@@ -31,9 +33,9 @@ namespace RabbitMQ.Next.Consumer
 
         public Func<IAcknowledgement, IAcknowledger> AcknowledgerFactory { get; private set; }
 
-        public UnprocessedMessageMode OnUnprocessedMessage { get; private set; } = UnprocessedMessageMode.Default;
+        public UnprocessedMessageMode OnUnprocessedMessage { get; private set; } = UnprocessedMessageMode.Requeue;
 
-        public UnprocessedMessageMode OnPoisonMessage { get; private set; } = UnprocessedMessageMode.Default;
+        public UnprocessedMessageMode OnPoisonMessage { get; private set; } = UnprocessedMessageMode.Requeue;
 
         IConsumerBuilder IConsumerBuilder.UseFormatter(ITypeFormatter formatter)
         {

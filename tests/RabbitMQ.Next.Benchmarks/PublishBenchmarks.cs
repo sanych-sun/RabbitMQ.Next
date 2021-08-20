@@ -9,6 +9,7 @@ using RabbitMQ.Client;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Consumer;
+using RabbitMQ.Next.Consumer.Abstractions;
 using RabbitMQ.Next.Publisher;
 using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Serialization.Formatters;
@@ -21,7 +22,7 @@ namespace RabbitMQ.Next.Benchmarks
     [MinColumn, MaxColumn, MeanColumn, MedianColumn]
     public class PublishBenchmarks
     {
-        private const int messagesCount = 10_000;
+        private const int messagesCount = 5_000;
 
         private IConnection connection;
         private IModel model;
@@ -58,6 +59,8 @@ namespace RabbitMQ.Next.Benchmarks
                     .PublisherConfirms()
                     .UseFormatter(new StringTypeFormatter()));
 
+
+
             ConnectionFactory factory = new ConnectionFactory();
             factory.Uri = new Uri("amqp://test2:test2@localhost:5672/");
 
@@ -65,35 +68,35 @@ namespace RabbitMQ.Next.Benchmarks
             this.model.ConfirmSelect();
         }
 
-        [Benchmark(Baseline = true)]
-        public void Publish()
-        {
-            for (var i = 0; i < this.messages.Count; i++)
-            {
-                var props = this.model.CreateBasicProperties();
-                props.CorrelationId = this.corrIds[i];
-                this.model.BasicPublish("amq.topic", "", props, Encoding.UTF8.GetBytes(this.messages[i]));
-                this.model.WaitForConfirms();
-            }
-        }
+        // [Benchmark(Baseline = true)]
+        // public void Publish()
+        // {
+        //     for (var i = 0; i < this.messages.Count; i++)
+        //     {
+        //         var props = this.model.CreateBasicProperties();
+        //         props.CorrelationId = this.corrIds[i];
+        //         this.model.BasicPublish("amq.topic", "", props, Encoding.UTF8.GetBytes(this.messages[i]));
+        //         this.model.WaitForConfirms();
+        //     }
+        // }
 
-        [Benchmark]
-        public async Task PublishParallelAsync()
-        {
-            await Task.WhenAll(Enumerable.Range(0, 10)
-                .Select(async num =>
-                {
-                    await Task.Yield();
-
-                    for (int i = num; i < this.messages.Count; i = i + 10)
-                    {
-                        await this.publisher.PublishAsync(this.corrIds[i], this.messages[i],
-                            (state, message) => message.RoutingKey(state));
-
-                    }
-                })
-                .ToArray());
-        }
+        // [Benchmark]
+        // public async Task PublishParallelAsync()
+        // {
+        //     await Task.WhenAll(Enumerable.Range(0, 10)
+        //         .Select(async num =>
+        //         {
+        //             await Task.Yield();
+        //
+        //             for (int i = num; i < this.messages.Count; i = i + 10)
+        //             {
+        //                 await this.publisher.PublishAsync(this.corrIds[i], this.messages[i],
+        //                     (state, message) => message.RoutingKey(state));
+        //
+        //             }
+        //         })
+        //         .ToArray());
+        // }
 
         [Benchmark]
         public async Task PublishAsync()
@@ -101,8 +104,34 @@ namespace RabbitMQ.Next.Benchmarks
             for (int i = 0; i < this.messages.Count; i++)
             {
                 await this.publisher.PublishAsync(this.corrIds[i], this.messages[i],
-                    (state, message) => message.RoutingKey(state));
+                    (state, message) => message.CorrelationId(state));
             }
+
+            var cancellation = new CancellationTokenSource();
+            var num = 0;
+            var consumer = this.connection.Consumer(
+                b => b
+                    .BindToQueue("test-queue")
+                    .PrefetchCount(10)
+                    .EachMessageAcknowledgement()
+                    .UseFormatter(new StringTypeFormatter())
+                    .AddMessageHandler((message, properties, content) =>
+                    {
+                        //var data = content.GetContent<string>();
+                        num++;
+                        if (num >= messagesCount)
+                        {
+                            Console.WriteLine(num);
+                            if (!cancellation.IsCancellationRequested)
+                            {
+                                cancellation.Cancel();
+                            }
+                        }
+
+                        return new ValueTask<bool>(true);
+                    }));
+
+            await consumer.ConsumeAsync(cancellation.Token);
 
             // var processed = 0;
             // var consumerCancellation = new CancellationTokenSource();
