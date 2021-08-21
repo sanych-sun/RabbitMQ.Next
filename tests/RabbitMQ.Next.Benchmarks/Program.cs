@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Diagnosers;
 using BenchmarkDotNet.Engines;
@@ -28,7 +29,11 @@ namespace RabbitMQ.Next.Benchmarks
             // await bc.Setup();
             //
             // await Task.Yield();
-            // await Test(bc);
+            // await bc.PublishAsync();
+            // await bc.PublishAsync();
+            // await bc.ConsumeAsync();
+            //
+            // Console.WriteLine("Done!");
         }
 
         static Task Test(PublishBenchmarks bc)

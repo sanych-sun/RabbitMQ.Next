@@ -90,11 +90,6 @@ namespace RabbitMQ.Next.Consumer
 
         private async ValueTask<bool> HandleMessageAsync(DeliverMethod method, IMessageProperties properties, ReadOnlySequence<byte> payload)
         {
-            if (this.isCancelled)
-            {
-                return true;
-            }
-
             var message = new DeliveredMessage(method.Exchange, method.RoutingKey, method.Redelivered, method.ConsumerTag, method.DeliveryTag);
             this.contentAccessor.Set(payload);
 

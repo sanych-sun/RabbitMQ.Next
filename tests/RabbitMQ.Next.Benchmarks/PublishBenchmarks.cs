@@ -6,8 +6,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
 using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
 using RabbitMQ.Next.Abstractions;
-using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Consumer;
 using RabbitMQ.Next.Consumer.Abstractions;
 using RabbitMQ.Next.Publisher;
@@ -22,11 +22,11 @@ namespace RabbitMQ.Next.Benchmarks
     [MinColumn, MaxColumn, MeanColumn, MedianColumn]
     public class PublishBenchmarks
     {
-        private const int messagesCount = 5_000;
+        private const int messagesCount = 10_000;
 
         private IConnection connection;
-        private IModel model;
-        private IPublisher publisher;
+        private RabbitMQ.Client.IConnection theirConnection;
+
         private IReadOnlyList<string> messages;
         private IReadOnlyList<string> corrIds;
 
@@ -54,59 +54,109 @@ namespace RabbitMQ.Next.Benchmarks
                 .AddEndpoint("amqp://test2:test2@localhost:5672/")
                 .ConnectAsync();
 
-            this.publisher = await this.connection.CreatePublisherAsync("amq.topic",
-                builder => builder
-                    .PublisherConfirms()
-                    .UseFormatter(new StringTypeFormatter()));
 
 
 
             ConnectionFactory factory = new ConnectionFactory();
             factory.Uri = new Uri("amqp://test2:test2@localhost:5672/");
 
-            this.model = factory.CreateConnection().CreateModel();
-            this.model.ConfirmSelect();
+            this.theirConnection = factory.CreateConnection();
         }
 
-        // [Benchmark(Baseline = true)]
-        // public void Publish()
-        // {
-        //     for (var i = 0; i < this.messages.Count; i++)
-        //     {
-        //         var props = this.model.CreateBasicProperties();
-        //         props.CorrelationId = this.corrIds[i];
-        //         this.model.BasicPublish("amq.topic", "", props, Encoding.UTF8.GetBytes(this.messages[i]));
-        //         this.model.WaitForConfirms();
-        //     }
-        // }
+        [Benchmark(Baseline = true)]
+        [BenchmarkCategory("Publish")]
+        public void PublishBaseLibrary()
+        {
+            var model = this.theirConnection.CreateModel();
+            model.ConfirmSelect();
 
-        // [Benchmark]
-        // public async Task PublishParallelAsync()
-        // {
-        //     await Task.WhenAll(Enumerable.Range(0, 10)
-        //         .Select(async num =>
-        //         {
-        //             await Task.Yield();
-        //
-        //             for (int i = num; i < this.messages.Count; i = i + 10)
-        //             {
-        //                 await this.publisher.PublishAsync(this.corrIds[i], this.messages[i],
-        //                     (state, message) => message.RoutingKey(state));
-        //
-        //             }
-        //         })
-        //         .ToArray());
-        // }
+            for (var i = 0; i < this.messages.Count; i++)
+            {
+                var props = model.CreateBasicProperties();
+                props.CorrelationId = this.corrIds[i];
+                model.BasicPublish("amq.topic", "", props, Encoding.UTF8.GetBytes(this.messages[i]));
+                model.WaitForConfirms();
+            }
+        }
 
         [Benchmark]
+        [BenchmarkCategory("Publish")]
+        public async Task PublishParallelAsync()
+        {
+            var publisher = await this.connection.CreatePublisherAsync("amq.topic",
+                builder => builder
+                    .PublisherConfirms()
+                    .UseFormatter(new StringTypeFormatter()));
+
+            await Task.WhenAll(Enumerable.Range(0, 10)
+                .Select(async num =>
+                {
+                    await Task.Yield();
+
+                    for (int i = num; i < this.messages.Count; i = i + 10)
+                    {
+                        await publisher.PublishAsync(this.corrIds[i], this.messages[i],
+                            (state, message) => message.RoutingKey(state));
+
+                    }
+                })
+                .ToArray());
+
+            await publisher.DisposeAsync();
+        }
+
+        [Benchmark]
+        [BenchmarkCategory("Publish")]
         public async Task PublishAsync()
         {
+            var publisher = await this.connection.CreatePublisherAsync("amq.topic",
+                builder => builder
+                    .PublisherConfirms()
+                    .UseFormatter(new StringTypeFormatter()));
+
             for (int i = 0; i < this.messages.Count; i++)
             {
-                await this.publisher.PublishAsync(this.corrIds[i], this.messages[i],
+                await publisher.PublishAsync(this.corrIds[i], this.messages[i],
                     (state, message) => message.CorrelationId(state));
             }
 
+            await publisher.DisposeAsync();
+        }
+
+        [Benchmark(Baseline = true)]
+        [BenchmarkCategory("Consume")]
+        public void ConsumeBaseLibrary()
+        {
+            var model = this.theirConnection.CreateModel();
+            model.BasicQos(0, 10, false);
+
+            var num = 0;
+            var consumer = new EventingBasicConsumer(model);
+            consumer.Received += (ch, ea) =>
+            {
+                var body = ea.Body.ToArray();
+                var message = Encoding.UTF8.GetString(body);
+                num++;
+
+                model.BasicAck(ea.DeliveryTag, false);
+            };
+            var tag = model.BasicConsume(queue: "test-queue",
+                autoAck: false,
+                consumer: consumer);
+
+            while (num <= messagesCount)
+            {
+                Thread.Sleep(10);
+            }
+
+            model.BasicCancel(tag);
+            model.Close();
+        }
+
+        [Benchmark]
+        [BenchmarkCategory("Consume")]
+        public async Task ConsumeAsync()
+        {
             var cancellation = new CancellationTokenSource();
             var num = 0;
             var consumer = this.connection.Consumer(
@@ -117,11 +167,10 @@ namespace RabbitMQ.Next.Benchmarks
                     .UseFormatter(new StringTypeFormatter())
                     .AddMessageHandler((message, properties, content) =>
                     {
-                        //var data = content.GetContent<string>();
+                        var data = content.GetContent<string>();
                         num++;
                         if (num >= messagesCount)
                         {
-                            Console.WriteLine(num);
                             if (!cancellation.IsCancellationRequested)
                             {
                                 cancellation.Cancel();
@@ -132,35 +181,6 @@ namespace RabbitMQ.Next.Benchmarks
                     }));
 
             await consumer.ConsumeAsync(cancellation.Token);
-
-            // var processed = 0;
-            // var consumerCancellation = new CancellationTokenSource();
-            //
-            // var consumer = connection.Consumer(
-            //      builder => builder
-            //          .PrefetchCount(200)
-            //          .UseFormatter(new ArrayTypeFormatter())
-            //          //.MultipleMessageAcknowledgement(TimeSpan.FromSeconds(5), 100)
-            //          .AddMessageHandler((message, props, content) =>
-            //          {
-            //              var data = content.GetContent<byte[]>();
-            //
-            //              processed++;
-            //
-            //              if (processed == messagesCount)
-            //              {
-            //                  consumerCancellation.Cancel();
-            //              }
-            //
-            //              return new ValueTask<bool>(true);
-            //          })
-            //          .BindToQueue("test-queue"));
-            //
-            // var consumerTask = consumer.ConsumeAsync(consumerCancellation.Token);
-            //
-            //
-            //
-            // await consumerTask;
         }
     }
 }
