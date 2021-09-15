@@ -186,6 +186,11 @@ namespace RabbitMQ.Next
                         throw new InvalidOperationException();
                     }
 
+                    if (frameType == FrameType.Heartbeat)
+                    {
+                        continue;
+                    }
+
                     // 5. Shrink buffer to the data size
                     buffer.Slice((int)payloadSize);
 

@@ -1,6 +1,7 @@
 // using System;
 // using System.Buffers;
 // using System.Diagnostics;
+// using System.Text;
 // using System.Threading;
 // using System.Threading.Tasks;
 // using RabbitMQ.Next.Consumer;
@@ -40,9 +41,9 @@
 //
 //             var sw = Stopwatch.StartNew();
 //
-//             for (var i = 0; i < 1000; i++)
+//             for (var i = 0; i < 10; i++)
 //             {
-//                 await publisher.PublishAsync($"a {i}");
+//                 await publisher.PublishAsync(BuildDummyText(1048576));
 //             }
 //
 //             await publisher.DisposeAsync();
@@ -109,6 +110,20 @@
 //
 //                 return default;
 //             }
+//         }
+//
+//         private const string TextFragment = "Lorem ipsum dolor sit amet, ne putent ornatus expetendis vix. Ea sed suas accusamus. Possim prodesset maiestatis sea te, graeci tractatos evertitur ad vix, sit an sale regione facilisi. Vel cu suscipit perfecto voluptaria. Diam soleat eos ex, his liber causae saperet et.";
+//
+//         public static string BuildDummyText(int length)
+//         {
+//             var builder = new StringBuilder(length);
+//
+//             while (builder.Length < length)
+//             {
+//                 builder.Append(TextFragment);
+//             }
+//
+//             return builder.ToString(0, length);
 //         }
 //     }
 // }

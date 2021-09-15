@@ -105,7 +105,7 @@ namespace RabbitMQ.Next.Channels
 
         public ValueTask WriteToAsync(ChannelWriter<IMemoryOwner<byte>> channel)
         {
-            if (this.chunks.Count > 0)
+            if (this.chunks.Count == 0)
             {
                 this.buffer.Slice(this.offset);
                 var single = this.buffer;
@@ -154,15 +154,10 @@ namespace RabbitMQ.Next.Channels
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int ExpandIfRequired(int requestedSize)
         {
-            if (requestedSize == 0)
+            var bufferAvailable = this.buffer.BufferCapacity - this.offset - 1;
+            if (this.buffer.BufferCapacity - this.offset - 1 > requestedSize) // current buffer available space: capacity - already written bytes - frame end
             {
-                requestedSize = this.buffer.BufferCapacity - this.offset - 1; // current buffer available space: capacity - already written bytes - frame end
-                return Math.Min(requestedSize, this.frameMaxSize - this.currentFrameSize);
-            }
-
-            if (this.currentFrameSize + requestedSize <= this.frameMaxSize)
-            {
-                return requestedSize;
+                return Math.Min(bufferAvailable, this.frameMaxSize - this.currentFrameSize);
             }
 
             this.EndFrame();

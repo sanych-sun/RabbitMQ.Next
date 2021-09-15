@@ -5,6 +5,7 @@ using BenchmarkDotNet.Diagnosers;
 using BenchmarkDotNet.Engines;
 using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Running;
+using RabbitMQ.Next.Benchmarks.PublishTests;
 
 namespace RabbitMQ.Next.Benchmarks
 {
@@ -25,20 +26,17 @@ namespace RabbitMQ.Next.Benchmarks
                     .AddLogicalGroupRules(BenchmarkLogicalGroupRule.ByCategory)
             );
 
-            // var bc = new PublishBenchmarks();
+            // var bc = new PublisherConfirmsBenchmarks();
             // await bc.Setup();
-            //
             // await Task.Yield();
-            // await bc.PublishAsync();
-            // await bc.PublishAsync();
-            // await bc.ConsumeAsync();
+            //
+            // foreach (var tc in PublisherConfirmsBenchmarks.TestCases())
+            // {
+            //     await bc.PublishAsync(tc);
+            //     await bc.PublishAsync(tc);
+            // }
             //
             // Console.WriteLine("Done!");
-        }
-
-        static Task Test(PublishBenchmarks bc)
-        {
-            return bc.PublishAsync();
         }
     }
 }
