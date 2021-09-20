@@ -28,7 +28,6 @@ namespace RabbitMQ.Next.Benchmarks
 
             // var bc = new PublisherConfirmsBenchmarks();
             // await bc.Setup();
-            // await Task.Yield();
             //
             // foreach (var tc in PublisherConfirmsBenchmarks.TestCases())
             // {

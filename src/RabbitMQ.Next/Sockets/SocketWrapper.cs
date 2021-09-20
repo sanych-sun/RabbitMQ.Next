@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Threading.Tasks;
 using RabbitMQ.Next.Transport;
 
 namespace RabbitMQ.Next.Sockets
@@ -10,6 +11,7 @@ namespace RabbitMQ.Next.Sockets
     {
         private readonly Socket socket;
         private readonly Stream stream;
+        private readonly Stream writer;
 
         public SocketWrapper(Socket socket, Endpoint endpoint)
         {
@@ -28,12 +30,14 @@ namespace RabbitMQ.Next.Sockets
 
                 this.stream = sslStream;
             }
+
+            this.writer = new BufferedStream(this.stream, this.socket.SendBufferSize);
         }
 
-        public void Send(ReadOnlyMemory<byte> payload)
-        {
-            this.stream.Write(payload.Span);
-        }
+        public ValueTask SendAsync(ReadOnlyMemory<byte> payload)
+            => this.writer.WriteAsync(payload);
+
+        public Task FlushAsync() => this.writer.FlushAsync();
 
         public int Receive(Memory<byte> buffer)
         {

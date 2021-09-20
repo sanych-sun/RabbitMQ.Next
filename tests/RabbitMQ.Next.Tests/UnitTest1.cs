@@ -9,7 +9,6 @@
 // using RabbitMQ.Next.Publisher;
 // using RabbitMQ.Next.Abstractions;
 // using RabbitMQ.Next.Publisher.Attributes;
-// using RabbitMQ.Next.Publisher.Initializers;
 // using RabbitMQ.Next.Serialization.Abstractions;
 // using RabbitMQ.Next.Serialization.Formatters;
 // using Xunit;

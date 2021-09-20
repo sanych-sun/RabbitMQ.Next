@@ -154,10 +154,16 @@ namespace RabbitMQ.Next.Channels
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int ExpandIfRequired(int requestedSize)
         {
+            // current buffer available space: capacity - already written bytes - frame end
             var bufferAvailable = this.buffer.BufferCapacity - this.offset - 1;
-            if (this.buffer.BufferCapacity - this.offset - 1 > requestedSize) // current buffer available space: capacity - already written bytes - frame end
+            if (bufferAvailable - 1 > requestedSize)
             {
                 return Math.Min(bufferAvailable, this.frameMaxSize - this.currentFrameSize);
+            }
+
+            if (this.currentFrameType != FrameType.ContentBody)
+            {
+                throw new InvalidOperationException("Cannot extend buffer for non-content frame.");
             }
 
             this.EndFrame();

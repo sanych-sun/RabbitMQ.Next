@@ -217,9 +217,11 @@ namespace RabbitMQ.Next
             {
                 while (socketChannel.TryRead(out var memoryBlock))
                 {
-                    socket.Send(memoryBlock.Memory);
+                    await socket.SendAsync(memoryBlock.Memory);
                     memoryBlock.Dispose();
                 }
+
+                await socket.FlushAsync();
             }
         }
 
