@@ -70,7 +70,7 @@ namespace RabbitMQ.Next.Channels
                 cancellationTokenRegistration = cancellation.Register(this.cancellationHandler);
             }
 
-            this.waitingTask.Task.ContinueWith(x => cancellationTokenRegistration.Dispose());
+            this.waitingTask.Task.ContinueWith(_ => cancellationTokenRegistration.Dispose());
             return this.waitingTask.Task;
 
         }

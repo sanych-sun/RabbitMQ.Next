@@ -15,7 +15,6 @@ namespace RabbitMQ.Next.Consumer
     internal class Consumer : IConsumer
     {
         private readonly IConnection connection;
-        private readonly ISerializer serializer;
         private readonly List<Func<DeliveredMessage, IMessageProperties, IContentAccessor, ValueTask<bool>>> handlers;
         private readonly ConsumerInitializer initializer;
         private readonly Func<IAcknowledgement, IAcknowledger> acknowledgerFactory;
@@ -25,7 +24,6 @@ namespace RabbitMQ.Next.Consumer
 
         private IChannel channel;
         private IAcknowledger acknowledger;
-        private bool isCancelled;
 
         public Consumer(
             IConnection connection,
@@ -37,7 +35,6 @@ namespace RabbitMQ.Next.Consumer
             UnprocessedMessageMode onPoisonMessage)
         {
             this.connection = connection;
-            this.serializer = serializer;
             this.handlers = handlers;
             this.initializer = initializer;
             this.acknowledgerFactory = acknowledgerFactory;
@@ -73,8 +70,6 @@ namespace RabbitMQ.Next.Consumer
 
         private async ValueTask CancelConsumeAsync(Exception ex = null)
         {
-            this.isCancelled = true;
-
             await this.initializer.CancelAsync(this.channel);
 
             if (this.acknowledger != null)
@@ -106,9 +101,9 @@ namespace RabbitMQ.Next.Consumer
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                await this.ProcessPoisonMessageAsync(message, properties, payload, ex);
+                await this.NackAsync(message, this.onPoisonMessage);
                 return true;
             }
             finally
@@ -116,7 +111,7 @@ namespace RabbitMQ.Next.Consumer
                 this.contentAccessor.Reset();
             }
 
-            await this.ProcessUnprocessedMessageAsync(message, properties, payload);
+            await this.NackAsync(message, this.onUnprocessedMessage);
             return true;
         }
 
@@ -137,29 +132,8 @@ namespace RabbitMQ.Next.Consumer
                 return default;
             }
 
-            var requeue = (mode | UnprocessedMessageMode.Requeue) == UnprocessedMessageMode.Requeue;
+            var requeue = mode == UnprocessedMessageMode.Requeue;
             return this.acknowledger.NackAsync(message.DeliveryTag, requeue);
-        }
-
-        private async ValueTask ProcessPoisonMessageAsync(DeliveredMessage message, IMessageProperties properties, ReadOnlySequence<byte> payload, Exception ex)
-        {
-            await this.NackAsync(message, this.onPoisonMessage);
-            // TODO: report to diagnostic source
-        }
-
-        private async ValueTask ProcessUnprocessedMessageAsync(DeliveredMessage message, IMessageProperties properties, ReadOnlySequence<byte> payload)
-        {
-            await this.NackAsync(message, this.onUnprocessedMessage);
-            // TODO: report to diagnostic source
-        }
-
-        private IContentAccessor MakeDetachedContent(ReadOnlySequence<byte> payload)
-        {
-            var detachedPayload = new byte[payload.Length];
-            payload.CopyTo(detachedPayload);
-            var content = new ContentAccessor(this.serializer);
-            content.Set(new ReadOnlySequence<byte>(detachedPayload));
-            return content;
         }
     }
 }

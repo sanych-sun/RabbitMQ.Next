@@ -18,7 +18,7 @@ namespace RabbitMQ.Next
         private readonly Dictionary<string, object> clientProperties = new();
         private IAuthMechanism authMechanism;
         private string virtualhost = ProtocolConstants.DefaultVHost;
-        private string locale = DefaultLocale;
+        private string clientLocale = DefaultLocale;
         private int frameSize = 102_400;
 
         public ConnectionBuilder()
@@ -73,7 +73,7 @@ namespace RabbitMQ.Next
 
         public IConnectionBuilder Locale(string locale)
         {
-            this.locale = locale;
+            this.clientLocale = locale;
             return this;
         }
 
@@ -94,7 +94,7 @@ namespace RabbitMQ.Next
                 this.endpoints.ToArray(),
                 this.virtualhost,
                 this.authMechanism,
-                this.locale,
+                this.clientLocale,
                 this.clientProperties,
                 this.methodRegistry.Build(),
                 this.frameSize);
