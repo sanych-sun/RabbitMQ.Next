@@ -11,7 +11,7 @@ namespace RabbitMQ.Next.Consumer
     {
         private readonly List<QueueConsumerBuilder> queues;
         private readonly List<Func<DeliveredMessage, IMessageProperties, IContentAccessor, ValueTask<bool>>> handlers;
-        private List<ITypeFormatter> formatters;
+        private Dictionary<string, ISerializer> serializers;
 
         public ConsumerBuilder()
         {
@@ -21,7 +21,7 @@ namespace RabbitMQ.Next.Consumer
             this.EachMessageAcknowledgement();
         }
 
-        public IReadOnlyList<ITypeFormatter> Formatters => this.formatters;
+        public IReadOnlyDictionary<string, ISerializer> Serializers => this.serializers;
 
         public IReadOnlyList<QueueConsumerBuilder> Queues => this.queues;
 
@@ -36,18 +36,6 @@ namespace RabbitMQ.Next.Consumer
         public UnprocessedMessageMode OnUnprocessedMessage { get; private set; } = UnprocessedMessageMode.Requeue;
 
         public UnprocessedMessageMode OnPoisonMessage { get; private set; } = UnprocessedMessageMode.Requeue;
-
-        IConsumerBuilder IConsumerBuilder.UseFormatter(ITypeFormatter formatter)
-        {
-            if (formatter == null)
-            {
-                throw new ArgumentNullException(nameof(formatter));
-            }
-
-            this.formatters ??= new List<ITypeFormatter>();
-            this.formatters.Add(formatter);
-            return this;
-        }
 
         IConsumerBuilder IConsumerBuilder.BindToQueue(string queue, Action<IQueueConsumerBuilder> builder)
         {
@@ -101,6 +89,28 @@ namespace RabbitMQ.Next.Consumer
 
             this.handlers.Add(handler);
             return this;
+        }
+
+        void ISerializationBuilder.AddSerializer(ISerializer serializer, string[] contentTypes)
+        {
+            if (serializer == null)
+            {
+                throw new ArgumentNullException(nameof(serializer));
+            }
+
+            this.serializers ??= new Dictionary<string, ISerializer>();
+
+            if (contentTypes == null || contentTypes.Length == 0)
+            {
+                this.serializers[string.Empty] = serializer;
+            }
+            else
+            {
+                foreach (var contentType in contentTypes)
+                {
+                    this.serializers[contentType] = serializer;
+                }
+            }
         }
     }
 }

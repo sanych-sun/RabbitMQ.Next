@@ -8,6 +8,7 @@ using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Abstractions.Methods;
 using RabbitMQ.Next.Publisher;
 using RabbitMQ.Next.Publisher.Abstractions;
+using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.Transport.Methods.Basic;
 using Xunit;
@@ -93,9 +94,9 @@ namespace RabbitMQ.Next.Tests.Publisher
             var registry = Substitute.For<IMethodRegistry>();
             var returnMethodParser = Substitute.For<IMethodParser<ReturnMethod>>();
             registry.GetParser<ReturnMethod>().Returns(returnMethodParser);
-            var serializer = Substitute.For<ISerializer>();
+            var serializerFactory = Substitute.For<ISerializerFactory>();
 
-            return new ReturnFrameHandler(serializer, handlers ?? new [] { Substitute.For<IReturnedMessageHandler>() }, registry);
+            return new ReturnFrameHandler(serializerFactory, handlers ?? new [] { Substitute.For<IReturnedMessageHandler>() }, registry);
         }
     }
 }

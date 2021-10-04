@@ -7,7 +7,7 @@ using BenchmarkDotNet.Attributes;
 using RabbitMQ.Client;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Publisher;
-using RabbitMQ.Next.Serialization.Formatters;
+using RabbitMQ.Next.Serialization.PlainText;
 using IConnection = RabbitMQ.Next.Abstractions.IConnection;
 
 namespace RabbitMQ.Next.Benchmarks.PublishTests
@@ -55,7 +55,7 @@ namespace RabbitMQ.Next.Benchmarks.PublishTests
         {
             var publisher = await this.connection.CreatePublisherAsync("amq.topic",
                 builder => builder
-                    .UseFormatter(new StringTypeFormatter()));
+                    .UsePlainTextSerializer());
 
             await Task.WhenAll(Enumerable.Range(0, 10)
                 .Select(async num =>
@@ -82,7 +82,7 @@ namespace RabbitMQ.Next.Benchmarks.PublishTests
         {
             var publisher = await this.connection.CreatePublisherAsync("amq.topic",
                 builder => builder
-                    .UseFormatter(new StringTypeFormatter()));
+                    .UsePlainTextSerializer());
 
             for (int i = 0; i < parameters.Messages.Count; i++)
             {
@@ -108,10 +108,10 @@ namespace RabbitMQ.Next.Benchmarks.PublishTests
                 return new TestCaseParameters(name, messages);
             }
 
-            // yield return GenerateTestCase(128, 10_000, "10_000 (128 B)");
-            // yield return GenerateTestCase(1024, 10_000, "10_000 (1 kB)");
-            // yield return GenerateTestCase(10240, 10_000, "10_000 (10 kB)");
-            // yield return GenerateTestCase(102400, 10_000, "10_000 (100 kB)");
+            yield return GenerateTestCase(128, 10_000, "10_000 (128 B)");
+            yield return GenerateTestCase(1024, 10_000, "10_000 (1 kB)");
+            yield return GenerateTestCase(10240, 10_000, "10_000 (10 kB)");
+            yield return GenerateTestCase(102400, 10_000, "10_000 (100 kB)");
             yield return GenerateTestCase(1048576, 1_000, "1_000 (1 MB)");
         }
 

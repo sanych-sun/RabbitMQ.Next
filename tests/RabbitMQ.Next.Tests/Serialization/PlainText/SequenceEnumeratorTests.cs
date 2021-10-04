@@ -3,9 +3,10 @@ using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using RabbitMQ.Next.Buffers;
+using RabbitMQ.Next.Serialization.PlainText;
 using Xunit;
 
-namespace RabbitMQ.Next.Tests.Buffers
+namespace RabbitMQ.Next.Tests.Serialization.PlainText
 {
     public class SequenceEnumeratorTests
     {

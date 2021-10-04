@@ -10,25 +10,62 @@ namespace RabbitMQ.Next.Tests.Publisher
     public class PublisherBuilderTests
     {
         [Fact]
-        public void CanRegisterFormatters()
+        public void AddSerializer()
         {
-            var formatter1 = Substitute.For<ITypeFormatter>();
-            var formatter2 = Substitute.For<ITypeFormatter>();
+            var consumerBuilder = new PublisherBuilder();
+            var serializer1 = Substitute.For<ISerializer>();
+            var serializer2 = Substitute.For<ISerializer>();
 
-            var builder = new PublisherBuilder();
-            ((IPublisherBuilder) builder).UseFormatter(formatter1);
-            ((IPublisherBuilder) builder).UseFormatter(formatter2);
+            ((IPublisherBuilder) consumerBuilder).AddSerializer(serializer1, "test1");
+            ((IPublisherBuilder) consumerBuilder).AddSerializer(serializer2, "test2");
 
-            Assert.Contains(formatter1, builder.Formatters);
-            Assert.Contains(formatter2, builder.Formatters);
+            Assert.Equal(serializer1, consumerBuilder.Serializers["test1"]);
+            Assert.Equal(serializer2, consumerBuilder.Serializers["test2"]);
+        }
+        
+        [Fact]
+        public void AddSerializerAsDefault()
+        {
+            var consumerBuilder = new PublisherBuilder();
+            var serializer1 = Substitute.For<ISerializer>();
+
+            ((IPublisherBuilder) consumerBuilder).AddSerializer(serializer1);
+
+            Assert.Equal(serializer1, consumerBuilder.Serializers[string.Empty]);
         }
 
         [Fact]
-        public void ThrowsOnInvalidFormatter()
+        public void AddSerializerCanOverride()
         {
-            var builder = new PublisherBuilder();
-            
-            Assert.Throws<ArgumentNullException>(() => ((IPublisherBuilder)builder).UseFormatter(null));
+            var consumerBuilder = new PublisherBuilder();
+            var serializer1 = Substitute.For<ISerializer>();
+            var serializer2 = Substitute.For<ISerializer>();
+
+            ((IPublisherBuilder) consumerBuilder).AddSerializer(serializer1, "test1");
+            ((IPublisherBuilder) consumerBuilder).AddSerializer(serializer2, "test1");
+
+            Assert.Equal(serializer2, consumerBuilder.Serializers["test1"]);
+        }
+
+        [Fact]
+        public void AddSerializerCanOverrideDefault()
+        {
+            var consumerBuilder = new PublisherBuilder();
+            var serializer1 = Substitute.For<ISerializer>();
+            var serializer2 = Substitute.For<ISerializer>();
+
+            ((IPublisherBuilder) consumerBuilder).AddSerializer(serializer1);
+            ((IPublisherBuilder) consumerBuilder).AddSerializer(serializer2);
+
+            Assert.Equal(serializer2, consumerBuilder.Serializers[string.Empty]);
+        }
+
+        [Fact]
+        public void AddSerializerThrowsOnNull()
+        {
+            var consumerBuilder = new PublisherBuilder();
+
+            Assert.Throws<ArgumentNullException>(() => ((IPublisherBuilder) consumerBuilder).AddSerializer(null));
         }
 
         [Fact]
@@ -41,8 +78,8 @@ namespace RabbitMQ.Next.Tests.Publisher
             ((IPublisherBuilder) builder).UseMessageInitializer(transformer1);
             ((IPublisherBuilder) builder).UseMessageInitializer(transformer2);
 
-            Assert.Contains(transformer1, builder.Transformers);
-            Assert.Contains(transformer2, builder.Transformers);
+            Assert.Contains(transformer1, builder.Initializers);
+            Assert.Contains(transformer2, builder.Initializers);
         }
 
         [Fact]

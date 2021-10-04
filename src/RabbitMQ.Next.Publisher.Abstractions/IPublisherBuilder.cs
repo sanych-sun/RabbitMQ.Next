@@ -2,10 +2,8 @@ using RabbitMQ.Next.Serialization.Abstractions;
 
 namespace RabbitMQ.Next.Publisher.Abstractions
 {
-    public interface IPublisherBuilder
+    public interface IPublisherBuilder : ISerializationBuilder
     {
-        IPublisherBuilder UseFormatter(ITypeFormatter typeFormatter);
-
         IPublisherBuilder UseMessageInitializer(IMessageInitializer initializer);
 
         IPublisherBuilder AddReturnedMessageHandler(IReturnedMessageHandler returnedMessageHandler);

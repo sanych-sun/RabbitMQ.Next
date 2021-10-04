@@ -1,15 +1,13 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
-using RabbitMQ.Next.Buffers;
-using RabbitMQ.Next.Serialization.Abstractions;
-using RabbitMQ.Next.Transport;
+using System.Text;
 
-namespace RabbitMQ.Next.Serialization.Formatters
+namespace RabbitMQ.Next.Serialization.PlainText.Formatters
 {
-    public class StringTypeFormatter : ITypeFormatter
+    internal class StringFormatter : IFormatter
     {
-        private static readonly int MinBufferSize = TextEncoding.GetMaxByteCount(1);
+        private static readonly int MinBufferSize = Encoding.UTF8.GetMaxByteCount(1);
 
         public bool CanHandle(Type type) => type == typeof(string);
 
@@ -21,7 +19,7 @@ namespace RabbitMQ.Next.Serialization.Formatters
                 return;
             }
 
-            throw new InvalidOperationException();
+            throw new ArgumentException(nameof(TContent));
         }
 
         public TContent Parse<TContent>(ReadOnlySequence<byte> bytes)
@@ -31,7 +29,7 @@ namespace RabbitMQ.Next.Serialization.Formatters
                 return result;
             }
 
-            throw new InvalidOperationException();
+            throw new ArgumentException(nameof(TContent));
         }
 
 
@@ -42,17 +40,17 @@ namespace RabbitMQ.Next.Serialization.Formatters
                 return;
             }
 
-            var maxLength = TextEncoding.GetMaxByteCount(content.Length);
+            var maxLength = Encoding.UTF8.GetMaxByteCount(content.Length);
             var span = writer.GetSpan();
 
             if (span.Length > maxLength)
             {
-                var bytesWritten = TextEncoding.GetBytes(content, span);
+                var bytesWritten = Encoding.UTF8.GetBytes(content, span);
                 writer.Advance(bytesWritten);
             }
             else
             {
-                var encoder = TextEncoding.GetEncoder();
+                var encoder = Encoding.UTF8.GetEncoder();
                 var remaining = content.AsSpan();
                 do
                 {
@@ -73,10 +71,10 @@ namespace RabbitMQ.Next.Serialization.Formatters
 
             if (bytes.IsSingleSegment)
             {
-                return TextEncoding.GetString(bytes.FirstSpan);
+                return Encoding.UTF8.GetString(bytes.FirstSpan);
             }
 
-            var decoder = TextEncoding.GetDecoder();
+            var decoder = Encoding.UTF8.GetDecoder();
             var chunks = new List<ArraySegment<char>>();
             var totalChars = 0;
 
@@ -85,7 +83,7 @@ namespace RabbitMQ.Next.Serialization.Formatters
                 using var enumerator = new SequenceEnumerator<byte>(bytes);
                 while (enumerator.MoveNext())
                 {
-                    var maxChars = TextEncoding.GetMaxCharCount(enumerator.Current.Length);
+                    var maxChars = Encoding.UTF8.GetMaxCharCount(enumerator.Current.Length);
 
                     var chunk = ArrayPool<char>.Shared.Rent(maxChars);
                     var actualSize = decoder.GetChars(enumerator.Current.Span, chunk, enumerator.IsLast);

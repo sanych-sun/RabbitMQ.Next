@@ -7,7 +7,7 @@ using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Consumer.Abstractions;
-using RabbitMQ.Next.Serialization.Abstractions;
+using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Transport.Methods.Basic;
 
 namespace RabbitMQ.Next.Consumer
@@ -27,7 +27,7 @@ namespace RabbitMQ.Next.Consumer
 
         public Consumer(
             IConnection connection,
-            ISerializer serializer,
+            ISerializerFactory serializerFactory,
             List<Func<DeliveredMessage, IMessageProperties, IContentAccessor, ValueTask<bool>>> handlers,
             ConsumerInitializer initializer,
             Func<IAcknowledgement, IAcknowledger> acknowledgerFactory,
@@ -41,7 +41,7 @@ namespace RabbitMQ.Next.Consumer
             this.onUnprocessedMessage = onUnprocessedMessage;
             this.onPoisonMessage = onPoisonMessage;
 
-            this.contentAccessor = new ContentAccessor(serializer);
+            this.contentAccessor = new ContentAccessor(serializerFactory);
         }
 
 
@@ -86,7 +86,7 @@ namespace RabbitMQ.Next.Consumer
         private async ValueTask<bool> HandleMessageAsync(DeliverMethod method, IMessageProperties properties, ReadOnlySequence<byte> payload)
         {
             var message = new DeliveredMessage(method.Exchange, method.RoutingKey, method.Redelivered, method.ConsumerTag, method.DeliveryTag);
-            this.contentAccessor.Set(payload);
+            this.contentAccessor.Set(payload, properties.ContentType);
 
             try
             {

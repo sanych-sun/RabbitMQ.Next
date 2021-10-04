@@ -7,6 +7,7 @@ using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Abstractions.Methods;
 using RabbitMQ.Next.Publisher.Abstractions;
+using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.Transport.Methods.Basic;
 
@@ -21,11 +22,11 @@ namespace RabbitMQ.Next.Publisher
         private bool expectContent;
         private ReturnMethod currentMethod;
 
-        public ReturnFrameHandler(ISerializer serializer, IReadOnlyList<IReturnedMessageHandler> returnedMessageHandlers, IMethodRegistry registry)
+        public ReturnFrameHandler(ISerializerFactory serializerFactory, IReadOnlyList<IReturnedMessageHandler> returnedMessageHandlers, IMethodRegistry registry)
         {
             this.returnedMessageHandlers = returnedMessageHandlers;
             this.returnMethodParser = registry.GetParser<ReturnMethod>();
-            this.contentAccessor = new ContentAccessor(serializer);
+            this.contentAccessor = new ContentAccessor(serializerFactory);
         }
 
         public ValueTask<bool> HandleMethodFrameAsync(MethodId methodId, ReadOnlyMemory<byte> payload)
@@ -53,7 +54,7 @@ namespace RabbitMQ.Next.Publisher
         private async ValueTask<bool> HandleReturnedMessageAsync(IMessageProperties properties, ReadOnlySequence<byte> contentBytes)
         {
             var message = new ReturnedMessage(this.currentMethod.Exchange, this.currentMethod.RoutingKey, this.currentMethod.ReplyCode, this.currentMethod.ReplyText);
-            this.contentAccessor.Set(contentBytes);
+            this.contentAccessor.Set(contentBytes, properties.ContentType);
 
             try
             {

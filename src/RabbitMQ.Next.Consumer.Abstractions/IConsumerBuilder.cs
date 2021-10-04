@@ -5,10 +5,8 @@ using RabbitMQ.Next.Serialization.Abstractions;
 
 namespace RabbitMQ.Next.Consumer.Abstractions
 {
-    public interface IConsumerBuilder
+    public interface IConsumerBuilder: ISerializationBuilder
     {
-        IConsumerBuilder UseFormatter(ITypeFormatter formatter);
-
         IConsumerBuilder BindToQueue(string queue, Action<IQueueConsumerBuilder> builder = null);
 
         IConsumerBuilder PrefetchSize(uint size);

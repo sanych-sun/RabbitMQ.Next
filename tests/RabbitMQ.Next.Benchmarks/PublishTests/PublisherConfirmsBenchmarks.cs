@@ -7,7 +7,7 @@ using BenchmarkDotNet.Attributes;
 using RabbitMQ.Client;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Publisher;
-using RabbitMQ.Next.Serialization.Formatters;
+using RabbitMQ.Next.Serialization.PlainText;
 using IConnection = RabbitMQ.Next.Abstractions.IConnection;
 
 namespace RabbitMQ.Next.Benchmarks.PublishTests
@@ -58,7 +58,7 @@ namespace RabbitMQ.Next.Benchmarks.PublishTests
             var publisher = await this.connection.CreatePublisherAsync("amq.topic",
                 builder => builder
                     .PublisherConfirms()
-                    .UseFormatter(new StringTypeFormatter()));
+                    .UsePlainTextSerializer());
 
             await Task.WhenAll(Enumerable.Range(0, 10)
                 .Select(async num =>
@@ -86,7 +86,7 @@ namespace RabbitMQ.Next.Benchmarks.PublishTests
             var publisher = await this.connection.CreatePublisherAsync("amq.topic",
                 builder => builder
                     .PublisherConfirms()
-                    .UseFormatter(new StringTypeFormatter()));
+                    .UsePlainTextSerializer());
 
             for (int i = 0; i < parameters.Messages.Count; i++)
             {

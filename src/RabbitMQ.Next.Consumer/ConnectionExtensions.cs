@@ -12,7 +12,7 @@ namespace RabbitMQ.Next.Consumer
             var consumerBuilder = new ConsumerBuilder();
             builder?.Invoke(consumerBuilder);
 
-            var serializer = new Serializer(consumerBuilder.Formatters);
+            var serializer = new SerializerFactory(consumerBuilder.Serializers);
             var consumerInitializer = new ConsumerInitializer(consumerBuilder.Queues, consumerBuilder.PrefetchSize, consumerBuilder.PrefetchCount, consumerBuilder.AcknowledgerFactory == null);
 
             var consumer = new Consumer(connection, serializer, consumerBuilder.Handlers,

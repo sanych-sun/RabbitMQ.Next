@@ -8,7 +8,7 @@ using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Methods;
 using RabbitMQ.Next.Publisher.Abstractions;
-using RabbitMQ.Next.Serialization.Abstractions;
+using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Transport.Methods.Basic;
 using RabbitMQ.Next.Transport.Methods.Confirm;
 using RabbitMQ.Next.Transport.Methods.Exchange;
@@ -22,7 +22,7 @@ namespace RabbitMQ.Next.Publisher
         private readonly IReadOnlyList<IReturnedMessageHandler> returnedMessageHandlers;
         private readonly IConnection connection;
         private readonly string exchange;
-        private readonly ISerializer serializer;
+        private readonly ISerializerFactory serializerFactory;
         private readonly IReadOnlyList<IMessageInitializer> transformers;
         private readonly IMethodFormatter<PublishMethod> publishFormatter;
         private readonly bool publisherConfirms;
@@ -36,7 +36,7 @@ namespace RabbitMQ.Next.Publisher
             IConnection connection,
             string exchange,
             bool publisherConfirms,
-            ISerializer serializer,
+            ISerializerFactory serializerFactory,
             IReadOnlyList<IMessageInitializer> transformers,
             IReadOnlyList<IReturnedMessageHandler> returnedMessageHandlers)
         {
@@ -47,7 +47,7 @@ namespace RabbitMQ.Next.Publisher
             this.connection = connection;
             this.exchange = exchange;
             this.publisherConfirms = publisherConfirms;
-            this.serializer = serializer;
+            this.serializerFactory = serializerFactory;
             this.transformers = transformers;
             this.returnedMessageHandlers = returnedMessageHandlers;
 
@@ -102,7 +102,14 @@ namespace RabbitMQ.Next.Publisher
             this.CheckDisposed();
             this.EnsureChannel();
 
-            await this.channel.SendAsync((properties: builder, flags, publisher: this, content), (state, frameBuilder) =>
+            var serializer = this.serializerFactory.Get(builder.ContentType);
+
+            if (serializer == null)
+            {
+                throw new NotSupportedException($"Cannot resolve serializer for '{builder.ContentType}' content type.");
+            }
+
+            await this.channel.SendAsync((properties: builder, flags, publisher: this, content, serializer), (state, frameBuilder) =>
             {
                 var method = new PublishMethod(state.publisher.exchange, state.properties.RoutingKey, (byte) state.flags);
                 var methodBuffer = frameBuilder.BeginMethodFrame(MethodId.BasicPublish);
@@ -112,7 +119,7 @@ namespace RabbitMQ.Next.Publisher
                 frameBuilder.EndFrame();
 
                 var bodyWriter = frameBuilder.BeginContentFrame(state.properties);
-                state.publisher.serializer.Serialize(state.content, bodyWriter);
+                state.serializer.Serialize(state.content, bodyWriter);
                 frameBuilder.EndFrame();
             });
 
@@ -178,7 +185,7 @@ namespace RabbitMQ.Next.Publisher
                     this.lastDeliveryTag = 0;
                     var methodHandlers = new List<IFrameHandler>
                     {
-                        new ReturnFrameHandler(this.serializer, this.returnedMessageHandlers, this.connection.MethodRegistry),
+                        new ReturnFrameHandler(this.serializerFactory, this.returnedMessageHandlers, this.connection.MethodRegistry),
                     };
 
                     if (this.publisherConfirms)

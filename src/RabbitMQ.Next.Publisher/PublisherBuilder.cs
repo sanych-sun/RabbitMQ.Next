@@ -7,29 +7,17 @@ namespace RabbitMQ.Next.Publisher
 {
     internal sealed class PublisherBuilder : IPublisherBuilder
     {
-        private List<IMessageInitializer> transformers;
-        private List<ITypeFormatter> formatters;
+        private List<IMessageInitializer> initializers;
+        private Dictionary<string, ISerializer> serializers;
         private List<IReturnedMessageHandler> returnedMessageHandlers;
 
-        public IReadOnlyList<IMessageInitializer> Transformers => this.transformers;
+        public IReadOnlyList<IMessageInitializer> Initializers => this.initializers;
 
-        public IReadOnlyList<ITypeFormatter> Formatters => this.formatters;
+        public IReadOnlyDictionary<string, ISerializer> Serializers => this.serializers;
 
         public IReadOnlyList<IReturnedMessageHandler> ReturnedMessageHandlers => this.returnedMessageHandlers;
 
         public bool PublisherConfirms { get; private set; }
-
-        IPublisherBuilder IPublisherBuilder.UseFormatter(ITypeFormatter typeFormatter)
-        {
-            if (typeFormatter == null)
-            {
-                throw new ArgumentNullException(nameof(typeFormatter));
-            }
-
-            this.formatters ??= new List<ITypeFormatter>();
-            this.formatters.Add(typeFormatter);
-            return this;
-        }
 
         IPublisherBuilder IPublisherBuilder.UseMessageInitializer(IMessageInitializer initializer)
         {
@@ -38,8 +26,8 @@ namespace RabbitMQ.Next.Publisher
                 throw new ArgumentNullException(nameof(initializer));
             }
 
-            this.transformers ??= new List<IMessageInitializer>();
-            this.transformers.Add(initializer);
+            this.initializers ??= new List<IMessageInitializer>();
+            this.initializers.Add(initializer);
             return this;
         }
 
@@ -59,6 +47,28 @@ namespace RabbitMQ.Next.Publisher
         {
             this.PublisherConfirms = true;
             return this;
+        }
+
+        void ISerializationBuilder.AddSerializer(ISerializer serializer, params string[] contentTypes)
+        {
+            if (serializer == null)
+            {
+                throw new ArgumentNullException(nameof(serializer));
+            }
+
+            this.serializers ??= new Dictionary<string, ISerializer>();
+
+            if (contentTypes == null || contentTypes.Length == 0)
+            {
+                this.serializers[string.Empty ] = serializer;
+            }
+            else
+            {
+                foreach (var contentType in contentTypes)
+                {
+                    this.serializers[contentType] = serializer;
+                }
+            }
         }
     }
 }

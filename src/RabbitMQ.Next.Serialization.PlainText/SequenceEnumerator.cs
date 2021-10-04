@@ -4,9 +4,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
-namespace RabbitMQ.Next.Buffers
+namespace RabbitMQ.Next.Serialization.PlainText
 {
-    public struct SequenceEnumerator<T> : IEnumerator<ReadOnlyMemory<T>>
+    internal struct SequenceEnumerator<T> : IEnumerator<ReadOnlyMemory<T>>
     {
         private readonly ReadOnlySequence<T> source;
         private ReadOnlySequence<T>? remaining;

@@ -1,9 +1,9 @@
 using System;
 using System.Buffers;
 
-namespace RabbitMQ.Next.Serialization.Abstractions
+namespace RabbitMQ.Next.Serialization.PlainText
 {
-    public interface ITypeFormatter
+    public interface IFormatter
     {
         bool CanHandle(Type type);
 

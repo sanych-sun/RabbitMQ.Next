@@ -4,13 +4,13 @@ using System.Collections.Generic;
 using System.Linq;
 using RabbitMQ.Next.Serialization.Abstractions;
 
-namespace RabbitMQ.Next.Serialization
+namespace RabbitMQ.Next.Serialization.PlainText
 {
-    public class Serializer : ISerializer
+    internal class PlainTextSerializer : ISerializer
     {
-        private readonly ITypeFormatter[] formatters;
+        private readonly IFormatter[] formatters;
 
-        public Serializer(IEnumerable<ITypeFormatter> formatters)
+        public PlainTextSerializer(IEnumerable<IFormatter> formatters)
         {
             this.formatters = formatters?.ToArray();
 
@@ -29,7 +29,7 @@ namespace RabbitMQ.Next.Serialization
             return formatter.Parse<TContent>(bytes);
         }
 
-        private ITypeFormatter GetFormatter<TContent>()
+        private IFormatter GetFormatter<TContent>()
         {
             for (var i = 0; i < this.formatters.Length; i++)
             {

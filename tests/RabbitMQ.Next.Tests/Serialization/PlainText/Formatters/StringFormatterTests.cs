@@ -1,11 +1,11 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
-using RabbitMQ.Next.Serialization.Formatters;
+using RabbitMQ.Next.Serialization.PlainText.Formatters;
 using RabbitMQ.Next.Tests.Mocks;
 using Xunit;
 
-namespace RabbitMQ.Next.Tests.Serialization.Formatters
+namespace RabbitMQ.Next.Tests.Serialization.PlainText.Formatters
 {
     public class StringFormatterTests
     {
@@ -13,7 +13,7 @@ namespace RabbitMQ.Next.Tests.Serialization.Formatters
         [MemberData(nameof(FormatTestCases))]
         public void CanFormat(string data, int initialBufferSize, byte[] expected)
         {
-            var formatter = new StringTypeFormatter();
+            var formatter = new StringFormatter();
             var bufferWriter = new ArrayBufferWriter<byte>(initialBufferSize);
 
             formatter.Format(data, bufferWriter);
@@ -25,7 +25,7 @@ namespace RabbitMQ.Next.Tests.Serialization.Formatters
         [MemberData(nameof(ParseTestCases))]
         public void CanParse(string expected, params byte[][] parts)
         {
-            var formatter = new StringTypeFormatter();
+            var formatter = new StringFormatter();
             var sequence = Helpers.MakeSequence(parts);
 
             var result = formatter.Parse<string>(sequence);
@@ -40,7 +40,7 @@ namespace RabbitMQ.Next.Tests.Serialization.Formatters
         [InlineData(typeof(int), false)]
         public void CanHandle(Type type, bool expected)
         {
-            var formatter = new StringTypeFormatter();
+            var formatter = new StringFormatter();
 
             Assert.Equal(expected, formatter.CanHandle(type));
         }
@@ -48,19 +48,19 @@ namespace RabbitMQ.Next.Tests.Serialization.Formatters
         [Fact]
         public void ThrowsOnInvalidFormat()
         {
-            var formatter = new StringTypeFormatter();
+            var formatter = new StringFormatter();
             var bufferWriter = new ArrayBufferWriter<byte>();
 
-            Assert.Throws<InvalidOperationException>(() => formatter.Format(42, bufferWriter));
+            Assert.Throws<ArgumentException>(() => formatter.Format(42, bufferWriter));
         }
 
         [Fact]
         public void ThrowsOnInvalidParse()
         {
-            var formatter = new StringTypeFormatter();
+            var formatter = new StringFormatter();
             var sequence = ReadOnlySequence<byte>.Empty;
 
-            Assert.Throws<InvalidOperationException>(() => formatter.Parse<int>(sequence));
+            Assert.Throws<ArgumentException>(() => formatter.Parse<int>(sequence));
         }
 
         public static IEnumerable<object[]> FormatTestCases()
