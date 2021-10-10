@@ -1,19 +1,20 @@
 using System;
 using System.Collections.Generic;
 using RabbitMQ.Next.Publisher.Abstractions;
+using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Serialization.Abstractions;
 
 namespace RabbitMQ.Next.Publisher
 {
     internal sealed class PublisherBuilder : IPublisherBuilder
     {
+        private readonly SerializerFactory serializerFactory = new();
         private List<IMessageInitializer> initializers;
-        private Dictionary<string, ISerializer> serializers;
         private List<IReturnedMessageHandler> returnedMessageHandlers;
 
         public IReadOnlyList<IMessageInitializer> Initializers => this.initializers;
 
-        public IReadOnlyDictionary<string, ISerializer> Serializers => this.serializers;
+        public ISerializerFactory SerializerFactory => this.serializerFactory;
 
         public IReadOnlyList<IReturnedMessageHandler> ReturnedMessageHandlers => this.returnedMessageHandlers;
 
@@ -43,32 +44,18 @@ namespace RabbitMQ.Next.Publisher
             return this;
         }
 
+
         IPublisherBuilder IPublisherBuilder.PublisherConfirms()
         {
             this.PublisherConfirms = true;
             return this;
         }
 
-        void ISerializationBuilder.AddSerializer(ISerializer serializer, params string[] contentTypes)
+        public IPublisherBuilder UseSerializer(ISerializer serializer, IReadOnlyList<string> contentTypes = null, bool isDefault = true)
         {
-            if (serializer == null)
-            {
-                throw new ArgumentNullException(nameof(serializer));
-            }
+            this.serializerFactory.RegisterSerializer(serializer, contentTypes, isDefault);
 
-            this.serializers ??= new Dictionary<string, ISerializer>();
-
-            if (contentTypes == null || contentTypes.Length == 0)
-            {
-                this.serializers[string.Empty ] = serializer;
-            }
-            else
-            {
-                foreach (var contentType in contentTypes)
-                {
-                    this.serializers[contentType] = serializer;
-                }
-            }
+            return this;
         }
     }
 }

@@ -12,65 +12,6 @@ namespace RabbitMQ.Next.Tests.Consumer
     public class ConsumerBuilderTests
     {
         [Fact]
-        public void AddSerializer()
-        {
-            var consumerBuilder = new ConsumerBuilder();
-            var formatter1 = Substitute.For<ISerializer>();
-            var formatter2 = Substitute.For<ISerializer>();
-
-            ((IConsumerBuilder) consumerBuilder).AddSerializer(formatter1, "test1");
-            ((IConsumerBuilder) consumerBuilder).AddSerializer(formatter2, "test2");
-
-            Assert.Equal(formatter1, consumerBuilder.Serializers["test1"]);
-            Assert.Equal(formatter2, consumerBuilder.Serializers["test2"]);
-        }
-
-        [Fact]
-        public void AddSerializerAsDefault()
-        {
-            var consumerBuilder = new ConsumerBuilder();
-            var formatter1 = Substitute.For<ISerializer>();
-
-            ((IConsumerBuilder) consumerBuilder).AddSerializer(formatter1);
-
-            Assert.Equal(formatter1, consumerBuilder.Serializers[string.Empty]);
-        }
-
-        [Fact]
-        public void AddSerializerCanOverride()
-        {
-            var consumerBuilder = new ConsumerBuilder();
-            var formatter1 = Substitute.For<ISerializer>();
-            var formatter2 = Substitute.For<ISerializer>();
-
-            ((IConsumerBuilder) consumerBuilder).AddSerializer(formatter1, "test1");
-            ((IConsumerBuilder) consumerBuilder).AddSerializer(formatter2, "test1");
-
-            Assert.Equal(formatter2, consumerBuilder.Serializers["test1"]);
-        }
-
-        [Fact]
-        public void AddSerializerCanOverrideDefault()
-        {
-            var consumerBuilder = new ConsumerBuilder();
-            var formatter1 = Substitute.For<ISerializer>();
-            var formatter2 = Substitute.For<ISerializer>();
-
-            ((IConsumerBuilder) consumerBuilder).AddSerializer(formatter1);
-            ((IConsumerBuilder) consumerBuilder).AddSerializer(formatter2);
-
-            Assert.Equal(formatter2, consumerBuilder.Serializers[string.Empty]);
-        }
-
-        [Fact]
-        public void AddSerializerThrowsOnNull()
-        {
-            var consumerBuilder = new ConsumerBuilder();
-
-            Assert.Throws<ArgumentNullException>(() => ((IConsumerBuilder) consumerBuilder).AddSerializer(null));
-        }
-
-        [Fact]
         public void PrefetchSize()
         {
             var consumerBuilder = new ConsumerBuilder();

@@ -6,19 +6,31 @@ namespace RabbitMQ.Next.Serialization
 {
     public class SerializerFactory : ISerializerFactory
     {
-        private readonly IReadOnlyDictionary<string, ISerializer> serializers;
-        private readonly ISerializer defaultSerializer;
+        private readonly Dictionary<string, ISerializer> serializers = new();
+        private ISerializer defaultSerializer;
 
-        public SerializerFactory(IReadOnlyDictionary<string, ISerializer> serializers)
+        public void RegisterSerializer(ISerializer serializer, IReadOnlyList<string> contentTypes = null, bool isDefault = true)
         {
-            this.serializers = serializers;
-            if (serializers.TryGetValue(string.Empty, out var serializer))
+            if (serializer == null)
+            {
+                throw new ArgumentNullException(nameof(serializer));
+            }
+
+            if (isDefault)
             {
                 this.defaultSerializer = serializer;
             }
+
+            if (contentTypes != null)
+            {
+                for (var i = 0; i < contentTypes.Count; i++)
+                {
+                    this.serializers[contentTypes[i]] = serializer;
+                }
+            }
         }
 
-        public ISerializer Get(string contentType)
+        ISerializer ISerializerFactory.Get(string contentType)
         {
             if (string.IsNullOrEmpty(contentType))
             {
@@ -30,7 +42,7 @@ namespace RabbitMQ.Next.Serialization
                 return serializer;
             }
 
-            return null;
+            return this.defaultSerializer;
         }
     }
 }

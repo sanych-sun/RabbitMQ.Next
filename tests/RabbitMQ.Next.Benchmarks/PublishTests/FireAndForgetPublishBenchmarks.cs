@@ -55,7 +55,8 @@ namespace RabbitMQ.Next.Benchmarks.PublishTests
         {
             var publisher = await this.connection.CreatePublisherAsync("amq.topic",
                 builder => builder
-                    .UsePlainTextSerializer());
+                    .UsePlainTextSerializer()
+                );
 
             await Task.WhenAll(Enumerable.Range(0, 10)
                 .Select(async num =>
@@ -82,7 +83,8 @@ namespace RabbitMQ.Next.Benchmarks.PublishTests
         {
             var publisher = await this.connection.CreatePublisherAsync("amq.topic",
                 builder => builder
-                    .UsePlainTextSerializer());
+                    .UsePlainTextSerializer()
+                );
 
             for (int i = 0; i < parameters.Messages.Count; i++)
             {

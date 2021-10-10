@@ -32,7 +32,7 @@ namespace RabbitMQ.Next.Serialization.PlainText.Formatters
         private void FormatInternal(DateTimeOffset content, IBufferWriter<byte> writer)
         {
             var target = writer.GetSpan();
-            if (Utf8Formatter.TryFormat(content, target, out int bytesWritten))
+            if (Utf8Formatter.TryFormat(content, target, out int bytesWritten, new StandardFormat('O')))
             {
                 writer.Advance(bytesWritten);
                 return;
@@ -46,7 +46,7 @@ namespace RabbitMQ.Next.Serialization.PlainText.Formatters
         {
             DateTimeOffset ParseSource(ReadOnlySpan<byte> data)
             {
-                if(Utf8Parser.TryParse(bytes.First.Span, out DateTimeOffset result, out var consumed))
+                if(Utf8Parser.TryParse(data, out DateTimeOffset result, out var consumed, 'O'))
                 {
                     if (consumed != data.Length)
                     {
@@ -56,7 +56,7 @@ namespace RabbitMQ.Next.Serialization.PlainText.Formatters
                     return result;
                 }
 
-                throw new FormatException("Cannot read the payload as int32.");
+                throw new FormatException("Cannot read the payload as DateTimeOffset.");
             }
 
             if (bytes.IsSingleSegment)

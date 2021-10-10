@@ -2,7 +2,6 @@ using System;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Publisher.Abstractions;
-using RabbitMQ.Next.Serialization;
 
 namespace RabbitMQ.Next.Publisher
 {
@@ -18,9 +17,9 @@ namespace RabbitMQ.Next.Publisher
             var publisherBuilder = new PublisherBuilder();
             builder?.Invoke(publisherBuilder);
 
-            var serializer = new SerializerFactory(publisherBuilder.Serializers);
-
-            var publisher = new Publisher(connection, exchange, publisherBuilder.PublisherConfirms, serializer, publisherBuilder.Initializers, publisherBuilder.ReturnedMessageHandlers);
+            var publisher = new Publisher(connection, exchange,
+                publisherBuilder.PublisherConfirms, publisherBuilder.SerializerFactory,
+                publisherBuilder.Initializers, publisherBuilder.ReturnedMessageHandlers);
             await publisher.InitializeAsync();
 
             return publisher;

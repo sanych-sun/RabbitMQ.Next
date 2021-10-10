@@ -56,7 +56,7 @@ namespace RabbitMQ.Next.Serialization.PlainText.Formatters
                     return result;
                 }
 
-                throw new FormatException("Cannot read the payload as int32.");
+                throw new FormatException("Cannot read the payload as int64.");
             }
 
             if (bytes.IsSingleSegment)

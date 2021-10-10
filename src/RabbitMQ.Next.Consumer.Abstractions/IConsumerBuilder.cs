@@ -5,7 +5,7 @@ using RabbitMQ.Next.Serialization.Abstractions;
 
 namespace RabbitMQ.Next.Consumer.Abstractions
 {
-    public interface IConsumerBuilder: ISerializationBuilder
+    public interface IConsumerBuilder : ISerializationBuilder<IConsumerBuilder>
     {
         IConsumerBuilder BindToQueue(string queue, Action<IQueueConsumerBuilder> builder = null);
 

@@ -2,8 +2,8 @@ using System.Collections.Generic;
 
 namespace RabbitMQ.Next.Serialization.Abstractions
 {
-    public interface ISerializationBuilder
+    public interface ISerializationBuilder<out TBuilder>
     {
-        void AddSerializer(ISerializer serializer, params string[] contentTypes);
+        TBuilder UseSerializer(ISerializer serializer, IReadOnlyList<string> contentTypes = null, bool isDefault = true);
     }
 }

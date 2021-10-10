@@ -52,6 +52,15 @@ namespace RabbitMQ.Next.Tests.Serialization.PlainText.Formatters
             Assert.Throws<FormatException>(() =>  formatter.Parse<long>(sequence));
         }
 
+        [Fact]
+        public void ThrowsOnTooSmallBuffer()
+        {
+            var formatter = new Int64Formatter();
+            var bufferWriter = new ArrayBufferWriter<byte>(1);
+
+            Assert.Throws<OutOfMemoryException>(() => formatter.Format(42L, bufferWriter));
+        }
+
         [Theory]
         [InlineData(typeof(byte), false)]
         [InlineData(typeof(int), false)]

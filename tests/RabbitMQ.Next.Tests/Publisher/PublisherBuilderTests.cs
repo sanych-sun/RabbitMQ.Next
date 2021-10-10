@@ -10,65 +10,6 @@ namespace RabbitMQ.Next.Tests.Publisher
     public class PublisherBuilderTests
     {
         [Fact]
-        public void AddSerializer()
-        {
-            var consumerBuilder = new PublisherBuilder();
-            var serializer1 = Substitute.For<ISerializer>();
-            var serializer2 = Substitute.For<ISerializer>();
-
-            ((IPublisherBuilder) consumerBuilder).AddSerializer(serializer1, "test1");
-            ((IPublisherBuilder) consumerBuilder).AddSerializer(serializer2, "test2");
-
-            Assert.Equal(serializer1, consumerBuilder.Serializers["test1"]);
-            Assert.Equal(serializer2, consumerBuilder.Serializers["test2"]);
-        }
-        
-        [Fact]
-        public void AddSerializerAsDefault()
-        {
-            var consumerBuilder = new PublisherBuilder();
-            var serializer1 = Substitute.For<ISerializer>();
-
-            ((IPublisherBuilder) consumerBuilder).AddSerializer(serializer1);
-
-            Assert.Equal(serializer1, consumerBuilder.Serializers[string.Empty]);
-        }
-
-        [Fact]
-        public void AddSerializerCanOverride()
-        {
-            var consumerBuilder = new PublisherBuilder();
-            var serializer1 = Substitute.For<ISerializer>();
-            var serializer2 = Substitute.For<ISerializer>();
-
-            ((IPublisherBuilder) consumerBuilder).AddSerializer(serializer1, "test1");
-            ((IPublisherBuilder) consumerBuilder).AddSerializer(serializer2, "test1");
-
-            Assert.Equal(serializer2, consumerBuilder.Serializers["test1"]);
-        }
-
-        [Fact]
-        public void AddSerializerCanOverrideDefault()
-        {
-            var consumerBuilder = new PublisherBuilder();
-            var serializer1 = Substitute.For<ISerializer>();
-            var serializer2 = Substitute.For<ISerializer>();
-
-            ((IPublisherBuilder) consumerBuilder).AddSerializer(serializer1);
-            ((IPublisherBuilder) consumerBuilder).AddSerializer(serializer2);
-
-            Assert.Equal(serializer2, consumerBuilder.Serializers[string.Empty]);
-        }
-
-        [Fact]
-        public void AddSerializerThrowsOnNull()
-        {
-            var consumerBuilder = new PublisherBuilder();
-
-            Assert.Throws<ArgumentNullException>(() => ((IPublisherBuilder) consumerBuilder).AddSerializer(null));
-        }
-
-        [Fact]
         public void CanRegisterTransformers()
         {
             var transformer1 = Substitute.For<IMessageInitializer>();
