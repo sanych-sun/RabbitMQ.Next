@@ -15,7 +15,7 @@ namespace RabbitMQ.Next.Serialization.PlainText
 
         private List<string> contentTypes;
         private List<IFormatter> formatters;
-        public bool IsDefault { get; private set; }
+        public bool IsDefault { get; private set; } = true;
 
         public IReadOnlyList<string> ContentTypes
             => this.contentTypes == null ? DefaultContentTypes : this.contentTypes;
