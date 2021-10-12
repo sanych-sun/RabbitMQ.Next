@@ -8,9 +8,21 @@ namespace RabbitMQ.Next.Serialization.PlainText
         private static readonly string[] DefaultContentTypes = { "text/plain" };
         private static readonly IFormatter[] DefaultFormatters = {
             new StringFormatter(),
+            new GuidFormatter(),
             new DateTimeOffsetFormatter(),
+            new TimeSpanFormatter(),
+            new ByteFormatter(),
+            new Int16Formatter(),
             new Int32Formatter(),
             new Int64Formatter(),
+            new SingleFormatter(),
+            new DoubleFormatter(),
+            new DecimalFormatter(),
+            new BooleanFormatter(),
+            new SByteFormatter(),
+            new UInt16Formatter(),
+            new UInt32Formatter(),
+            new UInt64Formatter(),
         };
 
         private List<string> contentTypes;

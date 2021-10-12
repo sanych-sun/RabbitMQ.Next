@@ -7,13 +7,13 @@ using Xunit;
 
 namespace RabbitMQ.Next.Tests.Serialization.PlainText.Formatters
 {
-    public class Int64FormatterTests
+    public class SByteFormatterTests
     {
         [Theory]
         [MemberData(nameof(GenericTestCases))]
-        public void CanFormat(long content, byte[] expected)
+        public void CanFormat(sbyte content, byte[] expected)
         {
-            var formatter = new Int64Formatter();
+            var formatter = new SByteFormatter();
             var bufferWriter = new ArrayBufferWriter<byte>(expected.Length);
 
             formatter.Format(content, bufferWriter);
@@ -24,9 +24,9 @@ namespace RabbitMQ.Next.Tests.Serialization.PlainText.Formatters
         [Theory]
         [MemberData(nameof(GenericTestCases))]
         [MemberData(nameof(NullableTestCases))]
-        public void CanFormatNullable(long? content, byte[] expected)
+        public void CanFormatNullable(sbyte? content, byte[] expected)
         {
-            var formatter = new Int64Formatter();
+            var formatter = new SByteFormatter();
             var bufferWriter = new ArrayBufferWriter<byte>(expected.Length == 0 ? 1 : expected.Length);
 
             formatter.Format(content, bufferWriter);
@@ -37,12 +37,12 @@ namespace RabbitMQ.Next.Tests.Serialization.PlainText.Formatters
         [Theory]
         [MemberData(nameof(GenericTestCases))]
         [MemberData(nameof(ParseExtraTestCases))]
-        public void CanParse(long expected, params byte[][] parts)
+        public void CanParse(sbyte expected, params byte[][] parts)
         {
-            var formatter = new Int64Formatter();
+            var formatter = new SByteFormatter();
             var sequence = Helpers.MakeSequence(parts);
 
-            var result = formatter.Parse<long>(sequence);
+            var result = formatter.Parse<sbyte>(sequence);
 
             Assert.Equal(expected, result);
         }
@@ -51,12 +51,12 @@ namespace RabbitMQ.Next.Tests.Serialization.PlainText.Formatters
         [MemberData(nameof(GenericTestCases))]
         [MemberData(nameof(NullableTestCases))]
         [MemberData(nameof(ParseExtraTestCases))]
-        public void CanParseNullable(long? expected, params byte[][] parts)
+        public void CanParseNullable(sbyte? expected, params byte[][] parts)
         {
-            var formatter = new Int64Formatter();
+            var formatter = new SByteFormatter();
             var sequence = Helpers.MakeSequence(parts);
 
-            var result = formatter.Parse<long?>(sequence);
+            var result = formatter.Parse<sbyte?>(sequence);
 
             Assert.Equal(expected, result);
         }
@@ -67,32 +67,33 @@ namespace RabbitMQ.Next.Tests.Serialization.PlainText.Formatters
         [InlineData(new byte[] { 0x34, 0x32, 0x68, 0x65, 0x6C, 0x6C, 0x6F } )]
         public void ParseThrowsOnWrongContent(byte[] content)
         {
-            var formatter = new Int64Formatter();
+            var formatter = new SByteFormatter();
             var sequence = new ReadOnlySequence<byte>(content);
 
-            Assert.Throws<FormatException>(() =>  formatter.Parse<long>(sequence));
+            Assert.Throws<FormatException>(() =>  formatter.Parse<sbyte>(sequence));
         }
 
         [Fact]
         public void ThrowsOnTooSmallBuffer()
         {
-            var formatter = new Int64Formatter();
+            var formatter = new SByteFormatter();
             var bufferWriter = new ArrayBufferWriter<byte>(1);
 
-            Assert.Throws<OutOfMemoryException>(() => formatter.Format(42L, bufferWriter));
+            Assert.Throws<OutOfMemoryException>(() => formatter.Format((sbyte)42, bufferWriter));
         }
 
         [Theory]
+        [InlineData(typeof(sbyte), true)]
+        [InlineData(typeof(sbyte?), true)]
         [InlineData(typeof(byte), false)]
         [InlineData(typeof(int), false)]
-        [InlineData(typeof(long), true)]
-        [InlineData(typeof(long?), true)]
+        [InlineData(typeof(long), false)]
         [InlineData(typeof(string), false)]
         [InlineData(typeof(DateTime), false)]
         [InlineData(typeof(DateTimeOffset), false)]
         public void CanHandle(Type type, bool expected)
         {
-            var formatter = new Int64Formatter();
+            var formatter = new SByteFormatter();
 
             Assert.Equal(expected, formatter.CanHandle(type));
         }
@@ -100,7 +101,7 @@ namespace RabbitMQ.Next.Tests.Serialization.PlainText.Formatters
         [Fact]
         public void ThrowsOnInvalidFormat()
         {
-            var formatter = new Int64Formatter();
+            var formatter = new SByteFormatter();
             var bufferWriter = new ArrayBufferWriter<byte>();
 
             Assert.Throws<ArgumentException>(() => formatter.Format("hello", bufferWriter));
@@ -109,7 +110,7 @@ namespace RabbitMQ.Next.Tests.Serialization.PlainText.Formatters
         [Fact]
         public void ThrowsOnInvalidParse()
         {
-            var formatter = new Int64Formatter();
+            var formatter = new SByteFormatter();
             var sequence = Helpers.MakeSequence(new byte[] { 0x31 });
 
             Assert.Throws<ArgumentException>(() => formatter.Parse<string>(sequence));
@@ -117,10 +118,10 @@ namespace RabbitMQ.Next.Tests.Serialization.PlainText.Formatters
 
         public static IEnumerable<object[]> GenericTestCases()
         {
-            yield return new object[] { 0, new byte[] { 0x30 } };
-            yield return new object[] { 1, new byte[] { 0x31 } };
-            yield return new object[] { 42, new byte[] { 0x34, 0x32 } };
-            yield return new object[] { -42, new byte[] { 0x2D, 0x34, 0x32 } };
+            yield return new object[] { (sbyte)0, new byte[] { 0x30 } };
+            yield return new object[] { (sbyte)1, new byte[] { 0x31 } };
+            yield return new object[] { (sbyte)42, new byte[] { 0x34, 0x32 } };
+            yield return new object[] { (sbyte)-42, new byte[] { 0x2D, 0x34, 0x32 } };
         }
 
         public static IEnumerable<object[]> NullableTestCases()
@@ -130,7 +131,7 @@ namespace RabbitMQ.Next.Tests.Serialization.PlainText.Formatters
 
         public static IEnumerable<object[]> ParseExtraTestCases()
         {
-            yield return new object[] { -42, new byte[] { 0x2D, 0x34 }, new byte[] { 0x32 } };
+            yield return new object[] { (sbyte)-42, new byte[] { 0x2D, 0x34 }, new byte[] { 0x32 } };
         }
     }
 }

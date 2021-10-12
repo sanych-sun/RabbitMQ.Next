@@ -1,6 +1,7 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace RabbitMQ.Next.Serialization.PlainText.Formatters
@@ -32,7 +33,7 @@ namespace RabbitMQ.Next.Serialization.PlainText.Formatters
             throw new ArgumentException(nameof(TContent));
         }
 
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void FormatInternal(string content, IBufferWriter<byte> writer)
         {
             if (string.IsNullOrEmpty(content))
@@ -62,6 +63,7 @@ namespace RabbitMQ.Next.Serialization.PlainText.Formatters
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private string ParseInternal(ReadOnlySequence<byte> bytes)
         {
             if (bytes.IsEmpty)
