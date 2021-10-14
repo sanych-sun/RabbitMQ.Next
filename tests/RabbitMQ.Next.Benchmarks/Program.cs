@@ -5,7 +5,6 @@ using BenchmarkDotNet.Diagnosers;
 using BenchmarkDotNet.Engines;
 using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Running;
-using RabbitMQ.Next.Benchmarks.PublishTests;
 
 namespace RabbitMQ.Next.Benchmarks
 {

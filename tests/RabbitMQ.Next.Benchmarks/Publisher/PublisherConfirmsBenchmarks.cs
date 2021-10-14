@@ -10,9 +10,9 @@ using RabbitMQ.Next.Publisher;
 using RabbitMQ.Next.Serialization.PlainText;
 using IConnection = RabbitMQ.Next.Abstractions.IConnection;
 
-namespace RabbitMQ.Next.Benchmarks.PublishTests
+namespace RabbitMQ.Next.Benchmarks.Publisher
 {
-    public class FireAndForgetPublishBenchmarks
+    public class PublisherConfirmsBenchmarks
     {
         private IConnection connection;
         private RabbitMQ.Client.IConnection theirConnection;
@@ -31,11 +31,11 @@ namespace RabbitMQ.Next.Benchmarks.PublishTests
         }
 
         [Benchmark(Baseline = true)]
-        [BenchmarkCategory("Publish")]
         [ArgumentsSource(nameof(TestCases))]
         public void PublishBaseLibrary(TestCaseParameters parameters)
         {
             var model = this.theirConnection.CreateModel();
+            model.ConfirmSelect();
 
             for (var i = 0; i < parameters.Messages.Count; i++)
             {
@@ -43,18 +43,19 @@ namespace RabbitMQ.Next.Benchmarks.PublishTests
                 var props = model.CreateBasicProperties();
                 props.CorrelationId = data.CorrelationId;
                 model.BasicPublish("amq.topic", "", props, Encoding.UTF8.GetBytes(data.Payload));
+                model.WaitForConfirms();
             }
 
             model.Close();
         }
 
         [Benchmark]
-        [BenchmarkCategory("Publish")]
         [ArgumentsSource(nameof(TestCases))]
         public async Task PublishParallelAsync(TestCaseParameters parameters)
         {
             var publisher = await this.connection.CreatePublisherAsync("amq.topic",
                 builder => builder
+                    .PublisherConfirms()
                     .UsePlainTextSerializer()
                 );
 
@@ -77,12 +78,12 @@ namespace RabbitMQ.Next.Benchmarks.PublishTests
         }
 
         [Benchmark]
-        [BenchmarkCategory("Publish")]
         [ArgumentsSource(nameof(TestCases))]
         public async Task PublishAsync(TestCaseParameters parameters)
         {
             var publisher = await this.connection.CreatePublisherAsync("amq.topic",
                 builder => builder
+                    .PublisherConfirms()
                     .UsePlainTextSerializer()
                 );
 

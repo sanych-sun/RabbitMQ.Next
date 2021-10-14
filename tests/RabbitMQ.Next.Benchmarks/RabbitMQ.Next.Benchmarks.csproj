@@ -29,4 +29,8 @@
     <None Remove="BenchmarkDotNet.Artifacts\**" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Consumer" />
+  </ItemGroup>
+
 </Project>
