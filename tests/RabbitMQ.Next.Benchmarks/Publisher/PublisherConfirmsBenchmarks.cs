@@ -53,7 +53,7 @@ namespace RabbitMQ.Next.Benchmarks.Publisher
         [ArgumentsSource(nameof(TestCases))]
         public async Task PublishParallelAsync(TestCaseParameters parameters)
         {
-            var publisher = await this.connection.CreatePublisherAsync("amq.topic",
+            var publisher = this.connection.CreatePublisher("amq.topic",
                 builder => builder
                     .PublisherConfirms()
                     .UsePlainTextSerializer()
@@ -81,7 +81,7 @@ namespace RabbitMQ.Next.Benchmarks.Publisher
         [ArgumentsSource(nameof(TestCases))]
         public async Task PublishAsync(TestCaseParameters parameters)
         {
-            var publisher = await this.connection.CreatePublisherAsync("amq.topic",
+            var publisher = this.connection.CreatePublisher("amq.topic",
                 builder => builder
                     .PublisherConfirms()
                     .UsePlainTextSerializer()

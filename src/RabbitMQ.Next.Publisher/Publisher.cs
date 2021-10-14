@@ -100,7 +100,7 @@ namespace RabbitMQ.Next.Publisher
         private async ValueTask InternalPublishAsync<TContent>(TContent content, MessageBuilder builder, PublishFlags flags)
         {
             this.CheckDisposed();
-            this.EnsureChannel();
+            var ch = await this.GetChannelAsync();
 
             var serializer = this.serializerFactory.Get(builder.ContentType);
 
@@ -109,7 +109,7 @@ namespace RabbitMQ.Next.Publisher
                 throw new NotSupportedException($"Cannot resolve serializer for '{builder.ContentType}' content type.");
             }
 
-            await this.channel.SendAsync((properties: builder, flags, publisher: this, content, serializer), (state, frameBuilder) =>
+            await ch.SendAsync((properties: builder, flags, publisher: this, content, serializer), (state, frameBuilder) =>
             {
                 var method = new PublishMethod(state.publisher.exchange, state.properties.RoutingKey, (byte) state.flags);
                 var methodBuffer = frameBuilder.BeginMethodFrame(MethodId.BasicPublish);
@@ -147,15 +147,6 @@ namespace RabbitMQ.Next.Publisher
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void EnsureChannel()
-        {
-            if (this.channel.Completion.Exception != null)
-            {
-                throw this.channel.Completion.Exception?.InnerException ?? this.channel.Completion.Exception;
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ApplyInitializers<TContent>(TContent content, IMessageBuilder properties)
         {
             if (this.transformers == null)
@@ -169,7 +160,23 @@ namespace RabbitMQ.Next.Publisher
             }
         }
 
-        public async ValueTask<IChannel> InitializeAsync(CancellationToken cancellationToken = default)
+        private ValueTask<IChannel> GetChannelAsync(CancellationToken cancellationToken = default)
+        {
+            var ch = this.channel;
+            if (ch == null)
+            {
+                return this.InitializeAsync(cancellationToken);
+            }
+            
+            if (this.channel.Completion.Exception != null)
+            {
+                throw this.channel.Completion.Exception?.InnerException ?? this.channel.Completion.Exception;
+            }
+
+            return new ValueTask<IChannel>(ch);
+        }
+
+        private async ValueTask<IChannel> InitializeAsync(CancellationToken cancellationToken = default)
         {
             if (this.connection.State != ConnectionState.Open)
             {
