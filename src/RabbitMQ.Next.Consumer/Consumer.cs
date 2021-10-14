@@ -50,6 +50,11 @@ namespace RabbitMQ.Next.Consumer
 
         public async Task ConsumeAsync(CancellationToken cancellation)
         {
+            if (this.channel != null)
+            {
+                throw new InvalidOperationException("The consumer is already started.");
+            }
+
             this.channel = await this.connection.OpenChannelAsync(new []
             {
                 new DeliverFrameHandler(this.connection.MethodRegistry, this.HandleMessageAsync)

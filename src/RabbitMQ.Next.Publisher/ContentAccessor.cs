@@ -9,7 +9,7 @@ namespace RabbitMQ.Next.Publisher
     {
         private readonly ISerializerFactory serializerFactory;
         private ReadOnlySequence<byte> payload;
-        private string contentType;
+        private string payloadType;
         private bool isSet;
 
         public ContentAccessor(ISerializerFactory serializerFactory)
@@ -25,14 +25,14 @@ namespace RabbitMQ.Next.Publisher
         public void Set(ReadOnlySequence<byte> content, string contentType)
         {
             this.payload = content;
-            this.contentType = contentType;
+            this.payloadType = contentType;
             this.isSet = true;
         }
 
         public void Reset()
         {
             this.payload = ReadOnlySequence<byte>.Empty;
-            this.contentType = string.Empty;
+            this.payloadType = string.Empty;
             this.isSet = false;
         }
 
@@ -43,11 +43,11 @@ namespace RabbitMQ.Next.Publisher
                 throw new InvalidOperationException("Cannot get content outsize of message context");
             }
 
-            var serializer = this.serializerFactory.Get(this.contentType);
+            var serializer = this.serializerFactory.Get(this.payloadType);
 
             if (serializer == null)
             {
-                throw new NotSupportedException($"Cannot resolve a serializer for '{this.contentType}' content type");
+                throw new NotSupportedException($"Cannot resolve a serializer for '{this.payloadType}' content type");
             }
 
             return serializer.Deserialize<T>(this.payload);

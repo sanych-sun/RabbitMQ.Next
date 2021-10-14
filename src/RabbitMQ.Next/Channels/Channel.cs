@@ -92,11 +92,11 @@ namespace RabbitMQ.Next.Channels
             this.channelPool.Release(this.ChannelNumber);
         }
 
-        public async ValueTask<TResponse> SendAsync<TRequest, TResponse>(TRequest request, CancellationToken cancellationToken = default)
+        public async ValueTask<TResponse> SendAsync<TRequest, TResponse>(TRequest request, CancellationToken cancellation = default)
             where TRequest : struct, IOutgoingMethod
             where TResponse : struct, IIncomingMethod
         {
-            var waitTask = this.WaitAsync<TResponse>(cancellationToken);
+            var waitTask = this.WaitAsync<TResponse>(cancellation);
             await this.SendAsync(request);
             return await waitTask;
         }
@@ -127,13 +127,13 @@ namespace RabbitMQ.Next.Channels
             }
         }
 
-        public async ValueTask SendAsync<TState>(TState state, Action<TState, IFrameBuilder> payload)
+        public async ValueTask SendAsync<TState>(TState state, Action<TState, IFrameBuilder> payload, CancellationToken cancellation = default)
         {
             this.ValidateState();
             var frameBuilder = this.frameBuilderPool.Get();
             payload(state, frameBuilder);
 
-            await this.senderSync.WaitAsync();
+            await this.senderSync.WaitAsync(cancellation);
 
             try
             {

@@ -9,6 +9,7 @@ using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Initializers;
+using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.Tests.Mocks;
 using RabbitMQ.Next.Transport.Methods.Basic;
@@ -20,113 +21,124 @@ namespace RabbitMQ.Next.Tests.Publisher
 {
     public class PublisherTests
     {
-        // [Fact]
-        // public async Task PublisherCheckExchangeExistsAsync()
-        // {
-        //     var mock = this.Mock();
-        //
-        //     var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", false, this.MockSerializer(), null, null);
-        //
-        //     await publisher.InitializeAsync();
-        //
-        //     await mock.channel.Received().SendAsync<DeclareMethod, DeclareOkMethod>(new DeclareMethod("exchange"));
-        // }
-        //
-        // [Fact]
-        // public async Task PublisherThrowsIfExchangeDoesNotExistAsync()
-        // {
-        //     var mock = this.Mock();
-        //     mock.channel.SendAsync<DeclareMethod, DeclareOkMethod>(Arg.Any<DeclareMethod>())
-        //         .Throws(new ChannelClosedException("Exchange does not exists"));
-        //
-        //     var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", false, this.MockSerializer(), null, null);
-        //
-        //     await Assert.ThrowsAsync<ChannelClosedException>(async () => await publisher.InitializeAsync());
-        // }
-        //
-        // [Fact]
-        // public async Task PublisherSetConfirmModeAsync()
-        // {
-        //     var mock = this.Mock();
-        //
-        //     var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", true, this.MockSerializer(), null, null);
-        //
-        //     await publisher.InitializeAsync();
-        //
-        //     await mock.channel.Received().SendAsync<SelectMethod, SelectOkMethod>(Arg.Any<SelectMethod>());
-        // }
-        //
-        // [Fact]
-        // public async Task PublisherDoesNotSetConfirmModeAsync()
-        // {
-        //     var mock = this.Mock();
-        //
-        //     var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", false, this.MockSerializer(), null, null);
-        //
-        //     await publisher.InitializeAsync();
-        //
-        //     await mock.channel.DidNotReceive().SendAsync<SelectMethod, SelectOkMethod>( Arg.Any<SelectMethod>());
-        // }
-        //
-        // [Fact]
-        // public async Task ShouldThrowIfConnectionClosed()
-        // {
-        //     var mock = this.Mock();
-        //     mock.connection.State.Returns(ConnectionState.Closed);
-        //
-        //     var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", false, this.MockSerializer(), null, null);
-        //
-        //     await Assert.ThrowsAsync<InvalidOperationException>(async () => await publisher.InitializeAsync());
-        // }
-        //
-        // [Fact]
-        // public async Task ShouldThrowIfDisposed()
-        // {
-        //     var mock = this.Mock();
-        //
-        //     var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", false, this.MockSerializer(), null, null);
-        //     await publisher.DisposeAsync();
-        //
-        //     await Assert.ThrowsAsync<ObjectDisposedException>(async () => await publisher.PublishAsync("test"));
-        // }
-        //
-        // [Fact]
-        // public async Task CanDisposeMultipleTimes()
-        // {
-        //     var mock = this.Mock();
-        //
-        //     var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", false, this.MockSerializer(), null, null);
-        //     await publisher.DisposeAsync();
-        //
-        //     var ex = await Record.ExceptionAsync(async () => await publisher.DisposeAsync());
-        //
-        //     Assert.Null(ex);
-        // }
-        //
-        // [Fact]
-        // public async Task DisposeShouldDisposeHandlers()
-        // {
-        //     var mock = this.Mock();
-        //
-        //     var returnedMessageHandler = Substitute.For<IReturnedMessageHandler>();
-        //
-        //     var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", false, this.MockSerializer(), null, new[] {returnedMessageHandler});
-        //     await publisher.DisposeAsync();
-        //
-        //     returnedMessageHandler.Received().Dispose();
-        // }
-        //
-        // [Fact]
-        // public async Task DisposeShouldCloseChannel()
-        // {
-        //     var mock = this.Mock();
-        //
-        //     var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", false, this.MockSerializer(), null, null);
-        //     await publisher.InitializeAsync();
-        //     await publisher.DisposeAsync();
-        //
-        //     await mock.channel.Received().CloseAsync();
-        // }
+        [Fact]
+        public async Task PublisherCheckExchangeExistsAsync()
+        {
+            var mock = this.Mock();
+
+            var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", false, this.MockSerializerFactory(), null, null);
+
+            await publisher.InitializeAsync();
+
+            await mock.channel.Received().SendAsync<DeclareMethod, DeclareOkMethod>(new DeclareMethod("exchange"));
+        }
+
+        [Fact]
+        public async Task PublisherThrowsIfExchangeDoesNotExistAsync()
+        {
+            var mock = this.Mock();
+            mock.channel.SendAsync<DeclareMethod, DeclareOkMethod>(Arg.Any<DeclareMethod>())
+                .Throws(new ChannelClosedException("Exchange does not exists"));
+
+            var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", false, this.MockSerializerFactory(), null, null);
+
+            await Assert.ThrowsAsync<ChannelClosedException>(async () => await publisher.InitializeAsync());
+        }
+
+        [Fact]
+        public async Task PublisherSetConfirmModeAsync()
+        {
+            var mock = this.Mock();
+
+            var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", true, this.MockSerializerFactory(), null, null);
+
+            await publisher.InitializeAsync();
+
+            await mock.channel.Received().SendAsync<SelectMethod, SelectOkMethod>(Arg.Any<SelectMethod>());
+        }
+
+        [Fact]
+        public async Task PublisherDoesNotSetConfirmModeAsync()
+        {
+            var mock = this.Mock();
+
+            var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", false, this.MockSerializerFactory(), null, null);
+
+            await publisher.InitializeAsync();
+
+            await mock.channel.DidNotReceive().SendAsync<SelectMethod, SelectOkMethod>( Arg.Any<SelectMethod>());
+        }
+
+        [Fact]
+        public async Task ShouldThrowIfConnectionClosed()
+        {
+            var mock = this.Mock();
+            mock.connection.State.Returns(ConnectionState.Closed);
+
+            var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", false, this.MockSerializerFactory(), null, null);
+
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await publisher.InitializeAsync());
+        }
+
+        [Fact]
+        public async Task ShouldThrowIfDisposed()
+        {
+            var mock = this.Mock();
+
+            var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", false, this.MockSerializerFactory(), null, null);
+            await publisher.DisposeAsync();
+
+            await Assert.ThrowsAsync<ObjectDisposedException>(async () => await publisher.PublishAsync("test"));
+        }
+
+        [Fact]
+        public async Task CanDisposeMultipleTimes()
+        {
+            var mock = this.Mock();
+
+            var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", false, this.MockSerializerFactory(), null, null);
+            await publisher.DisposeAsync();
+
+            var ex = await Record.ExceptionAsync(async () => await publisher.DisposeAsync());
+
+            Assert.Null(ex);
+        }
+
+        [Fact]
+        public async Task DisposeShouldDisposeHandlers()
+        {
+            var mock = this.Mock();
+
+            var returnedMessageHandler = Substitute.For<IReturnedMessageHandler>();
+
+            var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", false, this.MockSerializerFactory(), null, new[] {returnedMessageHandler});
+            await publisher.DisposeAsync();
+
+            returnedMessageHandler.Received().Dispose();
+        }
+
+        [Fact]
+        public async Task DisposeShouldCloseChannel()
+        {
+            var mock = this.Mock();
+
+            var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", false, this.MockSerializerFactory(), null, null);
+            await publisher.InitializeAsync();
+            await publisher.DisposeAsync();
+
+            await mock.channel.Received().CloseAsync();
+        }
+
+        [Fact]
+        public async Task ThrowsOnNonSupportedContentType()
+        {
+            var mock = this.Mock();
+
+            var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", false, this.MockSerializerFactory(), null, null);
+
+            await Assert.ThrowsAsync<NotSupportedException>(
+                async () => await publisher.PublishAsync("text", m => m.ContentType("unknown-type")));
+        }
 
         // [Theory]
         // [MemberData(nameof(PublishTestCases))]
@@ -271,14 +283,18 @@ namespace RabbitMQ.Next.Tests.Publisher
             };
         }
 
-        protected ISerializer MockSerializer()
+        private ISerializerFactory MockSerializerFactory()
         {
             var serializer = Substitute.For<ISerializer>();
             serializer
                 .When(x => x.Serialize(Arg.Any<string>(), Arg.Any<IBufferWriter<byte>>()))
                 .Do(x => x.ArgAt<IBufferWriter<byte>>(1).Write(new byte[] { 0x01, 0x02}));
 
-            return serializer;
+            var serializerFactory = Substitute.For<ISerializerFactory>();
+            serializerFactory.Get(Arg.Any<string>()).Returns(serializer);
+            serializerFactory.Get("unknown-type").Returns((ISerializer)null);
+
+            return serializerFactory;
         }
 
         private (IConnection connection, IChannel channel) Mock()

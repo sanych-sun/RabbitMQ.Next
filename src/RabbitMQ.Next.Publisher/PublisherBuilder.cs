@@ -8,9 +8,19 @@ namespace RabbitMQ.Next.Publisher
 {
     internal sealed class PublisherBuilder : IPublisherBuilder
     {
-        private readonly SerializerFactory serializerFactory = new();
+        private readonly ISerializerFactory serializerFactory;
         private List<IMessageInitializer> initializers;
         private List<IReturnedMessageHandler> returnedMessageHandlers;
+
+        public PublisherBuilder(ISerializerFactory serializerFactory)
+        {
+            if (serializerFactory == null)
+            {
+                throw new ArgumentNullException(nameof(serializerFactory));
+            }
+
+            this.serializerFactory = serializerFactory;
+        }
 
         public IReadOnlyList<IMessageInitializer> Initializers => this.initializers;
 

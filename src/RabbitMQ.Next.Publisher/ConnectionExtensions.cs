@@ -1,6 +1,7 @@
 using System;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Publisher.Abstractions;
+using RabbitMQ.Next.Serialization;
 
 namespace RabbitMQ.Next.Publisher
 {
@@ -13,7 +14,7 @@ namespace RabbitMQ.Next.Publisher
                 throw new ArgumentNullException(nameof(exchange));
             }
 
-            var publisherBuilder = new PublisherBuilder();
+            var publisherBuilder = new PublisherBuilder(new SerializerFactory());
             builder?.Invoke(publisherBuilder);
 
             var publisher = new Publisher(connection, exchange,

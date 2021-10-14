@@ -81,35 +81,24 @@ namespace RabbitMQ.Next.Publisher
             return default;
         }
 
-        public ValueTask PublishAsync<TContent>(TContent content, Action<IMessageBuilder> propertiesBuilder = null, PublishFlags flags = PublishFlags.None, CancellationToken cancellationToken = default)
+        public async ValueTask PublishAsync<TState, TContent>(TState state, TContent content, Action<TState, IMessageBuilder> propertiesBuilder, PublishFlags flags = PublishFlags.None, CancellationToken cancellation = default)
         {
-            var properties = this.messagePropsPool.Get();
-            this.ApplyInitializers(content, properties);
-            propertiesBuilder?.Invoke(properties);
-            return this.InternalPublishAsync(content, properties, flags);
-        }
+            this.CheckDisposed();
 
-        public ValueTask PublishAsync<TState, TContent>(TState state, TContent content, Action<TState, IMessageBuilder> propertiesBuilder, PublishFlags flags = PublishFlags.None, CancellationToken cancellationToken = default)
-        {
             var properties = this.messagePropsPool.Get();
             this.ApplyInitializers(content, properties);
             propertiesBuilder?.Invoke(state, properties);
-            return this.InternalPublishAsync(content, properties, flags);
-        }
 
-        private async ValueTask InternalPublishAsync<TContent>(TContent content, MessageBuilder builder, PublishFlags flags)
-        {
-            this.CheckDisposed();
-            var ch = await this.GetChannelAsync();
+            var ch = await this.GetChannelAsync(cancellation);
 
-            var serializer = this.serializerFactory.Get(builder.ContentType);
+            var serializer = this.serializerFactory.Get(properties.ContentType);
 
             if (serializer == null)
             {
-                throw new NotSupportedException($"Cannot resolve serializer for '{builder.ContentType}' content type.");
+                throw new NotSupportedException($"Cannot resolve serializer for '{properties.ContentType}' content type.");
             }
 
-            await ch.SendAsync((properties: builder, flags, publisher: this, content, serializer), (state, frameBuilder) =>
+            await ch.SendAsync((properties, flags, publisher: this, content, serializer), (state, frameBuilder) =>
             {
                 var method = new PublishMethod(state.publisher.exchange, state.properties.RoutingKey, (byte) state.flags);
                 var methodBuffer = frameBuilder.BeginMethodFrame(MethodId.BasicPublish);
@@ -121,10 +110,10 @@ namespace RabbitMQ.Next.Publisher
                 var bodyWriter = frameBuilder.BeginContentFrame(state.properties);
                 state.serializer.Serialize(state.content, bodyWriter);
                 frameBuilder.EndFrame();
-            });
+            }, cancellation);
 
-            this.messagePropsPool.Return(builder);
             var messageDeliveryTag = Interlocked.Increment(ref this.lastDeliveryTag);
+            this.messagePropsPool.Return(properties);
 
             if (this.confirms != null)
             {
@@ -167,7 +156,7 @@ namespace RabbitMQ.Next.Publisher
             {
                 return this.InitializeAsync(cancellationToken);
             }
-            
+
             if (this.channel.Completion.Exception != null)
             {
                 throw this.channel.Completion.Exception?.InnerException ?? this.channel.Completion.Exception;
@@ -176,7 +165,7 @@ namespace RabbitMQ.Next.Publisher
             return new ValueTask<IChannel>(ch);
         }
 
-        private async ValueTask<IChannel> InitializeAsync(CancellationToken cancellationToken = default)
+        internal async ValueTask<IChannel> InitializeAsync(CancellationToken cancellationToken = default)
         {
             if (this.connection.State != ConnectionState.Open)
             {
