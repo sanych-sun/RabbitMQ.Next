@@ -1,6 +1,6 @@
 using System;
 
-namespace RabbitMQ.Next.Publisher.Abstractions
+namespace RabbitMQ.Next.Abstractions.Channels
 {
     [Flags]
     public enum PublishFlags : byte

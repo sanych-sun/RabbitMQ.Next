@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Transport.Methods.Basic;
+using RabbitMQ.Next.Transport.Methods.Channel;
 
 namespace RabbitMQ.Next.Consumer
 {

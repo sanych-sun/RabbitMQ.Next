@@ -6,10 +6,8 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.ObjectPool;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
-using RabbitMQ.Next.Abstractions.Methods;
 using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Serialization;
-using RabbitMQ.Next.Transport.Methods.Basic;
 using RabbitMQ.Next.Transport.Methods.Confirm;
 using RabbitMQ.Next.Transport.Methods.Exchange;
 
@@ -24,7 +22,6 @@ namespace RabbitMQ.Next.Publisher
         private readonly string exchange;
         private readonly ISerializerFactory serializerFactory;
         private readonly IReadOnlyList<IMessageInitializer> transformers;
-        private readonly IMethodFormatter<PublishMethod> publishFormatter;
         private readonly bool publisherConfirms;
         private ConfirmFrameHandler confirms;
         private ulong lastDeliveryTag;
@@ -50,8 +47,6 @@ namespace RabbitMQ.Next.Publisher
             this.serializerFactory = serializerFactory;
             this.transformers = transformers;
             this.returnedMessageHandlers = returnedMessageHandlers;
-
-            this.publishFormatter = connection.MethodRegistry.GetFormatter<PublishMethod>();
         }
 
         public ValueTask DisposeAsync()
@@ -98,19 +93,12 @@ namespace RabbitMQ.Next.Publisher
                 throw new NotSupportedException($"Cannot resolve serializer for '{properties.ContentType}' content type.");
             }
 
-            await ch.SendAsync((properties, flags, publisher: this, content, serializer), (state, frameBuilder) =>
-            {
-                var method = new PublishMethod(state.publisher.exchange, state.properties.RoutingKey, (byte) state.flags);
-                var methodBuffer = frameBuilder.BeginMethodFrame(MethodId.BasicPublish);
+            await ch.PublishAsync(
+                (content, serializer),
+                this.exchange, properties.RoutingKey, properties,
+                (st, buffer) => st.serializer.Serialize(st.content, buffer),
+                flags, cancellation);
 
-                var written = state.publisher.publishFormatter.Write(methodBuffer.GetMemory(), method);
-                methodBuffer.Advance(written);
-                frameBuilder.EndFrame();
-
-                var bodyWriter = frameBuilder.BeginContentFrame(state.properties);
-                state.serializer.Serialize(state.content, bodyWriter);
-                frameBuilder.EndFrame();
-            }, cancellation);
 
             var messageDeliveryTag = Interlocked.Increment(ref this.lastDeliveryTag);
             this.messagePropsPool.Return(properties);

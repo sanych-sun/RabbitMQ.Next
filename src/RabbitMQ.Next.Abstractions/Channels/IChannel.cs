@@ -1,6 +1,8 @@
 using System;
+using System.Buffers;
 using System.Threading;
 using System.Threading.Tasks;
+using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Abstractions.Methods;
 
 namespace RabbitMQ.Next.Abstractions.Channels
@@ -16,7 +18,7 @@ namespace RabbitMQ.Next.Abstractions.Channels
             where TRequest : struct, IOutgoingMethod
             where TResponse : struct, IIncomingMethod;
 
-        ValueTask SendAsync<TState>(TState state, Action<TState, IFrameBuilder> payload, CancellationToken cancellation = default);
+        ValueTask PublishAsync<TState>(TState state, string exchange, string routingKey, IMessageProperties properties, Action<TState, IBufferWriter<byte>> payload, PublishFlags flags = PublishFlags.None, CancellationToken cancellation = default);
 
         ValueTask<TMethod> WaitAsync<TMethod>(CancellationToken cancellation = default)
             where TMethod : struct, IIncomingMethod;

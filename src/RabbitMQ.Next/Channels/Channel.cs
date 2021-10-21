@@ -9,6 +9,7 @@ using Microsoft.Extensions.ObjectPool;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Exceptions;
+using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Abstractions.Methods;
 using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Transport;
@@ -19,14 +20,11 @@ namespace RabbitMQ.Next.Channels
 {
     internal sealed class Channel : IChannelInternal
     {
-        private readonly ObjectPool<FrameBuilder> frameBuilderPool;
-        private readonly ChannelWriter<IMemoryOwner<byte>> socketWriter;
-        private readonly SemaphoreSlim senderSync;
         private readonly ChannelPool channelPool;
         private readonly IMethodRegistry registry;
-        private readonly IBufferPool bufferPool;
+        private readonly MethodSender methodSender;
         private readonly TaskCompletionSource<bool> channelCompletion;
-        private readonly int frameMaxSize;
+        private readonly ushort channelNumber;
 
         private readonly WaitFrameHandler waitHandler;
         private readonly IReadOnlyList<IFrameHandler> methodHandlers;
@@ -35,13 +33,16 @@ namespace RabbitMQ.Next.Channels
         {
             this.channelPool = channelPool;
             this.registry = methodRegistry;
-            this.socketWriter = socketWriter;
-            this.bufferPool = bufferPool;
-            this.ChannelNumber = channelPool.Register(this);
-            this.frameMaxSize = frameMaxSize;
+            var chNumber = channelPool.Register(this);
 
-            this.frameBuilderPool = new DefaultObjectPool<FrameBuilder>(
-                new ObjectPoolPolicy<FrameBuilder>(this.CreateFrameBuilder, ResetFrameBuilder), 100);
+            var frameBuilderPool = new DefaultObjectPool<FrameBuilder>(
+                new ObjectPoolPolicy<FrameBuilder>(
+                    () => new(bufferPool, chNumber, frameMaxSize),
+                    b => { b.Reset(); return true; }), 100);
+
+            this.channelNumber = chNumber;
+
+            this.methodSender = new MethodSender(socketWriter, methodRegistry, frameBuilderPool);
 
             handlers ??= Array.Empty<IFrameHandler>();
 
@@ -53,11 +54,11 @@ namespace RabbitMQ.Next.Channels
                 AllowSynchronousContinuations = false,
             });
             this.FrameWriter = receiveChannel.Writer;
-            this.senderSync = new SemaphoreSlim(1,1);
+
 
             this.waitHandler = new WaitFrameHandler(methodRegistry, this);
             var list = new List<IFrameHandler>(handlers) { this.waitHandler };
-            if (this.ChannelNumber == 0)
+            if (this.channelNumber == 0)
             {
                 list.Add(new ConnectionCloseHandler(this, this.registry));
             }
@@ -71,9 +72,33 @@ namespace RabbitMQ.Next.Channels
             Task.Factory.StartNew(() => this.LoopAsync(receiveChannel.Reader), TaskCreationOptions.LongRunning);
         }
 
-        public ushort ChannelNumber { get; }
-
         public Task Completion => this.channelCompletion.Task;
+        public ValueTask SendAsync<TRequest>(TRequest request, CancellationToken cancellation = default)
+            where TRequest : struct, IOutgoingMethod
+        {
+            this.ValidateState();
+            return this.methodSender.SendAsync(request, cancellation);
+        }
+
+        public async ValueTask<TResponse> SendAsync<TRequest, TResponse>(TRequest request, CancellationToken cancellation = default)
+            where TRequest : struct, IOutgoingMethod where TResponse : struct, IIncomingMethod
+        {
+            this.ValidateState();
+            var waitTask = this.WaitAsync<TResponse>(cancellation);
+
+            await this.methodSender.SendAsync(request, cancellation);
+
+            return await waitTask;
+        }
+
+        public ValueTask PublishAsync<TState>(
+            TState state, string exchange, string routingKey,
+            IMessageProperties properties, Action<TState, IBufferWriter<byte>> payload,
+            PublishFlags flags = PublishFlags.None, CancellationToken cancellation = default)
+        {
+            this.ValidateState();
+            return this.methodSender.PublishAsync(state, exchange, routingKey, properties, payload, flags, cancellation);
+        }
 
         public ChannelWriter<(FrameType Type, MemoryBlock Payload)> FrameWriter { get; }
 
@@ -89,61 +114,7 @@ namespace RabbitMQ.Next.Channels
             }
 
             this.FrameWriter.Complete();
-            this.channelPool.Release(this.ChannelNumber);
-        }
-
-        public async ValueTask<TResponse> SendAsync<TRequest, TResponse>(TRequest request, CancellationToken cancellation = default)
-            where TRequest : struct, IOutgoingMethod
-            where TResponse : struct, IIncomingMethod
-        {
-            var waitTask = this.WaitAsync<TResponse>(cancellation);
-            await this.SendAsync(request);
-            return await waitTask;
-        }
-
-        public async ValueTask SendAsync<TRequest>(TRequest request, CancellationToken cancellation = default)
-            where TRequest : struct, IOutgoingMethod
-        {
-            this.ValidateState();
-            var frameBuilder = this.frameBuilderPool.Get();
-            var buffer = frameBuilder.BeginMethodFrame(request.MethodId);
-
-            var formatter = this.registry.GetFormatter<TRequest>();
-
-            var written = formatter.Write(buffer.GetMemory(), request);
-            buffer.Advance(written);
-            frameBuilder.EndFrame();
-
-            await this.senderSync.WaitAsync(cancellation);
-
-            try
-            {
-                await frameBuilder.WriteToAsync(this.socketWriter);
-            }
-            finally
-            {
-                this.senderSync.Release();
-                this.frameBuilderPool.Return(frameBuilder);
-            }
-        }
-
-        public async ValueTask SendAsync<TState>(TState state, Action<TState, IFrameBuilder> payload, CancellationToken cancellation = default)
-        {
-            this.ValidateState();
-            var frameBuilder = this.frameBuilderPool.Get();
-            payload(state, frameBuilder);
-
-            await this.senderSync.WaitAsync(cancellation);
-
-            try
-            {
-                await frameBuilder.WriteToAsync(this.socketWriter);
-            }
-            finally
-            {
-                this.senderSync.Release();
-                this.frameBuilderPool.Return(frameBuilder);
-            }
+            this.channelPool.Release(this.channelNumber);
         }
 
         public async ValueTask<TMethod> WaitAsync<TMethod>(CancellationToken cancellation = default)
@@ -152,7 +123,6 @@ namespace RabbitMQ.Next.Channels
             var result = await this.waitHandler.WaitAsync<TMethod>(cancellation);
             return (TMethod) result;
         }
-
 
         public async ValueTask CloseAsync(Exception ex = null)
         {
@@ -276,14 +246,6 @@ namespace RabbitMQ.Next.Channels
                 }
             }
             // todo: throw if not processed?
-        }
-
-        private FrameBuilder CreateFrameBuilder() => new(this.bufferPool, this.ChannelNumber, this.frameMaxSize);
-
-        private static bool ResetFrameBuilder(FrameBuilder fr)
-        {
-            fr.Reset();
-            return true;
         }
     }
 }

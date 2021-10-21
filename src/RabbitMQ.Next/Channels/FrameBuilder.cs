@@ -12,7 +12,7 @@ using RabbitMQ.Next.Transport.Messaging;
 
 namespace RabbitMQ.Next.Channels
 {
-    internal class FrameBuilder : IFrameBuilder, IBufferWriter<byte>
+    internal class FrameBuilder : IBufferWriter<byte>
     {
         private readonly IBufferPool pool;
         private readonly ushort channelNumber;
