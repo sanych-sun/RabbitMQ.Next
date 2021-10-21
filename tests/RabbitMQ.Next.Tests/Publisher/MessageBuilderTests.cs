@@ -183,7 +183,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             ((IMessageBuilder)messageBuilder).SetHeader("key", "value");
             messageBuilder.Reset();
 
-            Assert.Empty(messageBuilder.Headers);
+            Assert.Null(messageBuilder.Headers);
         }
         
         [Theory]

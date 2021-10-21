@@ -31,17 +31,15 @@ namespace RabbitMQ.Next.Publisher
 
         public Publisher(
             IConnection connection,
+            ObjectPool<MessageBuilder> messagePropsPool,
             string exchange,
             bool publisherConfirms,
             ISerializerFactory serializerFactory,
             IReadOnlyList<IMessageInitializer> transformers,
             IReadOnlyList<IReturnedMessageHandler> returnedMessageHandlers)
         {
-            this.messagePropsPool = new DefaultObjectPool<MessageBuilder>(
-                new MessageBuilderPoolPolicy(),
-                100);
-
             this.connection = connection;
+            this.messagePropsPool = messagePropsPool;
             this.exchange = exchange;
             this.publisherConfirms = publisherConfirms;
             this.serializerFactory = serializerFactory;
@@ -84,8 +82,6 @@ namespace RabbitMQ.Next.Publisher
             this.ApplyInitializers(content, properties);
             propertiesBuilder?.Invoke(state, properties);
 
-            var ch = await this.GetChannelAsync(cancellation);
-
             var serializer = this.serializerFactory.Get(properties.ContentType);
 
             if (serializer == null)
@@ -93,15 +89,21 @@ namespace RabbitMQ.Next.Publisher
                 throw new NotSupportedException($"Cannot resolve serializer for '{properties.ContentType}' content type.");
             }
 
-            await ch.PublishAsync(
-                (content, serializer),
-                this.exchange, properties.RoutingKey, properties,
-                (st, buffer) => st.serializer.Serialize(st.content, buffer),
-                flags, cancellation);
-
+            try
+            {
+                var ch = await this.GetChannelAsync(cancellation);
+                await ch.PublishAsync(
+                    (content, serializer),
+                    this.exchange, properties.RoutingKey, properties,
+                    (st, buffer) => st.serializer.Serialize(st.content, buffer),
+                    flags, cancellation);
+            }
+            finally
+            {
+                this.messagePropsPool.Return(properties);
+            }
 
             var messageDeliveryTag = Interlocked.Increment(ref this.lastDeliveryTag);
-            this.messagePropsPool.Return(properties);
 
             if (this.confirms != null)
             {
@@ -145,9 +147,14 @@ namespace RabbitMQ.Next.Publisher
                 return this.InitializeAsync(cancellationToken);
             }
 
-            if (this.channel.Completion.Exception != null)
+            if (this.channel.Completion.IsCompleted)
             {
-                throw this.channel.Completion.Exception?.InnerException ?? this.channel.Completion.Exception;
+                if (this.channel.Completion.Exception != null)
+                {
+                    throw this.channel.Completion.Exception?.InnerException ?? this.channel.Completion.Exception;
+                }
+
+                throw new InvalidOperationException();
             }
 
             return new ValueTask<IChannel>(ch);
@@ -187,6 +194,15 @@ namespace RabbitMQ.Next.Publisher
                 }
 
                 return this.channel;
+            }
+            catch (Exception)
+            {
+                if (this.channel != null)
+                {
+                    await this.channel.CloseAsync();
+                }
+
+                throw;
             }
             finally
             {

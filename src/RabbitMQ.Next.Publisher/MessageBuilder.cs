@@ -30,7 +30,7 @@ namespace RabbitMQ.Next.Publisher
         public string RoutingKey { get; private set; }
         public string ContentType { get; private set; }
         public string ContentEncoding { get; private set; }
-        public IReadOnlyDictionary<string, object> Headers => this.headers;
+        public IReadOnlyDictionary<string, object> Headers => this.headers.Count == 0 ? null : this.headers;
         public DeliveryMode DeliveryMode { get; private set; }
         public byte? Priority { get; private set; }
         public string CorrelationId { get; private set; }

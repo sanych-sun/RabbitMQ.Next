@@ -1,18 +1,22 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using Microsoft.Extensions.ObjectPool;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
+using RabbitMQ.Next.Abstractions.Messaging;
+using RabbitMQ.Next.Buffers;
+using RabbitMQ.Next.Publisher;
 using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Initializers;
 using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.Tests.Mocks;
-using RabbitMQ.Next.Transport.Methods.Basic;
 using RabbitMQ.Next.Transport.Methods.Confirm;
 using RabbitMQ.Next.Transport.Methods.Exchange;
 using Xunit;
@@ -26,7 +30,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         {
             var mock = this.Mock();
 
-            var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", false, this.MockSerializerFactory(), null, null);
+            var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, "exchange", false, this.MockSerializerFactory(), null, null);
 
             await publisher.InitializeAsync();
 
@@ -40,7 +44,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             mock.channel.SendAsync<DeclareMethod, DeclareOkMethod>(Arg.Any<DeclareMethod>())
                 .Throws(new ChannelClosedException("Exchange does not exists"));
 
-            var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", false, this.MockSerializerFactory(), null, null);
+            var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, "exchange", false, this.MockSerializerFactory(), null, null);
 
             await Assert.ThrowsAsync<ChannelClosedException>(async () => await publisher.InitializeAsync());
         }
@@ -50,7 +54,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         {
             var mock = this.Mock();
 
-            var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", true, this.MockSerializerFactory(), null, null);
+            var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, "exchange", true, this.MockSerializerFactory(), null, null);
 
             await publisher.InitializeAsync();
 
@@ -62,7 +66,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         {
             var mock = this.Mock();
 
-            var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", false, this.MockSerializerFactory(), null, null);
+            var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, "exchange", false, this.MockSerializerFactory(), null, null);
 
             await publisher.InitializeAsync();
 
@@ -75,7 +79,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             var mock = this.Mock();
             mock.connection.State.Returns(ConnectionState.Closed);
 
-            var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", false, this.MockSerializerFactory(), null, null);
+            var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, "exchange", false, this.MockSerializerFactory(), null, null);
 
             await Assert.ThrowsAsync<InvalidOperationException>(async () => await publisher.InitializeAsync());
         }
@@ -85,7 +89,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         {
             var mock = this.Mock();
 
-            var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", false, this.MockSerializerFactory(), null, null);
+            var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, "exchange", false, this.MockSerializerFactory(), null, null);
             await publisher.DisposeAsync();
 
             await Assert.ThrowsAsync<ObjectDisposedException>(async () => await publisher.PublishAsync("test"));
@@ -96,7 +100,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         {
             var mock = this.Mock();
 
-            var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", false, this.MockSerializerFactory(), null, null);
+            var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, "exchange", false, this.MockSerializerFactory(), null, null);
             await publisher.DisposeAsync();
 
             var ex = await Record.ExceptionAsync(async () => await publisher.DisposeAsync());
@@ -111,7 +115,7 @@ namespace RabbitMQ.Next.Tests.Publisher
 
             var returnedMessageHandler = Substitute.For<IReturnedMessageHandler>();
 
-            var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", false, this.MockSerializerFactory(), null, new[] {returnedMessageHandler});
+            var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, "exchange", false, this.MockSerializerFactory(), null, new[] {returnedMessageHandler});
             await publisher.DisposeAsync();
 
             returnedMessageHandler.Received().Dispose();
@@ -122,7 +126,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         {
             var mock = this.Mock();
 
-            var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", false, this.MockSerializerFactory(), null, null);
+            var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, "exchange", false, this.MockSerializerFactory(), null, null);
             await publisher.InitializeAsync();
             await publisher.DisposeAsync();
 
@@ -134,151 +138,76 @@ namespace RabbitMQ.Next.Tests.Publisher
         {
             var mock = this.Mock();
 
-            var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", false, this.MockSerializerFactory(), null, null);
+            var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, "exchange", false, this.MockSerializerFactory(), null, null);
 
             await Assert.ThrowsAsync<NotSupportedException>(
                 async () => await publisher.PublishAsync("text", m => m.ContentType("unknown-type")));
         }
 
-        // [Theory]
-        // [MemberData(nameof(PublishTestCases))]
-        // public async Task PublishAsync(
-        //     IReadOnlyList<IMessageInitializer> transformers,
-        //     string exchange, string routingKey, MessageProperties properties, PublishFlags flags,
-        //     PublishMethod expectedMethod, IMessageProperties expectedProperties)
-        // {
-        //     var mock = this.Mock();
-        //
-        //     var publisher = new Next.Publisher.Publisher(mock.connection, exchange, false, this.MockSerializer(), transformers, null);
-        //
-        //     await publisher.PublishAsync(routingKey, "test",
-        //         (state, builder) => builder.RoutingKey(state), flags);
-        //
-        //     await mock.channel.Received().SendAsync(
-        //         expectedMethod,
-        //         Arg.Is<MessageProperties>(p => new MessagePropertiesComparer().Equals(p, expectedProperties)),
-        //         Arg.Any<ReadOnlySequence<byte>>()
-        //     );
-        // }
-        //
-        // [Fact]
-        // public async Task PublishWaitForConfirmAck()
-        // {
-        //     var mock = this.Mock();
-        //
-        //     var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", true, this.MockSerializer(), null, null);
-        //
-        //     var publishTask = publisher.PublishAsync("test");
-        //
-        //     await Task.Delay(10);
-        //     Assert.False(publishTask.IsCompleted);
-        //
-        //     await mock.channel.EmulateMethodAsync(new AckMethod(1, false));
-        //
-        //     var ex = await Record.ExceptionAsync(async () => await publishTask);
-        //     Assert.Null(ex);
-        // }
-        //
-        // [Fact]
-        // public async Task PublishWaitForConfirmNack()
-        // {
-        //     var mock = this.Mock();
-        //
-        //     var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", true, this.MockSerializer(), null, null);
-        //
-        //     var publishTask = publisher.PublishAsync("test");
-        //
-        //     await Task.Delay(10);
-        //     Assert.False(publishTask.IsCompleted);
-        //
-        //     await mock.channel.EmulateMethodAsync(new NackMethod(1, false, false));
-        //
-        //     var ex = await Record.ExceptionAsync(async () => await publishTask);
-        //     Assert.NotNull(ex);
-        // }
-        //
-        // [Fact]
-        // public async Task CallReturnedMessageHandlers()
-        // {
-        //     var mock = this.Mock();
-        //     var returnedMessagesHandler = Substitute.For<IReturnedMessageHandler>();
-        //     returnedMessagesHandler.TryHandleAsync(Arg.Any<ReturnedMessage>(), Arg.Any<IMessageProperties>(), Arg.Any<Content>())
-        //         .Returns(new ValueTask<bool>(true));
-        //
-        //     var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", false, this.MockSerializer(), null, new [] { returnedMessagesHandler } );
-        //     await publisher.PublishAsync("test");
-        //
-        //     var props = Substitute.For<IMessageProperties>();
-        //     await mock.channel.EmulateMethodAsync(new ReturnMethod("exchange", null, 301, "test"), props, ReadOnlySequence<byte>.Empty);
-        //
-        //     await returnedMessagesHandler.Received().TryHandleAsync(Arg.Any<ReturnedMessage>(), props, Arg.Any<Content>());
-        // }
-        //
-        // [Fact]
-        // public async Task CallMultipleReturnedMessageHandlers()
-        // {
-        //     var mock = this.Mock();
-        //     var returnedMessagesHandler1 = Substitute.For<IReturnedMessageHandler>();
-        //     returnedMessagesHandler1.TryHandleAsync(Arg.Any<ReturnedMessage>(), Arg.Any<IMessageProperties>(), Arg.Any<Content>())
-        //         .Returns(new ValueTask<bool>(false));
-        //     var returnedMessagesHandler2 = Substitute.For<IReturnedMessageHandler>();
-        //     returnedMessagesHandler2.TryHandleAsync(Arg.Any<ReturnedMessage>(), Arg.Any<IMessageProperties>(), Arg.Any<Content>())
-        //         .Returns(new ValueTask<bool>(true));
-        //     var returnedMessagesHandler3 = Substitute.For<IReturnedMessageHandler>();
-        //     returnedMessagesHandler3.TryHandleAsync(Arg.Any<ReturnedMessage>(), Arg.Any<IMessageProperties>(), Arg.Any<Content>())
-        //         .Returns(new ValueTask<bool>(true));
-        //
-        //     var publisher = new Next.Publisher.Publisher(mock.connection, "exchange", false, this.MockSerializer(), null,
-        //         new [] { returnedMessagesHandler1, returnedMessagesHandler2, returnedMessagesHandler3 } );
-        //     await publisher.PublishAsync("test");
-        //
-        //     var props = Substitute.For<IMessageProperties>();
-        //     await mock.channel.EmulateMethodAsync(new ReturnMethod("exchange", null, 301, "test"), props, ReadOnlySequence<byte>.Empty);
-        //
-        //     await returnedMessagesHandler1.Received().TryHandleAsync(Arg.Any<ReturnedMessage>(), props, Arg.Any<Content>());
-        //     await returnedMessagesHandler2.Received().TryHandleAsync(Arg.Any<ReturnedMessage>(), props, Arg.Any<Content>());
-        //     await returnedMessagesHandler3.DidNotReceive().TryHandleAsync(Arg.Any<ReturnedMessage>(), props, Arg.Any<Content>());
-        // }
-        //
+        [Theory]
+        [MemberData(nameof(PublishTestCases))]
+        public async Task PublishAsync(
+            IReadOnlyList<IMessageInitializer> transformers,
+            string exchange, string routingKey, Action<IMessageBuilder> builder, PublishFlags flags,
+            IMessageProperties expectedProperties)
+        {
+            var mock = this.Mock();
+
+            var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, exchange, false, this.MockSerializerFactory(), transformers, null);
+
+            await publisher.PublishAsync("a", "test", (state, message) => builder?.Invoke(message), flags);
+
+            await mock.channel.Received().PublishAsync(
+                Arg.Any<(string, ISerializer)>(), exchange, routingKey,
+                Arg.Is<IMessageProperties>(p => new MessagePropertiesComparer().Equals(expectedProperties, p)),
+                Arg.Any<Action<(string, ISerializer), IBufferWriter<byte>>>(),
+                flags, Arg.Any<CancellationToken>());
+        }
+
         public static IEnumerable<object[]> PublishTestCases()
         {
             yield return new object[]
             {
                 null,
-                "myExchange", "key", new MessageProperties(), PublishFlags.None,
-                new PublishMethod("myExchange", "key", 0),
+                "myExchange", "key",
+                (Action<IMessageBuilder>)(m => m.RoutingKey("key")),
+                PublishFlags.None,
                 new MessageProperties()
             };
 
             yield return new object[]
             {
                 null,
-                "myExchange", "key", new MessageProperties(), PublishFlags.Immediate,
-                new PublishMethod("myExchange", "key", (byte)PublishFlags.Immediate),
+                "myExchange", "key",
+                (Action<IMessageBuilder>)(m => m.RoutingKey("key")),
+                PublishFlags.Immediate,
                 new MessageProperties()
             };
 
             yield return new object[]
             {
-                null,
-                "myExchange", "key", new MessageProperties { ApplicationId = "test"}, PublishFlags.None,
-                new PublishMethod("myExchange", "key", 0),
-                new MessageProperties { ApplicationId = "test"}
+                new IMessageInitializer[] { new UserIdInitializer("testUser")},
+                "myExchange", "key",
+                (Action<IMessageBuilder>)(m => m.RoutingKey("key")),
+                PublishFlags.None,
+                new MessageProperties { UserId = "testUser"}
             };
 
             yield return new object[]
             {
                 null,
-                "myExchange", "key", new MessageProperties { Priority = 1, Type = "test"}, PublishFlags.None,
-                new PublishMethod("myExchange", "key", 0),
+                "myExchange", "key",
+                (Action<IMessageBuilder>)(m => m.RoutingKey("key").Priority(1).Type("test")),
+                PublishFlags.None,
                 new MessageProperties { Priority = 1, Type = "test"}
             };
 
             yield return new object[]
             {
                 new IMessageInitializer[] { new UserIdInitializer("testUser")},
-                "exchange", "key", new MessageProperties { Priority = 1, Type = "test"}, PublishFlags.None,
-                new PublishMethod("exchange", "key", 0),
+                "exchange", "key",
+                (Action<IMessageBuilder>)(m =>m.RoutingKey("key").Priority(1).Type("test")),
+                PublishFlags.None,
                 new MessageProperties { Priority = 1, Type = "test", UserId = "testUser"}
             };
         }
@@ -296,6 +225,9 @@ namespace RabbitMQ.Next.Tests.Publisher
 
             return serializerFactory;
         }
+
+        private ObjectPool<MessageBuilder> PoolStub = new DefaultObjectPool<MessageBuilder>(
+            new ObjectPoolPolicy<MessageBuilder>(() => new MessageBuilder(), _ => true));
 
         private (IConnection connection, IChannel channel) Mock()
         {

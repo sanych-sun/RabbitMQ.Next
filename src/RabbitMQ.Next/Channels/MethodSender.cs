@@ -12,7 +12,7 @@ using RabbitMQ.Next.Transport.Methods.Basic;
 
 namespace RabbitMQ.Next.Channels
 {
-    internal class MethodSender : IMethodSender
+    internal class MethodSender
     {
         private readonly ObjectPool<FrameBuilder> frameBuilderPool;
         private readonly ChannelWriter<IMemoryOwner<byte>> socketWriter;
