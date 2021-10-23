@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using NSubstitute;
 using RabbitMQ.Next.Abstractions;
@@ -7,6 +8,7 @@ using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Exceptions;
 using RabbitMQ.Next.Tests.Mocks;
 using RabbitMQ.Next.TopologyBuilder;
+using RabbitMQ.Next.TopologyBuilder.Builders;
 using RabbitMQ.Next.Transport.Methods.Exchange;
 using Xunit;
 
@@ -14,41 +16,88 @@ namespace RabbitMQ.Next.Tests.TopologyBuilder
 {
     public class ExchangeBindingBuilderTests
     {
-        [Theory]
-        [MemberData(nameof(TestCases))]
-        public void ExchangeBindingBuilder(BindMethod expected, string destination, string source, string routingKey, IEnumerable<(string Key, object Value)> arguments)
-        {
-            var builder = new ExchangeBindingBuilder(destination, source)
-            {
-                RoutingKey = routingKey
-            };
-
-            if (arguments != null)
-            {
-                foreach (var arg in arguments)
-                {
-                    builder.SetArgument(arg.Key, arg.Value);
-                }
-            }
-
-            var method = builder.ToMethod();
-
-            Assert.Equal(expected.Source, method.Source);
-            Assert.Equal(expected.Destination, method.Destination);
-            Assert.Equal(expected.RoutingKey, method.RoutingKey);
-            Assert.True(Helpers.DictionaryEquals(expected.Arguments, method.Arguments));
-        }
-
-        [Fact]
+               [Fact]
         public async Task ApplySendsMethod()
         {
             var channel = Substitute.For<IChannel>();
-            var builder = new ExchangeBindingBuilder("destination", "source");
-            var method = builder.ToMethod();
+            var builder = new ExchangeBindingBuilder("dest", "src");
 
             await builder.ApplyAsync(channel);
 
-            await channel.Received().SendAsync<BindMethod, BindOkMethod>(method);
+            await channel.Received().SendAsync<BindMethod, BindOkMethod>(Arg.Any<BindMethod>());
+        }
+
+        [Fact]
+        public async Task CanPassNames()
+        {
+            var dest = "test-dest";
+            var src = "test-src";
+            var channel = Substitute.For<IChannel>();
+            var builder = new ExchangeBindingBuilder(dest, src);
+
+            await builder.ApplyAsync(channel);
+
+            await channel.Received().SendAsync<BindMethod, BindOkMethod>(Arg.Is<BindMethod>(
+                m => m.Destination == dest && m.Source == src));
+        }
+
+        [Fact]
+        public async Task CanPassRoutingKey()
+        {
+            var routingKey = "route";
+            var channel = Substitute.For<IChannel>();
+            var builder = new ExchangeBindingBuilder("dest", "src");
+            builder.RoutingKey(routingKey);
+
+            await builder.ApplyAsync(channel);
+
+            await channel.Received().SendAsync<BindMethod, BindOkMethod>(Arg.Is<BindMethod>(
+                m => m.RoutingKey == routingKey));
+        }
+
+        [Fact]
+        public async Task CanPassMultipleRoutingKeys()
+        {
+            var keys = new List<string>
+            {
+                "key",
+                "other-key"
+            };
+            var channel = Substitute.For<IChannel>();
+            var builder = new ExchangeBindingBuilder("dest", "src");
+            foreach (var key in keys)
+            {
+                builder.RoutingKey(key);
+            }
+
+            await builder.ApplyAsync(channel);
+
+            foreach (var key in keys)
+            {
+                await channel.Received().SendAsync<BindMethod, BindOkMethod>(Arg.Is<BindMethod>(
+                    m => m.RoutingKey == key));
+            }
+        }
+
+        [Fact]
+        public async Task CanPassArguments()
+        {
+            var arguments = new Dictionary<string, object>()
+            {
+                ["test"] = "value",
+                ["key2"] = 5,
+            };
+            var channel = Substitute.For<IChannel>();
+            var builder = new ExchangeBindingBuilder("dest", "src");
+            foreach (var argument in arguments)
+            {
+                builder.Argument(argument.Key, argument.Value);
+            }
+
+            await builder.ApplyAsync(channel);
+
+            await channel.Received().SendAsync<BindMethod, BindOkMethod>(Arg.Is<BindMethod>(
+                m => arguments.All(a => m.Arguments[a.Key] == a.Value)));
         }
 
         [Theory]
@@ -62,27 +111,6 @@ namespace RabbitMQ.Next.Tests.TopologyBuilder
             var builder = new ExchangeBindingBuilder("destination", "source");
 
             await Assert.ThrowsAsync(exceptionType,async ()=> await builder.ApplyAsync(channel));
-        }
-
-        public static IEnumerable<object[]> TestCases()
-        {
-            var destination = "testQueue";
-            var source = "exchange";
-
-            yield return new object[] {new BindMethod(destination, source, string.Empty, null),
-                destination, source, string.Empty, null};
-
-            yield return new object[] {new BindMethod(destination, source, "route", null),
-                destination, source, "route", null};
-
-            yield return new object[] {new BindMethod(destination, source, "route", new Dictionary<string, object> { ["key"] = "value"}),
-                destination, source, "route", new [] { ("key", (object)"value") } };
-
-            yield return new object[] {new BindMethod(destination, source, "route", new Dictionary<string, object> { ["key"] = "value2"}),
-                destination, source, "route", new [] { ("key", (object)"value1"), ("key", (object)"value2") } };
-
-            yield return new object[] {new BindMethod(destination, source, "route", new Dictionary<string, object> { ["key1"] = "value1", ["key2"] = "value2"}),
-                destination, source, "route", new [] { ("key1", (object)"value1"), ("key2", (object)"value2") } };
         }
     }
 }

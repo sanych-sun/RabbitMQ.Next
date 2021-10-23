@@ -4,14 +4,14 @@ using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Exceptions;
-using RabbitMQ.Next.TopologyBuilder.Abstractions;
 using RabbitMQ.Next.Transport.Methods.Queue;
 
-namespace RabbitMQ.Next.TopologyBuilder
+namespace RabbitMQ.Next.TopologyBuilder.Builders
 {
     internal class QueueBindingBuilder : IQueueBindingBuilder
     {
         private Dictionary<string, object> arguments;
+        private List<string> routingKeys;
 
         public QueueBindingBuilder(string queue, string exchange)
         {
@@ -23,21 +23,39 @@ namespace RabbitMQ.Next.TopologyBuilder
 
         public string Queue { get; }
 
-        public string RoutingKey { get; set; }
+        public IQueueBindingBuilder RoutingKey(string routingKey)
+        {
+            this.routingKeys ??= new List<string>();
+            this.routingKeys.Add(routingKey);
 
-        public void SetArgument(string key, object value)
+            return this;
+        }
+
+        public IQueueBindingBuilder Argument(string key, object value)
         {
             this.arguments ??= new Dictionary<string, object>();
             this.arguments[key] = value;
-        }
 
-        public BindMethod ToMethod() => new(this.Queue, this.Exchange, this.RoutingKey, this.arguments);
+            return this;
+        }
 
         public async Task ApplyAsync(IChannel channel)
         {
             try
             {
-                await channel.SendAsync<BindMethod, BindOkMethod>(this.ToMethod());
+                if (this.routingKeys != null && this.routingKeys.Count > 0)
+                {
+                    for (var i = 0; i < this.routingKeys.Count; i++)
+                    {
+                        await channel.SendAsync<BindMethod, BindOkMethod>(
+                            new(this.Queue, this.Exchange, this.routingKeys[i], this.arguments));
+                    }
+                }
+                else
+                {
+                    await channel.SendAsync<BindMethod, BindOkMethod>(
+                        new(this.Queue, this.Exchange, null, this.arguments));
+                }
             }
             catch (ChannelException ex)
             {

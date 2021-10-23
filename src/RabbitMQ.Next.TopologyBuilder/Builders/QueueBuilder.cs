@@ -4,14 +4,14 @@ using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Exceptions;
-using RabbitMQ.Next.TopologyBuilder.Abstractions;
-using RabbitMQ.Next.TopologyBuilder.Abstractions.Exceptions;
 using RabbitMQ.Next.Transport.Methods.Queue;
+using RabbitMQ.Next.TopologyBuilder.Exceptions;
 
-namespace RabbitMQ.Next.TopologyBuilder
+namespace RabbitMQ.Next.TopologyBuilder.Builders
 {
     internal class QueueBuilder : IQueueBuilder
     {
+        private QueueFlags flags;
         private Dictionary<string, object> arguments;
 
         public QueueBuilder(string name)
@@ -21,21 +21,27 @@ namespace RabbitMQ.Next.TopologyBuilder
 
         public string Name { get; }
 
-        public QueueFlags Flags { get; set; }
+        public IQueueBuilder Flags(QueueFlags flag)
+        {
+            this.flags |= flag;
 
-        public void SetArgument(string key, object value)
+            return this;
+        }
+
+        public IQueueBuilder Argument(string key, object value)
         {
             this.arguments ??= new Dictionary<string, object>();
             this.arguments[key] = value;
-        }
 
-        public DeclareMethod ToMethod() => new(this.Name, (byte)this.Flags, this.arguments);
+            return this;
+        }
 
         public async Task ApplyAsync(IChannel channel)
         {
             try
             {
-                await channel.SendAsync<DeclareMethod, DeclareOkMethod>(this.ToMethod());
+                await channel.SendAsync<DeclareMethod, DeclareOkMethod>(
+                    new(this.Name, (byte)this.flags, this.arguments));
             }
             catch (ChannelException ex)
             {

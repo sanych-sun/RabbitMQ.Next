@@ -1,6 +1,6 @@
 using System;
 
-namespace RabbitMQ.Next.TopologyBuilder.Abstractions.Exceptions
+namespace RabbitMQ.Next.TopologyBuilder.Exceptions
 {
     public class ConflictException : Exception
     {

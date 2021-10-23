@@ -4,14 +4,14 @@ using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Exceptions;
-using RabbitMQ.Next.TopologyBuilder.Abstractions;
-using RabbitMQ.Next.TopologyBuilder.Abstractions.Exceptions;
+using RabbitMQ.Next.TopologyBuilder.Exceptions;
 using RabbitMQ.Next.Transport.Methods.Exchange;
 
-namespace RabbitMQ.Next.TopologyBuilder
+namespace RabbitMQ.Next.TopologyBuilder.Builders
 {
     internal class ExchangeBuilder : IExchangeBuilder
     {
+        private ExchangeFlags flags;
         private Dictionary<string, object> arguments;
 
         public ExchangeBuilder(string name, string type)
@@ -24,22 +24,27 @@ namespace RabbitMQ.Next.TopologyBuilder
 
         public string Type { get; }
 
-        public ExchangeFlags Flags { get; set; }
+        public IExchangeBuilder Flags(ExchangeFlags flag)
+        {
+            this.flags |= flag;
 
-        public void SetArgument(string key, object value)
+            return this;
+        }
+
+        public IExchangeBuilder Argument(string key, object value)
         {
             this.arguments ??= new Dictionary<string, object>();
             this.arguments[key] = value;
-        }
 
-        public DeclareMethod ToMethod()
-            => new DeclareMethod(this.Name, this.Type, (byte)this.Flags, this.arguments);
+            return this;
+        }
 
         public async Task ApplyAsync(IChannel channel)
         {
             try
             {
-                await channel.SendAsync<DeclareMethod, DeclareOkMethod>(this.ToMethod());
+                await channel.SendAsync<DeclareMethod, DeclareOkMethod>(
+                    new (this.Name, this.Type, (byte)this.flags, this.arguments));
             }
             catch (ChannelException ex)
             {

@@ -1,6 +1,6 @@
 using System;
 
-namespace RabbitMQ.Next.TopologyBuilder.Abstractions
+namespace RabbitMQ.Next.TopologyBuilder
 {
     [Flags]
     public enum ExchangeFlags : byte

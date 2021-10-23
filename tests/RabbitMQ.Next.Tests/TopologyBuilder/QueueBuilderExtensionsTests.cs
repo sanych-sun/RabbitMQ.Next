@@ -1,5 +1,5 @@
 using NSubstitute;
-using RabbitMQ.Next.TopologyBuilder.Abstractions;
+using RabbitMQ.Next.TopologyBuilder;
 using Xunit;
 
 namespace RabbitMQ.Next.Tests.TopologyBuilder
@@ -14,7 +14,7 @@ namespace RabbitMQ.Next.Tests.TopologyBuilder
 
             builder.WithMessageTtl(ttl);
 
-            builder.Received().SetArgument("x-message-ttl", ttl);
+            builder.Received().Argument("x-message-ttl", ttl);
         }
 
         [Fact]
@@ -25,8 +25,8 @@ namespace RabbitMQ.Next.Tests.TopologyBuilder
 
             builder.WithDeadLetterExchange(exchange);
 
-            builder.Received().SetArgument("x-dead-letter-exchange", exchange);
-            builder.DidNotReceive().SetArgument("x-dead-letter-routing-key", Arg.Any<string>());
+            builder.Received().Argument("x-dead-letter-exchange", exchange);
+            builder.DidNotReceive().Argument("x-dead-letter-routing-key", Arg.Any<string>());
         }
 
         [Fact]
@@ -38,8 +38,8 @@ namespace RabbitMQ.Next.Tests.TopologyBuilder
 
             builder.WithDeadLetterExchange(exchange, routeKey);
 
-            builder.Received().SetArgument("x-dead-letter-exchange", exchange);
-            builder.Received().SetArgument("x-dead-letter-routing-key", routeKey);
+            builder.Received().Argument("x-dead-letter-exchange", exchange);
+            builder.Received().Argument("x-dead-letter-routing-key", routeKey);
         }
 
         [Fact]
@@ -50,7 +50,7 @@ namespace RabbitMQ.Next.Tests.TopologyBuilder
 
             builder.WithMaxLength(maxLength);
 
-            builder.Received().SetArgument("x-max-length", maxLength);
+            builder.Received().Argument("x-max-length", maxLength);
         }
 
         [Fact]
@@ -61,7 +61,7 @@ namespace RabbitMQ.Next.Tests.TopologyBuilder
 
             builder.WithMaxSize(maxSize);
 
-            builder.Received().SetArgument("x-max-length-bytes", maxSize);
+            builder.Received().Argument("x-max-length-bytes", maxSize);
         }
 
         [Fact]
@@ -71,7 +71,7 @@ namespace RabbitMQ.Next.Tests.TopologyBuilder
 
             builder.WithDropOnOverflow();
 
-            builder.Received().SetArgument("x-overflow", "drop-head");
+            builder.Received().Argument("x-overflow", "drop-head");
         }
 
         [Fact]
@@ -81,7 +81,7 @@ namespace RabbitMQ.Next.Tests.TopologyBuilder
 
             builder.WithRejectOnOverflow();
 
-            builder.Received().SetArgument("x-overflow", "reject-publish");
+            builder.Received().Argument("x-overflow", "reject-publish");
         }
 
         [Fact]
@@ -92,7 +92,7 @@ namespace RabbitMQ.Next.Tests.TopologyBuilder
 
             builder.WithMaxPriority(maxPriority);
 
-            builder.Received().SetArgument("x-max-priority", maxPriority);
+            builder.Received().Argument("x-max-priority", maxPriority);
         }
 
         [Fact]
@@ -102,7 +102,7 @@ namespace RabbitMQ.Next.Tests.TopologyBuilder
 
             builder.AsLazy();
 
-            builder.Received().SetArgument("x-queue-mode", "lazy");
+            builder.Received().Argument("x-queue-mode", "lazy");
         }
     }
 }

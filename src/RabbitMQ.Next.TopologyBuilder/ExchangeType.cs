@@ -1,4 +1,4 @@
-namespace RabbitMQ.Next.TopologyBuilder.Abstractions
+namespace RabbitMQ.Next.TopologyBuilder
 {
     public static class ExchangeType
     {

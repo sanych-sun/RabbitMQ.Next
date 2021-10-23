@@ -1,5 +1,5 @@
 using NSubstitute;
-using RabbitMQ.Next.TopologyBuilder.Abstractions;
+using RabbitMQ.Next.TopologyBuilder;
 using Xunit;
 
 namespace RabbitMQ.Next.Tests.TopologyBuilder
@@ -14,7 +14,7 @@ namespace RabbitMQ.Next.Tests.TopologyBuilder
 
             builder.WithAlternateExchange(alternateExchange);
 
-            builder.Received().SetArgument("alternate-exchange", alternateExchange);
+            builder.Received().Argument("alternate-exchange", alternateExchange);
         }
     }
 }
