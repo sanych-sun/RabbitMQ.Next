@@ -17,19 +17,11 @@ namespace RabbitMQ.Next.Transport.Methods.Registry
 
         public Type Type { get; }
 
-        public bool IsSync { get; private set; }
-
         public bool HasContent { get; private set; }
 
         public object Parser { get; private set; }
 
         public object Formatter { get; private set; }
-
-        IMethodRegistrationBuilder<TMethod> IMethodRegistrationBuilder<TMethod>.Sync()
-        {
-            this.IsSync = true;
-            return this;
-        }
 
         IMethodRegistrationBuilder<TMethod> IMethodRegistrationBuilder<TMethod>.HasContent()
         {

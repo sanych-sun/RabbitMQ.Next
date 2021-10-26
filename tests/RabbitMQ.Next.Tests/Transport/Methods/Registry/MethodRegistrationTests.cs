@@ -48,5 +48,11 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Registry
 
             Assert.Equal(formatter, registration.Parser);
         }
+
+        [Fact]
+        public void IsSync()
+        {
+
+        }
     }
 }

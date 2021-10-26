@@ -4,8 +4,6 @@ namespace RabbitMQ.Next.Abstractions.Methods
 {
     public interface IMethodRegistry
     {
-        bool IsSync(MethodId methodId);
-
         bool HasContent(MethodId methodId);
 
         Type GetMethodType(MethodId methodId);

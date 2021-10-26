@@ -19,7 +19,6 @@ namespace RabbitMQ.Next.Tests.Publisher.Initializers
 
         [Theory]
         [InlineData("appId")]
-        [InlineData("appId")]
         public void CanTransform(string value)
         {
             var transformer = new ApplicationIdInitializer(value);

@@ -31,8 +31,6 @@ namespace RabbitMQ.Next.Transport.Methods.Registry
             this.types = typeMap;
         }
 
-        public bool IsSync(MethodId methodId) => this.GetMethod(methodId).IsSync;
-
         public bool HasContent(MethodId methodId) => this.GetMethod(methodId).HasContent;
 
         public Type GetMethodType(MethodId methodId) => this.GetMethod(methodId).Type;

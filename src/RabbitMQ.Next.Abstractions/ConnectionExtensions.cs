@@ -17,7 +17,7 @@ namespace RabbitMQ.Next.Abstractions
         {
             if (connection.State != ConnectionState.Open)
             {
-                throw new InvalidOperationException("Connection should be in Open state to use the TopologyBuilder");
+                throw new InvalidOperationException("Connection should be open.");
             }
 
             IChannel channel = null;

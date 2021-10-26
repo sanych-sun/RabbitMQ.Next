@@ -113,7 +113,7 @@ namespace RabbitMQ.Next.Tests.Channels
             Assert.True(wait.IsCompleted);
             var data = (AckMethod) await wait;
             Assert.Equal((ulong)24, data.DeliveryTag);
-            Assert.Equal(true, data.Multiple);
+            Assert.True(data.Multiple);
         }
 
 
