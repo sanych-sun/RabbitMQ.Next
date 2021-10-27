@@ -1,5 +1,4 @@
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Threading;
@@ -26,18 +25,18 @@ namespace RabbitMQ.Next
         private readonly IMethodRegistry methodRegistry;
 
         private readonly ChannelPool channelPool;
-        private readonly IBufferPool bufferPool;
+        private readonly IMemoryPool memoryPool;
         private readonly ConnectionDetails connectionDetails = new ConnectionDetails();
 
-        private Channel<IMemoryOwner<byte>> socketChannel;
+        private Channel<IMemoryBlock> socketChannel;
         private CancellationTokenSource socketIoCancellation;
 
-        private Connection(IMethodRegistry methodRegistry, IBufferPool bufferPool)
+        private Connection(IMethodRegistry methodRegistry, IMemoryPool memoryPool)
         {
             this.methodRegistry = methodRegistry;
 
             this.State = ConnectionState.Pending;
-            this.bufferPool = bufferPool;
+            this.memoryPool = memoryPool;
             this.channelPool = new ChannelPool();
         }
 
@@ -50,14 +49,14 @@ namespace RabbitMQ.Next
             int frameSize)
         {
             var bufferSize = ProtocolConstants.FrameHeaderSize + frameSize + 1; // frame header + frame + frame-end
-            var bufferPool = new BufferPool(bufferSize, 100);
+            var memoryPool = new MemoryPool(bufferSize, 100);
 
-            var connection = new Connection(methodRegistry, bufferPool);
+            var connection = new Connection(methodRegistry, memoryPool);
             // TODO: adopt authentication_failure_close capability to handle auth errors
 
             connection.State = ConnectionState.Connecting;
             var socket = await OpenSocketAsync(endpoints);
-            connection.socketChannel = System.Threading.Channels.Channel.CreateBounded<IMemoryOwner<byte>>(new BoundedChannelOptions(100)
+            connection.socketChannel = System.Threading.Channels.Channel.CreateBounded<IMemoryBlock>(new BoundedChannelOptions(100)
             {
                 SingleReader = true,
                 SingleWriter = false,
@@ -65,7 +64,7 @@ namespace RabbitMQ.Next
             });
 
             connection.State = ConnectionState.Negotiating;
-            var connectionChannel = new Channel(connection.channelPool, connection.methodRegistry, connection.socketChannel.Writer, connection.bufferPool, null, ProtocolConstants.FrameMinSize);
+            var connectionChannel = new Channel(connection.channelPool, connection.methodRegistry, connection.socketChannel.Writer, connection.memoryPool, null, ProtocolConstants.FrameMinSize);
 
             connection.socketIoCancellation = new CancellationTokenSource();
             Task.Factory.StartNew(() => connection.ReceiveLoop(socket, connection.socketIoCancellation.Token), TaskCreationOptions.LongRunning);
@@ -106,7 +105,7 @@ namespace RabbitMQ.Next
         {
             // TODO: validate state
 
-            var channel = new Channel(this.channelPool, this.methodRegistry, this.socketChannel.Writer, this.bufferPool, handlers, this.Details.FrameMaxSize);
+            var channel = new Channel(this.channelPool, this.methodRegistry, this.socketChannel.Writer, this.memoryPool, handlers, this.Details.FrameMaxSize);
             await channel.SendAsync<Transport.Methods.Channel.OpenMethod, Transport.Methods.Channel.OpenOkMethod>(new Transport.Methods.Channel.OpenMethod(), cancellationToken);
 
             return channel;
@@ -158,7 +157,7 @@ namespace RabbitMQ.Next
 
         private void ReceiveLoop(ISocket socket, CancellationToken cancellationToken)
         {
-            var headerBuffer = new byte[ProtocolConstants.FrameHeaderSize];
+            Memory<byte> headerBuffer = new byte[ProtocolConstants.FrameHeaderSize];
 
             try
             {
@@ -174,27 +173,29 @@ namespace RabbitMQ.Next
                     ((ReadOnlyMemory<byte>) headerBuffer).ReadFrameHeader(out FrameType frameType, out ushort channel, out uint payloadSize);
 
                     // 2. Get buffer
-                    var buffer = this.bufferPool.CreateMemory();
+                    var buffer = this.memoryPool.Get();
 
                     // 3. Read payload into the buffer, allocate extra byte for FrameEndByte
-                    socket.FillBuffer(buffer.Memory[..((int)payloadSize + 1)]);
-
-                    // 4. Ensure there is FrameEnd at last position
-                    if (buffer.Memory.Span[(int)payloadSize] != ProtocolConstants.FrameEndByte)
+                    var payload = buffer.Writer[..((int)payloadSize + 1)];
+                    socket.FillBuffer(payload);
+                    // 4. Ensure there is FrameEnd
+                    if (payload.Span[(int)payloadSize] != ProtocolConstants.FrameEndByte)
                     {
                         // TODO: throw connection exception here
                         throw new InvalidOperationException();
                     }
 
+                    // 5. Doing nothing on heartbeat frame
                     if (frameType == FrameType.Heartbeat)
                     {
+                        buffer.Release();
                         continue;
                     }
 
-                    // 5. Shrink buffer to the data size
-                    buffer.Slice((int)payloadSize);
+                    // 6. Shrink the buffer to the payload size
+                    buffer.Commit((int)payloadSize);
 
-                    // 5. Write frame to appropriate channel
+                    // 7. Write frame to appropriate channel
                     var targetChannel = this.channelPool[channel].FrameWriter;
                     if (!targetChannel.TryWrite((frameType, buffer)))
                     {
@@ -211,14 +212,14 @@ namespace RabbitMQ.Next
             }
         }
 
-        private static async Task SendLoop(ISocket socket, ChannelReader<IMemoryOwner<byte>> socketChannel)
+        private static async Task SendLoop(ISocket socket, ChannelReader<IMemoryBlock> socketChannel)
         {
             while (await socketChannel.WaitToReadAsync())
             {
                 while (socketChannel.TryRead(out var memoryBlock))
                 {
                     await socket.SendAsync(memoryBlock.Memory);
-                    memoryBlock.Dispose();
+                    memoryBlock.Release();
                 }
 
                 await socket.FlushAsync();

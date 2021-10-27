@@ -114,7 +114,7 @@ namespace RabbitMQ.Next.Benchmarks.Publisher
             yield return GenerateTestCase(128, 10_000, "10_000 (128 B)");
             yield return GenerateTestCase(1024, 10_000, "10_000 (1 kB)");
             yield return GenerateTestCase(10240, 10_000, "10_000 (10 kB)");
-            yield return GenerateTestCase(102400, 10_000, "10_000 (100 kB)");
+            yield return GenerateTestCase(102400, 1_000, "10_000 (100 kB)");
             yield return GenerateTestCase(1048576, 1_000, "1_000 (1 MB)");
         }
 

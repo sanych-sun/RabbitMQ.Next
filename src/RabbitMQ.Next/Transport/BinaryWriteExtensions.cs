@@ -9,6 +9,23 @@ namespace RabbitMQ.Next.Transport
     public static class BinaryWriteExtensions
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Memory<byte> Slice(this Memory<byte> target, int start, int size, out Memory<byte> result)
+        {
+            if (size <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(size));
+            }
+
+            if (start + size > target.Length)
+            {
+                throw new OutOfMemoryException();
+            }
+
+            result = target.Slice(start, size);
+            return target.Slice(start + size);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Memory<byte> Write(this Memory<byte> target, byte data)
         {
             target.Span[0] = data;

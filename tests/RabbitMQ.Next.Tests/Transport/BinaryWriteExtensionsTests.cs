@@ -9,6 +9,35 @@ namespace RabbitMQ.Next.Tests.Transport
     public class BinaryWriteExtensionsTests
     {
         [Theory]
+        [InlineData(0)]
+        [InlineData(-10)]
+        public void SliceThrowsOnWrongSize(int sliceSize)
+        {
+            Memory<byte> buffer = new byte[10];
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => buffer.Slice(0, sliceSize, out _));
+        }
+
+        [Fact]
+        public void SliceThrowsOnTooBigSize()
+        {
+            Memory<byte> buffer = new byte[10];
+
+            Assert.Throws<OutOfMemoryException>(() => buffer.Slice(0, 20, out _));
+        }
+
+        [Fact]
+        public void Slice()
+        {
+            Memory<byte> buffer = new byte[10];
+
+            var result = buffer.Slice(0, 2, out var slice);
+
+            Assert.Equal(2, slice.Length);
+            Assert.Equal(8, result.Length);
+        }
+
+        [Theory]
         [InlineData(0, new byte[] { 0b_00000000 })]
         [InlineData(1, new byte[] { 0b_00000001 })]
         [InlineData(42, new byte[] { 0b_00101010 })]

@@ -4,10 +4,10 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Extensions.ObjectPool;
-using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Abstractions.Methods;
+using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Transport.Methods.Basic;
 
 namespace RabbitMQ.Next.Channels
@@ -15,13 +15,13 @@ namespace RabbitMQ.Next.Channels
     internal class MethodSender
     {
         private readonly ObjectPool<FrameBuilder> frameBuilderPool;
-        private readonly ChannelWriter<IMemoryOwner<byte>> socketWriter;
+        private readonly ChannelWriter<IMemoryBlock> socketWriter;
         private readonly SemaphoreSlim senderSync;
 
         private readonly IMethodFormatter<PublishMethod> publishMethodFormatter;
         private readonly IMethodRegistry registry;
 
-        public MethodSender(ChannelWriter<IMemoryOwner<byte>> socketWriter, IMethodRegistry registry, ObjectPool<FrameBuilder> frameBuilderPool)
+        public MethodSender(ChannelWriter<IMemoryBlock> socketWriter, IMethodRegistry registry, ObjectPool<FrameBuilder> frameBuilderPool)
         {
             this.socketWriter = socketWriter;
             this.registry = registry;
@@ -34,33 +34,22 @@ namespace RabbitMQ.Next.Channels
             where TRequest : struct, IOutgoingMethod
         {
             var frameBuilder = this.frameBuilderPool.Get();
-            var buffer = frameBuilder.BeginMethodFrame(request.MethodId);
-
             var formatter = this.registry.GetFormatter<TRequest>();
-
-            var written = formatter.Write(buffer.GetMemory(), request);
-            buffer.Advance(written);
-            frameBuilder.EndFrame();
+            frameBuilder.WriteMethodFrame(request, formatter);
 
             return this.TransmitFrameAsync(frameBuilder, cancellation);
         }
 
         public ValueTask PublishAsync<TState>(
             TState state, string exchange, string routingKey,
-            IMessageProperties properties, Action<TState, IBufferWriter<byte>> payload,
+            IMessageProperties properties, Action<TState, IBufferWriter<byte>> contentBody,
             PublishFlags flags = PublishFlags.None, CancellationToken cancellation = default)
         {
             var frameBuilder = this.frameBuilderPool.Get();
+            var publishMethod = new PublishMethod(exchange, routingKey, (byte)flags);
 
-            var buffer = frameBuilder.BeginMethodFrame(MethodId.BasicPublish);
-
-            var written = this.publishMethodFormatter.Write(buffer.GetMemory(), new PublishMethod(exchange, routingKey, (byte)flags));
-            buffer.Advance(written);
-            frameBuilder.EndFrame();
-
-            var contentBuffer = frameBuilder.BeginContentFrame(properties);
-            payload(state, contentBuffer);
-            frameBuilder.EndFrame();
+            frameBuilder.WriteMethodFrame(publishMethod, this.publishMethodFormatter);
+            frameBuilder.WriteContentFrame(state, properties, contentBody);
 
             return this.TransmitFrameAsync(frameBuilder, cancellation);
         }

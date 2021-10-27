@@ -1,14 +1,13 @@
 using System;
-using System.Buffers;
 using Microsoft.Extensions.ObjectPool;
 
 namespace RabbitMQ.Next.Buffers
 {
-    internal sealed class MemoryBlock : IMemoryOwner<byte>
+    internal sealed class MemoryBlock : IMemoryBlock
     {
         private readonly ObjectPool<MemoryBlock> pool;
         private readonly byte[] buffer;
-        private Memory<byte> memory;
+        private Memory<byte> writer;
 
         public MemoryBlock(ObjectPool<MemoryBlock> pool, int size)
         {
@@ -19,24 +18,24 @@ namespace RabbitMQ.Next.Buffers
 
             this.pool = pool;
             this.buffer = new byte[size];
-            this.memory = this.buffer;
+            this.writer = this.buffer;
         }
 
-        public void Dispose()
+        public void Release()
         {
-            this.memory = this.buffer;
+            this.writer = this.buffer;
             this.pool.Return(this);
         }
 
-        public int BufferCapacity
-            => this.memory.Length;
+        public ReadOnlyMemory<byte> Memory
+            =>  new ReadOnlyMemory<byte>(this.buffer, 0, this.buffer.Length - this.writer.Length);
 
-        public Memory<byte> Memory
-            => this.memory;
-
-        public void Slice(int length)
+        public void Commit(int length)
         {
-            this.memory = this.memory[..length];
+            this.writer = this.writer[length..];
         }
+
+        public Memory<byte> Writer
+            => this.writer;
     }
 }

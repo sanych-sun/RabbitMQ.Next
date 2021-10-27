@@ -1,25 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Messaging;
 
 namespace RabbitMQ.Next.Transport.Messaging
 {
-    internal static class ContentHeader
+    internal static class MessageHeader
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int WriteContentHeader(this Memory<byte> target, IMessageProperties properties, ulong contentSize)
-        {
-            var result = target
-                .Write((ushort) ClassId.Basic)
-                .Write((ushort) ProtocolConstants.ObsoleteField)
-                .Write(contentSize)
-                .WriteMessageProperties(properties);
-
-            return target.Length - result.Length;
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Memory<byte> WriteMessageProperties(this Memory<byte> target, IMessageProperties properties)
         {
@@ -31,19 +18,19 @@ namespace RabbitMQ.Next.Transport.Messaging
             if (properties != null)
             {
                 target = target
-                    .WriteProperty(properties.ContentType, ref flags, 15)
-                    .WriteProperty(properties.ContentEncoding, ref flags, 14)
-                    .WriteProperty(properties.Headers, ref flags, 13)
-                    .WriteProperty((byte) properties.DeliveryMode, ref flags, 12)
-                    .WriteProperty(properties.Priority, ref flags, 11)
-                    .WriteProperty(properties.CorrelationId, ref flags, 10)
-                    .WriteProperty(properties.ReplyTo, ref flags, 9)
-                    .WriteProperty(properties.Expiration, ref flags, 8)
-                    .WriteProperty(properties.MessageId, ref flags, 7)
-                    .WriteProperty(properties.Timestamp, ref flags, 6)
-                    .WriteProperty(properties.Type, ref flags, 5)
-                    .WriteProperty(properties.UserId, ref flags, 4)
-                    .WriteProperty(properties.ApplicationId, ref flags, 3);
+                    .WriteProperty(properties.ContentType, ref flags, MessagePropertiesBits.ContentType)
+                    .WriteProperty(properties.ContentEncoding, ref flags, MessagePropertiesBits.ContentEncoding)
+                    .WriteProperty(properties.Headers, ref flags, MessagePropertiesBits.Headers)
+                    .WriteProperty((byte) properties.DeliveryMode, ref flags, MessagePropertiesBits.DeliveryMode)
+                    .WriteProperty(properties.Priority, ref flags, MessagePropertiesBits.Priority)
+                    .WriteProperty(properties.CorrelationId, ref flags, MessagePropertiesBits.CorrelationId)
+                    .WriteProperty(properties.ReplyTo, ref flags, MessagePropertiesBits.ReplyTo)
+                    .WriteProperty(properties.Expiration, ref flags, MessagePropertiesBits.Expiration)
+                    .WriteProperty(properties.MessageId, ref flags, MessagePropertiesBits.MessageId)
+                    .WriteProperty(properties.Timestamp, ref flags, MessagePropertiesBits.Timestamp)
+                    .WriteProperty(properties.Type, ref flags, MessagePropertiesBits.Type)
+                    .WriteProperty(properties.UserId, ref flags, MessagePropertiesBits.UserId)
+                    .WriteProperty(properties.ApplicationId, ref flags, MessagePropertiesBits.ApplicationId);
             }
 
             flagsSpan.Write(flags);

@@ -1,11 +1,14 @@
 // using System;
 // using System.Buffers;
+// using System.Diagnostics;
 // using System.Text;
 // using System.Threading;
 // using System.Threading.Tasks;
 // using RabbitMQ.Next.Consumer;
 // using RabbitMQ.Next.Consumer.Abstractions;
 // using RabbitMQ.Next.Abstractions;
+// using RabbitMQ.Next.Publisher;
+// using RabbitMQ.Next.Publisher.Abstractions;
 // using RabbitMQ.Next.Publisher.Attributes;
 // using RabbitMQ.Next.Serialization.PlainText;
 // using Xunit;
@@ -22,32 +25,34 @@
 //             this.output = output;
 //         }
 //
-//         // [Fact]
-//         // public async Task Test1()
-//         // {
-//         //     await using var connection = await ConnectionBuilder.Default
-//         //         .AddEndpoint("amqp://test2:test2@localhost:5672/")
-//         //         .ConnectAsync();
-//         //
-//         //     var publisher = connection.CreatePublisher("amq.topic",
-//         //         builder => builder
-//         //             .UsePlainTextSerializer()
-//         //             .PublisherConfirms()
-//         //         );
-//         //
-//         //     var sw = Stopwatch.StartNew();
-//         //
-//         //     for (var i = 0; i < 10; i++)
-//         //     {
-//         //         await publisher.PublishAsync(BuildDummyText(1048576));
-//         //     }
-//         //
-//         //     await publisher.DisposeAsync();
-//         //
-//         //     sw.Stop();
-//         //
-//         //     this.output.WriteLine(sw.ElapsedMilliseconds.ToString());
-//         // }
+//         [Fact]
+//         public async Task Test1()
+//         {
+//             await using var connection = await ConnectionBuilder.Default
+//                 .AddEndpoint("amqp://test2:test2@localhost:5672/")
+//                 .ConnectAsync();
+//
+//             var publisher = connection.CreatePublisher("amq.fanout",
+//                 builder => builder
+//                     .UsePlainTextSerializer()
+//                     .PublisherConfirms()
+//                 );
+//
+//             var sw = Stopwatch.StartNew();
+//
+//             await publisher.PublishAsync(BuildDummyText(1048576));
+//
+//             for (var i = 0; i < 10; i++)
+//             {
+//                 await publisher.PublishAsync(BuildDummyText(1048576));
+//             }
+//
+//             await publisher.DisposeAsync();
+//
+//             sw.Stop();
+//
+//             this.output.WriteLine(sw.ElapsedMilliseconds.ToString());
+//         }
 //
 //         [Fact]
 //         public async Task TestConsumer()
@@ -64,16 +69,18 @@
 //                 builder => builder
 //                     .BindToQueue("test-queue")
 //                     .EachMessageAcknowledgement()
-//                     .PrefetchCount(100)
+//                     .PrefetchCount(10)
 //                     .UsePlainTextSerializer()
 //                     .AddMessageHandler((message, properties, content) =>
 //                     {
 //                         num++;
 //
-//                         if (num == 10)
+//                         if (num == 15)
 //                         {
 //                             cancelation.Cancel();
 //                         }
+//
+//                         var body = content.GetContent<string>();
 //
 //                         return new ValueTask<bool>(true);
 //                     })

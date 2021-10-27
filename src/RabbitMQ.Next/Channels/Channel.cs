@@ -29,7 +29,7 @@ namespace RabbitMQ.Next.Channels
         private readonly WaitFrameHandler waitHandler;
         private readonly IReadOnlyList<IFrameHandler> methodHandlers;
 
-        public Channel(ChannelPool channelPool, IMethodRegistry methodRegistry, ChannelWriter<IMemoryOwner<byte>> socketWriter, IBufferPool bufferPool, IReadOnlyList<IFrameHandler> handlers, int frameMaxSize)
+        public Channel(ChannelPool channelPool, IMethodRegistry methodRegistry, ChannelWriter<IMemoryBlock> socketWriter, IMemoryPool memoryPool, IReadOnlyList<IFrameHandler> handlers, int frameMaxSize)
         {
             this.channelPool = channelPool;
             this.registry = methodRegistry;
@@ -37,7 +37,7 @@ namespace RabbitMQ.Next.Channels
 
             var frameBuilderPool = new DefaultObjectPool<FrameBuilder>(
                 new ObjectPoolPolicy<FrameBuilder>(
-                    () => new(bufferPool, chNumber, frameMaxSize),
+                    () => new(memoryPool, chNumber, frameMaxSize),
                     b => { b.Reset(); return true; }), 100);
 
             this.channelNumber = chNumber;
@@ -182,11 +182,11 @@ namespace RabbitMQ.Next.Channels
                         }
                         finally
                         {
-                            contentHeaderFrame.Payload.Dispose();
+                            contentHeaderFrame.Payload.Release();
                             messageProperty.Reset();
                             for (var i = 0; i < contentChunks.Count; i++)
                             {
-                                contentChunks[i].Dispose();
+                                contentChunks[i].Release();
                             }
                             contentChunks.Clear();
                         }
@@ -229,7 +229,7 @@ namespace RabbitMQ.Next.Channels
             }
             finally
             {
-                payload.Dispose();
+                payload.Release();
             }
         }
 
