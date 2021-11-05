@@ -7,22 +7,22 @@ using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Exceptions;
 using RabbitMQ.Next.TopologyBuilder;
-using RabbitMQ.Next.TopologyBuilder.Builders;
+using RabbitMQ.Next.TopologyBuilder.Commands;
 using RabbitMQ.Next.TopologyBuilder.Exceptions;
 using RabbitMQ.Next.Transport.Methods.Queue;
 using Xunit;
 
 namespace RabbitMQ.Next.Tests.TopologyBuilder
 {
-    public class QueueBuilderTests
+    public class QueueDeclareCommandTests
     {
         [Fact]
-        public async Task ApplySendsMethod()
+        public async Task ExecuteSendsMethod()
         {
             var channel = Substitute.For<IChannel>();
-            var builder = new QueueBuilder("queue");
+            var builder = new QueueDeclareCommand("queue");
 
-            await builder.ApplyAsync(channel);
+            await builder.ExecuteAsync(channel);
 
             await channel.Received().SendAsync<DeclareMethod, DeclareOkMethod>(Arg.Any<DeclareMethod>());
         }
@@ -32,9 +32,9 @@ namespace RabbitMQ.Next.Tests.TopologyBuilder
         {
             var queueName = "test-queue";
             var channel = Substitute.For<IChannel>();
-            var builder = new QueueBuilder(queueName);
+            var builder = new QueueDeclareCommand(queueName);
 
-            await builder.ApplyAsync(channel);
+            await builder.ExecuteAsync(channel);
 
             await channel.Received().SendAsync<DeclareMethod, DeclareOkMethod>(Arg.Is<DeclareMethod>(
                 m => m.Queue == queueName));
@@ -44,10 +44,10 @@ namespace RabbitMQ.Next.Tests.TopologyBuilder
         public async Task CanPassFlag()
         {
             var channel = Substitute.For<IChannel>();
-            var builder = new QueueBuilder("queue");
+            var builder = new QueueDeclareCommand("queue");
             builder.Flags(QueueFlags.Durable);
 
-            await builder.ApplyAsync(channel);
+            await builder.ExecuteAsync(channel);
 
             await channel.Received().SendAsync<DeclareMethod, DeclareOkMethod>(Arg.Is<DeclareMethod>(
                 m => m.Flags == (byte)QueueFlags.Durable));
@@ -57,11 +57,11 @@ namespace RabbitMQ.Next.Tests.TopologyBuilder
         public async Task CanCombineFlags()
         {
             var channel = Substitute.For<IChannel>();
-            var builder = new QueueBuilder("queue");
+            var builder = new QueueDeclareCommand("queue");
             builder.Flags(QueueFlags.Exclusive);
             builder.Flags(QueueFlags.AutoDelete);
 
-            await builder.ApplyAsync(channel);
+            await builder.ExecuteAsync(channel);
 
             await channel.Received().SendAsync<DeclareMethod, DeclareOkMethod>(Arg.Is<DeclareMethod>(
                 m => m.Flags == (byte)(QueueFlags.Exclusive | QueueFlags.AutoDelete)));
@@ -76,14 +76,14 @@ namespace RabbitMQ.Next.Tests.TopologyBuilder
                 ["key2"] = 5,
             };
             var channel = Substitute.For<IChannel>();
-            var builder = new QueueBuilder("queue");
+            var builder = new QueueDeclareCommand("queue");
 
             foreach (var arg in arguments)
             {
                 builder.Argument(arg.Key, arg.Value);
             }
 
-            await builder.ApplyAsync(channel);
+            await builder.ExecuteAsync(channel);
 
             await channel.Received().SendAsync<DeclareMethod, DeclareOkMethod>(Arg.Is<DeclareMethod>(
                 m => arguments.All(a => m.Arguments[a.Key] == a.Value)));
@@ -94,14 +94,14 @@ namespace RabbitMQ.Next.Tests.TopologyBuilder
         [InlineData(ReplyCode.PreconditionFailed, typeof(ArgumentOutOfRangeException))]
         [InlineData(ReplyCode.ResourceLocked, typeof(ConflictException))]
         [InlineData(ReplyCode.ChannelError, typeof(ChannelException))]
-        public async Task ApplyProcessExceptions(ReplyCode replyCode, Type exceptionType)
+        public async Task ExecuteProcessExceptions(ReplyCode replyCode, Type exceptionType)
         {
             var channel = Substitute.For<IChannel>();
             channel.SendAsync<DeclareMethod, DeclareOkMethod>(default)
                 .ReturnsForAnyArgs(new ValueTask<DeclareOkMethod>(Task.FromException<DeclareOkMethod>(new ChannelException((ushort)replyCode, "error message", MethodId.QueueBind))));
-            var builder = new QueueBuilder("queue");
+            var builder = new QueueDeclareCommand("queue");
 
-            await Assert.ThrowsAsync(exceptionType,async ()=> await builder.ApplyAsync(channel));
+            await Assert.ThrowsAsync(exceptionType,async ()=> await builder.ExecuteAsync(channel));
         }
     }
 }

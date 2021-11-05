@@ -8,21 +8,21 @@ using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Exceptions;
 using RabbitMQ.Next.TopologyBuilder;
 using RabbitMQ.Next.TopologyBuilder.Exceptions;
-using RabbitMQ.Next.TopologyBuilder.Builders;
+using RabbitMQ.Next.TopologyBuilder.Commands;
 using RabbitMQ.Next.Transport.Methods.Exchange;
 using Xunit;
 
 namespace RabbitMQ.Next.Tests.TopologyBuilder
 {
-    public class ExchangeBuilderTests
+    public class ExchangeDeclareCommandTests
     {
         [Fact]
-        public async Task ApplySendsMethod()
+        public async Task ExecuteSendsMethod()
         {
             var channel = Substitute.For<IChannel>();
-            var builder = new ExchangeBuilder("exchange", ExchangeType.Direct);
+            var builder = new ExchangeDeclareCommand("exchange", ExchangeType.Direct);
 
-            await builder.ApplyAsync(channel);
+            await builder.ExecuteAsync(channel);
 
             await channel.Received().SendAsync<DeclareMethod, DeclareOkMethod>(Arg.Any<DeclareMethod>());
         }
@@ -32,9 +32,9 @@ namespace RabbitMQ.Next.Tests.TopologyBuilder
         {
             var exchangeName = "test-exch";
             var channel = Substitute.For<IChannel>();
-            var builder = new ExchangeBuilder(exchangeName, ExchangeType.Direct);
+            var builder = new ExchangeDeclareCommand(exchangeName, ExchangeType.Direct);
 
-            await builder.ApplyAsync(channel);
+            await builder.ExecuteAsync(channel);
 
             await channel.Received().SendAsync<DeclareMethod, DeclareOkMethod>(Arg.Is<DeclareMethod>(
                 m => m.Exchange == exchangeName));
@@ -44,9 +44,9 @@ namespace RabbitMQ.Next.Tests.TopologyBuilder
         public async Task CanPassExchangeType()
         {
             var channel = Substitute.For<IChannel>();
-            var builder = new ExchangeBuilder("exchange", ExchangeType.Topic);
+            var builder = new ExchangeDeclareCommand("exchange", ExchangeType.Topic);
 
-            await builder.ApplyAsync(channel);
+            await builder.ExecuteAsync(channel);
 
             await channel.Received().SendAsync<DeclareMethod, DeclareOkMethod>(Arg.Is<DeclareMethod>(
                 m => m.Type == ExchangeType.Topic));
@@ -56,10 +56,10 @@ namespace RabbitMQ.Next.Tests.TopologyBuilder
         public async Task CanPassFlag()
         {
             var channel = Substitute.For<IChannel>();
-            var builder = new ExchangeBuilder("exchange", ExchangeType.Direct);
+            var builder = new ExchangeDeclareCommand("exchange", ExchangeType.Direct);
             builder.Flags(ExchangeFlags.Durable);
 
-            await builder.ApplyAsync(channel);
+            await builder.ExecuteAsync(channel);
 
             await channel.Received().SendAsync<DeclareMethod, DeclareOkMethod>(Arg.Is<DeclareMethod>(
                 m => m.Flags == (byte)ExchangeFlags.Durable));
@@ -69,11 +69,11 @@ namespace RabbitMQ.Next.Tests.TopologyBuilder
         public async Task CanCombineFlags()
         {
             var channel = Substitute.For<IChannel>();
-            var builder = new ExchangeBuilder("exchange", ExchangeType.Direct);
+            var builder = new ExchangeDeclareCommand("exchange", ExchangeType.Direct);
             builder.Flags(ExchangeFlags.AutoDelete);
             builder.Flags(ExchangeFlags.Internal);
 
-            await builder.ApplyAsync(channel);
+            await builder.ExecuteAsync(channel);
 
             await channel.Received().SendAsync<DeclareMethod, DeclareOkMethod>(Arg.Is<DeclareMethod>(
                 m => m.Flags == (byte)(ExchangeFlags.AutoDelete | ExchangeFlags.Internal)));
@@ -88,14 +88,14 @@ namespace RabbitMQ.Next.Tests.TopologyBuilder
                 ["key2"] = 5,
             };
             var channel = Substitute.For<IChannel>();
-            var builder = new ExchangeBuilder("exchange", ExchangeType.Direct);
+            var builder = new ExchangeDeclareCommand("exchange", ExchangeType.Direct);
 
             foreach (var arg in arguments)
             {
                 builder.Argument(arg.Key, arg.Value);
             }
 
-            await builder.ApplyAsync(channel);
+            await builder.ExecuteAsync(channel);
 
             await channel.Received().SendAsync<DeclareMethod, DeclareOkMethod>(Arg.Is<DeclareMethod>(
                 m => arguments.All(a => m.Arguments[a.Key] == a.Value)));
@@ -107,14 +107,14 @@ namespace RabbitMQ.Next.Tests.TopologyBuilder
         [InlineData(ReplyCode.NotAllowed, typeof(ConflictException))]
         [InlineData(ReplyCode.CommandInvalid, typeof(NotSupportedException))]
         [InlineData(ReplyCode.ChannelError, typeof(ChannelException))]
-        public async Task ApplyProcessExceptions(ReplyCode replyCode, Type exceptionType)
+        public async Task ExecuteProcessExceptions(ReplyCode replyCode, Type exceptionType)
         {
             var channel = Substitute.For<IChannel>();
             channel.SendAsync<DeclareMethod, DeclareOkMethod>(default)
-                .ReturnsForAnyArgs(new ValueTask<DeclareOkMethod>(Task.FromException<DeclareOkMethod>(new ChannelException((ushort)replyCode, "error message", MethodId.QueueBind))));
-            var builder = new ExchangeBuilder("exchange", ExchangeType.Direct);
+                .ReturnsForAnyArgs(new ValueTask<DeclareOkMethod>(Task.FromException<DeclareOkMethod>(new ChannelException((ushort)replyCode, "error message", MethodId.ExchangeDeclare))));
+            var builder = new ExchangeDeclareCommand("exchange", ExchangeType.Direct);
 
-            await Assert.ThrowsAsync(exceptionType,async ()=> await builder.ApplyAsync(channel));
+            await Assert.ThrowsAsync(exceptionType,async ()=> await builder.ExecuteAsync(channel));
         }
     }
 }

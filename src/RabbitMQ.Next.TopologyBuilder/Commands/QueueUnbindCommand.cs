@@ -4,26 +4,26 @@ using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Exceptions;
-using RabbitMQ.Next.Transport.Methods.Exchange;
+using RabbitMQ.Next.Transport.Methods.Queue;
 
-namespace RabbitMQ.Next.TopologyBuilder.Builders
+namespace RabbitMQ.Next.TopologyBuilder.Commands
 {
-    internal class ExchangeBindingBuilder : IExchangeBindingBuilder
+    internal class QueueUnbindCommand : ICommand, IQueueBindingBuilder
     {
         private Dictionary<string, object> arguments;
         private List<string> routingKeys;
 
-        public ExchangeBindingBuilder(string destination, string source)
+        public QueueUnbindCommand(string queue, string exchange)
         {
-            this.Source = source;
-            this.Destination = destination;
+            this.Exchange = exchange;
+            this.Queue = queue;
         }
-        
-        public string Source { get; }
 
-        public string Destination { get; }
+        public string Exchange { get; }
 
-        public IExchangeBindingBuilder RoutingKey(string routingKey)
+        public string Queue { get; }
+
+        public IQueueBindingBuilder RoutingKey(string routingKey)
         {
             this.routingKeys ??= new List<string>();
             this.routingKeys.Add(routingKey);
@@ -31,7 +31,7 @@ namespace RabbitMQ.Next.TopologyBuilder.Builders
             return this;
         }
 
-        public IExchangeBindingBuilder Argument(string key, object value)
+        public IQueueBindingBuilder Argument(string key, object value)
         {
             this.arguments ??= new Dictionary<string, object>();
             this.arguments[key] = value;
@@ -39,7 +39,7 @@ namespace RabbitMQ.Next.TopologyBuilder.Builders
             return this;
         }
 
-        public async Task ApplyAsync(IChannel channel)
+        public async Task ExecuteAsync(IChannel channel)
         {
             try
             {
@@ -47,14 +47,14 @@ namespace RabbitMQ.Next.TopologyBuilder.Builders
                 {
                     for (var i = 0; i < this.routingKeys.Count; i++)
                     {
-                        await channel.SendAsync<BindMethod, BindOkMethod>(
-                            new(this.Destination, this.Source, this.routingKeys[i], this.arguments));
+                        await channel.SendAsync<UnbindMethod, UnbindOkMethod>(
+                            new(this.Queue, this.Exchange, this.routingKeys[i], this.arguments));
                     }
                 }
                 else
                 {
-                    await channel.SendAsync<BindMethod, BindOkMethod>(
-                        new(this.Destination, this.Source, null, this.arguments));
+                    await channel.SendAsync<UnbindMethod, UnbindOkMethod>(
+                        new(this.Queue, this.Exchange, null, this.arguments));
                 }
             }
             catch (ChannelException ex)
@@ -62,7 +62,7 @@ namespace RabbitMQ.Next.TopologyBuilder.Builders
                 switch (ex.ErrorCode)
                 {
                     case (ushort)ReplyCode.NotFound:
-                        throw new ArgumentOutOfRangeException("Source or destination exchange does not exists", ex);
+                        throw new ArgumentOutOfRangeException("Queue or exchange does not exists", ex);
                 }
                 throw;
             }

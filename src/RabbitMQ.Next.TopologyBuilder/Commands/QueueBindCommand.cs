@@ -6,14 +6,14 @@ using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Exceptions;
 using RabbitMQ.Next.Transport.Methods.Queue;
 
-namespace RabbitMQ.Next.TopologyBuilder.Builders
+namespace RabbitMQ.Next.TopologyBuilder.Commands
 {
-    internal class QueueBindingBuilder : IQueueBindingBuilder
+    internal class QueueBindCommand : IQueueBindingBuilder, ICommand
     {
         private Dictionary<string, object> arguments;
         private List<string> routingKeys;
 
-        public QueueBindingBuilder(string queue, string exchange)
+        public QueueBindCommand(string queue, string exchange)
         {
             this.Exchange = exchange;
             this.Queue = queue;
@@ -39,7 +39,7 @@ namespace RabbitMQ.Next.TopologyBuilder.Builders
             return this;
         }
 
-        public async Task ApplyAsync(IChannel channel)
+        public async Task ExecuteAsync(IChannel channel)
         {
             try
             {

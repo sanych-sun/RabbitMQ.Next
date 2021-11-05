@@ -4,31 +4,34 @@ using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Exceptions;
-using RabbitMQ.Next.Transport.Methods.Queue;
 using RabbitMQ.Next.TopologyBuilder.Exceptions;
+using RabbitMQ.Next.Transport.Methods.Exchange;
 
-namespace RabbitMQ.Next.TopologyBuilder.Builders
+namespace RabbitMQ.Next.TopologyBuilder.Commands
 {
-    internal class QueueBuilder : IQueueBuilder
+    internal class ExchangeDeclareCommand : IExchangeBuilder, ICommand
     {
-        private QueueFlags flags;
+        private ExchangeFlags flags;
         private Dictionary<string, object> arguments;
 
-        public QueueBuilder(string name)
+        public ExchangeDeclareCommand(string name, string type)
         {
             this.Name = name;
+            this.Type = type;
         }
 
         public string Name { get; }
 
-        public IQueueBuilder Flags(QueueFlags flag)
+        public string Type { get; }
+
+        public IExchangeBuilder Flags(ExchangeFlags flag)
         {
             this.flags |= flag;
 
             return this;
         }
 
-        public IQueueBuilder Argument(string key, object value)
+        public IExchangeBuilder Argument(string key, object value)
         {
             this.arguments ??= new Dictionary<string, object>();
             this.arguments[key] = value;
@@ -36,12 +39,12 @@ namespace RabbitMQ.Next.TopologyBuilder.Builders
             return this;
         }
 
-        public async Task ApplyAsync(IChannel channel)
+        public async Task ExecuteAsync(IChannel channel)
         {
             try
             {
                 await channel.SendAsync<DeclareMethod, DeclareOkMethod>(
-                    new(this.Name, (byte)this.flags, this.arguments));
+                    new (this.Name, this.Type, (byte)this.flags, this.arguments));
             }
             catch (ChannelException ex)
             {
@@ -49,9 +52,11 @@ namespace RabbitMQ.Next.TopologyBuilder.Builders
                 {
                     case (ushort)ReplyCode.AccessRefused:
                     case (ushort)ReplyCode.PreconditionFailed:
-                        throw new ArgumentOutOfRangeException("Illegal queue name.", ex);
-                    case (ushort)ReplyCode.ResourceLocked:
-                        throw new ConflictException("Cannot redeclare existing queue as exclusive.", ex);
+                        throw new ArgumentOutOfRangeException("Illegal exchange name", ex);
+                    case (ushort)ReplyCode.NotAllowed:
+                        throw new ConflictException("Exchange cannot be redeclared with different type", ex);
+                    case (ushort)ReplyCode.CommandInvalid:
+                        throw new NotSupportedException("Specified exchange type does not supported", ex);
                 }
                 throw;
             }
