@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using Microsoft.Extensions.ObjectPool;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Abstractions.Methods;
@@ -15,7 +16,7 @@ namespace RabbitMQ.Next.Channels
 {
     internal class FrameBuilder
     {
-        private readonly IMemoryPool memoryPool;
+        private readonly ObjectPool<MemoryBlock> memoryPool;
         private readonly ushort channelNumber;
         private readonly int frameMaxSize;
         private readonly List<IMemoryBlock> chunks;
@@ -23,7 +24,7 @@ namespace RabbitMQ.Next.Channels
         private MemoryBlock buffer;
         private Memory<byte> currentFrameHeader;
 
-        public FrameBuilder(IMemoryPool memoryPool, ushort channelNumber, int frameMaxSize)
+        public FrameBuilder(ObjectPool<MemoryBlock> memoryPool, ushort channelNumber, int frameMaxSize)
         {
             this.chunks = new List<IMemoryBlock>();
             this.memoryPool = memoryPool;

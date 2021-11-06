@@ -4,6 +4,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using Microsoft.Extensions.ObjectPool;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Exceptions;
@@ -25,13 +26,13 @@ namespace RabbitMQ.Next
         private readonly IMethodRegistry methodRegistry;
 
         private readonly ChannelPool channelPool;
-        private readonly IMemoryPool memoryPool;
+        private readonly ObjectPool<MemoryBlock> memoryPool;
         private readonly ConnectionDetails connectionDetails = new ConnectionDetails();
 
         private Channel<IMemoryBlock> socketChannel;
         private CancellationTokenSource socketIoCancellation;
 
-        private Connection(IMethodRegistry methodRegistry, IMemoryPool memoryPool)
+        private Connection(IMethodRegistry methodRegistry, ObjectPool<MemoryBlock> memoryPool)
         {
             this.methodRegistry = methodRegistry;
 
@@ -49,8 +50,9 @@ namespace RabbitMQ.Next
             int frameSize)
         {
             var bufferSize = ProtocolConstants.FrameHeaderSize + frameSize + 1; // frame header + frame + frame-end
-            var memoryPool = new MemoryPool(bufferSize, 100);
-
+            var memoryPool = new DefaultObjectPool<MemoryBlock>(new ObjectPoolPolicy<MemoryBlock>(
+                () => new MemoryBlock(bufferSize),
+                memory => memory.Reset()));
             var connection = new Connection(methodRegistry, memoryPool);
             // TODO: adopt authentication_failure_close capability to handle auth errors
 
@@ -68,7 +70,7 @@ namespace RabbitMQ.Next
 
             connection.socketIoCancellation = new CancellationTokenSource();
             Task.Factory.StartNew(() => connection.ReceiveLoop(socket, connection.socketIoCancellation.Token), TaskCreationOptions.LongRunning);
-            Task.Factory.StartNew(() => SendLoop(socket, connection.socketChannel.Reader), TaskCreationOptions.LongRunning);
+            Task.Factory.StartNew(() => SendLoop(socket, connection.socketChannel.Reader, memoryPool), TaskCreationOptions.LongRunning);
 
             // connection should be forcibly closed if negotiation phase take more then 10s.
             var cancellation = new CancellationTokenSource(10000);
@@ -188,7 +190,7 @@ namespace RabbitMQ.Next
                     // 5. Doing nothing on heartbeat frame
                     if (frameType == FrameType.Heartbeat)
                     {
-                        buffer.Release();
+                        this.memoryPool.Return(buffer);
                         continue;
                     }
 
@@ -212,14 +214,18 @@ namespace RabbitMQ.Next
             }
         }
 
-        private static async Task SendLoop(ISocket socket, ChannelReader<IMemoryBlock> socketChannel)
+        private static async Task SendLoop(ISocket socket, ChannelReader<IMemoryBlock> socketChannel, ObjectPool<MemoryBlock> memoryPool)
         {
             while (await socketChannel.WaitToReadAsync())
             {
                 while (socketChannel.TryRead(out var memoryBlock))
                 {
                     await socket.SendAsync(memoryBlock.Memory);
-                    memoryBlock.Release();
+
+                    if (memoryBlock is MemoryBlock block)
+                    {
+                        memoryPool.Return(block);
+                    }
                 }
 
                 await socket.FlushAsync();
@@ -266,5 +272,7 @@ namespace RabbitMQ.Next
 
             return (tuneMethod.ChannelMax, frameSize, tuneMethod.HeartbeatInterval);
         }
+
+
     }
 }

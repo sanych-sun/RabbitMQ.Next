@@ -22,6 +22,7 @@ namespace RabbitMQ.Next.Channels
     {
         private readonly ChannelPool channelPool;
         private readonly IMethodRegistry registry;
+        private readonly ObjectPool<MemoryBlock> memoryPool;
         private readonly MethodSender methodSender;
         private readonly TaskCompletionSource<bool> channelCompletion;
         private readonly ushort channelNumber;
@@ -29,10 +30,11 @@ namespace RabbitMQ.Next.Channels
         private readonly WaitFrameHandler waitHandler;
         private readonly IReadOnlyList<IFrameHandler> methodHandlers;
 
-        public Channel(ChannelPool channelPool, IMethodRegistry methodRegistry, ChannelWriter<IMemoryBlock> socketWriter, IMemoryPool memoryPool, IReadOnlyList<IFrameHandler> handlers, int frameMaxSize)
+        public Channel(ChannelPool channelPool, IMethodRegistry methodRegistry, ChannelWriter<IMemoryBlock> socketWriter, ObjectPool<MemoryBlock> memoryPool, IReadOnlyList<IFrameHandler> handlers, int frameMaxSize)
         {
             this.channelPool = channelPool;
             this.registry = methodRegistry;
+            this.memoryPool = memoryPool;
             var chNumber = channelPool.Register(this);
 
             var frameBuilderPool = new DefaultObjectPool<FrameBuilder>(
@@ -182,11 +184,11 @@ namespace RabbitMQ.Next.Channels
                         }
                         finally
                         {
-                            contentHeaderFrame.Payload.Release();
+                            this.memoryPool.Return(contentHeaderFrame.Payload);
                             messageProperty.Reset();
                             for (var i = 0; i < contentChunks.Count; i++)
                             {
-                                contentChunks[i].Release();
+                                this.memoryPool.Return(contentChunks[i]);
                             }
                             contentChunks.Clear();
                         }
@@ -229,7 +231,7 @@ namespace RabbitMQ.Next.Channels
             }
             finally
             {
-                payload.Release();
+                this.memoryPool.Return(payload);
             }
         }
 

@@ -11,10 +11,7 @@ namespace RabbitMQ.Next.Buffers
 
         public ReadOnlyMemory<byte> Memory { get; }
 
-        public void Release()
-        {
-            // do nothing here, as the instance should be reusable
-        }
-
+        // do nothing here, as the instance should be reusable
+        public bool Reset() => false;
     }
 }

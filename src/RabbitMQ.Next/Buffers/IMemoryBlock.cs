@@ -6,6 +6,6 @@ namespace RabbitMQ.Next.Buffers
     {
         ReadOnlyMemory<byte> Memory { get; }
 
-        void Release();
+        bool Reset();
     }
 }
