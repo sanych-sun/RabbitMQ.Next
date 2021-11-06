@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using NSubstitute;
 using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Attributes;
@@ -33,7 +34,7 @@ namespace RabbitMQ.Next.Tests.Publisher.Attributes
 
             attr.Apply(builder);
 
-            builder.Received().Expiration(TimeSpan.FromSeconds(value).TotalMilliseconds.ToString());
+            builder.Received().Expiration(TimeSpan.FromSeconds(value).TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
         }
     }
 }

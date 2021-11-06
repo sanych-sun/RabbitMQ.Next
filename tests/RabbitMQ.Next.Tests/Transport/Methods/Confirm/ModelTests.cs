@@ -18,7 +18,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Confirm
         }
 
         [Fact]
-        public void SelectOKMethod()
+        public void SelectOkMethod()
         {
             var method = new SelectOkMethod();
 

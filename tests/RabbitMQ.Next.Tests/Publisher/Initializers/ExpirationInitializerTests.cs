@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using NSubstitute;
 using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Initializers;
@@ -26,7 +27,7 @@ namespace RabbitMQ.Next.Tests.Publisher.Initializers
 
             transformer.Apply(string.Empty, message);
 
-            message.Received().Expiration(ts.TotalMilliseconds.ToString());
+            message.Received().Expiration(ts.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
         }
 
     }

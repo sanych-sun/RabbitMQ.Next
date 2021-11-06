@@ -7,7 +7,6 @@ using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Channels;
-using RabbitMQ.Next.Tests.Mocks;
 using RabbitMQ.Next.Transport.Methods;
 using RabbitMQ.Next.Transport.Methods.Basic;
 using RabbitMQ.Next.Transport.Methods.Registry;

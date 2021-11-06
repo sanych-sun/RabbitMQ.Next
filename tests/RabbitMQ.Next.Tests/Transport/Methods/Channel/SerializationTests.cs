@@ -1,4 +1,3 @@
-using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Methods;
 using RabbitMQ.Next.Transport.Methods.Channel;
 using Xunit;

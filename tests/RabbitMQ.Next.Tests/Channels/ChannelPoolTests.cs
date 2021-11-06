@@ -77,7 +77,6 @@ namespace RabbitMQ.Next.Tests.Channels
         {
             var channelPool = new ChannelPool();
 
-            var index1 = channelPool.Register(Substitute.For<IChannelInternal>());
             var index2 = channelPool.Register(Substitute.For<IChannelInternal>());
 
             channelPool.Release(index2);

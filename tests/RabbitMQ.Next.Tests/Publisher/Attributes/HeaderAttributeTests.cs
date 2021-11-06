@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using NSubstitute;
 using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Attributes;

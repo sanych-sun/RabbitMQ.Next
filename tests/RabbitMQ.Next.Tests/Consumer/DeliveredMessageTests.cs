@@ -1,5 +1,3 @@
-using NSubstitute;
-using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Consumer.Abstractions;
 using Xunit;
 

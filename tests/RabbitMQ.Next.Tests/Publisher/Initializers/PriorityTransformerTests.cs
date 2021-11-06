@@ -3,7 +3,7 @@ using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Initializers;
 using Xunit;
 
-namespace RabbitMQ.Next.Tests.Publisher.Transformers
+namespace RabbitMQ.Next.Tests.Publisher.Initializers
 {
     public class PriorityTransformerTests
     {

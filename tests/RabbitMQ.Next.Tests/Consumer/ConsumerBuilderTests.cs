@@ -4,7 +4,6 @@ using NSubstitute;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Consumer;
 using RabbitMQ.Next.Consumer.Abstractions;
-using RabbitMQ.Next.Serialization.Abstractions;
 using Xunit;
 
 namespace RabbitMQ.Next.Tests.Consumer

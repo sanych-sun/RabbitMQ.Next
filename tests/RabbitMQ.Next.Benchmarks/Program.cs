@@ -1,5 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Diagnosers;
 using BenchmarkDotNet.Engines;
@@ -24,17 +23,6 @@ namespace RabbitMQ.Next.Benchmarks
                     })
                     .AddLogicalGroupRules(BenchmarkLogicalGroupRule.ByCategory)
             );
-
-            // var bc = new PublisherConfirmsBenchmarks();
-            // await bc.Setup();
-            //
-            // foreach (var tc in PublisherConfirmsBenchmarks.TestCases())
-            // {
-            //     await bc.PublishAsync(tc);
-            //     await bc.PublishAsync(tc);
-            // }
-            //
-            // Console.WriteLine("Done!");
         }
     }
 }
