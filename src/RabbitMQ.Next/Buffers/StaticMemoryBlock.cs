@@ -13,5 +13,11 @@ namespace RabbitMQ.Next.Buffers
 
         // do nothing here, as the instance should be reusable
         public bool Reset() => false;
+
+        public static implicit operator StaticMemoryBlock(byte[] data)
+            => new StaticMemoryBlock(data);
+
+        public static implicit operator StaticMemoryBlock(ReadOnlyMemory<byte> data)
+            => new StaticMemoryBlock(data);
     }
 }

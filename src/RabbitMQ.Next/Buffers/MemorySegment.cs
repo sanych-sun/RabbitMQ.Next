@@ -12,6 +12,12 @@ namespace RabbitMQ.Next.Buffers
 
         public MemorySegment<T> Append(ReadOnlyMemory<T> segment)
         {
+            if (segment.IsEmpty)
+            {
+                this.Next = null;
+                return this;
+            }
+
             var chunk = new MemorySegment<T>(segment)
             {
                 RunningIndex = this.RunningIndex + this.Memory.Length
