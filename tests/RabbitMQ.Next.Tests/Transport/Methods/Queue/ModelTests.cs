@@ -25,17 +25,24 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Queue
             Assert.Equal(arguments, method.Arguments);
         }
 
-        [Theory]
-        [InlineData(0b_00000000, false, false, false, false, false)]
-        [InlineData(0b_00000001, true, false, false, false, false)]
-        [InlineData(0b_00000010, false, true, false, false, false)]
-        [InlineData(0b_00000100, false, false, true, false, false)]
-        [InlineData(0b_00001000, false, false, false, true, false)]
-        [InlineData(0b_00010000, false, false, false, false, true)]
-        [InlineData(0b_00011111, true, true, true, true, true)]
-        public void DeclareMethodFlags(byte expected, bool passive, bool durable, bool exclusive, bool autoDelete, bool nowait)
+        [Fact]
+        public void DeclarePassiveMethod()
         {
-            var method = new DeclareMethod("queue", passive, durable, exclusive, autoDelete, nowait, null);
+            var method = new DeclareMethod("queue");
+
+            Assert.Equal(0b_0000001, method.Flags);
+            Assert.Null(method.Arguments);
+            Assert.Equal("queue", method.Queue);
+        }
+
+        [Theory]
+        [InlineData(0b_00000010, true, false, false)]
+        [InlineData(0b_00000100, false, true, false)]
+        [InlineData(0b_00001000, false, false, true)]
+        [InlineData(0b_00000000, false, false, false)]
+        public void DeclareMethodFlags(byte expected, bool durable, bool exclusive, bool autoDelete)
+        {
+            var method = new DeclareMethod("queue", durable, exclusive, autoDelete, null);
 
             Assert.Equal(expected, method.Flags);
         }

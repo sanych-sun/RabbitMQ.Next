@@ -5,16 +5,13 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
 {
     public readonly struct CancelMethod : IOutgoingMethod
     {
-        public CancelMethod(string consumerTag, bool noWait)
+        public CancelMethod(string consumerTag)
         {
             this.ConsumerTag = consumerTag;
-            this.NoWait = noWait;
         }
 
         public MethodId MethodId => MethodId.BasicCancel;
 
         public string ConsumerTag { get; }
-
-        public bool NoWait { get; }
     }
 }

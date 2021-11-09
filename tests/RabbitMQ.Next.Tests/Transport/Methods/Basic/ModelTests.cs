@@ -48,15 +48,14 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Basic
         }
 
         [Theory]
-        [InlineData(0b_00000000, false, false, false, false)]
-        [InlineData(0b_00000001, true, false, false, false)]
-        [InlineData(0b_00000010, false, true, false, false)]
-        [InlineData(0b_00000100, false, false, true, false)]
-        [InlineData(0b_00001000, false, false, false, true)]
-        [InlineData(0b_00001111, true, true, true, true)]
-        public void ConsumeMethodFlags(byte expected, bool noLocal, bool noAck, bool exclusive, bool noWait)
+        [InlineData(0b_00000000, false, false, false)]
+        [InlineData(0b_00000001, true, false, false)]
+        [InlineData(0b_00000010, false, true, false)]
+        [InlineData(0b_00000100, false, false, true)]
+        [InlineData(0b_00000111, true, true, true)]
+        public void ConsumeMethodFlags(byte expected, bool noLocal, bool noAck, bool exclusive)
         {
-            var method = new ConsumeMethod("queue", "tag", noLocal, noAck, exclusive, noWait, null);
+            var method = new ConsumeMethod("queue", "tag", noLocal, noAck, exclusive, null);
 
             Assert.Equal(expected, method.Flags);
         }
@@ -76,13 +75,11 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Basic
         public void CancelMethod()
         {
             var consumerTag = "tag";
-            var noWait = true;
 
-            var method = new CancelMethod(consumerTag, noWait);
+            var method = new CancelMethod(consumerTag);
 
             Assert.Equal(MethodId.BasicCancel, method.MethodId);
             Assert.Equal(consumerTag, method.ConsumerTag);
-            Assert.Equal(noWait, method.NoWait);
         }
 
         [Fact]

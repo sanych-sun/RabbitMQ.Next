@@ -7,7 +7,8 @@ namespace RabbitMQ.Next.Transport.Methods.Confirm
     {
         public int Write(Memory<byte> destination, SelectMethod method)
         {
-            var result = destination.Write(method.NoWait);
+            var result = destination
+                .Write(false); // noWait flag
 
             return destination.Length - result.Length;
         }

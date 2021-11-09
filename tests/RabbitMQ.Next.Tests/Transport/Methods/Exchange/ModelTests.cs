@@ -28,16 +28,25 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Exchange
         }
 
         [Theory]
-        [InlineData(0b_00000000, false, false, false, false)]
-        [InlineData(0b_00000010, true, false, false, false)]
-        [InlineData(0b_00000100, false, true, false, false)]
-        [InlineData(0b_00001000, false, false, true, false)]
-        [InlineData(0b_00010000, false, false, false, true)]
-        public void DeclareMethodFlags(byte expected, bool durable, bool autoDelete, bool @internal, bool nowait)
+        [InlineData(0b_00000000, false, false, false)]
+        [InlineData(0b_00000010, true, false, false)]
+        [InlineData(0b_00000100, false, true, false)]
+        [InlineData(0b_00001000, false, false, true)]
+        public void DeclareMethodFlags(byte expected, bool durable, bool autoDelete, bool @internal)
         {
-            var method = new DeclareMethod("exchange", "type", durable, autoDelete, @internal, nowait, null);
+            var method = new DeclareMethod("exchange", "type", durable, autoDelete, @internal, null);
 
             Assert.Equal(expected, method.Flags);
+        }
+
+        [Fact]
+        public void DeclarePassiveMethod()
+        {
+            var method = new DeclareMethod("exchange");
+
+            Assert.Equal(0b_0000001, method.Flags);
+            Assert.Null(method.Arguments);
+            Assert.Equal("exchange", method.Exchange);
         }
 
         [Fact]

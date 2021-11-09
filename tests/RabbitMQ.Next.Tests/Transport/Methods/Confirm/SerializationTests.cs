@@ -13,7 +13,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Confirm
 
         [Fact]
         public void SelectMethodFormatter()
-            => this.TestFormatter(new SelectMethod(true));
+            => this.TestFormatter(new SelectMethod());
 
         [Fact]
         public void SelectOkMethodParser()

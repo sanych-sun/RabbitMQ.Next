@@ -9,12 +9,9 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Confirm
         [Fact]
         public void SelectMethod()
         {
-            var noWait = true;
-
-            var method = new SelectMethod(noWait);
+            var method = new SelectMethod();
 
             Assert.Equal(MethodId.ConfirmSelect, method.MethodId);
-            Assert.Equal(noWait, method.NoWait);
         }
 
         [Fact]

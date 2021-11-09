@@ -7,9 +7,9 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
     public readonly struct ConsumeMethod : IOutgoingMethod
     {
         public ConsumeMethod(string queue, string consumerTag,
-            bool noLocal, bool noAck, bool exclusive, bool noWait,
+            bool noLocal, bool noAck, bool exclusive,
             IReadOnlyDictionary<string, object> arguments)
-            : this(queue, consumerTag, BitConverter.ComposeFlags(noLocal, noAck, exclusive, noWait), arguments)
+            : this(queue, consumerTag, BitConverter.ComposeFlags(noLocal, noAck, exclusive), arguments)
         {
         }
 

@@ -189,7 +189,7 @@ namespace RabbitMQ.Next.Publisher
                     await this.channel.SendAsync<DeclareMethod, DeclareOkMethod>(new DeclareMethod(this.exchange), cancellationToken);
                     if (this.publisherConfirms)
                     {
-                        await this.channel.SendAsync<SelectMethod, SelectOkMethod>(new SelectMethod(false), cancellationToken);
+                        await this.channel.SendAsync<SelectMethod, SelectOkMethod>(new SelectMethod(), cancellationToken);
                     }
                 }
 

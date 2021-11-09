@@ -9,7 +9,7 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
         {
             var result = destination
                 .Write(method.ConsumerTag)
-                .Write(method.NoWait);
+                .Write(false); // noWait flag
 
             return destination.Length - result.Length;
         }

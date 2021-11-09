@@ -33,7 +33,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Basic
 
         [Fact]
         public void CancelMethodFormatter()
-            => this.TestFormatter(new CancelMethod("ctag", false));
+            => this.TestFormatter(new CancelMethod("ctag"));
 
         [Fact]
         public void CancelOkMethodParser()

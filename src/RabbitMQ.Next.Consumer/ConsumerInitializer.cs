@@ -35,7 +35,7 @@ namespace RabbitMQ.Next.Consumer
                 var response = await channel.SendAsync<ConsumeMethod, ConsumeOkMethod>(
                     new ConsumeMethod(
                         queue.Queue, queue.ConsumerTag, queue.NoLocal, this.NoAck,
-                        queue.Exclusive, false, queue.Arguments), cancellation);
+                        queue.Exclusive, queue.Arguments), cancellation);
 
                 queue.ConsumerTag = response.ConsumerTag;
             }
@@ -46,7 +46,7 @@ namespace RabbitMQ.Next.Consumer
             for (var i = 0; i < this.Queues.Count; i++)
             {
                 var queue = this.Queues[i];
-                await channel.SendAsync<CancelMethod, CancelOkMethod>(new CancelMethod(queue.ConsumerTag, false));
+                await channel.SendAsync<CancelMethod, CancelOkMethod>(new CancelMethod(queue.ConsumerTag));
             }
         }
     }
