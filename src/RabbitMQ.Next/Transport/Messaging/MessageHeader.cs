@@ -52,7 +52,7 @@ namespace RabbitMQ.Next.Transport.Messaging
             return source[(sizeof(byte) + size)..];
         }
 
-        public static ReadOnlyMemory<byte> SplitTableProperty(this ReadOnlyMemory<byte> source, out ReadOnlyMemory<byte> value, ushort flags, byte bitNumber)
+        public static ReadOnlyMemory<byte> SplitDynamicProperty(this ReadOnlyMemory<byte> source, out ReadOnlyMemory<byte> value, ushort flags, byte bitNumber)
         {
             if (!BitConverter.IsFlagSet(flags, bitNumber))
             {
@@ -66,7 +66,7 @@ namespace RabbitMQ.Next.Transport.Messaging
             return source[(sizeof(uint) + (int)size)..];
         }
 
-        public static ReadOnlyMemory<byte> SplitFixedSizeProperty(this ReadOnlyMemory<byte> source, out ReadOnlyMemory<byte> value, ushort flags, byte bitNumber, int size)
+        public static ReadOnlyMemory<byte> SplitFixedProperty(this ReadOnlyMemory<byte> source, out ReadOnlyMemory<byte> value, ushort flags, byte bitNumber, int size)
         {
             if (!BitConverter.IsFlagSet(flags, bitNumber))
             {

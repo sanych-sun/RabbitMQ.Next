@@ -7,7 +7,7 @@ using Xunit;
 
 namespace RabbitMQ.Next.Tests.Transport.Messaging
 {
-    public class ContentHeaderTests
+    public class MessageHeaderTests
     {
         [Theory]
         [MemberData(nameof(MessagePropertiesTestCases))]
