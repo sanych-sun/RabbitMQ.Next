@@ -1,17 +1,15 @@
-using System.Collections.Generic;
-
 namespace RabbitMQ.Next.Consumer.Abstractions
 {
     public interface IQueueConsumerBuilder
     {
-        public string Queue { get; }
+        string Queue { get; }
 
-        public bool NoLocal { get; set; }
+        IQueueConsumerBuilder NoLocal();
 
-        public bool Exclusive { get; set; }
+        IQueueConsumerBuilder Exclusive();
 
-        public IDictionary<string, object> Arguments { get; }
+        IQueueConsumerBuilder Argument(string key, object value);
 
-        public string ConsumerTag { get; set; }
+        IQueueConsumerBuilder ConsumerTag(string consumerTag);
     }
 }

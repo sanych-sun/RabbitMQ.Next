@@ -12,11 +12,12 @@ namespace RabbitMQ.Next.Consumer
     {
         private readonly List<QueueConsumerBuilder> queues = new();
         private readonly List<Func<DeliveredMessage, IMessageProperties, IContentAccessor, ValueTask<bool>>> handlers = new();
-        private readonly SerializerFactory serializerFactory = new();
+        private readonly ISerializerFactory serializerFactory;
 
-        public ConsumerBuilder()
+        public ConsumerBuilder(ISerializerFactory serializerFactory)
         {
             this.EachMessageAcknowledgement();
+            this.serializerFactory = serializerFactory;
         }
 
         public ISerializerFactory SerializerFactory => this.serializerFactory;

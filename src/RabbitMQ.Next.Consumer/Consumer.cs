@@ -15,9 +15,11 @@ namespace RabbitMQ.Next.Consumer
     internal class Consumer : IConsumer
     {
         private readonly IConnection connection;
-        private readonly List<Func<DeliveredMessage, IMessageProperties, IContentAccessor, ValueTask<bool>>> handlers;
-        private readonly ConsumerInitializer initializer;
+        private readonly IReadOnlyList<Func<DeliveredMessage, IMessageProperties, IContentAccessor, ValueTask<bool>>> handlers;
         private readonly Func<IAcknowledgement, IAcknowledger> acknowledgerFactory;
+        private readonly IReadOnlyList<QueueConsumerBuilder> queues;
+        private readonly uint prefetchSize;
+        private readonly ushort prefetchCount;
         private readonly UnprocessedMessageMode onUnprocessedMessage;
         private readonly UnprocessedMessageMode onPoisonMessage;
         private readonly ContentAccessor contentAccessor;
@@ -28,16 +30,20 @@ namespace RabbitMQ.Next.Consumer
         public Consumer(
             IConnection connection,
             ISerializerFactory serializerFactory,
-            List<Func<DeliveredMessage, IMessageProperties, IContentAccessor, ValueTask<bool>>> handlers,
-            ConsumerInitializer initializer,
             Func<IAcknowledgement, IAcknowledger> acknowledgerFactory,
+            IReadOnlyList<Func<DeliveredMessage, IMessageProperties, IContentAccessor, ValueTask<bool>>> handlers,
+            IReadOnlyList<QueueConsumerBuilder> queues,
+            uint prefetchSize,
+            ushort prefetchCount,
             UnprocessedMessageMode onUnprocessedMessage,
             UnprocessedMessageMode onPoisonMessage)
         {
             this.connection = connection;
             this.handlers = handlers;
-            this.initializer = initializer;
             this.acknowledgerFactory = acknowledgerFactory;
+            this.queues = queues;
+            this.prefetchSize = prefetchSize;
+            this.prefetchCount = prefetchCount;
             this.onUnprocessedMessage = onUnprocessedMessage;
             this.onPoisonMessage = onPoisonMessage;
 
@@ -66,7 +72,7 @@ namespace RabbitMQ.Next.Consumer
                 this.acknowledger = this.acknowledgerFactory(ack);
             }
 
-            await this.initializer.InitConsumerAsync(this.channel, cancellation);
+            await this.InitConsumerAsync(this.channel, cancellation);
 
             cancellation.Register(() => this.CancelConsumeAsync());
 
@@ -75,7 +81,7 @@ namespace RabbitMQ.Next.Consumer
 
         private async ValueTask CancelConsumeAsync(Exception ex = null)
         {
-            await this.initializer.CancelAsync(this.channel);
+            await this.CancelAsync(this.channel);
 
             if (this.acknowledger != null)
             {
@@ -139,6 +145,31 @@ namespace RabbitMQ.Next.Consumer
 
             var requeue = mode == UnprocessedMessageMode.Requeue;
             return this.acknowledger.NackAsync(message.DeliveryTag, requeue);
+        }
+
+        private async ValueTask InitConsumerAsync(IChannel channel, CancellationToken cancellation)
+        {
+            await channel.SendAsync<QosMethod, QosOkMethod>(new QosMethod(this.prefetchSize, this.prefetchCount, false), cancellation);
+
+            for (var i = 0; i < this.queues.Count; i++)
+            {
+                var queue = this.queues[i];
+                var response = await channel.SendAsync<ConsumeMethod, ConsumeOkMethod>(
+                    new ConsumeMethod(
+                        queue.Queue, queue.ConsumerTag, queue.NoLocal, this.acknowledgerFactory == null,
+                        queue.Exclusive, queue.Arguments), cancellation);
+
+                queue.ConsumerTag = response.ConsumerTag;
+            }
+        }
+
+        private async ValueTask CancelAsync(IChannel channel)
+        {
+            for (var i = 0; i < this.queues.Count; i++)
+            {
+                var queue = this.queues[i];
+                await channel.SendAsync<CancelMethod, CancelOkMethod>(new CancelMethod(queue.ConsumerTag));
+            }
         }
     }
 }

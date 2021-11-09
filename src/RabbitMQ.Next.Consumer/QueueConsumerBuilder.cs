@@ -8,15 +8,38 @@ namespace RabbitMQ.Next.Consumer
         public QueueConsumerBuilder(string queue)
         {
             this.Queue = queue;
-            this.Arguments = new Dictionary<string, object>();
         }
 
         public string Queue { get; }
-        public bool NoLocal { get; set; }
-        public bool Exclusive { get; set; }
-        public Dictionary<string, object> Arguments { get; }
+
+        public bool NoLocal { get; private set; }
+        public bool Exclusive { get; private set; }
+        public Dictionary<string, object> Arguments { get; private set; }
         public string ConsumerTag { get; set; }
 
-        IDictionary<string, object> IQueueConsumerBuilder.Arguments => this.Arguments;
+        IQueueConsumerBuilder IQueueConsumerBuilder.NoLocal()
+        {
+            this.NoLocal = true;
+            return this;
+        }
+
+        IQueueConsumerBuilder IQueueConsumerBuilder.Exclusive()
+        {
+            this.Exclusive = true;
+            return this;
+        }
+
+        public IQueueConsumerBuilder Argument(string key, object value)
+        {
+            this.Arguments ??= new Dictionary<string, object>();
+            this.Arguments[key] = value;
+            return this;
+        }
+
+        IQueueConsumerBuilder IQueueConsumerBuilder.ConsumerTag(string consumerTag)
+        {
+            this.ConsumerTag = consumerTag;
+            return this;
+        }
     }
 }
