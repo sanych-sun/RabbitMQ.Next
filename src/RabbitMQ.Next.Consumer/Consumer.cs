@@ -66,13 +66,7 @@ namespace RabbitMQ.Next.Consumer
                 new DeliverFrameHandler(this.connection.MethodRegistry, this.HandleMessageAsync)
             }, cancellation);
 
-            if (this.acknowledgerFactory != null)
-            {
-                var ack = new Acknowledgement(this.channel);
-                this.acknowledger = this.acknowledgerFactory(ack);
-            }
-
-            await this.InitConsumerAsync(this.channel, cancellation);
+            await this.InitConsumerAsync(cancellation);
 
             cancellation.Register(() => this.CancelConsumeAsync());
 
@@ -81,7 +75,11 @@ namespace RabbitMQ.Next.Consumer
 
         private async ValueTask CancelConsumeAsync(Exception ex = null)
         {
-            await this.CancelAsync(this.channel);
+            for (var i = 0; i < this.queues.Count; i++)
+            {
+                var queue = this.queues[i];
+                await this.channel.SendAsync<CancelMethod, CancelOkMethod>(new CancelMethod(queue.ConsumerTag));
+            }
 
             if (this.acknowledger != null)
             {
@@ -147,28 +145,25 @@ namespace RabbitMQ.Next.Consumer
             return this.acknowledger.NackAsync(message.DeliveryTag, requeue);
         }
 
-        private async ValueTask InitConsumerAsync(IChannel channel, CancellationToken cancellation)
+        private async ValueTask InitConsumerAsync(CancellationToken cancellation)
         {
-            await channel.SendAsync<QosMethod, QosOkMethod>(new QosMethod(this.prefetchSize, this.prefetchCount, false), cancellation);
+            if (this.acknowledgerFactory != null)
+            {
+                var ack = new Acknowledgement(this.channel);
+                this.acknowledger = this.acknowledgerFactory(ack);
+            }
+
+            await this.channel.SendAsync<QosMethod, QosOkMethod>(new QosMethod(this.prefetchSize, this.prefetchCount, false), cancellation);
 
             for (var i = 0; i < this.queues.Count; i++)
             {
                 var queue = this.queues[i];
-                var response = await channel.SendAsync<ConsumeMethod, ConsumeOkMethod>(
+                var response = await this.channel.SendAsync<ConsumeMethod, ConsumeOkMethod>(
                     new ConsumeMethod(
-                        queue.Queue, queue.ConsumerTag, queue.NoLocal, this.acknowledgerFactory == null,
+                        queue.Queue, queue.ConsumerTag, queue.NoLocal, this.acknowledger == null,
                         queue.Exclusive, queue.Arguments), cancellation);
 
                 queue.ConsumerTag = response.ConsumerTag;
-            }
-        }
-
-        private async ValueTask CancelAsync(IChannel channel)
-        {
-            for (var i = 0; i < this.queues.Count; i++)
-            {
-                var queue = this.queues[i];
-                await channel.SendAsync<CancelMethod, CancelOkMethod>(new CancelMethod(queue.ConsumerTag));
             }
         }
     }
