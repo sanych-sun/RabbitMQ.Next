@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Threading.Tasks;
-using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Serialization.Abstractions;
 
 namespace RabbitMQ.Next.Consumer.Abstractions
@@ -19,6 +17,6 @@ namespace RabbitMQ.Next.Consumer.Abstractions
 
         IConsumerBuilder OnPoisonMessage(UnprocessedMessageMode mode);
 
-        IConsumerBuilder AddMessageHandler(Func<DeliveredMessage, IMessageProperties, IContentAccessor, ValueTask<bool>> handler);
+        IConsumerBuilder AddMessageHandler(IDeliveredMessageHandler handler);
     }
 }

@@ -1,28 +1,23 @@
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
-using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Consumer.Abstractions;
 using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Transport.Methods.Basic;
 
 namespace RabbitMQ.Next.Consumer
 {
-    internal class Consumer : IConsumer
+    internal class Consumer : IConsumer, IAcknowledger
     {
         private readonly IConnection connection;
-        private readonly IReadOnlyList<Func<DeliveredMessage, IMessageProperties, IContentAccessor, ValueTask<bool>>> handlers;
+        private readonly DeliverFrameHandler deliverFrameHandler;
         private readonly Func<IAcknowledgement, IAcknowledger> acknowledgerFactory;
         private readonly IReadOnlyList<QueueConsumerBuilder> queues;
         private readonly uint prefetchSize;
         private readonly ushort prefetchCount;
-        private readonly UnprocessedMessageMode onUnprocessedMessage;
-        private readonly UnprocessedMessageMode onPoisonMessage;
-        private readonly ContentAccessor contentAccessor;
 
         private IChannel channel;
         private IAcknowledger acknowledger;
@@ -31,7 +26,7 @@ namespace RabbitMQ.Next.Consumer
             IConnection connection,
             ISerializerFactory serializerFactory,
             Func<IAcknowledgement, IAcknowledger> acknowledgerFactory,
-            IReadOnlyList<Func<DeliveredMessage, IMessageProperties, IContentAccessor, ValueTask<bool>>> handlers,
+            IReadOnlyList<IDeliveredMessageHandler> handlers,
             IReadOnlyList<QueueConsumerBuilder> queues,
             uint prefetchSize,
             ushort prefetchCount,
@@ -39,15 +34,11 @@ namespace RabbitMQ.Next.Consumer
             UnprocessedMessageMode onPoisonMessage)
         {
             this.connection = connection;
-            this.handlers = handlers;
+            this.deliverFrameHandler = new DeliverFrameHandler(serializerFactory, this, connection.MethodRegistry, handlers, onUnprocessedMessage, onPoisonMessage);
             this.acknowledgerFactory = acknowledgerFactory;
             this.queues = queues;
             this.prefetchSize = prefetchSize;
             this.prefetchCount = prefetchCount;
-            this.onUnprocessedMessage = onUnprocessedMessage;
-            this.onPoisonMessage = onPoisonMessage;
-
-            this.contentAccessor = new ContentAccessor(serializerFactory);
         }
 
 
@@ -61,9 +52,10 @@ namespace RabbitMQ.Next.Consumer
                 throw new InvalidOperationException("The consumer is already started.");
             }
 
+            this.deliverFrameHandler.Reset();
             this.channel = await this.connection.OpenChannelAsync(new []
             {
-                new DeliverFrameHandler(this.connection.MethodRegistry, this.HandleMessageAsync)
+                this.deliverFrameHandler
             }, cancellation);
 
             await this.InitConsumerAsync(cancellation);
@@ -92,59 +84,6 @@ namespace RabbitMQ.Next.Consumer
             this.channel = null;
         }
 
-        private async ValueTask<bool> HandleMessageAsync(DeliverMethod method, IMessageProperties properties, ReadOnlySequence<byte> payload)
-        {
-            var message = new DeliveredMessage(method.Exchange, method.RoutingKey, method.Redelivered, method.ConsumerTag, method.DeliveryTag);
-            this.contentAccessor.Set(payload, properties.ContentType);
-
-            try
-            {
-                for (var i = 0; i < this.handlers.Count; i++)
-                {
-                    var handled = await this.handlers[i].Invoke(message, properties, this.contentAccessor);
-
-                    if (handled)
-                    {
-                        await this.AckAsync(message);
-                        return true;
-                    }
-                }
-            }
-            catch (Exception)
-            {
-                await this.NackAsync(message, this.onPoisonMessage);
-                return true;
-            }
-            finally
-            {
-                this.contentAccessor.Reset();
-            }
-
-            await this.NackAsync(message, this.onUnprocessedMessage);
-            return true;
-        }
-
-        private ValueTask AckAsync(DeliveredMessage message)
-        {
-            if (this.acknowledger == null)
-            {
-                return default;
-            }
-
-            return this.acknowledger.AckAsync(message.DeliveryTag);
-        }
-
-        private ValueTask NackAsync(DeliveredMessage message, UnprocessedMessageMode mode)
-        {
-            if (this.acknowledger == null)
-            {
-                return default;
-            }
-
-            var requeue = mode == UnprocessedMessageMode.Requeue;
-            return this.acknowledger.NackAsync(message.DeliveryTag, requeue);
-        }
-
         private async ValueTask InitConsumerAsync(CancellationToken cancellation)
         {
             if (this.acknowledgerFactory != null)
@@ -166,5 +105,11 @@ namespace RabbitMQ.Next.Consumer
                 queue.ConsumerTag = response.ConsumerTag;
             }
         }
+
+        public ValueTask AckAsync(ulong deliveryTag)
+            => this.acknowledger?.AckAsync(deliveryTag) ?? default;
+
+        public ValueTask NackAsync(ulong deliveryTag, bool requeue)
+            => this.acknowledger?.NackAsync(deliveryTag, requeue) ?? default;
     }
 }

@@ -14,16 +14,16 @@ namespace RabbitMQ.Next.Publisher
 {
     internal sealed class ReturnFrameHandler : IFrameHandler
     {
-        private readonly IReadOnlyList<IReturnedMessageHandler> returnedMessageHandlers;
+        private readonly IReadOnlyList<IReturnedMessageHandler> messageHandlers;
         private readonly IMethodParser<ReturnMethod> returnMethodParser;
         private readonly ContentAccessor contentAccessor;
 
         private bool expectContent;
         private ReturnMethod currentMethod;
 
-        public ReturnFrameHandler(ISerializerFactory serializerFactory, IReadOnlyList<IReturnedMessageHandler> returnedMessageHandlers, IMethodRegistry registry)
+        public ReturnFrameHandler(ISerializerFactory serializerFactory, IReadOnlyList<IReturnedMessageHandler> messageHandlers, IMethodRegistry registry)
         {
-            this.returnedMessageHandlers = returnedMessageHandlers;
+            this.messageHandlers = messageHandlers;
             this.returnMethodParser = registry.GetParser<ReturnMethod>();
             this.contentAccessor = new ContentAccessor(serializerFactory);
         }
@@ -57,9 +57,9 @@ namespace RabbitMQ.Next.Publisher
 
             try
             {
-                for (var i = 0; i < this.returnedMessageHandlers.Count; i++)
+                for (var i = 0; i < this.messageHandlers.Count; i++)
                 {
-                    if (await this.returnedMessageHandlers[i].TryHandleAsync(message, properties, this.contentAccessor))
+                    if (await this.messageHandlers[i].TryHandleAsync(message, properties, this.contentAccessor))
                     {
                         break;
                     }

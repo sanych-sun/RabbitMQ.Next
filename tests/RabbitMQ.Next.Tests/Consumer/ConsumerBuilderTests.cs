@@ -1,8 +1,6 @@
 using System;
 using System.Linq;
-using System.Threading.Tasks;
 using NSubstitute;
-using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Consumer;
 using RabbitMQ.Next.Consumer.Abstractions;
 using RabbitMQ.Next.Serialization;
@@ -87,8 +85,8 @@ namespace RabbitMQ.Next.Tests.Consumer
         {
             var serializerFactory = Substitute.For<ISerializerFactory>();
             var consumerBuilder = new ConsumerBuilder(serializerFactory);
-            var handler1 = Substitute.For<Func<DeliveredMessage, IMessageProperties, IContentAccessor, ValueTask<bool>>>();
-            var handler2 = Substitute.For<Func<DeliveredMessage, IMessageProperties, IContentAccessor, ValueTask<bool>>>();
+            var handler1 = Substitute.For<IDeliveredMessageHandler>();
+            var handler2 = Substitute.For<IDeliveredMessageHandler>();
 
             ((IConsumerBuilder) consumerBuilder).AddMessageHandler(handler1);
             ((IConsumerBuilder) consumerBuilder).AddMessageHandler(handler2);

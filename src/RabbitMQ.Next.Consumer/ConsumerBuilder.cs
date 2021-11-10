@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
-using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Consumer.Abstractions;
 using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Serialization.Abstractions;
@@ -11,7 +9,7 @@ namespace RabbitMQ.Next.Consumer
     internal class ConsumerBuilder : IConsumerBuilder
     {
         private readonly List<QueueConsumerBuilder> queues = new();
-        private readonly List<Func<DeliveredMessage, IMessageProperties, IContentAccessor, ValueTask<bool>>> handlers = new();
+        private readonly List<IDeliveredMessageHandler> handlers = new();
         private readonly ISerializerFactory serializerFactory;
 
         public ConsumerBuilder(ISerializerFactory serializerFactory)
@@ -24,7 +22,7 @@ namespace RabbitMQ.Next.Consumer
 
         public IReadOnlyList<QueueConsumerBuilder> Queues => this.queues;
 
-        public List<Func<DeliveredMessage, IMessageProperties, IContentAccessor, ValueTask<bool>>> Handlers => this.handlers;
+        public IReadOnlyList<IDeliveredMessageHandler> Handlers => this.handlers;
 
         public uint PrefetchSize { get; private set; }
 
@@ -79,7 +77,7 @@ namespace RabbitMQ.Next.Consumer
             return this;
         }
 
-        IConsumerBuilder IConsumerBuilder.AddMessageHandler(Func<DeliveredMessage, IMessageProperties, IContentAccessor, ValueTask<bool>> handler)
+        IConsumerBuilder IConsumerBuilder.AddMessageHandler(IDeliveredMessageHandler handler)
         {
             if (handler == null)
             {
