@@ -21,10 +21,10 @@ namespace RabbitMQ.Next.Publisher
         private bool expectContent;
         private ReturnMethod currentMethod;
 
-        public ReturnFrameHandler(ISerializerFactory serializerFactory, IReadOnlyList<IReturnedMessageHandler> messageHandlers, IMethodRegistry registry)
+        public ReturnFrameHandler(ISerializerFactory serializerFactory, IReadOnlyList<IReturnedMessageHandler> messageHandlers, IMethodParser<ReturnMethod> returnMethodParser)
         {
             this.messageHandlers = messageHandlers;
-            this.returnMethodParser = registry.GetParser<ReturnMethod>();
+            this.returnMethodParser = returnMethodParser;
             this.contentAccessor = new ContentAccessor(serializerFactory);
         }
 
@@ -50,6 +50,13 @@ namespace RabbitMQ.Next.Publisher
             return this.HandleReturnedMessageAsync(properties, contentBytes);
         }
 
+        public void Reset()
+        {
+            this.expectContent = false;
+            this.currentMethod = default;
+            this.contentAccessor.Reset();
+        }
+
         private async ValueTask<bool> HandleReturnedMessageAsync(IMessageProperties properties, ReadOnlySequence<byte> contentBytes)
         {
             var message = new ReturnedMessage(this.currentMethod.Exchange, this.currentMethod.RoutingKey, this.currentMethod.ReplyCode, this.currentMethod.ReplyText);
@@ -67,9 +74,7 @@ namespace RabbitMQ.Next.Publisher
             }
             finally
             {
-                this.expectContent = false;
-                this.currentMethod = default;
-                this.contentAccessor.Reset();
+                this.Reset();
             }
 
             return true;

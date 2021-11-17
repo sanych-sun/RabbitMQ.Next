@@ -90,12 +90,10 @@ namespace RabbitMQ.Next.Tests.Publisher
 
         private ReturnFrameHandler CreateMock(IReadOnlyList<IReturnedMessageHandler> handlers = null)
         {
-            var registry = Substitute.For<IMethodRegistry>();
             var returnMethodParser = Substitute.For<IMethodParser<ReturnMethod>>();
-            registry.GetParser<ReturnMethod>().Returns(returnMethodParser);
             var serializerFactory = Substitute.For<ISerializerFactory>();
 
-            return new ReturnFrameHandler(serializerFactory, handlers ?? new [] { Substitute.For<IReturnedMessageHandler>() }, registry);
+            return new ReturnFrameHandler(serializerFactory, handlers ?? new [] { Substitute.For<IReturnedMessageHandler>() }, returnMethodParser);
         }
     }
 }

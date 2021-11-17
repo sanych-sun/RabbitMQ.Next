@@ -27,7 +27,7 @@ namespace RabbitMQ.Next.Consumer
         public DeliverFrameHandler(
             ISerializerFactory serializerFactory,
             IAcknowledger acknowledger,
-            IMethodRegistry registry,
+            IMethodParser<DeliverMethod> deliverMethodParser,
             IReadOnlyList<IDeliveredMessageHandler> messageHandlers,
             UnprocessedMessageMode onUnprocessedMessage,
             UnprocessedMessageMode onPoisonMessage)
@@ -36,7 +36,7 @@ namespace RabbitMQ.Next.Consumer
             this.messageHandlers = messageHandlers;
             this.onUnprocessedMessage = onUnprocessedMessage;
             this.onPoisonMessage = onPoisonMessage;
-            this.deliverMethodParser = registry.GetParser<DeliverMethod>();
+            this.deliverMethodParser = deliverMethodParser;
             this.contentAccessor = new ContentAccessor(serializerFactory);
         }
 

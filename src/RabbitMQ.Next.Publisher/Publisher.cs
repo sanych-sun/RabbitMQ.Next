@@ -8,6 +8,7 @@ using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Serialization;
+using RabbitMQ.Next.Transport.Methods.Basic;
 using RabbitMQ.Next.Transport.Methods.Confirm;
 using RabbitMQ.Next.Transport.Methods.Exchange;
 
@@ -19,11 +20,11 @@ namespace RabbitMQ.Next.Publisher
         private readonly SemaphoreSlim channelOpenSync = new(1,1);
         private readonly IReadOnlyList<IReturnedMessageHandler> returnedMessageHandlers;
         private readonly IConnection connection;
+        private readonly IReadOnlyList<IFrameHandler> frameHandlers;
         private readonly string exchange;
         private readonly ISerializerFactory serializerFactory;
         private readonly IReadOnlyList<IMessageInitializer> transformers;
-        private readonly bool publisherConfirms;
-        private ConfirmFrameHandler confirms;
+        private readonly ConfirmFrameHandler confirms;
         private ulong lastDeliveryTag;
         private bool isDisposed;
 
@@ -39,9 +40,20 @@ namespace RabbitMQ.Next.Publisher
             IReadOnlyList<IReturnedMessageHandler> returnedMessageHandlers)
         {
             this.connection = connection;
+            var handlers = new List<IFrameHandler>
+            {
+                new ReturnFrameHandler(serializerFactory, returnedMessageHandlers, connection.MethodRegistry.GetParser<ReturnMethod>()),
+            };
+
+            if (publisherConfirms)
+            {
+                this.confirms = new ConfirmFrameHandler(this.connection.MethodRegistry);
+                handlers.Add(this.confirms);
+            }
+
+            this.frameHandlers = handlers;
             this.messagePropsPool = messagePropsPool;
             this.exchange = exchange;
-            this.publisherConfirms = publisherConfirms;
             this.serializerFactory = serializerFactory;
             this.transformers = transformers;
             this.returnedMessageHandlers = returnedMessageHandlers;
@@ -142,19 +154,9 @@ namespace RabbitMQ.Next.Publisher
         private ValueTask<IChannel> GetChannelAsync(CancellationToken cancellationToken = default)
         {
             var ch = this.channel;
-            if (ch == null)
+            if (ch == null || ch.Completion.IsCompleted)
             {
                 return this.InitializeAsync(cancellationToken);
-            }
-
-            if (this.channel.Completion.IsCompleted)
-            {
-                if (this.channel.Completion.Exception != null)
-                {
-                    throw this.channel.Completion.Exception?.InnerException ?? this.channel.Completion.Exception;
-                }
-
-                throw new InvalidOperationException();
             }
 
             return new ValueTask<IChannel>(ch);
@@ -174,20 +176,14 @@ namespace RabbitMQ.Next.Publisher
                 if (this.channel == null)
                 {
                     this.lastDeliveryTag = 0;
-                    var methodHandlers = new List<IFrameHandler>
+                    for (var i = 0; i < this.frameHandlers.Count; i++)
                     {
-                        new ReturnFrameHandler(this.serializerFactory, this.returnedMessageHandlers, this.connection.MethodRegistry),
-                    };
-
-                    if (this.publisherConfirms)
-                    {
-                        this.confirms = new ConfirmFrameHandler(this.connection.MethodRegistry);
-                        methodHandlers.Add(this.confirms);
+                        this.frameHandlers[0].Reset();
                     }
 
-                    this.channel = await this.connection.OpenChannelAsync(methodHandlers, cancellationToken);
+                    this.channel = await this.connection.OpenChannelAsync(this.frameHandlers, cancellationToken);
                     await this.channel.SendAsync<DeclareMethod, DeclareOkMethod>(new DeclareMethod(this.exchange), cancellationToken);
-                    if (this.publisherConfirms)
+                    if (this.confirms != null)
                     {
                         await this.channel.SendAsync<SelectMethod, SelectOkMethod>(new SelectMethod(), cancellationToken);
                     }

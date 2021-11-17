@@ -9,6 +9,10 @@ namespace RabbitMQ.Next.Abstractions.Channels
 {
     public interface IChannel
     {
+        void AddFrameHandler(IFrameHandler handler);
+
+        bool RemoveFrameHandler(IFrameHandler handler);
+
         Task Completion { get; }
 
         ValueTask SendAsync<TRequest>(TRequest request, CancellationToken cancellation = default)

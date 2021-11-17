@@ -100,7 +100,6 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Connection
         public void UnblockedMethodParser()
             => this.TestParser(new UnblockedMethod());
 
-        // todo: move this to some aux namespace
         private class StartMethodComparer : IEqualityComparer<StartMethod>
         {
             public bool Equals(StartMethod x, StartMethod y)

@@ -12,6 +12,7 @@ using RabbitMQ.Next.Abstractions.Exceptions;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Abstractions.Methods;
 using RabbitMQ.Next.Buffers;
+using RabbitMQ.Next.Tasks;
 using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Messaging;
 using RabbitMQ.Next.Transport.Methods.Channel;
@@ -27,8 +28,7 @@ namespace RabbitMQ.Next.Channels
         private readonly TaskCompletionSource<bool> channelCompletion;
         private readonly ushort channelNumber;
 
-        private readonly WaitFrameHandler waitHandler;
-        private readonly IReadOnlyList<IFrameHandler> methodHandlers;
+        private readonly IList<IFrameHandler> frameHandlers;
 
         public Channel(ChannelPool channelPool, IMethodRegistry methodRegistry, ChannelWriter<IMemoryBlock> socketWriter, ObjectPool<MemoryBlock> memoryPool, IReadOnlyList<IFrameHandler> handlers, int frameMaxSize)
         {
@@ -57,22 +57,44 @@ namespace RabbitMQ.Next.Channels
             });
             this.FrameWriter = receiveChannel.Writer;
 
-
-            this.waitHandler = new WaitFrameHandler(methodRegistry, this);
-            var list = new List<IFrameHandler>(handlers) { this.waitHandler };
+            var list = new List<IFrameHandler>(handlers);
             if (this.channelNumber == 0)
             {
-                list.Add(new ConnectionCloseHandler(this, this.registry));
+                var channelCloseWait = new WaitMethodFrameHandler<CloseMethod>(this.registry);
+                channelCloseWait.WaitTask.ContinueWith(t =>
+                {
+                    if (t.IsCompleted)
+                    {
+                        this.SetCompleted(new ChannelException(t.Result.StatusCode, t.Result.Description, t.Result.FailedMethodId));
+                    }
+                });
+
+                list.Add(channelCloseWait);
             }
             else
             {
-                list.Add(new ChannelCloseHandler(this, this.registry));
+                var connectionCloseWait = new WaitMethodFrameHandler<Transport.Methods.Connection.CloseMethod>(this.registry);
+                connectionCloseWait.WaitTask.ContinueWith(t =>
+                {
+                    if (t.IsCompleted)
+                    {
+                        this.SetCompleted(new ConnectionException(t.Result.StatusCode, t.Result.Description));
+                    }
+                });
+
+                list.Add(connectionCloseWait);
             }
 
-            this.methodHandlers = list;
+            this.frameHandlers = list;
 
             Task.Factory.StartNew(() => this.LoopAsync(receiveChannel.Reader), TaskCreationOptions.LongRunning);
         }
+
+        public void AddFrameHandler(IFrameHandler handler)
+            => this.frameHandlers.Add(handler);
+
+        public bool RemoveFrameHandler(IFrameHandler handler)
+            => this.frameHandlers.Remove(handler);
 
         public Task Completion => this.channelCompletion.Task;
         public ValueTask SendAsync<TRequest>(TRequest request, CancellationToken cancellation = default)
@@ -122,8 +144,18 @@ namespace RabbitMQ.Next.Channels
         public async ValueTask<TMethod> WaitAsync<TMethod>(CancellationToken cancellation = default)
             where TMethod : struct, IIncomingMethod
         {
-            var result = await this.waitHandler.WaitAsync<TMethod>(cancellation);
-            return (TMethod) result;
+            this.ValidateState();
+            var waitHandler = new WaitMethodFrameHandler<TMethod>(this.registry);
+            this.AddFrameHandler(waitHandler);
+
+            try
+            {
+                return await waitHandler.WaitTask.WithCancellation(cancellation);
+            }
+            finally
+            {
+                this.frameHandlers.Remove(waitHandler);
+            }
         }
 
         public async ValueTask CloseAsync(Exception ex = null)
@@ -165,7 +197,7 @@ namespace RabbitMQ.Next.Channels
                     if (this.registry.HasContent(methodId))
                     {
                         var contentHeaderFrame = await reader.ReadAsync();
-                        var payload = ((ReadOnlyMemory<byte>)contentHeaderFrame.Payload.Memory[4..]) // skip 2 obsolete shorts
+                        var payload = contentHeaderFrame.Payload.Memory[4..] // skip 2 obsolete shorts
                             .Read(out ulong contentSize);
 
                         try
@@ -214,11 +246,11 @@ namespace RabbitMQ.Next.Channels
         {
             try
             {
-                var payloadBytes = ((ReadOnlyMemory<byte>)payload.Memory).Read(out uint method);
+                var payloadBytes = payload.Memory.Read(out uint method);
                 var methodId = (MethodId) method;
-                for (var i = 0; i < this.methodHandlers.Count; i++)
+                for (var i = 0; i < this.frameHandlers.Count; i++)
                 {
-                    var handled = await this.methodHandlers[i].HandleMethodFrameAsync(methodId, payloadBytes);
+                    var handled = await this.frameHandlers[i].HandleMethodFrameAsync(methodId, payloadBytes);
                     if (handled)
                     {
                         break;
@@ -239,9 +271,9 @@ namespace RabbitMQ.Next.Channels
         {
             var content = contentFrames.ToSequence();
 
-            for (var i = 0; i < this.methodHandlers.Count; i++)
+            for (var i = 0; i < this.frameHandlers.Count; i++)
             {
-                var handled = await this.methodHandlers[i].HandleContentAsync(props, content);
+                var handled = await this.frameHandlers[i].HandleContentAsync(props, content);
                 if (handled)
                 {
                     return;

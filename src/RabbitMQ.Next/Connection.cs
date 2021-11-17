@@ -86,7 +86,11 @@ namespace RabbitMQ.Next
             connection.connectionDetails.HeartbeatInterval = negotiationResults.HeartbeatInterval;
             connection.connectionDetails.FrameMaxSize = negotiationResults.FrameSize;
 
-            connectionChannel.OnCompleted(connection.ConnectionClose);
+            connectionChannel.Completion.ContinueWith(t =>
+            {
+                var ex = t.Exception?.InnerException ?? t.Exception;
+                connection.ConnectionClose(ex);
+            });
 
             // start heartbeat
             Task.Factory.StartNew(() => connection.HeartbeatLoop(heartbeatIntervalMs, connection.socketIoCancellation.Token), TaskCreationOptions.LongRunning);

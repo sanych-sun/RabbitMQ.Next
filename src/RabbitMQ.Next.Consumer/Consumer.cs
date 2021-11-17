@@ -13,7 +13,7 @@ namespace RabbitMQ.Next.Consumer
     internal class Consumer : IConsumer, IAcknowledger
     {
         private readonly IConnection connection;
-        private readonly DeliverFrameHandler deliverFrameHandler;
+        private readonly IReadOnlyList<IFrameHandler> frameHanders;
         private readonly Func<IAcknowledgement, IAcknowledger> acknowledgerFactory;
         private readonly IReadOnlyList<QueueConsumerBuilder> queues;
         private readonly uint prefetchSize;
@@ -34,7 +34,13 @@ namespace RabbitMQ.Next.Consumer
             UnprocessedMessageMode onPoisonMessage)
         {
             this.connection = connection;
-            this.deliverFrameHandler = new DeliverFrameHandler(serializerFactory, this, connection.MethodRegistry, handlers, onUnprocessedMessage, onPoisonMessage);
+            var deliverMethodParser = connection.MethodRegistry.GetParser<DeliverMethod>();
+
+            this.frameHanders = new IFrameHandler[]
+            {
+                new DeliverFrameHandler(serializerFactory, this, deliverMethodParser, handlers, onUnprocessedMessage, onPoisonMessage)
+            };
+
             this.acknowledgerFactory = acknowledgerFactory;
             this.queues = queues;
             this.prefetchSize = prefetchSize;
@@ -52,11 +58,12 @@ namespace RabbitMQ.Next.Consumer
                 throw new InvalidOperationException("The consumer is already started.");
             }
 
-            this.deliverFrameHandler.Reset();
-            this.channel = await this.connection.OpenChannelAsync(new []
+            for (var i = 0; i < this.frameHanders.Count; i++)
             {
-                this.deliverFrameHandler
-            }, cancellation);
+                this.frameHanders[i].Reset();
+            }
+
+            this.channel = await this.connection.OpenChannelAsync(this.frameHanders, cancellation);
 
             await this.InitConsumerAsync(cancellation);
 

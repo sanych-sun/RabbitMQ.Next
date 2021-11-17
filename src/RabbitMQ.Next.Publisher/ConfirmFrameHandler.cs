@@ -17,6 +17,7 @@ namespace RabbitMQ.Next.Publisher
         private static readonly TaskCompletionSource<bool> PositiveCompletedTcs;
         private static readonly TaskCompletionSource<bool> NegativeCompletedTcs;
 
+        private readonly ConcurrentDictionary<ulong, TaskCompletionSource<bool>> pendingConfirms;
         private readonly IMethodParser<AckMethod> ackMethodParser;
         private readonly IMethodParser<NackMethod> nackMethodParser;
         private ulong lastMultipleAck;
@@ -30,8 +31,6 @@ namespace RabbitMQ.Next.Publisher
             NegativeCompletedTcs = new TaskCompletionSource<bool>();
             NegativeCompletedTcs.SetResult(false);
         }
-
-        private readonly ConcurrentDictionary<ulong, TaskCompletionSource<bool>> pendingConfirms;
 
         public ConfirmFrameHandler(IMethodRegistry registry)
         {
@@ -97,6 +96,18 @@ namespace RabbitMQ.Next.Publisher
 
         ValueTask<bool> IFrameHandler.HandleContentAsync(IMessageProperties properties, ReadOnlySequence<byte> contentBytes)
             => new(false);
+
+        void IFrameHandler.Reset()
+        {
+            this.lastMultipleAck = 0;
+            this.lastMultipleNack = 0;
+
+            foreach (var task in this.pendingConfirms)
+            {
+                task.Value.SetCanceled();
+            }
+            this.pendingConfirms.Clear();
+        }
 
         private void AckSingle(ulong deliveryTag, bool isPositive)
         {

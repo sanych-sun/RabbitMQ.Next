@@ -10,5 +10,7 @@ namespace RabbitMQ.Next.Abstractions.Channels
         ValueTask<bool> HandleMethodFrameAsync(MethodId methodId, ReadOnlyMemory<byte> payload);
 
         ValueTask<bool> HandleContentAsync(IMessageProperties properties, ReadOnlySequence<byte> contentBytes);
+
+        void Reset();
     }
 }
