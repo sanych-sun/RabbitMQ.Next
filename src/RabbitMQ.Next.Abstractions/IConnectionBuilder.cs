@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions.Methods;
 
@@ -18,8 +19,8 @@ namespace RabbitMQ.Next.Abstractions
 
         IConnectionBuilder Locale(string locale);
 
-        IConnectionBuilder FrameSize(int sizeBytes);
+        IConnectionBuilder MaxFrameSize(int sizeBytes);
 
-        Task<IConnection> ConnectAsync();
+        Task<IConnection> ConnectAsync(CancellationToken cancellation = default);
     }
 }

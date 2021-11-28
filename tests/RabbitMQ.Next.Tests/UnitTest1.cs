@@ -1,5 +1,3 @@
-// using System;
-// using System.Buffers;
 // using System.Diagnostics;
 // using System.Text;
 // using System.Threading;
@@ -40,11 +38,11 @@
 //
 //             var sw = Stopwatch.StartNew();
 //
-//             await publisher.PublishAsync(BuildDummyText(1048576));
+//             await publisher.PublishAsync(BuildDummyText(100));
 //
 //             for (var i = 0; i < 10; i++)
 //             {
-//                 await publisher.PublishAsync(BuildDummyText(1048576));
+//                 await publisher.PublishAsync(BuildDummyText(100));
 //             }
 //
 //             await publisher.DisposeAsync();

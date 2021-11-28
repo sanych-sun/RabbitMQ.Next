@@ -1,5 +1,6 @@
 using System;
-using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using NSubstitute;
 using RabbitMQ.Next.Channels;
 using Xunit;
@@ -9,120 +10,182 @@ namespace RabbitMQ.Next.Tests.Channels
     public class ChannelPoolTests
     {
         [Fact]
-        public void ShouldStartWithZero()
+        public void PoolStartsWithOne()
         {
-            var channelPool = new ChannelPool();
-            var channel = Substitute.For<IChannelInternal>();
+            var factory = this.MockFactory();
+            var pool = new ChannelPool(factory);
 
-            var channelNumber = channelPool.Register(channel);
+            pool.Create();
 
-            Assert.Equal(0, channelNumber);
+            factory.Received().Invoke(1);
         }
 
         [Theory]
-        [InlineData(5, 10)]
-        [InlineData(15, 10)]
-        public void ShouldAssignNext(int count, int initialPoolSize)
+        [InlineData(1, 2)]
+        [InlineData(5, 22)]
+        public void CanResize(int initialSize, int channels)
         {
-            var channelPool = new ChannelPool(initialPoolSize);
+            var factory = this.MockFactory();
+            var pool = new ChannelPool(factory, initialSize);
 
-            for (var i = 0; i < count; i++)
+            for(var i = 0; i < channels; i++)
             {
-                var channel = Substitute.For<IChannelInternal>();
-                var number = channelPool.Register(channel);
+                pool.Create();
+            }
 
-                Assert.Equal(i, number);
+            for (var i = 1; i < channels + 1; i++)
+            {
+                var ch = pool.Get((ushort)i);
+                Assert.Equal(i, ch.ChannelNumber);
+            }
+        }
+
+        [Theory]
+        [InlineData(10, 1)]
+        [InlineData(10, 10)]
+        public async Task CreateTests(int number, int concurrencyLevel)
+        {
+            var factory = this.MockFactory();
+            var pool = new ChannelPool(factory);
+
+            var createTasks = Enumerable.Range(0, number)
+                .Select(async _ =>
+                {
+                    await Task.Yield();
+                    for (var i = 0; i < number; i++)
+                    {
+                        pool.Create();
+                    }
+                })
+                .ToArray();
+
+            await Task.WhenAll(createTasks);
+
+            factory.DidNotReceive().Invoke(0);
+            for (ushort i = 1; i < number * concurrencyLevel; i++)
+            {
+                factory.Received().Invoke(i);
+            }
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(10)]
+        public void CanGet(int num)
+        {
+            var factory = this.MockFactory();
+            var pool = new ChannelPool(factory);
+
+            for (var i = 0; i < num; i++)
+            {
+                pool.Create();
+            }
+
+            for (int i = 1; i < num + 1; i++)
+            {
+                var ch = pool.Get((ushort)i);
+                Assert.Equal(i, ch.ChannelNumber);
+            }
+        }
+
+        [Theory]
+        [InlineData(0, 0)]
+        [InlineData(0, 1)]
+        [InlineData(10, 0)]
+        [InlineData(10, 11)]
+        [InlineData(10, 100)]
+        public void GetThrowsOnUnknownChannel(int channels, ushort ch)
+        {
+            var factory = this.MockFactory();
+            var pool = new ChannelPool(factory);
+
+            for (var i = 0; i < channels; i++)
+            {
+                pool.Create();
+            }
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => pool.Get(ch));
+        }
+
+        [Theory]
+        [InlineData(1, 1)]
+        [InlineData(10, 5)]
+        [InlineData(10, 5, 2)]
+        public async Task CanReuseChannelAfterCompletion(int channels, params int[] chToComplete)
+        {
+            var factory = this.MockFactory();
+            var pool = new ChannelPool(factory);
+
+            for (var i = 0; i < channels; i++)
+            {
+                pool.Create();
+            }
+
+            foreach (var i in chToComplete)
+            {
+                var ch = pool.Get((ushort)i);
+                ch.TryComplete();
+            }
+
+            await Task.Delay(10);
+
+            factory.ClearReceivedCalls();
+            for (var i = 0; i < chToComplete.Length; i++)
+            {
+                pool.Create();
+            }
+
+            foreach (var ch in chToComplete)
+            {
+                factory.Received(1)((ushort)ch);
             }
         }
 
         [Fact]
-        public void CanGetByIndex()
+        public async Task CanReleaseAll()
         {
-            var channelPool = new ChannelPool();
+            var factory = this.MockFactory();
+            var pool = new ChannelPool(factory);
 
-            var channel1 = Substitute.For<IChannelInternal>();
-            var channel2 = Substitute.For<IChannelInternal>();
-            var channel3 = Substitute.For<IChannelInternal>();
-
-            var ch1 = channelPool.Register(channel1);
-            var ch2 = channelPool.Register(channel2);
-            var ch3 = channelPool.Register(channel3);
-
-            Assert.Equal(channel1, channelPool[ch1]);
-            Assert.Equal(channel2, channelPool[ch2]);
-            Assert.Equal(channel3, channelPool[ch3]);
-        }
-
-        [Theory]
-        [InlineData(10, 0, 1)]
-        [InlineData(10, 5, 6)]
-        [InlineData(10, 5, 9)]
-        [InlineData(10, 5, 11)]
-        [InlineData(10, 10, 11)]
-        public void ThrowsIfOutOfRange(int initialSize, int count, int index)
-        {
-            var channelPool = new ChannelPool(initialSize);
-
-            for (var i = 0; i < count; i++)
+            for (var i = 0; i < 10; i++)
             {
-                var channel = Substitute.For<IChannelInternal>();
-                channelPool.Register(channel);
+                pool.Create();
             }
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => channelPool[index]);
+            pool.ReleaseAll();
+            await Task.Delay(10);
+
+            factory.ClearReceivedCalls();
+            pool.Create();
+
+            factory.Received(1)(Arg.Is<ushort>(u => u > 0 && u < 10));
         }
 
-        [Fact]
-        public void ThrowsIfAccessToReleased()
+        private Func<ushort, IChannelInternal> MockFactory()
         {
-            var channelPool = new ChannelPool();
-
-            var index2 = channelPool.Register(Substitute.For<IChannelInternal>());
-
-            channelPool.Release(index2);
-            Assert.Throws<ArgumentOutOfRangeException>(() => channelPool[index2]);
-        }
-
-        [Fact]
-        public void ShouldReuseReturnedNumbers()
-        {
-            var channelPool = new ChannelPool();
-
-            for (var i = 0; i < 5; i++)
+            var factory = Substitute.For<Func<ushort, IChannelInternal>>();
+            factory(Arg.Any<ushort>()).Returns(args =>
             {
-                var channel = Substitute.For<IChannelInternal>();
-                channelPool.Register(channel);
-            }
-
-            channelPool.Release(2);
-            channelPool.Release(3);
-
-            Assert.Equal(2, channelPool.Register(Substitute.For<IChannelInternal>()));
-            Assert.Equal(3, channelPool.Register(Substitute.For<IChannelInternal>()));
-            Assert.Equal(5, channelPool.Register(Substitute.For<IChannelInternal>()));
-        }
-
-        [Theory]
-        [MemberData(nameof(ReleaseTestCases))]
-        public void ReleaseAllShouldCompleteAll(Exception exception)
-        {
-            var channelPool = new ChannelPool();
-            var channel1 = Substitute.For<IChannelInternal>();
-            var channel2 = Substitute.For<IChannelInternal>();
-
-            channelPool.Register(channel1);
-            channelPool.Register(channel2);
-
-            channelPool.ReleaseAll(exception);
-
-            channel1.Received().SetCompleted(exception);
-            channel2.Received().SetCompleted(exception);
-        }
-
-        public static IEnumerable<object[]> ReleaseTestCases()
-        {
-            yield return new object[] {null};
-            yield return new object[] {new Exception()};
+                var t = new TaskCompletionSource();
+                var ch = Substitute.For<IChannelInternal>();
+                ch.Completion.Returns(t.Task);
+                ch.ChannelNumber.Returns(args[0]);
+                ch.TryComplete(Arg.Any<Exception>()).Returns(args =>
+                {
+                    var ex = (Exception)args[0];
+                    if (ex == null)
+                    {
+                        t.SetResult();
+                    }
+                    else
+                    {
+                        t.SetException(ex);
+                    }
+                    return true;
+                });
+                return ch;
+            });
+            return factory;
         }
     }
 }

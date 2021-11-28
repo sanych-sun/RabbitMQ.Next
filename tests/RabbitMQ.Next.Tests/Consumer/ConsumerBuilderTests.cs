@@ -135,7 +135,7 @@ namespace RabbitMQ.Next.Tests.Consumer
 
             ((IConsumerBuilder)builder).BindToQueue(queueName, null);
 
-            Assert.True(builder.Queues.Any(x => x.Queue == queueName));
+            Assert.Contains(builder.Queues, x => x.Queue == queueName);
         }
 
         [Fact]
@@ -149,7 +149,7 @@ namespace RabbitMQ.Next.Tests.Consumer
             ((IConsumerBuilder)builder).BindToQueue(queueName, consumerBuilder);
 
             consumerBuilder.Received();
-            Assert.True(builder.Queues.Any(x => x.Queue == queueName));
+            Assert.Contains(builder.Queues, x => x.Queue == queueName);
         }
     }
 }

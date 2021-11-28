@@ -10,6 +10,8 @@ namespace RabbitMQ.Next.Channels
     {
         public ChannelWriter<(FrameType Type, MemoryBlock Payload)> FrameWriter { get; }
 
-        public void SetCompleted(Exception ex = null);
+        public bool TryComplete(Exception ex = null);
+
+        public ushort ChannelNumber { get; }
     }
 }

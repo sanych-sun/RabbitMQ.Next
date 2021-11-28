@@ -12,7 +12,7 @@ namespace RabbitMQ.Next.Abstractions
         private const int DefaultSslPort = 5671;
         private const string DefaultVirtualHost = "/";
 
-        public static IConnectionBuilder AuthPlain(this IConnectionBuilder builder, string user, string password)
+        public static IConnectionBuilder UsePlainAuth(this IConnectionBuilder builder, string user, string password)
         {
             builder.Auth(new PlainAuthMechanism(user, password));
             return builder;

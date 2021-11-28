@@ -28,17 +28,6 @@ namespace RabbitMQ.Next.Tests.Channels
         }
 
         [Fact]
-        public async Task CanResetOnCompletedWait()
-        {
-            var handler = this.CreateHandler<AckMethod>();
-
-            var wait = handler.WaitTask;
-            handler.Reset();
-
-            await Assert.ThrowsAsync<TaskCanceledException>(async() => await wait);
-        }
-
-        [Fact]
         public async Task IgnoresOtherMethods()
         {
             var handler = this.CreateHandler<AckMethod>();

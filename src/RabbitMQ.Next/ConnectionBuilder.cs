@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Methods;
@@ -11,6 +12,7 @@ namespace RabbitMQ.Next
     public class ConnectionBuilder : IConnectionBuilder
     {
         private const string DefaultLocale = "en-US";
+        private const int DefaultMaxFrameSize = 131_072; // 128kB
 
         private readonly IConnectionFactory factory;
         private readonly IMethodRegistryBuilder methodRegistry = new MethodRegistryBuilder();
@@ -19,9 +21,9 @@ namespace RabbitMQ.Next
         private IAuthMechanism authMechanism;
         private string virtualhost = ProtocolConstants.DefaultVHost;
         private string clientLocale = DefaultLocale;
-        private int frameSize = 102_400;
+        private int maxFrameSize = DefaultMaxFrameSize;
 
-        public ConnectionBuilder()
+        private ConnectionBuilder()
             : this(ConnectionFactory.Default)
         {
         }
@@ -77,27 +79,30 @@ namespace RabbitMQ.Next
             return this;
         }
 
-        public IConnectionBuilder FrameSize(int sizeBytes)
+        public IConnectionBuilder MaxFrameSize(int sizeBytes)
         {
             if (sizeBytes < ProtocolConstants.FrameMinSize)
             {
-                throw new ArgumentException("FrameSize cannot be smaller then minimal frame size", nameof(sizeBytes));
+                throw new ArgumentOutOfRangeException(nameof(sizeBytes), "FrameSize cannot be smaller then minimal frame size");
             }
 
-            this.frameSize = sizeBytes;
+            this.maxFrameSize = sizeBytes;
             return this;
         }
 
-        public Task<IConnection> ConnectAsync()
+        public Task<IConnection> ConnectAsync(CancellationToken cancellation = default)
         {
-            return this.factory.ConnectAsync(
-                this.endpoints.ToArray(),
-                this.virtualhost,
-                this.authMechanism,
-                this.clientLocale,
-                this.clientProperties,
-                this.methodRegistry.Build(),
-                this.frameSize);
+            var settings = new ConnectionSettings
+            {
+                Endpoints = this.endpoints.ToArray(),
+                Vhost = this.virtualhost,
+                Auth = this.authMechanism,
+                Locale = this.clientLocale,
+                ClientProperties = this.clientProperties,
+                MaxFrameSize = this.maxFrameSize
+            };
+
+            return this.factory.ConnectAsync(settings, this.methodRegistry.Build(), cancellation);
         }
     }
 }

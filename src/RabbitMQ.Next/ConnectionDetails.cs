@@ -1,14 +1,15 @@
-using RabbitMQ.Next.Abstractions;
-
 namespace RabbitMQ.Next
 {
-    internal class ConnectionDetails : IConnectionDetails
+    internal class ConnectionDetails
     {
-        public int FrameMaxSize { get; set; }
+        public ConnectionDetails(ConnectionSettings settings)
+        {
+            this.Settings = settings;
+        }
 
-        public int HeartbeatInterval { get; set; }
+        public ConnectionSettings Settings { get; }
 
-        public string AuthMechanism { get; set; }
+        public NegotiationResults Negotiated { get; set; }
 
         public string RemoteHost { get; set; }
 

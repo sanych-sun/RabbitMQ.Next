@@ -1,5 +1,4 @@
-﻿using System.Threading.Tasks;
-using BenchmarkDotNet.Configs;
+﻿using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Diagnosers;
 using BenchmarkDotNet.Engines;
 using BenchmarkDotNet.Jobs;
@@ -9,7 +8,7 @@ namespace RabbitMQ.Next.Benchmarks
 {
     class Program
     {
-        static async Task Main(string[] args)
+        static void Main(string[] args)
         {
             BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args,
                 DefaultConfig.Instance

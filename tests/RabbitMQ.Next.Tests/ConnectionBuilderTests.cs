@@ -1,16 +1,46 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using NSubstitute;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Methods;
-using RabbitMQ.Next.Transport;
 using Xunit;
 
 namespace RabbitMQ.Next.Tests
 {
     public class ConnectionBuilderTests
     {
+        [Fact]
+        public async Task DefaultValues()
+        {
+            var factory = Substitute.For<IConnectionFactory>();
+            var builder = new ConnectionBuilder(factory);
+
+            await builder.ConnectAsync();
+
+            await factory.Received().ConnectAsync(
+                Arg.Is<ConnectionSettings>(c => c.Locale == "en-US" && c.MaxFrameSize == 131_072),
+                Arg.Any<IMethodRegistry>(),
+                Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task ConnectPassCancellation()
+        {
+            var factory = Substitute.For<IConnectionFactory>();
+            var builder = new ConnectionBuilder(factory);
+            var cancellation = new CancellationTokenSource().Token;
+
+            await builder.ConnectAsync(cancellation);
+
+            await factory.Received().ConnectAsync(
+                Arg.Any<ConnectionSettings>(),
+                Arg.Any<IMethodRegistry>(),
+                cancellation);
+        }
+
         [Fact]
         public async Task Auth()
         {
@@ -23,9 +53,9 @@ namespace RabbitMQ.Next.Tests
             await builder.ConnectAsync();
 
             await factory.Received().ConnectAsync(
-                Arg.Any<IReadOnlyList<Endpoint>>(), Arg.Any<string>(), auth,
-                Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, object>>(),
-                Arg.Any<IMethodRegistry>(), Arg.Any<int>());
+                Arg.Is<ConnectionSettings>(c => c.Auth == auth),
+                Arg.Any<IMethodRegistry>(),
+                Arg.Any<CancellationToken>());
         }
 
         [Fact]
@@ -40,9 +70,9 @@ namespace RabbitMQ.Next.Tests
             await builder.ConnectAsync();
 
             await factory.Received().ConnectAsync(
-                Arg.Any<IReadOnlyList<Endpoint>>(), virtualHost, Arg.Any<IAuthMechanism>(),
-                Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, object>>(),
-                Arg.Any<IMethodRegistry>(), Arg.Any<int>());
+                Arg.Is<ConnectionSettings>(c => c.Vhost == virtualHost),
+                Arg.Any<IMethodRegistry>(),
+                Arg.Any<CancellationToken>());
         }
 
         [Theory]
@@ -60,10 +90,9 @@ namespace RabbitMQ.Next.Tests
             await builder.ConnectAsync();
 
             await factory.Received().ConnectAsync(
-                Arg.Is<IReadOnlyList<Endpoint>>(x => endpoints.All(i => x.Count(e => e.Host == i.host && e.Port == i.port && e.UseSsl == i.ssl) == 1)),
-                Arg.Any<string>(), Arg.Any<IAuthMechanism>(),
-                Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, object>>(),
-                Arg.Any<IMethodRegistry>(), Arg.Any<int>());
+                Arg.Is<ConnectionSettings>(c => endpoints.All(e => c.Endpoints.Any(e1 => e1.Host == e.host && e1.Port == e.port && e1.UseSsl == e.ssl))),
+                Arg.Any<IMethodRegistry>(),
+                Arg.Any<CancellationToken>());
         }
 
         [Fact]
@@ -78,9 +107,35 @@ namespace RabbitMQ.Next.Tests
             await builder.ConnectAsync();
 
             await factory.Received().ConnectAsync(
-                Arg.Any<IReadOnlyList<Endpoint>>(), Arg.Any<string>(), Arg.Any<IAuthMechanism>(),
-                locale, Arg.Any<IReadOnlyDictionary<string, object>>(),
-                Arg.Any<IMethodRegistry>(), Arg.Any<int>());
+                Arg.Is<ConnectionSettings>(c => c.Locale == locale),
+                Arg.Any<IMethodRegistry>(),
+                Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task MaxFrameSize()
+        {
+            var factory = Substitute.For<IConnectionFactory>();
+            var builder = new ConnectionBuilder(factory);
+            var maxFrameSize = 12345;
+
+            builder.MaxFrameSize(maxFrameSize);
+
+            await builder.ConnectAsync();
+
+            await factory.Received().ConnectAsync(
+                Arg.Is<ConnectionSettings>(c => c.MaxFrameSize == maxFrameSize),
+                Arg.Any<IMethodRegistry>(),
+                Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public void MaxFrameSize_ThrowsOnInvalidValue()
+        {
+            var factory = Substitute.For<IConnectionFactory>();
+            var builder = new ConnectionBuilder(factory);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder.MaxFrameSize(100));
         }
 
         [Theory]
@@ -98,10 +153,9 @@ namespace RabbitMQ.Next.Tests
             await builder.ConnectAsync();
 
             await factory.Received().ConnectAsync(
-                Arg.Any<IReadOnlyList<Endpoint>>(), Arg.Any<string>(), Arg.Any<IAuthMechanism>(),
-                Arg.Any<string>(),
-                Arg.Is<IReadOnlyDictionary<string, object>>(x => properties.All(p => x.Count(i => p.key == i.Key && p.value == i.Value) == 1)),
-                Arg.Any<IMethodRegistry>(), Arg.Any<int>());
+                Arg.Is<ConnectionSettings>(x => properties.All(p => x.ClientProperties.Any(i => p.key == i.Key && p.value == i.Value))),
+                Arg.Any<IMethodRegistry>(),
+                Arg.Any<CancellationToken>());
         }
 
         public static IEnumerable<object[]> AddEndpointTestCases()

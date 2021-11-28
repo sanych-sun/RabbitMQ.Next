@@ -21,32 +21,20 @@ namespace RabbitMQ.Next.Channels
 {
     internal sealed class Channel : IChannelInternal
     {
-        private readonly ChannelPool channelPool;
         private readonly IMethodRegistry registry;
         private readonly ObjectPool<MemoryBlock> memoryPool;
         private readonly MethodSender methodSender;
         private readonly TaskCompletionSource<bool> channelCompletion;
-        private readonly ushort channelNumber;
 
         private readonly IList<IFrameHandler> frameHandlers;
 
-        public Channel(ChannelPool channelPool, IMethodRegistry methodRegistry, ChannelWriter<IMemoryBlock> socketWriter, ObjectPool<MemoryBlock> memoryPool, IReadOnlyList<IFrameHandler> handlers, int frameMaxSize)
+        public Channel(IConnectionInternal connection, ushort channelNumber, int frameMaxSize)
         {
-            this.channelPool = channelPool;
-            this.registry = methodRegistry;
-            this.memoryPool = memoryPool;
-            var chNumber = channelPool.Register(this);
+            this.ChannelNumber = channelNumber;
+            this.registry = connection.MethodRegistry;
+            this.memoryPool = connection.MemoryPool;
 
-            var frameBuilderPool = new DefaultObjectPool<FrameBuilder>(
-                new ObjectPoolPolicy<FrameBuilder>(
-                    () => new(memoryPool, chNumber, frameMaxSize),
-                    b => { b.Reset(); return true; }), 100);
-
-            this.channelNumber = chNumber;
-
-            this.methodSender = new MethodSender(socketWriter, methodRegistry, frameBuilderPool);
-
-            handlers ??= Array.Empty<IFrameHandler>();
+            this.methodSender = new MethodSender(this.ChannelNumber, connection.SocketWriter, connection.MethodRegistry, connection.FrameBuilderPool, frameMaxSize);
 
             this.channelCompletion = new TaskCompletionSource<bool>();
             var receiveChannel = System.Threading.Channels.Channel.CreateUnbounded<(FrameType Type, MemoryBlock Payload)>(new UnboundedChannelOptions
@@ -57,38 +45,21 @@ namespace RabbitMQ.Next.Channels
             });
             this.FrameWriter = receiveChannel.Writer;
 
-            var list = new List<IFrameHandler>(handlers);
-            if (this.channelNumber == 0)
+            var channelCloseWait = new WaitMethodFrameHandler<CloseMethod>(this.registry);
+            channelCloseWait.WaitTask.ContinueWith(t =>
             {
-                var channelCloseWait = new WaitMethodFrameHandler<CloseMethod>(this.registry);
-                channelCloseWait.WaitTask.ContinueWith(t =>
+                if (t.IsCompleted)
                 {
-                    if (t.IsCompleted)
-                    {
-                        this.SetCompleted(new ChannelException(t.Result.StatusCode, t.Result.Description, t.Result.FailedMethodId));
-                    }
-                });
+                    this.TryComplete(new ChannelException(t.Result.StatusCode, t.Result.Description, t.Result.FailedMethodId));
+                }
+            });
 
-                list.Add(channelCloseWait);
-            }
-            else
-            {
-                var connectionCloseWait = new WaitMethodFrameHandler<Transport.Methods.Connection.CloseMethod>(this.registry);
-                connectionCloseWait.WaitTask.ContinueWith(t =>
-                {
-                    if (t.IsCompleted)
-                    {
-                        this.SetCompleted(new ConnectionException(t.Result.StatusCode, t.Result.Description));
-                    }
-                });
-
-                list.Add(connectionCloseWait);
-            }
-
-            this.frameHandlers = list;
+            this.frameHandlers = new List<IFrameHandler> { channelCloseWait };
 
             Task.Factory.StartNew(() => this.LoopAsync(receiveChannel.Reader), TaskCreationOptions.LongRunning);
         }
+
+        public ushort ChannelNumber { get; }
 
         public void AddFrameHandler(IFrameHandler handler)
             => this.frameHandlers.Add(handler);
@@ -126,19 +97,24 @@ namespace RabbitMQ.Next.Channels
 
         public ChannelWriter<(FrameType Type, MemoryBlock Payload)> FrameWriter { get; }
 
-        public void SetCompleted(Exception ex = null)
+        public bool TryComplete(Exception ex = null)
         {
+            if (this.channelCompletion.Task.IsCompleted)
+            {
+                return false;
+            }
+
             if (ex != null)
             {
-                this.channelCompletion.SetException(ex);
+                this.channelCompletion.TrySetException(ex);
             }
             else
             {
-                this.channelCompletion.SetResult(true);
+                this.channelCompletion.TrySetResult(true);
             }
 
-            this.FrameWriter.Complete();
-            this.channelPool.Release(this.channelNumber);
+            this.FrameWriter.TryComplete();
+            return true;
         }
 
         public async ValueTask<TMethod> WaitAsync<TMethod>(CancellationToken cancellation = default)
@@ -161,13 +137,13 @@ namespace RabbitMQ.Next.Channels
         public async ValueTask CloseAsync(Exception ex = null)
         {
             await this.SendAsync<CloseMethod, CloseOkMethod>(new CloseMethod((ushort) ReplyCode.Success, string.Empty, MethodId.Unknown));
-            this.SetCompleted(ex);
+            this.TryComplete(ex);
         }
 
         public async ValueTask CloseAsync(ushort statusCode, string description, MethodId failedMethodId)
         {
             await this.SendAsync<CloseMethod, CloseOkMethod>(new CloseMethod(statusCode, description, failedMethodId));
-            this.SetCompleted(new ChannelException(statusCode, description, failedMethodId));
+            this.TryComplete(new ChannelException(statusCode, description, failedMethodId));
         }
 
         private async Task LoopAsync(ChannelReader<(FrameType Type, MemoryBlock Payload)> reader)
@@ -229,7 +205,7 @@ namespace RabbitMQ.Next.Channels
             }
             catch (Exception e)
             {
-                this.SetCompleted(e);
+                this.TryComplete(e);
             }
         }
 

@@ -17,20 +17,25 @@ namespace RabbitMQ.Next.Channels
     internal class FrameBuilder
     {
         private readonly ObjectPool<MemoryBlock> memoryPool;
-        private readonly ushort channelNumber;
-        private readonly int frameMaxSize;
         private readonly List<IMemoryBlock> chunks;
         private readonly ContentBufferWriter contentBufferWriter;
+        private ushort chNumber;
+        private int frameMaxSize;
         private MemoryBlock buffer;
         private Memory<byte> currentFrameHeader;
 
-        public FrameBuilder(ObjectPool<MemoryBlock> memoryPool, ushort channelNumber, int frameMaxSize)
+        public FrameBuilder(ObjectPool<MemoryBlock> memoryPool)
         {
             this.chunks = new List<IMemoryBlock>();
             this.memoryPool = memoryPool;
-            this.channelNumber = channelNumber;
-            this.frameMaxSize = frameMaxSize;
             this.contentBufferWriter = new ContentBufferWriter(this);
+            this.chNumber = ushort.MaxValue;
+        }
+
+        public void Initialize(ushort channelNumber, int frameMaxSize)
+        {
+            this.chNumber = channelNumber;
+            this.frameMaxSize = frameMaxSize;
         }
 
         public void WriteMethodFrame<TMethod>(TMethod method, IMethodFormatter<TMethod> formatter)
@@ -69,6 +74,11 @@ namespace RabbitMQ.Next.Channels
         // allocates space for generic frame header and returns memory available for payload
         private Memory<byte> BeginFrame()
         {
+            if (this.chNumber == ushort.MaxValue)
+            {
+                throw new InvalidOperationException("Cannot use non-initialized FrameBuilder.");
+            }
+
             this.EnsureBuffer();
 
             this.currentFrameHeader = this.buffer.Writer[..ProtocolConstants.FrameHeaderSize];
@@ -79,7 +89,7 @@ namespace RabbitMQ.Next.Channels
 
         public void EndFrame(FrameType type, uint payloadSize)
         {
-            this.currentFrameHeader.WriteFrameHeader(type, this.channelNumber, payloadSize);
+            this.currentFrameHeader.WriteFrameHeader(type, this.chNumber, payloadSize);
             this.buffer.Writer.Write(ProtocolConstants.FrameEndByte);
             this.buffer.Commit(1);
         }
@@ -104,6 +114,7 @@ namespace RabbitMQ.Next.Channels
             this.chunks.Clear();
             this.currentFrameHeader = default;
             this.contentBufferWriter.Reset();
+            this.chNumber = ushort.MaxValue;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -161,6 +172,7 @@ namespace RabbitMQ.Next.Channels
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private int ExpandIfRequired(int requestedSize)
             {
+                // todo: implement workaround for too big chunks by allocating some extra array with merging the data back into buffer on Advance
                 if (requestedSize > this.owner.frameMaxSize)
                 {
                     throw new OutOfMemoryException();

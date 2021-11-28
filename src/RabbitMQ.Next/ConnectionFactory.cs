@@ -1,7 +1,10 @@
-using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.ObjectPool;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Methods;
+using RabbitMQ.Next.Buffers;
+using RabbitMQ.Next.Channels;
 using RabbitMQ.Next.Transport;
 
 namespace RabbitMQ.Next
@@ -10,14 +13,24 @@ namespace RabbitMQ.Next
     {
         public static readonly IConnectionFactory Default = new ConnectionFactory();
 
-        public Task<IConnection> ConnectAsync(
-            IReadOnlyList<Endpoint> endpoints,
-            string virtualHost,
-            IAuthMechanism authMechanism,
-            string locale,
-            IReadOnlyDictionary<string, object> clientProperties,
-            IMethodRegistry methodRegistry,
-            int frameSize)
-            => Connection.ConnectAsync(endpoints, virtualHost, authMechanism, locale, clientProperties, methodRegistry, frameSize);
+        public async Task<IConnection> ConnectAsync(ConnectionSettings settings, IMethodRegistry registry, CancellationToken cancellation)
+        {
+            var bufferSize = ProtocolConstants.FrameHeaderSize + settings.MaxFrameSize + 1; // 2 * (frame header + frame + frame-end) - to be sure that method and content header fit
+            var memoryPool = new DefaultObjectPool<MemoryBlock>(new ObjectPoolPolicy<MemoryBlock>(
+                () => new MemoryBlock(bufferSize),
+                memory => memory.Reset()));
+
+            var frameBuilderPool = new DefaultObjectPool<FrameBuilder>(new ObjectPoolPolicy<FrameBuilder>(
+                () => new FrameBuilder(memoryPool),
+                builder =>
+                {
+                    builder.Reset();
+                    return true;
+                }));
+
+            var connection = new Connection(settings, registry, memoryPool, frameBuilderPool);
+            await connection.OpenConnectionAsync(cancellation);
+            return connection;
+        }
     }
 }

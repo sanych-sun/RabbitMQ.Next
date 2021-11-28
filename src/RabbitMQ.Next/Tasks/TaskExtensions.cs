@@ -5,29 +5,54 @@ namespace RabbitMQ.Next.Tasks
 {
     public static class TaskExtensions
     {
-        public static Task<TResult> WithCancellation<TResult>(this Task<TResult> task, CancellationToken token)
+        public static Task<TResult> WithCancellation<TResult>(this Task<TResult> task, CancellationToken cancellation)
         {
             if (task.IsCompleted)
             {
                 return task;
             }
 
-            if (!token.CanBeCanceled)
+            if (cancellation.IsCancellationRequested)
+            {
+                throw new TaskCanceledException();
+            }
+
+            if (!cancellation.CanBeCanceled)
             {
                 return task;
             }
 
-            return task.WrapTask(token);
+            return task.WrapTask(cancellation);
         }
 
-        private static async Task<TResult> WrapTask<TResult>(this Task<TResult> task, CancellationToken token)
+        public static CancellationToken Combine(this CancellationToken token, CancellationToken other)
+        {
+            if (token.IsCancellationRequested || other.IsCancellationRequested)
+            {
+                throw new TaskCanceledException();
+            }
+
+            if (!token.CanBeCanceled)
+            {
+                return other;
+            }
+
+            if (!other.CanBeCanceled)
+            {
+                return token;
+            }
+
+            return CancellationTokenSource.CreateLinkedTokenSource(token, other).Token;
+        }
+
+        private static async Task<TResult> WrapTask<TResult>(this Task<TResult> task, CancellationToken cancellation)
         {
             var cancellationSource = new TaskCompletionSource<bool>();
-            await using var registration = token.Register(tcs => ((TaskCompletionSource<bool>)tcs).TrySetResult(true), cancellationSource);
+            await using var registration = cancellation.Register(tcs => ((TaskCompletionSource<bool>)tcs).TrySetResult(true), cancellationSource);
 
             await Task.WhenAny(task, cancellationSource.Task);
 
-            if (token.IsCancellationRequested)
+            if (cancellation.IsCancellationRequested)
             {
                 throw new TaskCanceledException();
             }

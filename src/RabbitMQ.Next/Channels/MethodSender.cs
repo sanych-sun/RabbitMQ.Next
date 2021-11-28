@@ -20,9 +20,13 @@ namespace RabbitMQ.Next.Channels
 
         private readonly IMethodFormatter<PublishMethod> publishMethodFormatter;
         private readonly IMethodRegistry registry;
+        private readonly ushort channelNumber;
+        private readonly int frameMaxSize;
 
-        public MethodSender(ChannelWriter<IMemoryBlock> socketWriter, IMethodRegistry registry, ObjectPool<FrameBuilder> frameBuilderPool)
+        public MethodSender(ushort channelNumber, ChannelWriter<IMemoryBlock> socketWriter, IMethodRegistry registry, ObjectPool<FrameBuilder> frameBuilderPool, int frameMaxSize)
         {
+            this.channelNumber = channelNumber;
+            this.frameMaxSize = frameMaxSize;
             this.socketWriter = socketWriter;
             this.registry = registry;
             this.publishMethodFormatter = registry.GetFormatter<PublishMethod>();
@@ -34,6 +38,7 @@ namespace RabbitMQ.Next.Channels
             where TRequest : struct, IOutgoingMethod
         {
             var frameBuilder = this.frameBuilderPool.Get();
+            frameBuilder.Initialize(this.channelNumber, this.frameMaxSize);
             var formatter = this.registry.GetFormatter<TRequest>();
             frameBuilder.WriteMethodFrame(request, formatter);
 
@@ -46,6 +51,7 @@ namespace RabbitMQ.Next.Channels
             PublishFlags flags = PublishFlags.None, CancellationToken cancellation = default)
         {
             var frameBuilder = this.frameBuilderPool.Get();
+            frameBuilder.Initialize(this.channelNumber, this.frameMaxSize);
             var publishMethod = new PublishMethod(exchange, routingKey, (byte)flags);
 
             frameBuilder.WriteMethodFrame(publishMethod, this.publishMethodFormatter);

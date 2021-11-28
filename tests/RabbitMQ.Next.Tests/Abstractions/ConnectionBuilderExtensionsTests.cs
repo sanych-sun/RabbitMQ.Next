@@ -16,7 +16,7 @@ namespace RabbitMQ.Next.Tests.Abstractions
             var password = "pwd";
             var builder = Substitute.For<IConnectionBuilder>();
 
-            builder.AuthPlain(user, password);
+            builder.UsePlainAuth(user, password);
 
             builder.Received().Auth(Arg.Is<PlainAuthMechanism>(a => a.UserName == user && a.Password == password));
         }

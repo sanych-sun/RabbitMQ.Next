@@ -4,11 +4,10 @@ namespace RabbitMQ.Next.Abstractions
     {
         Pending = 0,
         Connecting = 1,
-        Negotiating = 2,
-        Configuring = 3,
-        Open = 4,
-        Blocked = 5,
+        Configuring = 2,
+        Open = 3,
+        Blocked = 4,
+        Broken = 5,
         Closed = 6,
-        Broken = 7,
     }
 }
