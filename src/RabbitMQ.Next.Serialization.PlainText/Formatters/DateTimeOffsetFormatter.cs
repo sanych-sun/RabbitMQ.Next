@@ -4,7 +4,7 @@ using System.Buffers.Text;
 
 namespace RabbitMQ.Next.Serialization.PlainText.Formatters
 {
-    internal class DateTimeOffsetFormatter : SimpleFormatterBase<DateTimeOffset>
+    public class DateTimeOffsetFormatter : SimpleFormatterBase<DateTimeOffset>
     {
         protected override bool TryFormatContent(DateTimeOffset content, Span<byte> target, out int bytesWritten)
             => Utf8Formatter.TryFormat(content, target, out bytesWritten, new StandardFormat('O'));

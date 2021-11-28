@@ -3,7 +3,7 @@ using System.Buffers.Text;
 
 namespace RabbitMQ.Next.Serialization.PlainText.Formatters
 {
-    internal class Int32Formatter : SimpleFormatterBase<int>
+    public class Int32Formatter : SimpleFormatterBase<int>
     {
         protected override bool TryFormatContent(int content, Span<byte> target, out int bytesWritten)
             => Utf8Formatter.TryFormat(content, target, out bytesWritten);

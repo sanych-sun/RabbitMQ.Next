@@ -2,23 +2,24 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using RabbitMQ.Next.Serialization.Abstractions;
 
 namespace RabbitMQ.Next.Serialization.PlainText
 {
     internal class PlainTextSerializer : ISerializer
     {
+        private readonly IFormatter[] formatters;
+
         public PlainTextSerializer(IEnumerable<IFormatter> formatters)
         {
-            this.Formatters = formatters?.ToArray();
+            this.formatters = formatters?.ToArray();
 
-            if (this.Formatters == null || this.Formatters.Count == 0)
+            if (this.formatters == null || this.formatters.Length == 0)
             {
                 throw new ArgumentNullException(nameof(formatters));
             }
         }
-
-        internal IReadOnlyList<IFormatter> Formatters { get; }
 
         public void Serialize<TContent>(TContent content, IBufferWriter<byte> writer)
             => this.GetFormatter<TContent>().Format(content, writer);
@@ -29,13 +30,14 @@ namespace RabbitMQ.Next.Serialization.PlainText
             return formatter.Parse<TContent>(bytes);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private IFormatter GetFormatter<TContent>()
         {
-            for (var i = 0; i < this.Formatters.Count; i++)
+            for (var i = 0; i < this.formatters.Length; i++)
             {
-                if (this.Formatters[i].CanHandle(typeof(TContent)))
+                if (this.formatters[i].CanHandle(typeof(TContent)))
                 {
-                    return this.Formatters[i];
+                    return this.formatters[i];
                 }
             }
 

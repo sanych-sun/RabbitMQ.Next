@@ -6,7 +6,7 @@ using System.Text;
 
 namespace RabbitMQ.Next.Serialization.PlainText.Formatters
 {
-    internal class StringFormatter : IFormatter
+    public class StringFormatter : IFormatter
     {
         private static readonly int MinBufferSize = Encoding.UTF8.GetMaxByteCount(1);
 
