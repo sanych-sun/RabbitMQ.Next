@@ -8,7 +8,7 @@ namespace RabbitMQ.Next
 {
     internal interface IConnectionInternal : IConnection
     {
-        ChannelWriter<IMemoryBlock> SocketWriter { get; }
+        ChannelWriter<MemoryBlock> SocketWriter { get; }
 
         ObjectPool<MemoryBlock> MemoryPool { get; }
 

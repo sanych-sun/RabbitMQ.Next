@@ -24,17 +24,17 @@ namespace RabbitMQ.Next.Channels
 
         public Task<TMethod> WaitTask => this.tcs.Task;
 
-        public ValueTask<bool> HandleMethodFrameAsync(MethodId methodId, ReadOnlyMemory<byte> payload)
+        public bool HandleMethodFrame(MethodId methodId, ReadOnlyMemory<byte> payload)
         {
             if (methodId != this.expectedMethodId)
             {
-                return new(false);
+                return false;
             }
 
             var method = this.parser.Parse(payload);
             this.tcs.TrySetResult(method);
 
-            return new ValueTask<bool>(true);
+            return true;
         }
 
         public ValueTask<bool> HandleContentAsync(IMessageProperties properties, ReadOnlySequence<byte> contentBytes)

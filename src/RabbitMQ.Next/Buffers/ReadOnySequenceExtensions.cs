@@ -5,7 +5,7 @@ namespace RabbitMQ.Next.Buffers
 {
     internal static class ReadOnySequenceExtensions
     {
-        public static ReadOnlySequence<byte> ToSequence(this IReadOnlyList<IMemoryBlock> source)
+        public static ReadOnlySequence<byte> ToSequence(this IReadOnlyList<MemoryBlock> source)
         {
             if (source == null || source.Count == 0)
             {

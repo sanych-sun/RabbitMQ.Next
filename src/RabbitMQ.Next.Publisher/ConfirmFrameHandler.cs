@@ -2,6 +2,7 @@ using System;
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
@@ -53,11 +54,16 @@ namespace RabbitMQ.Next.Publisher
                 return new ValueTask<bool>(true);
             }
 
-            var tcs = this.pendingConfirms.GetOrAdd(deliveryTag, _ => new TaskCompletionSource<bool>());
+            var tcs = this.pendingConfirms.GetOrAdd(deliveryTag, _ => new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously));
+            if (tcs.Task.IsCompleted)
+            {
+                this.pendingConfirms.TryRemove(deliveryTag, out _);
+            }
+
             return new ValueTask<bool>(tcs.Task);
         }
 
-        ValueTask<bool> IFrameHandler.HandleMethodFrameAsync(MethodId methodId, ReadOnlyMemory<byte> payload)
+        bool IFrameHandler.HandleMethodFrame(MethodId methodId, ReadOnlyMemory<byte> payload)
         {
             if (methodId == MethodId.BasicAck)
             {
@@ -72,7 +78,7 @@ namespace RabbitMQ.Next.Publisher
                     this.AckSingle(ack.DeliveryTag, true);
                 }
 
-                return new (true);
+                return true;
             }
 
             if (methodId == MethodId.BasicNack)
@@ -88,10 +94,10 @@ namespace RabbitMQ.Next.Publisher
                     this.AckSingle(nack.DeliveryTag, false);
                 }
 
-                return new ValueTask<bool>(true);
+                return true;
             }
 
-            return new ValueTask<bool>(false);
+            return false;
         }
 
         ValueTask<bool> IFrameHandler.HandleContentAsync(IMessageProperties properties, ReadOnlySequence<byte> contentBytes)
@@ -109,6 +115,7 @@ namespace RabbitMQ.Next.Publisher
             this.pendingConfirms.Clear();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void AckSingle(ulong deliveryTag, bool isPositive)
         {
             if (!this.pendingConfirms.TryRemove(deliveryTag, out var tcs))
@@ -119,6 +126,7 @@ namespace RabbitMQ.Next.Publisher
             tcs.TrySetResult(isPositive);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void AckMultiple(ulong deliveryTag, bool isPositive)
         {
             var items = this.pendingConfirms.Where(t => t.Key <= deliveryTag).ToArray();

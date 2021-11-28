@@ -17,7 +17,7 @@ namespace RabbitMQ.Next.Channels
     internal class FrameBuilder
     {
         private readonly ObjectPool<MemoryBlock> memoryPool;
-        private readonly List<IMemoryBlock> chunks;
+        private readonly List<MemoryBlock> chunks;
         private readonly ContentBufferWriter contentBufferWriter;
         private ushort chNumber;
         private int frameMaxSize;
@@ -26,7 +26,7 @@ namespace RabbitMQ.Next.Channels
 
         public FrameBuilder(ObjectPool<MemoryBlock> memoryPool)
         {
-            this.chunks = new List<IMemoryBlock>();
+            this.chunks = new List<MemoryBlock>();
             this.memoryPool = memoryPool;
             this.contentBufferWriter = new ContentBufferWriter(this);
             this.chNumber = ushort.MaxValue;
@@ -72,6 +72,7 @@ namespace RabbitMQ.Next.Channels
 
 
         // allocates space for generic frame header and returns memory available for payload
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private Memory<byte> BeginFrame()
         {
             if (this.chNumber == ushort.MaxValue)
@@ -87,14 +88,15 @@ namespace RabbitMQ.Next.Channels
             return this.buffer.Writer;
         }
 
-        public void EndFrame(FrameType type, uint payloadSize)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void EndFrame(FrameType type, uint payloadSize)
         {
             this.currentFrameHeader.WriteFrameHeader(type, this.chNumber, payloadSize);
             this.buffer.Writer.Write(ProtocolConstants.FrameEndByte);
             this.buffer.Commit(1);
         }
 
-        public async ValueTask WriteToAsync(ChannelWriter<IMemoryBlock> channel)
+        public async ValueTask WriteToAsync(ChannelWriter<MemoryBlock> channel)
         {
             for(var i = 0; i < this.chunks.Count; i++)
             {

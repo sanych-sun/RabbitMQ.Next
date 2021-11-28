@@ -28,16 +28,16 @@ namespace RabbitMQ.Next.Publisher
             this.contentAccessor = new ContentAccessor(serializerFactory);
         }
 
-        public ValueTask<bool> HandleMethodFrameAsync(MethodId methodId, ReadOnlyMemory<byte> payload)
+        public bool HandleMethodFrame(MethodId methodId, ReadOnlyMemory<byte> payload)
         {
             if (methodId != MethodId.BasicReturn)
             {
-                return new(false);
+                return false;
             }
 
             this.currentMethod = this.returnMethodParser.Parse(payload);
             this.expectContent = true;
-            return new(true);
+            return true;
         }
 
         public ValueTask<bool> HandleContentAsync(IMessageProperties properties, ReadOnlySequence<byte> contentBytes)

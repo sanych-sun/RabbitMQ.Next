@@ -2,10 +2,10 @@ using System;
 
 namespace RabbitMQ.Next.Buffers
 {
-    internal sealed class MemoryBlock : IMemoryBlock
+    internal sealed class MemoryBlock
     {
         private readonly byte[] buffer;
-        private Memory<byte> writer;
+        private int offset;
 
         public MemoryBlock(int size)
         {
@@ -15,24 +15,23 @@ namespace RabbitMQ.Next.Buffers
             }
 
             this.buffer = new byte[size];
-            this.writer = this.buffer;
         }
 
         public bool Reset()
         {
-            this.writer = this.buffer;
+            this.offset = 0;
             return true;
         }
 
         public ReadOnlyMemory<byte> Memory
-            =>  new (this.buffer, 0, this.buffer.Length - this.writer.Length);
+            =>  new (this.buffer, 0, this.offset);
 
         public void Commit(int length)
         {
-            this.writer = this.writer[length..];
+            this.offset += length;
         }
 
         public Memory<byte> Writer
-            => this.writer;
+            => new Memory<byte>(this.buffer).Slice(this.offset);
     }
 }

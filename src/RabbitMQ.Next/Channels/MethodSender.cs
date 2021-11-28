@@ -15,7 +15,7 @@ namespace RabbitMQ.Next.Channels
     internal class MethodSender
     {
         private readonly ObjectPool<FrameBuilder> frameBuilderPool;
-        private readonly ChannelWriter<IMemoryBlock> socketWriter;
+        private readonly ChannelWriter<MemoryBlock> socketWriter;
         private readonly SemaphoreSlim senderSync;
 
         private readonly IMethodFormatter<PublishMethod> publishMethodFormatter;
@@ -23,7 +23,7 @@ namespace RabbitMQ.Next.Channels
         private readonly ushort channelNumber;
         private readonly int frameMaxSize;
 
-        public MethodSender(ushort channelNumber, ChannelWriter<IMemoryBlock> socketWriter, IMethodRegistry registry, ObjectPool<FrameBuilder> frameBuilderPool, int frameMaxSize)
+        public MethodSender(ushort channelNumber, ChannelWriter<MemoryBlock> socketWriter, IMethodRegistry registry, ObjectPool<FrameBuilder> frameBuilderPool, int frameMaxSize)
         {
             this.channelNumber = channelNumber;
             this.frameMaxSize = frameMaxSize;

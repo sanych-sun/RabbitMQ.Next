@@ -22,26 +22,26 @@ namespace RabbitMQ.Next.Tests.Publisher
         private readonly IMethodRegistry registry = new MethodRegistryBuilder().AddBasicMethods().Build();
 
         [Fact]
-        public async Task HandlesAckMethod()
+        public void HandlesAckMethod()
         {
             IFrameHandler handler = new ConfirmFrameHandler(this.registry);
-            var handled = await AckMessageAsync(handler, 1, true);
+            var handled = AckMessageAsync(handler, 1, true);
             Assert.True(handled);
         }
 
         [Fact]
-        public async Task HandlesNackMethod()
+        public void HandlesNackMethod()
         {
             IFrameHandler handler = new ConfirmFrameHandler(this.registry);
-            var handled = await AckMessageAsync(handler, 1, false);
+            var handled = AckMessageAsync(handler, 1, false);
             Assert.True(handled);
         }
 
         [Fact]
-        public async Task IgnoresOtherMethods()
+        public void IgnoresOtherMethods()
         {
             IFrameHandler handler = new ConfirmFrameHandler(this.registry);
-            var handled = await handler.HandleMethodFrameAsync(MethodId.BasicDeliver, ReadOnlyMemory<byte>.Empty);
+            var handled = handler.HandleMethodFrame(MethodId.BasicDeliver, ReadOnlyMemory<byte>.Empty);
             Assert.False(handled);
         }
 
@@ -61,7 +61,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             var wait = handler.WaitForConfirmAsync(1);
             Assert.False(wait.IsCompleted);
 
-            await AckMessageAsync(handler, 1, true);
+            AckMessageAsync(handler, 1, true);
 
             Assert.True(await wait);
         }
@@ -71,7 +71,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         {
             var handler = new ConfirmFrameHandler(this.registry);
 
-            await AckMessageAsync(handler, 1, true);
+            AckMessageAsync(handler, 1, true);
 
             var wait = handler.WaitForConfirmAsync(1);
             Assert.True(wait.IsCompleted);
@@ -90,7 +90,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             Assert.False(wait2.IsCompleted);
             Assert.False(wait3.IsCompleted);
 
-            await AckMessageAsync(handler, 2, true, true);
+            AckMessageAsync(handler, 2, true, true);
 
             Assert.True(wait1.IsCompleted);
             Assert.True(wait2.IsCompleted);
@@ -105,7 +105,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         {
             var handler = new ConfirmFrameHandler(this.registry);
 
-            await AckMessageAsync(handler, 2, true, true);
+            AckMessageAsync(handler, 2, true, true);
 
             var wait1 = handler.WaitForConfirmAsync(1);
             var wait2 = handler.WaitForConfirmAsync(2);
@@ -126,7 +126,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             var wait = handler.WaitForConfirmAsync(1);
             Assert.False(wait.IsCompleted);
 
-            await AckMessageAsync(handler, 1, false);
+            AckMessageAsync(handler, 1, false);
 
             Assert.False(await wait);
         }
@@ -136,7 +136,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         {
             var handler = new ConfirmFrameHandler(this.registry);
 
-            await AckMessageAsync(handler, 1, false);
+            AckMessageAsync(handler, 1, false);
 
             var wait = handler.WaitForConfirmAsync(1);
             Assert.True(wait.IsCompleted);
@@ -156,7 +156,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             Assert.False(wait2.IsCompleted);
             Assert.False(wait3.IsCompleted);
 
-            await AckMessageAsync(handler, 2, false, true);
+            AckMessageAsync(handler, 2, false, true);
 
             Assert.True(wait1.IsCompleted);
             Assert.True(wait2.IsCompleted);
@@ -171,7 +171,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         {
             var handler = new ConfirmFrameHandler(this.registry);
 
-            await AckMessageAsync(handler, 2, false, true);
+            AckMessageAsync(handler, 2, false, true);
 
             var wait1 = handler.WaitForConfirmAsync(1);
             var wait2 = handler.WaitForConfirmAsync(2);
@@ -214,7 +214,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             Assert.True(results.All(r => r));
         }
 
-        private static ValueTask<bool> AckMessageAsync(IFrameHandler handler, ulong deliveryTag, bool ack, bool multiple = false)
+        private static bool AckMessageAsync(IFrameHandler handler, ulong deliveryTag, bool ack, bool multiple = false)
         {
             var memory = new byte[9];
 
@@ -223,14 +223,14 @@ namespace RabbitMQ.Next.Tests.Publisher
                 ((Memory<byte>) memory)
                     .Write(deliveryTag)
                     .Write(multiple);
-                return handler.HandleMethodFrameAsync(MethodId.BasicAck, memory);
+                return handler.HandleMethodFrame(MethodId.BasicAck, memory);
             }
 
             ((Memory<byte>) memory)
                 .Write(deliveryTag)
                 .Write(BitConverter.ComposeFlags(multiple, false));
 
-            return handler.HandleMethodFrameAsync(MethodId.BasicNack, memory);
+            return handler.HandleMethodFrame(MethodId.BasicNack, memory);
         }
     }
 }

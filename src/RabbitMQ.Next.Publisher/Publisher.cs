@@ -103,7 +103,12 @@ namespace RabbitMQ.Next.Publisher
 
             try
             {
-                var ch = await this.GetChannelAsync(cancellation);
+                var ch = this.channel;
+                if (ch == null || ch.Completion.IsCompleted)
+                {
+                    ch = await this.InitializeAsync(cancellation);
+                }
+
                 await ch.PublishAsync(
                     (content, serializer),
                     this.exchange, properties.RoutingKey, properties,
@@ -149,17 +154,6 @@ namespace RabbitMQ.Next.Publisher
             {
                 this.transformers[i].Apply(content, properties);
             }
-        }
-
-        private ValueTask<IChannel> GetChannelAsync(CancellationToken cancellationToken = default)
-        {
-            var ch = this.channel;
-            if (ch == null || ch.Completion.IsCompleted)
-            {
-                return this.InitializeAsync(cancellationToken);
-            }
-
-            return new ValueTask<IChannel>(ch);
         }
 
         internal async ValueTask<IChannel> InitializeAsync(CancellationToken cancellationToken = default)

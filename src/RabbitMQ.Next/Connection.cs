@@ -21,9 +21,6 @@ namespace RabbitMQ.Next
 {
     internal class Connection : IConnectionInternal
     {
-        private static readonly StaticMemoryBlock AmqpProtocolHeader = new(ProtocolConstants.AmqpHeader);
-        private static readonly StaticMemoryBlock AmqpHeartbeatFrame = new(ProtocolConstants.HeartbeatFrame);
-
         private readonly ChannelPool channelPool;
         private readonly ConnectionDetails connectionDetails;
 
@@ -46,7 +43,7 @@ namespace RabbitMQ.Next
 
         public IMethodRegistry MethodRegistry { get; }
 
-        public ChannelWriter<IMemoryBlock> SocketWriter { get; private set; }
+        public ChannelWriter<MemoryBlock> SocketWriter { get; private set; }
 
         public ObjectPool<MemoryBlock> MemoryPool { get; }
 
@@ -88,7 +85,7 @@ namespace RabbitMQ.Next
 
             this.socket = await EndpointResolver.OpenSocketAsync(this.connectionDetails.Settings.Endpoints, cancellation);
 
-            var socketChannel = System.Threading.Channels.Channel.CreateBounded<IMemoryBlock>(new BoundedChannelOptions(100)
+            var socketChannel = System.Threading.Channels.Channel.CreateBounded<MemoryBlock>(new BoundedChannelOptions(100)
             {
                 SingleReader = true,
                 SingleWriter = false,
@@ -121,7 +118,7 @@ namespace RabbitMQ.Next
             // TODO: adopt authentication_failure_close capability to handle auth errors
 
             var negotiateTask = NegotiateConnectionAsync(this.connectionChannel, this.connectionDetails.Settings, cancellation);
-            await this.SocketWriter.WriteAsync(AmqpProtocolHeader);
+            await this.WriteToSocket(ProtocolConstants.AmqpHeader);
 
             this.connectionDetails.Negotiated = await negotiateTask;
 
@@ -137,22 +134,29 @@ namespace RabbitMQ.Next
             while (!cancellation.IsCancellationRequested)
             {
                 await Task.Delay(interval, cancellation);
-                await this.SocketWriter.WriteAsync(AmqpHeartbeatFrame);
+                await this.WriteToSocket(ProtocolConstants.HeartbeatFrame);
             }
         }
 
-        private async Task SendLoop(ChannelReader<IMemoryBlock> socketChannel)
+        private ValueTask WriteToSocket(ReadOnlyMemory<byte> bytes)
+        {
+            var memoryBlock = this.MemoryPool.Get();
+
+            bytes.CopyTo(memoryBlock.Writer);
+            memoryBlock.Commit(ProtocolConstants.AmqpHeader.Length);
+
+            // Should not return memory block here, it will be done in SendLoop
+            return this.SocketWriter.WriteAsync(memoryBlock);
+        }
+
+        private async Task SendLoop(ChannelReader<MemoryBlock> socketChannel)
         {
             while (await socketChannel.WaitToReadAsync())
             {
                 while (socketChannel.TryRead(out var memoryBlock))
                 {
                     await this.socket.SendAsync(memoryBlock.Memory);
-
-                    if (memoryBlock is MemoryBlock block)
-                    {
-                        this.MemoryPool.Return(block);
-                    }
+                    this.MemoryPool.Return(memoryBlock);
                 }
 
                 await this.socket.FlushAsync();

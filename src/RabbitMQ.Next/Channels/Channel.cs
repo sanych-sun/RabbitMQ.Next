@@ -62,7 +62,7 @@ namespace RabbitMQ.Next.Channels
         public ushort ChannelNumber { get; }
 
         public void AddFrameHandler(IFrameHandler handler)
-            => this.frameHandlers.Add(handler);
+            => this.frameHandlers.Insert(0, handler);
 
         public bool RemoveFrameHandler(IFrameHandler handler)
             => this.frameHandlers.Remove(handler);
@@ -168,7 +168,7 @@ namespace RabbitMQ.Next.Channels
                     }
 
                     // 2. Process method frame
-                    var methodId = await this.ProcessMethodFrameAsync(methodFrame.Payload);
+                    var methodId = this.ProcessMethodFrame(methodFrame.Payload);
 
                     if (this.registry.HasContent(methodId))
                     {
@@ -218,7 +218,7 @@ namespace RabbitMQ.Next.Channels
             }
         }
 
-        private async ValueTask<MethodId> ProcessMethodFrameAsync(MemoryBlock payload)
+        private MethodId ProcessMethodFrame(MemoryBlock payload)
         {
             try
             {
@@ -226,7 +226,7 @@ namespace RabbitMQ.Next.Channels
                 var methodId = (MethodId) method;
                 for (var i = 0; i < this.frameHandlers.Count; i++)
                 {
-                    var handled = await this.frameHandlers[i].HandleMethodFrameAsync(methodId, payloadBytes);
+                    var handled = this.frameHandlers[i].HandleMethodFrame(methodId, payloadBytes);
                     if (handled)
                     {
                         break;

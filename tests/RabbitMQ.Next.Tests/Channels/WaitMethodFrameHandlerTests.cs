@@ -28,12 +28,12 @@ namespace RabbitMQ.Next.Tests.Channels
         }
 
         [Fact]
-        public async Task IgnoresOtherMethods()
+        public void IgnoresOtherMethods()
         {
             var handler = this.CreateHandler<AckMethod>();
             var wait = handler.WaitTask;
 
-            var handled = await handler.HandleMethodFrameAsync(MethodId.BasicDeliver, ReadOnlyMemory<byte>.Empty);
+            var handled = handler.HandleMethodFrame(MethodId.BasicDeliver, ReadOnlyMemory<byte>.Empty);
 
             Assert.False(handled);
             Assert.False(wait.IsCompleted);
@@ -59,7 +59,7 @@ namespace RabbitMQ.Next.Tests.Channels
 
             Assert.False(wait.IsCompleted);
 
-            var handled = await ((IFrameHandler) handler).HandleMethodFrameAsync(MethodId.BasicAck, new byte[] {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x18, 0x01 });
+            var handled = ((IFrameHandler) handler).HandleMethodFrame(MethodId.BasicAck, new byte[] {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x18, 0x01 });
             await Task.Delay(10);
 
             Assert.True(handled);

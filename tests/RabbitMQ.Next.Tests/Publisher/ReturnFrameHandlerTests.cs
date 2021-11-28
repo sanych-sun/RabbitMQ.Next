@@ -19,10 +19,10 @@ namespace RabbitMQ.Next.Tests.Publisher
         [Theory]
         [InlineData(MethodId.BasicDeliver)]
         [InlineData(MethodId.BasicAck)]
-        public async Task ShouldIgnoreOtherMethodFrames(MethodId method)
+        public void ShouldIgnoreOtherMethodFrames(MethodId method)
         {
             var frameHandler = this.CreateMock();
-            var result = await frameHandler.HandleMethodFrameAsync(method, ReadOnlyMemory<byte>.Empty);
+            var result = frameHandler.HandleMethodFrame(method, ReadOnlyMemory<byte>.Empty);
             Assert.False(result);
         }
 
@@ -32,7 +32,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         {
             var frameHandler = this.CreateMock();
 
-            var result = await frameHandler.HandleMethodFrameAsync(method, ReadOnlyMemory<byte>.Empty);
+            var result = frameHandler.HandleMethodFrame(method, ReadOnlyMemory<byte>.Empty);
             Assert.False(result);
 
             result = await frameHandler.HandleContentAsync(Substitute.For<IMessageProperties>(), ReadOnlySequence<byte>.Empty);
@@ -44,7 +44,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         {
             var frameHandler = this.CreateMock();
 
-            var result = await frameHandler.HandleMethodFrameAsync(MethodId.BasicReturn, ReadOnlyMemory<byte>.Empty);
+            var result = frameHandler.HandleMethodFrame(MethodId.BasicReturn, ReadOnlyMemory<byte>.Empty);
             Assert.True(result);
 
             result = await frameHandler.HandleContentAsync(Substitute.For<IMessageProperties>(), ReadOnlySequence<byte>.Empty);
@@ -55,11 +55,11 @@ namespace RabbitMQ.Next.Tests.Publisher
         }
 
         [Fact]
-        public async Task ShouldHandleReturnMethodFrame()
+        public void ShouldHandleReturnMethodFrame()
         {
             var frameHandler = this.CreateMock();
 
-            var result = await frameHandler.HandleMethodFrameAsync(MethodId.BasicReturn, ReadOnlyMemory<byte>.Empty);
+            var result = frameHandler.HandleMethodFrame(MethodId.BasicReturn, ReadOnlyMemory<byte>.Empty);
             Assert.True(result);
         }
 
@@ -80,7 +80,7 @@ namespace RabbitMQ.Next.Tests.Publisher
 
             var frameHandler = this.CreateMock(new[] {handler1, handler2, handler3});
 
-            await frameHandler.HandleMethodFrameAsync(MethodId.BasicReturn, ReadOnlyMemory<byte>.Empty);
+            frameHandler.HandleMethodFrame(MethodId.BasicReturn, ReadOnlyMemory<byte>.Empty);
             await frameHandler.HandleContentAsync(Substitute.For<IMessageProperties>(), ReadOnlySequence<byte>.Empty);
 
             await handler1.Received().TryHandleAsync(Arg.Any<ReturnedMessage>(), Arg.Any<IMessageProperties>(), Arg.Any<IContentAccessor>());
