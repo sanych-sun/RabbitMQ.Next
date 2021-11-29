@@ -10,27 +10,30 @@ namespace RabbitMQ.Next.Serialization.PlainText.Formatters
     {
         private static readonly int MinBufferSize = Encoding.UTF8.GetMaxByteCount(1);
 
-        public bool CanHandle(Type type) => type == typeof(string);
-
-        public void Format<TContent>(TContent content, IBufferWriter<byte> writer)
+        public bool TryFormat<TContent>(TContent content, IBufferWriter<byte> writer)
         {
             if (content is string str)
             {
                 this.FormatInternal(str, writer);
-                return;
+                return true;
             }
 
-            throw new ArgumentException(nameof(TContent));
+            return false;
         }
 
-        public TContent Parse<TContent>(ReadOnlySequence<byte> bytes)
+        public bool TryParse<TContent>(ReadOnlySequence<byte> bytes, out TContent value)
         {
-            if (this.ParseInternal(bytes) is TContent result)
+            if (typeof(TContent) == typeof(string))
             {
-                return result;
+                if (this.ParseInternal(bytes) is TContent result)
+                {
+                    value = result;
+                    return true;
+                }
             }
 
-            throw new ArgumentException(nameof(TContent));
+            value = default;
+            return false;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

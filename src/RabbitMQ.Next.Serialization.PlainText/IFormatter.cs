@@ -1,14 +1,11 @@
-using System;
 using System.Buffers;
 
 namespace RabbitMQ.Next.Serialization.PlainText
 {
     public interface IFormatter
     {
-        bool CanHandle(Type type);
+        bool TryFormat<TContent>(TContent content, IBufferWriter<byte> writer);
 
-        void Format<TContent>(TContent content, IBufferWriter<byte> writer);
-
-        TContent Parse<TContent>(ReadOnlySequence<byte> bytes);
+        bool TryParse<TContent>(ReadOnlySequence<byte> bytes, out TContent parsed);
     }
 }

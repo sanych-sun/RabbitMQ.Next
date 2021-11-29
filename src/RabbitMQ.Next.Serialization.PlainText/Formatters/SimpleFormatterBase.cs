@@ -7,39 +7,36 @@ namespace RabbitMQ.Next.Serialization.PlainText.Formatters
     public abstract class SimpleFormatterBase<T> : IFormatter
         where T : struct
     {
-        public virtual bool CanHandle(Type type) => type == typeof(T) || type == typeof(T?);
-
-        public void Format<TContent>(TContent content, IBufferWriter<byte> writer)
+        public bool TryFormat<TContent>(TContent content, IBufferWriter<byte> writer)
         {
-            if (content == null)
+            if (content is not T typed)
             {
-                return;
+                return content == null && typeof(TContent) == typeof(T?);
             }
 
-            if (content is T typed)
-            {
-                this.FormatInternal(typed, writer);
-                return;
-            }
-
-            throw new ArgumentException(nameof(TContent));
+            this.FormatInternal(typed, writer);
+            return true;
         }
 
-        public TContent Parse<TContent>(ReadOnlySequence<byte> bytes)
+        public bool TryParse<TContent>(ReadOnlySequence<byte> bytes, out TContent value)
         {
-            var parsed = this.ParseInternal(bytes);
-
-            if (parsed is TContent result)
+            if (typeof(TContent) == typeof(T) || typeof(TContent) == typeof(T?))
             {
-                return result;
+                var parsed = this.ParseInternal(bytes);
+
+                switch (parsed)
+                {
+                    case TContent result:
+                        value = result;
+                        return true;
+                    case null when typeof(TContent) == typeof(T?):
+                        value = default;
+                        return true;
+                }
             }
 
-            if (!parsed.HasValue && typeof(TContent) == typeof(T?))
-            {
-                return default;
-            }
-
-            throw new ArgumentException(nameof(TContent));
+            value = default;
+            return false;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

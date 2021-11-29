@@ -22,22 +22,25 @@ namespace RabbitMQ.Next.Serialization.PlainText
         }
 
         public void Serialize<TContent>(TContent content, IBufferWriter<byte> writer)
-            => this.GetFormatter<TContent>().Format(content, writer);
-
-        public TContent Deserialize<TContent>(ReadOnlySequence<byte> bytes)
-        {
-            var formatter = this.GetFormatter<TContent>();
-            return formatter.Parse<TContent>(bytes);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private IFormatter GetFormatter<TContent>()
         {
             for (var i = 0; i < this.formatters.Length; i++)
             {
-                if (this.formatters[i].CanHandle(typeof(TContent)))
+                if (this.formatters[i].TryFormat(content, writer))
                 {
-                    return this.formatters[i];
+                    return;
+                }
+            }
+
+            throw new InvalidOperationException($"Cannot resolve formatter for the type: {typeof(TContent).FullName}");
+        }
+
+        public TContent Deserialize<TContent>(ReadOnlySequence<byte> bytes)
+        {
+            for (var i = 0; i < this.formatters.Length; i++)
+            {
+                if (this.formatters[i].TryParse(bytes, out TContent value))
+                {
+                    return value;
                 }
             }
 
