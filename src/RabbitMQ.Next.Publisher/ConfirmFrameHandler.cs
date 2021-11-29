@@ -3,7 +3,6 @@ using System.Buffers;
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
@@ -21,8 +20,6 @@ namespace RabbitMQ.Next.Publisher
         private readonly ConcurrentDictionary<ulong, TaskCompletionSource<bool>> pendingConfirms;
         private readonly IMethodParser<AckMethod> ackMethodParser;
         private readonly IMethodParser<NackMethod> nackMethodParser;
-        private ulong lastMultipleAck;
-        private ulong lastMultipleNack;
 
         static ConfirmFrameHandler()
         {
@@ -42,18 +39,6 @@ namespace RabbitMQ.Next.Publisher
 
         public ValueTask<bool> WaitForConfirmAsync(ulong deliveryTag)
         {
-            var lastMultNack = Interlocked.Read(ref this.lastMultipleNack);
-            if (deliveryTag <= lastMultNack)
-            {
-                return new ValueTask<bool>(false);
-            }
-
-            var lastMultAck = Interlocked.Read(ref this.lastMultipleAck);
-            if (deliveryTag <= lastMultAck)
-            {
-                return new ValueTask<bool>(true);
-            }
-
             var tcs = this.pendingConfirms.GetOrAdd(deliveryTag, _ => new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously));
             if (tcs.Task.IsCompleted)
             {
@@ -70,7 +55,6 @@ namespace RabbitMQ.Next.Publisher
                 var ack = this.ackMethodParser.Parse(payload);
                 if (ack.Multiple)
                 {
-                    Interlocked.Exchange(ref this.lastMultipleAck, ack.DeliveryTag);
                     this.AckMultiple(ack.DeliveryTag, true);
                 }
                 else
@@ -86,7 +70,6 @@ namespace RabbitMQ.Next.Publisher
                 var nack = this.nackMethodParser.Parse(payload);
                 if (nack.Multiple)
                 {
-                    Interlocked.Exchange(ref this.lastMultipleNack, nack.DeliveryTag);
                     this.AckMultiple(nack.DeliveryTag, false);
                 }
                 else
@@ -105,9 +88,6 @@ namespace RabbitMQ.Next.Publisher
 
         void IFrameHandler.Reset()
         {
-            this.lastMultipleAck = 0;
-            this.lastMultipleNack = 0;
-
             foreach (var task in this.pendingConfirms)
             {
                 task.Value.SetCanceled();

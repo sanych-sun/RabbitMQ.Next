@@ -114,22 +114,21 @@ namespace RabbitMQ.Next.Publisher
                     this.exchange, properties.RoutingKey, properties,
                     (st, buffer) => st.serializer.Serialize(st.content, buffer),
                     flags, cancellation);
+
+                var messageDeliveryTag = Interlocked.Increment(ref this.lastDeliveryTag);
+                if (this.confirms != null)
+                {
+                    var confirmed = await this.confirms.WaitForConfirmAsync(messageDeliveryTag);
+                    if (!confirmed)
+                    {
+                        // todo: provide some useful info here
+                        throw new DeliveryFailedException();
+                    }
+                }
             }
             finally
             {
                 this.messagePropsPool.Return(properties);
-            }
-
-            var messageDeliveryTag = Interlocked.Increment(ref this.lastDeliveryTag);
-
-            if (this.confirms != null)
-            {
-                var confirmed = await this.confirms.WaitForConfirmAsync(messageDeliveryTag);
-                if (!confirmed)
-                {
-                    // todo: provide some useful info here
-                    throw new DeliveryFailedException();
-                }
             }
         }
 
