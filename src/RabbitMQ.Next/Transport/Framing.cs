@@ -30,13 +30,9 @@ namespace RabbitMQ.Next.Transport
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int WriteFrameHeader(this Memory<byte> target, FrameType type, ushort channel, uint payloadSize)
-        {
-            var result = target.Write((byte)type)
+        public static void WriteFrameHeader(this Memory<byte> target, FrameType type, ushort channel, uint payloadSize)
+            => target.Write((byte)type)
                 .Write(channel)
                 .Write(payloadSize);
-
-            return target.Length - result.Length;
-        }
     }
 }

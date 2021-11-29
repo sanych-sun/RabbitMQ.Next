@@ -92,12 +92,28 @@ namespace RabbitMQ.Next.Channels
         private void EndFrame(FrameType type, uint payloadSize)
         {
             this.currentFrameHeader.WriteFrameHeader(type, this.chNumber, payloadSize);
-            this.buffer.Writer.Write(ProtocolConstants.FrameEndByte);
+            this.buffer.Writer.Span[0] = ProtocolConstants.FrameEndByte;
             this.buffer.Commit(1);
         }
 
-        public async ValueTask WriteToAsync(ChannelWriter<MemoryBlock> channel)
+        public ValueTask WriteToAsync(ChannelWriter<MemoryBlock> channel)
         {
+            if (this.chunks.Count > 0)
+            {
+                return this.WriteMultipartAsync(channel);
+            }
+
+            if (channel.TryWrite(this.buffer))
+            {
+                return default;
+            }
+
+            return channel.WriteAsync(this.buffer);
+        }
+
+        private async ValueTask WriteMultipartAsync(ChannelWriter<MemoryBlock> channel)
+        {
+            this.RotateBuffers();
             for(var i = 0; i < this.chunks.Count; i++)
             {
                 var chunk = this.chunks[i];
@@ -122,16 +138,17 @@ namespace RabbitMQ.Next.Channels
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void EnsureBuffer()
         {
-            if (this.buffer == null)
-            {
-                this.buffer = this.memoryPool.Get();
-                this.chunks.Add(this.buffer);
-            }
+            this.buffer ??= this.memoryPool.Get();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void RotateBuffers()
         {
+            if (this.buffer != default)
+            {
+                this.chunks.Add(this.buffer);
+            }
+
             this.buffer = default;
         }
 

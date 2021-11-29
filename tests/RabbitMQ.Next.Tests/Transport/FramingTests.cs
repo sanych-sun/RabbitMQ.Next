@@ -13,10 +13,9 @@ namespace RabbitMQ.Next.Tests.Transport
         internal void WriteFrameHeader(FrameType type, ushort channel, uint size, byte[] expected)
         {
             var buffer = new byte[expected.Length];
-            var result = ((Memory<byte>)buffer).WriteFrameHeader(type, channel, size);
+            ((Memory<byte>)buffer).WriteFrameHeader(type, channel, size);
 
             Assert.Equal(expected, buffer);
-            Assert.Equal(ProtocolConstants.FrameHeaderSize, result);
         }
 
         [Theory]
