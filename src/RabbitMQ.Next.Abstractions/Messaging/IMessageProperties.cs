@@ -5,6 +5,8 @@ namespace RabbitMQ.Next.Abstractions.Messaging
 {
     public interface IMessageProperties
     {
+        MessageFlags Flags { get; }
+
         string ContentType { get; }
 
         string ContentEncoding { get; }
@@ -13,7 +15,7 @@ namespace RabbitMQ.Next.Abstractions.Messaging
 
         DeliveryMode DeliveryMode { get; }
 
-        byte? Priority { get; }
+        byte Priority { get; }
 
         string CorrelationId { get; }
 
@@ -23,7 +25,7 @@ namespace RabbitMQ.Next.Abstractions.Messaging
 
         string MessageId { get; }
 
-        DateTimeOffset? Timestamp { get; }
+        DateTimeOffset Timestamp { get; }
 
         string Type { get; }
 

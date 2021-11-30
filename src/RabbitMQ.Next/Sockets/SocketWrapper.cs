@@ -11,7 +11,6 @@ namespace RabbitMQ.Next.Sockets
     {
         private readonly Socket socket;
         private readonly Stream stream;
-        private readonly Stream writer;
 
         public SocketWrapper(Socket socket, Endpoint endpoint)
         {
@@ -30,14 +29,13 @@ namespace RabbitMQ.Next.Sockets
 
                 this.stream = sslStream;
             }
-
-            this.writer = new BufferedStream(this.stream, this.socket.SendBufferSize);
         }
 
-        public ValueTask SendAsync(ReadOnlyMemory<byte> payload)
-            => this.writer.WriteAsync(payload);
-
-        public Task FlushAsync() => this.writer.FlushAsync();
+        public async ValueTask SendAsync(ReadOnlyMemory<byte> payload)
+        {
+            await this.stream.WriteAsync(payload);
+            await this.stream.FlushAsync();
+        }
 
         public int Receive(Memory<byte> buffer)
         {

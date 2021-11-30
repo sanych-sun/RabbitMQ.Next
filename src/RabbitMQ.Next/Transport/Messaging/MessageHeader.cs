@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using RabbitMQ.Next.Abstractions.Messaging;
 
@@ -10,30 +9,73 @@ namespace RabbitMQ.Next.Transport.Messaging
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Memory<byte> WriteMessageProperties(this Memory<byte> target, IMessageProperties properties)
         {
-            var flagsSpan = target;
-            target = target[sizeof(ushort)..];
+            var flags = properties.Flags;
+            target = target.Write((ushort)flags);
 
-            var flags = (ushort)0;
-
-            if (properties != null)
+            if (HasFlag(flags, MessageFlags.ContentType))
             {
-                target = target
-                    .WriteProperty(properties.ContentType, ref flags, MessagePropertiesBits.ContentType)
-                    .WriteProperty(properties.ContentEncoding, ref flags, MessagePropertiesBits.ContentEncoding)
-                    .WriteProperty(properties.Headers, ref flags, MessagePropertiesBits.Headers)
-                    .WriteProperty((byte) properties.DeliveryMode, ref flags, MessagePropertiesBits.DeliveryMode)
-                    .WriteProperty(properties.Priority, ref flags, MessagePropertiesBits.Priority)
-                    .WriteProperty(properties.CorrelationId, ref flags, MessagePropertiesBits.CorrelationId)
-                    .WriteProperty(properties.ReplyTo, ref flags, MessagePropertiesBits.ReplyTo)
-                    .WriteProperty(properties.Expiration, ref flags, MessagePropertiesBits.Expiration)
-                    .WriteProperty(properties.MessageId, ref flags, MessagePropertiesBits.MessageId)
-                    .WriteProperty(properties.Timestamp, ref flags, MessagePropertiesBits.Timestamp)
-                    .WriteProperty(properties.Type, ref flags, MessagePropertiesBits.Type)
-                    .WriteProperty(properties.UserId, ref flags, MessagePropertiesBits.UserId)
-                    .WriteProperty(properties.ApplicationId, ref flags, MessagePropertiesBits.ApplicationId);
+                target = target.Write(properties.ContentType);
             }
 
-            flagsSpan.Write(flags);
+            if (HasFlag(flags, MessageFlags.ContentEncoding))
+            {
+                target = target.Write(properties.ContentEncoding);
+            }
+
+            if (HasFlag(flags, MessageFlags.Headers))
+            {
+                target = target.Write(properties.Headers);
+            }
+
+            if (HasFlag(flags, MessageFlags.DeliveryMode))
+            {
+                target = target.Write((byte)properties.DeliveryMode);
+            }
+
+            if (HasFlag(flags, MessageFlags.Priority))
+            {
+                target = target.Write(properties.Priority);
+            }
+
+            if (HasFlag(flags, MessageFlags.CorrelationId))
+            {
+                target = target.Write(properties.CorrelationId);
+            }
+
+            if (HasFlag(flags, MessageFlags.ReplyTo))
+            {
+                target = target.Write(properties.ReplyTo);
+            }
+
+            if (HasFlag(flags, MessageFlags.Expiration))
+            {
+                target = target.Write(properties.Expiration);
+            }
+
+            if (HasFlag(flags, MessageFlags.MessageId))
+            {
+                target = target.Write(properties.MessageId);
+            }
+
+            if (HasFlag(flags, MessageFlags.Timestamp))
+            {
+                target = target.Write(properties.Timestamp);
+            }
+
+            if (HasFlag(flags, MessageFlags.Type))
+            {
+                target = target.Write(properties.Type);
+            }
+
+            if (HasFlag(flags, MessageFlags.UserId))
+            {
+                target = target.Write(properties.UserId);
+            }
+
+            if (HasFlag(flags, MessageFlags.ApplicationId))
+            {
+                target = target.Write(properties.ApplicationId);
+            }
 
             return target;
         }
@@ -79,66 +121,6 @@ namespace RabbitMQ.Next.Transport.Messaging
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Memory<byte> WriteProperty(this Memory<byte> target, string value, ref ushort flags, byte bitNumber)
-        {
-            if (string.IsNullOrEmpty(value))
-            {
-                return target;
-            }
-
-            flags = (ushort)(flags | (1 << bitNumber));
-
-            return target.Write(value);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Memory<byte> WriteProperty(this Memory<byte> target, IReadOnlyDictionary<string, object> value, ref ushort flags, byte bitNumber)
-        {
-            if (value == null || value.Count == 0)
-            {
-                return target;
-            }
-
-            flags = (ushort)(flags | (1 << bitNumber));
-
-            return target.Write(value);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Memory<byte> WriteProperty(this Memory<byte> target, byte? value, ref ushort flags, byte bitNumber)
-        {
-            if (!value.HasValue)
-            {
-                return target;
-            }
-
-            return target.WriteProperty(value.Value, ref flags, bitNumber);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Memory<byte> WriteProperty(this Memory<byte> target, byte value, ref ushort flags, byte bitNumber)
-        {
-            if (value == default)
-            {
-                return target;
-            }
-
-            flags = (ushort)(flags | (1 << bitNumber));
-
-            return target.Write(value);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Memory<byte> WriteProperty(this Memory<byte> target, DateTimeOffset? value, ref ushort flags, byte bitNumber)
-        {
-            if (!value.HasValue)
-            {
-                return target;
-            }
-
-            flags = (ushort)(flags | (1 << bitNumber));
-
-            return target.Write(value.Value);
-        }
+        private static bool HasFlag(MessageFlags flags, MessageFlags flag) => (flags & flag) == flag;
     }
 }

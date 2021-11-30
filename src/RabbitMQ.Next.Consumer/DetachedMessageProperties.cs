@@ -8,6 +8,7 @@ namespace RabbitMQ.Next.Consumer
     {
         public DetachedMessageProperties(IMessageProperties properties)
         {
+            this.Flags = properties.Flags;
             this.ContentType = properties.ContentType;
             this.ContentEncoding = properties.ContentEncoding;
             this.Headers = properties.Headers;
@@ -23,18 +24,32 @@ namespace RabbitMQ.Next.Consumer
             this.ApplicationId = properties.ApplicationId;
         }
 
+        public MessageFlags Flags { get; }
+
         public string ContentType { get; }
+
         public string ContentEncoding { get; }
+
         public IReadOnlyDictionary<string, object> Headers { get; }
+
         public DeliveryMode DeliveryMode { get; }
-        public byte? Priority { get; }
+
+        public byte Priority { get; }
+
         public string CorrelationId { get; }
+
         public string ReplyTo { get; }
+
         public string Expiration { get; }
+
         public string MessageId { get; }
-        public DateTimeOffset? Timestamp { get; }
+
+        public DateTimeOffset Timestamp { get; }
+
         public string Type { get; }
+
         public string UserId { get; }
+
         public string ApplicationId { get; }
     }
 }

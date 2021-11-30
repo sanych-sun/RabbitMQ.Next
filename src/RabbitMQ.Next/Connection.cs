@@ -158,8 +158,6 @@ namespace RabbitMQ.Next
                     await this.socket.SendAsync(memoryBlock.Memory);
                     this.MemoryPool.Return(memoryBlock);
                 }
-
-                await this.socket.FlushAsync();
             }
         }
 

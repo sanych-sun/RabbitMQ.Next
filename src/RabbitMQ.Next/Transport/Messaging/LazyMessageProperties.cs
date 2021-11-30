@@ -23,7 +23,10 @@ namespace RabbitMQ.Next.Transport.Messaging
 
         public void Set(ReadOnlyMemory<byte> buffer)
         {
-            buffer.Read(out ushort flags)
+            buffer = buffer.Read(out ushort flags);
+            this.Flags = (MessageFlags)flags;
+
+            buffer
                 .SplitStringProperty(out this.contentType, flags, 15)
                 .SplitStringProperty(out this.contentEncoding, flags, 14)
                 .SplitDynamicProperty(out this.headers, flags, 13)
@@ -56,27 +59,17 @@ namespace RabbitMQ.Next.Transport.Messaging
             this.applicationId = ReadOnlyMemory<byte>.Empty;
         }
 
+        public MessageFlags Flags { get; private set; }
+
         public string ContentType => this.DecodeString(this.contentType);
 
         public string ContentEncoding => this.DecodeString(this.contentEncoding);
 
         public IReadOnlyDictionary<string, object> Headers => this.DecodeTable(this.headers);
 
-        public DeliveryMode DeliveryMode
-        {
-            get
-            {
-                var vl = this.DecodeByte(this.deliveryMode);
-                if (vl.HasValue)
-                {
-                    return (DeliveryMode)vl;
-                }
+        public DeliveryMode DeliveryMode => (DeliveryMode)this.DecodeByte(this.deliveryMode);
 
-                return DeliveryMode.Unset;
-            }
-        }
-
-        public byte? Priority => this.DecodeByte(this.priority);
+        public byte Priority => this.DecodeByte(this.priority);
 
         public string CorrelationId => this.DecodeString(this.correlationId);
 
@@ -86,7 +79,7 @@ namespace RabbitMQ.Next.Transport.Messaging
 
         public string MessageId => this.DecodeString(this.messageId);
 
-        public DateTimeOffset? Timestamp => this.DecodeTimestamp(this.timestamp);
+        public DateTimeOffset Timestamp => this.DecodeTimestamp(this.timestamp);
 
         public string Type => this.DecodeString(this.type);
 
@@ -106,11 +99,11 @@ namespace RabbitMQ.Next.Transport.Messaging
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private DateTimeOffset? DecodeTimestamp(ReadOnlyMemory<byte> data)
+        private DateTimeOffset DecodeTimestamp(ReadOnlyMemory<byte> data)
         {
             if (data.IsEmpty)
             {
-                return null;
+                return default;
             }
 
             data.Read(out DateTimeOffset val);
@@ -130,11 +123,11 @@ namespace RabbitMQ.Next.Transport.Messaging
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private byte? DecodeByte(ReadOnlyMemory<byte> data)
+        private byte DecodeByte(ReadOnlyMemory<byte> data)
         {
             if (data.IsEmpty)
             {
-                return null;
+                return default;
             }
 
             data.Read(out byte val);
