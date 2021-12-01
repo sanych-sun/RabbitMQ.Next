@@ -20,7 +20,7 @@ namespace RabbitMQ.Next.Publisher
 
             var messagePropsPool = new DefaultObjectPool<MessageBuilder>(
                 new MessageBuilderPoolPolicy(),
-                100);
+                10);
 
             var publisher = new Publisher(connection, messagePropsPool, exchange,
                 publisherBuilder.PublisherConfirms, publisherBuilder.SerializerFactory,

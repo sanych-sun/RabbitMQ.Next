@@ -36,6 +36,7 @@ namespace RabbitMQ.Next.Channels
         {
             this.chNumber = channelNumber;
             this.frameMaxSize = frameMaxSize;
+            this.buffer = this.memoryPool.Get();
         }
 
         public void WriteMethodFrame<TMethod>(TMethod method, IMethodFormatter<TMethod> formatter)
@@ -75,13 +76,6 @@ namespace RabbitMQ.Next.Channels
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private Memory<byte> BeginFrame()
         {
-            if (this.chNumber == ushort.MaxValue)
-            {
-                throw new InvalidOperationException("Cannot use non-initialized FrameBuilder.");
-            }
-
-            this.EnsureBuffer();
-
             this.currentFrameHeader = this.buffer.Writer[..ProtocolConstants.FrameHeaderSize];
             this.buffer.Commit(ProtocolConstants.FrameHeaderSize);
 
@@ -89,11 +83,17 @@ namespace RabbitMQ.Next.Channels
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void EndFrame(FrameType type, uint payloadSize)
+        private void EndFrame(FrameType type, uint payloadSize, bool rotateBuffers = false)
         {
             this.currentFrameHeader.WriteFrameHeader(type, this.chNumber, payloadSize);
             this.buffer.Writer.Span[0] = ProtocolConstants.FrameEndByte;
             this.buffer.Commit(1);
+
+            if (rotateBuffers)
+            {
+                this.chunks.Add(this.buffer);
+                this.buffer = this.memoryPool.Get();
+            }
         }
 
         public ValueTask WriteToAsync(ChannelWriter<MemoryBlock> channel)
@@ -137,23 +137,6 @@ namespace RabbitMQ.Next.Channels
             this.currentFrameHeader = default;
             this.contentBufferWriter.Reset();
             this.chNumber = ushort.MaxValue;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void EnsureBuffer()
-        {
-            this.buffer ??= this.memoryPool.Get();
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void RotateBuffers()
-        {
-            if (this.buffer != default)
-            {
-                this.chunks.Add(this.buffer);
-            }
-
-            this.buffer = default;
         }
 
         private class ContentBufferWriter : IBufferWriter<byte>
@@ -210,8 +193,7 @@ namespace RabbitMQ.Next.Channels
                     return bufferAvailable;
                 }
 
-                this.owner.EndFrame(FrameType.ContentBody, (uint)this.CurrentFrameBytes);
-                this.owner.RotateBuffers();
+                this.owner.EndFrame(FrameType.ContentBody, (uint)this.CurrentFrameBytes, true);
                 this.CurrentFrameBytes = 0;
 
                 this.owner.BeginFrame();
