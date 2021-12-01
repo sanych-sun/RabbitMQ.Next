@@ -5,7 +5,7 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
 {
     internal class AckMethodFormatter : IMethodFormatter<AckMethod>
     {
-        public int Write(Memory<byte> destination, AckMethod method)
+        public int Write(Span<byte> destination, AckMethod method)
         {
             var result = destination
                 .Write(method.DeliveryTag)

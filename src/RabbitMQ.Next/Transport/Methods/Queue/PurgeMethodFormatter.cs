@@ -5,7 +5,7 @@ namespace RabbitMQ.Next.Transport.Methods.Queue
 {
     internal class PurgeMethodFormatter : IMethodFormatter<PurgeMethod>
     {
-        public int Write(Memory<byte> destination, PurgeMethod method)
+        public int Write(Span<byte> destination, PurgeMethod method)
         {
             var result = destination
                 .Write((short) ProtocolConstants.ObsoleteField)

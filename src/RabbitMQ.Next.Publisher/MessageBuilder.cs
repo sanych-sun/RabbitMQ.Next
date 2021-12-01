@@ -50,7 +50,8 @@ namespace RabbitMQ.Next.Publisher
 
         public string ContentEncoding => this.contentEncoding;
 
-        public IReadOnlyDictionary<string, object> Headers => this.headers;
+        public IReadOnlyDictionary<string, object> Headers
+            => (this.flags & MessageFlags.Headers) == MessageFlags.Headers ? this.headers : null;
 
         public DeliveryMode DeliveryMode => this.deliveryMode;
 

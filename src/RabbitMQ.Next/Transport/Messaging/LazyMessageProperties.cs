@@ -23,10 +23,10 @@ namespace RabbitMQ.Next.Transport.Messaging
 
         public void Set(ReadOnlyMemory<byte> buffer)
         {
-            buffer = buffer.Read(out ushort flags);
+            buffer.Span.Read(out ushort flags);
             this.Flags = (MessageFlags)flags;
 
-            buffer
+            buffer[sizeof(ushort)..]
                 .SplitStringProperty(out this.contentType, flags, 15)
                 .SplitStringProperty(out this.contentEncoding, flags, 14)
                 .SplitDynamicProperty(out this.headers, flags, 13)
@@ -44,6 +44,7 @@ namespace RabbitMQ.Next.Transport.Messaging
 
         public void Reset()
         {
+            this.Flags = MessageFlags.None;
             this.contentType = ReadOnlyMemory<byte>.Empty;
             this.contentEncoding = ReadOnlyMemory<byte>.Empty;
             this.headers = ReadOnlyMemory<byte>.Empty;
@@ -106,7 +107,7 @@ namespace RabbitMQ.Next.Transport.Messaging
                 return default;
             }
 
-            data.Read(out DateTimeOffset val);
+            data.Span.Read(out DateTimeOffset val);
             return val;
         }
 
@@ -118,7 +119,7 @@ namespace RabbitMQ.Next.Transport.Messaging
                 return null;
             }
 
-            data.Read(out Dictionary<string, object> val);
+            data.Span.Read(out Dictionary<string, object> val);
             return val;
         }
 
@@ -130,7 +131,7 @@ namespace RabbitMQ.Next.Transport.Messaging
                 return default;
             }
 
-            data.Read(out byte val);
+            data.Span.Read(out byte val);
             return val;
         }
     }

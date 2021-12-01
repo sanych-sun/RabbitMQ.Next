@@ -48,7 +48,7 @@ namespace RabbitMQ.Next.Publisher
             return new ValueTask<bool>(tcs.Task);
         }
 
-        bool IFrameHandler.HandleMethodFrame(MethodId methodId, ReadOnlyMemory<byte> payload)
+        bool IFrameHandler.HandleMethodFrame(MethodId methodId, ReadOnlySpan<byte> payload)
         {
             if (methodId == MethodId.BasicAck)
             {

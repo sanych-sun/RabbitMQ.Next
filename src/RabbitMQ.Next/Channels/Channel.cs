@@ -173,8 +173,10 @@ namespace RabbitMQ.Next.Channels
                     if (this.registry.HasContent(methodId))
                     {
                         var contentHeaderFrame = await reader.ReadAsync();
-                        var payload = contentHeaderFrame.Payload.Memory[4..] // skip 2 obsolete shorts
-                            .Read(out ulong contentSize);
+                        contentHeaderFrame.Payload.Data[4..] // skip 2 obsolete shorts
+                            .Span.Read(out ulong contentSize);
+
+                        var payload = contentHeaderFrame.Payload.Data.Slice(12, (int)contentSize);
 
                         try
                         {
@@ -185,7 +187,7 @@ namespace RabbitMQ.Next.Channels
                             {
                                 var frame = await reader.ReadAsync();
                                 contentChunks.Add(frame.Payload);
-                                receivedContent += frame.Payload.Memory.Length;
+                                receivedContent += frame.Payload.Data.Length;
                             }
 
                             await this.ProcessContentAsync(messageProperty, contentChunks);
@@ -222,7 +224,7 @@ namespace RabbitMQ.Next.Channels
         {
             try
             {
-                var payloadBytes = payload.Memory.Read(out uint method);
+                var payloadBytes = payload.Data.Span.Read(out uint method);
                 var methodId = (MethodId) method;
                 for (var i = 0; i < this.frameHandlers.Count; i++)
                 {

@@ -14,21 +14,20 @@ using RabbitMQ.Next.Transport.Messaging;
 
 namespace RabbitMQ.Next.Channels
 {
-    internal class FrameBuilder
+    internal class FrameBuilder : IBufferWriter<byte>
     {
         private readonly ObjectPool<MemoryBlock> memoryPool;
         private readonly List<MemoryBlock> chunks;
-        private readonly ContentBufferWriter contentBufferWriter;
         private ushort chNumber;
         private int frameMaxSize;
         private MemoryBlock buffer;
-        private Memory<byte> currentFrameHeader;
+        private int currentFrameHeaderOffset;
+        private int totalPayloadSize;
 
         public FrameBuilder(ObjectPool<MemoryBlock> memoryPool)
         {
             this.chunks = new List<MemoryBlock>();
             this.memoryPool = memoryPool;
-            this.contentBufferWriter = new ContentBufferWriter(this);
             this.chNumber = ushort.MaxValue;
         }
 
@@ -40,54 +39,63 @@ namespace RabbitMQ.Next.Channels
         }
 
         public void WriteMethodFrame<TMethod>(TMethod method, IMethodFormatter<TMethod> formatter)
-            where TMethod: struct, IOutgoingMethod
+            where TMethod : struct, IOutgoingMethod
         {
-            var payloadBuffer = this.BeginFrame()
+            this.BeginFrame();
+            var payloadBuffer = this.buffer.Span
                 .Write((uint)method.MethodId);
 
             var payloadSize = formatter.Write(payloadBuffer, method) + sizeof(uint);
             this.buffer.Commit(payloadSize);
-            this.EndFrame(FrameType.Method, (uint)payloadSize);
+            this.EndFrame(FrameType.Method);
         }
 
         private static readonly uint ContentHeaderPrefix = (ushort)ClassId.Basic << 16;
+
         public void WriteContentFrame<TState>(TState state, IMessageProperties properties, Action<TState, IBufferWriter<byte>> contentBuilder)
         {
-            var payloadBuffer = this.BeginFrame();
-
-            var result = payloadBuffer
-                .Write(ContentHeaderPrefix)
-                .Slice(0, sizeof(ulong), out var contentSizeBuffer)
-                .WriteMessageProperties(properties);
-
-            var payloadSize = payloadBuffer.Length - result.Length;
-            this.buffer.Commit(payloadSize);
-            this.EndFrame(FrameType.ContentHeader, (uint)payloadSize);
-
             this.BeginFrame();
-            contentBuilder.Invoke(state, this.contentBufferWriter);
-            this.EndFrame(FrameType.ContentBody, (uint)this.contentBufferWriter.CurrentFrameBytes);
 
-            contentSizeBuffer.Write((ulong)this.contentBufferWriter.TotalContentBytes);
+            this.buffer.Span.Write(ContentHeaderPrefix);
+            this.buffer.Commit(sizeof(uint));
+
+            var contentSizeBuffer = this.buffer.Span[..sizeof(ulong)];
+            this.buffer.Commit(sizeof(ulong));
+
+            var written = this.buffer.Span.WriteMessageProperties(properties);
+            this.buffer.Commit(written);
+
+            this.EndFrame(FrameType.ContentHeader);
+
+            var beforeContent = this.totalPayloadSize;
+            this.BeginFrame();
+            contentBuilder.Invoke(state, this);
+            this.EndFrame(FrameType.ContentBody);
+            var contentSize = this.totalPayloadSize - beforeContent;
+
+            contentSizeBuffer.Write((ulong)contentSize);
         }
 
 
         // allocates space for generic frame header and returns memory available for payload
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private Memory<byte> BeginFrame()
+        private void BeginFrame()
         {
-            this.currentFrameHeader = this.buffer.Writer[..ProtocolConstants.FrameHeaderSize];
+            this.currentFrameHeaderOffset = this.buffer.Offset;
+            // skip frame header bytes for now, will write it in EndFrame.
             this.buffer.Commit(ProtocolConstants.FrameHeaderSize);
-
-            return this.buffer.Writer;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void EndFrame(FrameType type, uint payloadSize, bool rotateBuffers = false)
+        private void EndFrame(FrameType type, bool rotateBuffers = false)
         {
-            this.currentFrameHeader.WriteFrameHeader(type, this.chNumber, payloadSize);
-            this.buffer.Writer.Span[0] = ProtocolConstants.FrameEndByte;
+            var frameSize = this.buffer.Offset - this.currentFrameHeaderOffset - ProtocolConstants.FrameHeaderSize;
+            var frameHeader = this.buffer.Access(this.currentFrameHeaderOffset, ProtocolConstants.FrameHeaderSize);
+            frameHeader.WriteFrameHeader(type, this.chNumber, (uint)frameSize);
+
+            this.buffer.Span[0] = ProtocolConstants.FrameEndByte;
             this.buffer.Commit(1);
+            this.totalPayloadSize += frameSize;
 
             if (rotateBuffers)
             {
@@ -113,7 +121,7 @@ namespace RabbitMQ.Next.Channels
 
         private async ValueTask WriteMultipartAsync(ChannelWriter<MemoryBlock> channel)
         {
-            for(var i = 0; i < this.chunks.Count; i++)
+            for (var i = 0; i < this.chunks.Count; i++)
             {
                 var chunk = this.chunks[i];
 
@@ -134,71 +142,51 @@ namespace RabbitMQ.Next.Channels
             // Should not release memory blocks here! It will be done on the frame sending in Connection.SendLoop
             this.buffer = default;
             this.chunks.Clear();
-            this.currentFrameHeader = default;
-            this.contentBufferWriter.Reset();
             this.chNumber = ushort.MaxValue;
+            this.currentFrameHeaderOffset = 0;
+            this.totalPayloadSize = 0;
         }
 
-        private class ContentBufferWriter : IBufferWriter<byte>
+
+        void IBufferWriter<byte>.Advance(int count)
         {
-            private readonly FrameBuilder owner;
+            this.buffer.Commit(count);
+        }
 
-            public ContentBufferWriter(FrameBuilder owner)
+        public Memory<byte> GetMemory(int sizeHint)
+        {
+            var size = this.ExpandIfRequired(sizeHint);
+            return this.buffer.Memory[..size];
+        }
+
+        public Span<byte> GetSpan(int sizeHint)
+        {
+            var size = this.ExpandIfRequired(sizeHint);
+            return this.buffer.Span[..size];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private int ExpandIfRequired(int requestedSize)
+        {
+            // todo: implement workaround for too big chunks by allocating some extra array with merging the data back into buffer on Advance
+            if (requestedSize > this.frameMaxSize)
             {
-                this.owner = owner;
+                throw new OutOfMemoryException();
             }
 
-            public long TotalContentBytes { get; private set; }
+            // current buffer available space: capacity - frame end
+            var bufferAvailable = this.buffer.Span.Length - 1;
+            bufferAvailable = Math.Min(this.frameMaxSize, bufferAvailable);
 
-            public int CurrentFrameBytes { get; private set; }
-
-            public void Reset()
+            if (requestedSize == 0 || bufferAvailable > requestedSize)
             {
-                this.TotalContentBytes = 0;
-                this.CurrentFrameBytes = 0;
+                return bufferAvailable;
             }
 
-            void IBufferWriter<byte>.Advance(int count)
-            {
-                this.CurrentFrameBytes += count;
-                this.TotalContentBytes += count;
+            this.EndFrame(FrameType.ContentBody, true);
 
-                this.owner.buffer.Commit(count);
-            }
-
-            public Memory<byte> GetMemory(int sizeHint)
-            {
-                var size = this.ExpandIfRequired(sizeHint);
-                return this.owner.buffer.Writer[..size];
-            }
-
-            public Span<byte> GetSpan(int sizeHint)
-                => this.GetMemory(sizeHint).Span;
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private int ExpandIfRequired(int requestedSize)
-            {
-                // todo: implement workaround for too big chunks by allocating some extra array with merging the data back into buffer on Advance
-                if (requestedSize > this.owner.frameMaxSize)
-                {
-                    throw new OutOfMemoryException();
-                }
-
-                // current buffer available space: capacity - frame end
-                var bufferAvailable = this.owner.buffer.Writer.Length - 1;
-                bufferAvailable = Math.Min(this.owner.frameMaxSize, bufferAvailable);
-
-                if (requestedSize == 0 || bufferAvailable > requestedSize)
-                {
-                    return bufferAvailable;
-                }
-
-                this.owner.EndFrame(FrameType.ContentBody, (uint)this.CurrentFrameBytes, true);
-                this.CurrentFrameBytes = 0;
-
-                this.owner.BeginFrame();
-                return requestedSize;
-            }
+            this.BeginFrame();
+            return requestedSize;
         }
     }
 }

@@ -9,108 +9,91 @@ namespace RabbitMQ.Next.Transport
     public static class BinaryWriteExtensions
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Memory<byte> Slice(this Memory<byte> target, int start, int size, out Memory<byte> result)
+        public static Span<byte> Write(this Span<byte> target, byte data)
         {
-            if (size <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(size));
-            }
-
-            if (start + size > target.Length)
-            {
-                throw new OutOfMemoryException();
-            }
-
-            result = target.Slice(start, size);
-            return target.Slice(start + size);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Memory<byte> Write(this Memory<byte> target, byte data)
-        {
-            target.Span[0] = data;
+            target[0] = data;
             return target[sizeof(byte)..];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Memory<byte> Write(this Memory<byte> target, sbyte data)
+        public static Span<byte> Write(this Span<byte> target, sbyte data)
         {
-            target.Span[0] = (byte)data;
+            target[0] = (byte)data;
             return target[sizeof(sbyte)..];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Memory<byte> Write(this Memory<byte> target, bool data)
+        public static Span<byte> Write(this Span<byte> target, bool data)
         {
-            target.Span[0] = data ? (byte) 1 : (byte) 0;
+            target[0] = data ? (byte) 1 : (byte) 0;
             return target[sizeof(byte)..];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Memory<byte> Write(this Memory<byte> target, ushort data)
+        public static Span<byte> Write(this Span<byte> target, ushort data)
         {
-            BinaryPrimitives.WriteUInt16BigEndian(target.Span, data);
+            BinaryPrimitives.WriteUInt16BigEndian(target, data);
             return target.Slice(sizeof(ushort));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Memory<byte> Write(this Memory<byte> target, short data)
+        public static Span<byte> Write(this Span<byte> target, short data)
         {
-            BinaryPrimitives.WriteInt16BigEndian(target.Span, data);
+            BinaryPrimitives.WriteInt16BigEndian(target, data);
             return target[sizeof(short)..];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Memory<byte> Write(this Memory<byte> target, uint data)
+        public static Span<byte> Write(this Span<byte> target, uint data)
         {
-            BinaryPrimitives.WriteUInt32BigEndian(target.Span, data);
+            BinaryPrimitives.WriteUInt32BigEndian(target, data);
             return target[sizeof(uint)..];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Memory<byte> Write(this Memory<byte> target, int data)
+        public static Span<byte> Write(this Span<byte> target, int data)
         {
-            BinaryPrimitives.WriteInt32BigEndian(target.Span, data);
+            BinaryPrimitives.WriteInt32BigEndian(target, data);
             return target[sizeof(int)..];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Memory<byte> Write(this Memory<byte> target, ulong data)
+        public static Span<byte> Write(this Span<byte> target, ulong data)
         {
-            BinaryPrimitives.WriteUInt64BigEndian(target.Span, data);
+            BinaryPrimitives.WriteUInt64BigEndian(target, data);
             return target[sizeof(ulong)..];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Memory<byte> Write(this Memory<byte> target, long data)
+        public static Span<byte> Write(this Span<byte> target, long data)
         {
-            BinaryPrimitives.WriteInt64BigEndian(target.Span, data);
+            BinaryPrimitives.WriteInt64BigEndian(target, data);
             return target[sizeof(long)..];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Memory<byte> Write(this Memory<byte> target, float data)
+        public static Span<byte> Write(this Span<byte> target, float data)
         {
-            MemoryMarshal.Write(target.Span, ref data);
+            MemoryMarshal.Write(target, ref data);
             return target[sizeof(float)..];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Memory<byte> Write(this Memory<byte> target, decimal data)
+        public static Span<byte> Write(this Span<byte> target, decimal data)
         {
-            MemoryMarshal.Write(target.Span, ref data);
+            MemoryMarshal.Write(target, ref data);
             return target[sizeof(decimal)..];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Memory<byte> Write(this Memory<byte> target, double data)
+        public static Span<byte> Write(this Span<byte> target, double data)
         {
-            MemoryMarshal.Write(target.Span, ref data);
+            MemoryMarshal.Write(target, ref data);
             return target[sizeof(double)..];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Memory<byte> Write(this Memory<byte> target, ReadOnlyMemory<byte> data)
+        public static Span<byte> Write(this Span<byte> target, ReadOnlySpan<byte> data)
         {
             target = target.Write((uint)data.Length);
             data.CopyTo(target);
@@ -118,13 +101,13 @@ namespace RabbitMQ.Next.Transport
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Memory<byte> Write(this Memory<byte> target, string data, bool isLongString = false)
+        public static Span<byte> Write(this Span<byte> target, string data, bool isLongString = false)
         {
             var lengthMemory = target;
 
             target = target.Slice(isLongString ? sizeof(uint) : sizeof(byte));
 
-            var bytesWritten = TextEncoding.GetBytes(data, target.Span);
+            var bytesWritten = TextEncoding.GetBytes(data, target);
             target = target.Slice(bytesWritten);
 
             if (isLongString)
@@ -145,14 +128,14 @@ namespace RabbitMQ.Next.Transport
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Memory<byte> Write(this Memory<byte> target, DateTimeOffset data)
+        public static Span<byte> Write(this Span<byte> target, DateTimeOffset data)
         {
             var timestamp = data.ToUnixTimeSeconds();
             return target.Write(timestamp);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Memory<byte> WriteField(this Memory<byte> target, object value)
+        public static Span<byte> WriteField(this Span<byte> target, object value)
         {
             switch (value)
             {
@@ -227,7 +210,7 @@ namespace RabbitMQ.Next.Transport
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Memory<byte> Write(this Memory<byte> target, IEnumerable<KeyValuePair<string, object>> value)
+        public static Span<byte> Write(this Span<byte> target, IEnumerable<KeyValuePair<string, object>> value)
         {
             if (value == null)
             {
@@ -251,7 +234,7 @@ namespace RabbitMQ.Next.Transport
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Memory<byte> Write(this Memory<byte> target, object[] value)
+        public static Span<byte> Write(this Span<byte> target, object[] value)
         {
             if (value == null)
             {

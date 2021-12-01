@@ -5,7 +5,7 @@ namespace RabbitMQ.Next.Transport.Methods.Connection
 {
     internal class OpenMethodFormatter : IMethodFormatter<OpenMethod>
     {
-        public int Write(Memory<byte> destination, OpenMethod method)
+        public int Write(Span<byte> destination, OpenMethod method)
         {
             var result = destination
                 .Write(method.VirtualHost)

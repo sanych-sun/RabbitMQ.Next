@@ -13,7 +13,7 @@ namespace RabbitMQ.Next.Tests.Transport
         internal void WriteFrameHeader(FrameType type, ushort channel, uint size, byte[] expected)
         {
             var buffer = new byte[expected.Length];
-            ((Memory<byte>)buffer).WriteFrameHeader(type, channel, size);
+            ((Span<byte>)buffer).WriteFrameHeader(type, channel, size);
 
             Assert.Equal(expected, buffer);
         }
@@ -22,7 +22,7 @@ namespace RabbitMQ.Next.Tests.Transport
         [MemberData(nameof(ReadFrameHeaderTestCases))]
         internal void ReadFrameHeader(byte[] bytes, FrameType expectedType, ushort expectedChannel, uint expectedSize)
         {
-            ((ReadOnlyMemory<byte>)bytes).ReadFrameHeader(out FrameType type, out ushort channel, out uint size);
+            ((ReadOnlySpan<byte>)bytes).ReadFrameHeader(out FrameType type, out ushort channel, out uint size);
 
             Assert.Equal(expectedType, type);
             Assert.Equal(expectedChannel, channel);

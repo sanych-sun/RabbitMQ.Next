@@ -158,7 +158,7 @@ namespace RabbitMQ.Next.Tests.Channels
             factory.ClearReceivedCalls();
             pool.Create();
 
-            factory.Received(1)(Arg.Is<ushort>(u => u > 0 && u < 10));
+            factory.Received(1)(Arg.Is<ushort>(u => u > 0 && u <= 10));
         }
 
         private Func<ushort, IChannelInternal> MockFactory()

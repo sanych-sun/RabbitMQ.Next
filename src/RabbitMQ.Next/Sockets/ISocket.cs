@@ -7,6 +7,8 @@ namespace RabbitMQ.Next.Sockets
     {
         ValueTask SendAsync(ReadOnlyMemory<byte> payload);
 
-        int Receive(Memory<byte> buffer);
+        Task FlushAsync();
+
+        int Receive(Span<byte> buffer);
     }
 }

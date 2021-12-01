@@ -32,35 +32,42 @@ namespace RabbitMQ.Next.Tests.Serialization.PlainText
         }
 
         [Fact]
-        public void SerializeChooseAppropriateFormatter()
+        public void SerializeTryFormattersUntilFound()
         {
-            var stringFormatter = this.MockFormatter<string>();
             var intFormatter = this.MockFormatter<int>();
+            var stringFormatter = this.MockFormatter<string>();
+            var doubleFormatter = this.MockFormatter<double>();
             var buffer = Substitute.For<IBufferWriter<byte>>();
             var data = "test string";
 
-            var serializer = new PlainTextSerializer(new [] { intFormatter, stringFormatter });
+            var serializer = new PlainTextSerializer(new [] { intFormatter, stringFormatter, doubleFormatter });
             serializer.Serialize(data, buffer);
 
-            stringFormatter.Received().Format(data, Arg.Any<IBufferWriter<byte>>());
+            intFormatter.Received().TryFormat(data, Arg.Any<IBufferWriter<byte>>());
+            stringFormatter.Received().TryFormat(data, Arg.Any<IBufferWriter<byte>>());
+            doubleFormatter.DidNotReceive().TryFormat(data, Arg.Any<IBufferWriter<byte>>());
         }
 
         [Fact]
-        public void DeserializeChooseAppropriateFormatter()
+        public void DeserializeTryFormattersUntilFound()
         {
-            var stringFormatter = this.MockFormatter<string>();
             var intFormatter = this.MockFormatter<int>();
+            var stringFormatter = this.MockFormatter<string>();
+            var doubleFormatter = this.MockFormatter<double>();
 
-            var serializer = new PlainTextSerializer(new [] { intFormatter, stringFormatter });
+            var serializer = new PlainTextSerializer(new [] { intFormatter, stringFormatter, doubleFormatter });
             serializer.Deserialize<string>(ReadOnlySequence<byte>.Empty);
 
-            stringFormatter.Received().Parse<string>(Arg.Any<ReadOnlySequence<byte>>());
+            intFormatter.Received().TryParse<string>(Arg.Any<ReadOnlySequence<byte>>(), out var _);
+            stringFormatter.Received().TryParse<string>(Arg.Any<ReadOnlySequence<byte>>(), out var _);
+            doubleFormatter.DidNotReceive().TryParse<string>(Arg.Any<ReadOnlySequence<byte>>(), out var _);
         }
 
         private IFormatter MockFormatter<TContent>()
         {
             var formatter = Substitute.For<IFormatter>();
-            formatter.CanHandle(typeof(TContent)).Returns(true);
+            formatter.TryFormat<TContent>(Arg.Any<TContent>(), Arg.Any<IBufferWriter<byte>>()).Returns(true);
+            formatter.TryParse<TContent>(Arg.Any<ReadOnlySequence<byte>>(), out Arg.Any<TContent>()).Returns(true);
             return formatter;
         }
 

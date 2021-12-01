@@ -6,7 +6,7 @@ namespace RabbitMQ.Next.Transport.Methods.Connection
 {
     internal class CloseMethodParser : IMethodParser<CloseMethod>
     {
-        public CloseMethod Parse(ReadOnlyMemory<byte> payload)
+        public CloseMethod Parse(ReadOnlySpan<byte> payload)
         {
             payload.Read(out ushort status)
                 .Read(out string description)
@@ -14,7 +14,5 @@ namespace RabbitMQ.Next.Transport.Methods.Connection
 
             return new CloseMethod(status, description, (MethodId)methodId);
         }
-
-        public IIncomingMethod ParseMethod(ReadOnlyMemory<byte> payload) => this.Parse(payload);
     }
 }

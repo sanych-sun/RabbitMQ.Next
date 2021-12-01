@@ -12,19 +12,21 @@ namespace RabbitMQ.Next.Tests.Mocks
             if (ReferenceEquals(x, null)) return false;
             if (ReferenceEquals(y, null)) return false;
 
-            var result = x.ContentType == y.ContentType
-                   && x.ContentEncoding == y.ContentEncoding
-                   && Helpers.DictionaryEquals(x.Headers, y.Headers)
-                   && x.DeliveryMode == y.DeliveryMode
-                   && x.Priority == y.Priority
-                   && x.CorrelationId == y.CorrelationId
-                   && x.ReplyTo == y.ReplyTo
-                   && x.Expiration == y.Expiration
-                   && x.MessageId == y.MessageId
-                   && Nullable.Equals(x.Timestamp, y.Timestamp)
-                   && x.Type == y.Type
-                   && x.UserId == y.UserId
-                   && x.ApplicationId == y.ApplicationId;
+            var result =
+                x.Flags == y.Flags
+                && x.ContentType == y.ContentType
+                && x.ContentEncoding == y.ContentEncoding
+                && Helpers.DictionaryEquals(x.Headers, y.Headers)
+                && x.DeliveryMode == y.DeliveryMode
+                && x.Priority == y.Priority
+                && x.CorrelationId == y.CorrelationId
+                && x.ReplyTo == y.ReplyTo
+                && x.Expiration == y.Expiration
+                && x.MessageId == y.MessageId
+                && Nullable.Equals(x.Timestamp, y.Timestamp)
+                && x.Type == y.Type
+                && x.UserId == y.UserId
+                && x.ApplicationId == y.ApplicationId;
 
             return result;
         }
@@ -32,6 +34,7 @@ namespace RabbitMQ.Next.Tests.Mocks
         public int GetHashCode(IMessageProperties obj)
         {
             var hashCode = new HashCode();
+            hashCode.Add(obj.Flags);
             hashCode.Add(obj.ContentType);
             hashCode.Add(obj.ContentEncoding);
             hashCode.Add(obj.Headers);

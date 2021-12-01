@@ -17,13 +17,15 @@ namespace RabbitMQ.Next.Buffers
             this.buffer = new byte[size];
         }
 
+        public int Offset => this.offset;
+
         public bool Reset()
         {
             this.offset = 0;
             return true;
         }
 
-        public ReadOnlyMemory<byte> Memory
+        public ReadOnlyMemory<byte> Data
             =>  new (this.buffer, 0, this.offset);
 
         public void Commit(int length)
@@ -31,7 +33,13 @@ namespace RabbitMQ.Next.Buffers
             this.offset += length;
         }
 
-        public Memory<byte> Writer
-            => new Memory<byte>(this.buffer).Slice(this.offset);
+        public Memory<byte> Memory
+            => new Memory<byte>(this.buffer)[this.offset..];
+
+        public Span<byte> Span
+            => new Span<byte>(this.buffer)[this.offset..];
+
+        public Span<byte> Access(int start, int length)
+            => new (this.buffer, start, length);
     }
 }

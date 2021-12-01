@@ -5,7 +5,7 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
 {
     internal class GetOkMethodParser : IMethodParser<GetOkMethod>
     {
-        public GetOkMethod Parse(ReadOnlyMemory<byte> payload)
+        public GetOkMethod Parse(ReadOnlySpan<byte> payload)
         {
             payload
                 .Read(out ulong deliveryTag)
@@ -16,8 +16,5 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
 
             return new GetOkMethod(exchange, routingKey, deliveryTag, redelivered, messageCount);
         }
-
-        public IIncomingMethod ParseMethod(ReadOnlyMemory<byte> payload)
-            => this.Parse(payload);
     }
 }

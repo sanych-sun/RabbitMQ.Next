@@ -5,7 +5,7 @@ namespace RabbitMQ.Next.Transport.Methods.Channel
 {
     internal class CloseMethodFormatter : IMethodFormatter<CloseMethod>
     {
-        public int Write(Memory<byte> destination, CloseMethod method)
+        public int Write(Span<byte> destination, CloseMethod method)
         {
             var result = destination.Write(method.StatusCode)
                 .Write(method.Description)

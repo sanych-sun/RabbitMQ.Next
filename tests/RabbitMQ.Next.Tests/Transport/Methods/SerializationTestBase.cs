@@ -29,7 +29,7 @@ namespace RabbitMQ.Next.Tests.Transport.Methods
             var formatter = this.Registry.GetFormatter<TMethod>();
             var expected = Helpers.GetFileContent(payloadResName);
 
-            Memory<byte> payload = new byte[expected.Length];
+            Span<byte> payload = stackalloc byte[expected.Length];
             var written = formatter.Write(payload, method);
 
             Assert.Equal(expected, payload.ToArray());
@@ -46,10 +46,8 @@ namespace RabbitMQ.Next.Tests.Transport.Methods
             var payload = Helpers.GetFileContent(payloadResName);
 
             var data = parser.Parse(payload);
-            var dataBoxed = parser.ParseMethod(payload);
 
             Assert.Equal(method, data, comparer);
-            Assert.Equal(method, (TMethod)dataBoxed, comparer);
         }
     }
 }

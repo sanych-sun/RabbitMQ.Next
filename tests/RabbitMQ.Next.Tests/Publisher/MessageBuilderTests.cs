@@ -235,12 +235,10 @@ namespace RabbitMQ.Next.Tests.Publisher
         }
 
         [Theory]
-        [InlineData(null, (byte)42)]
         [InlineData((byte)0, (byte)42)]
         [InlineData((byte)15, (byte)42)]
-        [InlineData((byte)15, null)]
         [InlineData((byte)15, (byte)0)]
-        public void CanOverridePriority(byte? initialValue, byte? value)
+        public void CanOverridePriority(byte initialValue, byte value)
         {
             var messageBuilder = new MessageBuilder();
 
@@ -258,7 +256,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             ((IMessageBuilder)messageBuilder).Priority(42);
             messageBuilder.Reset();
 
-            Assert.Null(messageBuilder.Priority);
+            Assert.Equal(0, messageBuilder.Priority);
         }
         
         [Theory]
@@ -426,7 +424,7 @@ namespace RabbitMQ.Next.Tests.Publisher
 
         [Theory]
         [MemberData(nameof(OverrideTimestampTestCases))]
-        public void CanOverrideTimestamp(DateTimeOffset? initialValue, DateTimeOffset? value)
+        public void CanOverrideTimestamp(DateTimeOffset initialValue, DateTimeOffset value)
         {
             var messageBuilder = new MessageBuilder();
 
@@ -438,10 +436,8 @@ namespace RabbitMQ.Next.Tests.Publisher
 
         public static IEnumerable<object[]> OverrideTimestampTestCases()
         {
-            yield return new object[] { null, DateTimeOffset.UtcNow };
             yield return new object[] { default(DateTimeOffset), DateTimeOffset.UtcNow };
             yield return new object[] { DateTimeOffset.UtcNow, new DateTimeOffset(2021, 08, 10, 00, 31, 00, TimeSpan.Zero) };
-            yield return new object[] { DateTimeOffset.UtcNow, null };
             yield return new object[] { DateTimeOffset.UtcNow, default(DateTimeOffset) };
         }
 
@@ -453,7 +449,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             ((IMessageBuilder)messageBuilder).Timestamp(DateTimeOffset.UtcNow);
             messageBuilder.Reset();
 
-            Assert.Null(messageBuilder.Timestamp);
+            Assert.Equal(default, messageBuilder.Timestamp);
         }
         
         [Theory]

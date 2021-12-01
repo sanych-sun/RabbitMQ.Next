@@ -14,15 +14,15 @@ namespace RabbitMQ.Next.Buffers
 
             if (source.Count == 1)
             {
-                return new ReadOnlySequence<byte>(source[0].Memory);
+                return new ReadOnlySequence<byte>(source[0].Data);
             }
 
-            var first = new MemorySegment<byte>(source[0].Memory);
+            var first = new MemorySegment<byte>(source[0].Data);
             var last = first;
 
             for (var i = 1; i < source.Count; i++)
             {
-                last = last.Append(source[i].Memory);
+                last = last.Append(source[i].Data);
             }
 
             return new ReadOnlySequence<byte>(first, 0, last, last.Memory.Length);

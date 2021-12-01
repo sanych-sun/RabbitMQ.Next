@@ -24,7 +24,7 @@ namespace RabbitMQ.Next.Channels
 
         public Task<TMethod> WaitTask => this.tcs.Task;
 
-        public bool HandleMethodFrame(MethodId methodId, ReadOnlyMemory<byte> payload)
+        public bool HandleMethodFrame(MethodId methodId, ReadOnlySpan<byte> payload)
         {
             if (methodId != this.expectedMethodId)
             {

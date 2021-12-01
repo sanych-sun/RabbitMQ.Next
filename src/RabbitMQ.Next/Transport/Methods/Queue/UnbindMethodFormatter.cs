@@ -5,7 +5,7 @@ namespace RabbitMQ.Next.Transport.Methods.Queue
 {
     internal class UnbindMethodFormatter : IMethodFormatter<UnbindMethod>
     {
-        public int Write(Memory<byte> destination, UnbindMethod method)
+        public int Write(Span<byte> destination, UnbindMethod method)
         {
             var result = destination
                 .Write((short) ProtocolConstants.ObsoleteField)

@@ -5,7 +5,7 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
 {
     internal class QosMethodFormatter : IMethodFormatter<QosMethod>
     {
-        public int Write(Memory<byte> destination, QosMethod method)
+        public int Write(Span<byte> destination, QosMethod method)
         {
             var result = destination
                 .Write(method.PrefetchSize)

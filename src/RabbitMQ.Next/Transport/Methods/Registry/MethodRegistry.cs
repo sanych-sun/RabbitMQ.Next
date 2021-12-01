@@ -49,8 +49,6 @@ namespace RabbitMQ.Next.Transport.Methods.Registry
             return null;
         }
 
-        public IMethodParser GetParser(MethodId methodId) => (IMethodParser)this.GetMethod(methodId).Parser;
-
         public IMethodFormatter<TMethod> GetFormatter<TMethod>()
             where TMethod : struct, IOutgoingMethod
         {

@@ -142,7 +142,7 @@ namespace RabbitMQ.Next
         {
             var memoryBlock = this.MemoryPool.Get();
 
-            bytes.CopyTo(memoryBlock.Writer);
+            bytes.CopyTo(memoryBlock.Memory);
             memoryBlock.Commit(ProtocolConstants.AmqpHeader.Length);
 
             // Should not return memory block here, it will be done in SendLoop
@@ -155,15 +155,17 @@ namespace RabbitMQ.Next
             {
                 while (socketChannel.TryRead(out var memoryBlock))
                 {
-                    await this.socket.SendAsync(memoryBlock.Memory);
+                    await this.socket.SendAsync(memoryBlock.Data);
                     this.MemoryPool.Return(memoryBlock);
                 }
+
+                await this.socket.FlushAsync();
             }
         }
 
         private void ReceiveLoop(CancellationToken cancellationToken)
         {
-            Memory<byte> headerBuffer = new byte[ProtocolConstants.FrameHeaderSize];
+            Span<byte> headerBuffer = new byte[ProtocolConstants.FrameHeaderSize];
 
             try
             {
@@ -176,16 +178,16 @@ namespace RabbitMQ.Next
                         break;
                     }
 
-                    ((ReadOnlyMemory<byte>) headerBuffer).ReadFrameHeader(out FrameType frameType, out ushort channel, out uint payloadSize);
+                    ((ReadOnlySpan<byte>)headerBuffer).ReadFrameHeader(out FrameType frameType, out ushort channel, out uint payloadSize);
 
                     // 2. Get buffer
                     var buffer = this.MemoryPool.Get();
 
                     // 3. Read payload into the buffer, allocate extra byte for FrameEndByte
-                    var payload = buffer.Writer[..((int)payloadSize + 1)];
+                    var payload = buffer.Span[..((int)payloadSize + 1)];
                     this.socket.FillBuffer(payload);
                     // 4. Ensure there is FrameEnd
-                    if (payload.Span[(int)payloadSize] != ProtocolConstants.FrameEndByte)
+                    if (payload[(int)payloadSize] != ProtocolConstants.FrameEndByte)
                     {
                         // TODO: throw connection exception here
                         throw new InvalidOperationException();

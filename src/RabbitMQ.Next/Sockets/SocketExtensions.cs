@@ -4,7 +4,7 @@ namespace RabbitMQ.Next.Sockets
 {
     internal static class SocketExtensions
     {
-        public static void FillBuffer(this ISocket socket, Memory<byte> buffer)
+        public static void FillBuffer(this ISocket socket, Span<byte> buffer)
         {
             while (buffer.Length > 0)
             {

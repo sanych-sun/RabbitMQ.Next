@@ -1,6 +1,7 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using NSubstitute;
 using RabbitMQ.Next.Serialization.PlainText.Formatters;
 using RabbitMQ.Next.Tests.Mocks;
 using Xunit;
@@ -16,8 +17,9 @@ namespace RabbitMQ.Next.Tests.Serialization.PlainText.Formatters
             var formatter = new SByteFormatter();
             var bufferWriter = new ArrayBufferWriter<byte>(expected.Length);
 
-            formatter.Format(content, bufferWriter);
+            var result = formatter.TryFormat(content, bufferWriter);
 
+            Assert.True(result);
             Assert.Equal(expected, bufferWriter.WrittenMemory.ToArray());
         }
 
@@ -29,8 +31,9 @@ namespace RabbitMQ.Next.Tests.Serialization.PlainText.Formatters
             var formatter = new SByteFormatter();
             var bufferWriter = new ArrayBufferWriter<byte>(expected.Length == 0 ? 1 : expected.Length);
 
-            formatter.Format(content, bufferWriter);
+            var result = formatter.TryFormat(content, bufferWriter);
 
+            Assert.True(result);
             Assert.Equal(expected, bufferWriter.WrittenMemory.ToArray());
         }
 
@@ -42,9 +45,10 @@ namespace RabbitMQ.Next.Tests.Serialization.PlainText.Formatters
             var formatter = new SByteFormatter();
             var sequence = Helpers.MakeSequence(parts);
 
-            var result = formatter.Parse<sbyte>(sequence);
+            var result = formatter.TryParse(sequence, out sbyte parsed);
 
-            Assert.Equal(expected, result);
+            Assert.True(result);
+            Assert.Equal(expected, parsed);
         }
 
         [Theory]
@@ -56,9 +60,10 @@ namespace RabbitMQ.Next.Tests.Serialization.PlainText.Formatters
             var formatter = new SByteFormatter();
             var sequence = Helpers.MakeSequence(parts);
 
-            var result = formatter.Parse<sbyte?>(sequence);
+            var result = formatter.TryParse(sequence, out sbyte? parsed);
 
-            Assert.Equal(expected, result);
+            Assert.True(result);
+            Assert.Equal(expected, parsed);
         }
 
 
@@ -70,7 +75,7 @@ namespace RabbitMQ.Next.Tests.Serialization.PlainText.Formatters
             var formatter = new SByteFormatter();
             var sequence = new ReadOnlySequence<byte>(content);
 
-            Assert.Throws<FormatException>(() =>  formatter.Parse<sbyte>(sequence));
+            Assert.Throws<FormatException>(() => formatter.TryParse(sequence, out sbyte _));
         }
 
         [Fact]
@@ -79,41 +84,30 @@ namespace RabbitMQ.Next.Tests.Serialization.PlainText.Formatters
             var formatter = new SByteFormatter();
             var bufferWriter = new ArrayBufferWriter<byte>(1);
 
-            Assert.Throws<OutOfMemoryException>(() => formatter.Format((sbyte)42, bufferWriter));
-        }
-
-        [Theory]
-        [InlineData(typeof(sbyte), true)]
-        [InlineData(typeof(sbyte?), true)]
-        [InlineData(typeof(byte), false)]
-        [InlineData(typeof(int), false)]
-        [InlineData(typeof(long), false)]
-        [InlineData(typeof(string), false)]
-        [InlineData(typeof(DateTime), false)]
-        [InlineData(typeof(DateTimeOffset), false)]
-        public void CanHandle(Type type, bool expected)
-        {
-            var formatter = new SByteFormatter();
-
-            Assert.Equal(expected, formatter.CanHandle(type));
+            Assert.Throws<OutOfMemoryException>(() => formatter.TryFormat((sbyte)42, bufferWriter));
         }
 
         [Fact]
-        public void ThrowsOnInvalidFormat()
+        public void ShouldNotFormatWrongType()
         {
             var formatter = new SByteFormatter();
-            var bufferWriter = new ArrayBufferWriter<byte>();
+            var bufferWriter = Substitute.For<IBufferWriter<byte>>();
 
-            Assert.Throws<ArgumentException>(() => formatter.Format("hello", bufferWriter));
+            var result = formatter.TryFormat("hello", bufferWriter);
+
+            Assert.False(result);
+            bufferWriter.DidNotReceive().Advance(Arg.Any<int>());
         }
 
         [Fact]
-        public void ThrowsOnInvalidParse()
+        public void ShouldNotParseToWrongType()
         {
             var formatter = new SByteFormatter();
-            var sequence = Helpers.MakeSequence(new byte[] { 0x31 });
+            var sequence = Helpers.MakeSequence(new byte[] { 0x54 });
 
-            Assert.Throws<ArgumentException>(() => formatter.Parse<string>(sequence));
+            var result = formatter.TryParse<string>(sequence, out var _);
+
+            Assert.False(result);
         }
 
         public static IEnumerable<object[]> GenericTestCases()

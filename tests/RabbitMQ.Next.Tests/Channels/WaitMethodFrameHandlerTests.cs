@@ -33,7 +33,7 @@ namespace RabbitMQ.Next.Tests.Channels
             var handler = this.CreateHandler<AckMethod>();
             var wait = handler.WaitTask;
 
-            var handled = handler.HandleMethodFrame(MethodId.BasicDeliver, ReadOnlyMemory<byte>.Empty);
+            var handled = handler.HandleMethodFrame(MethodId.BasicDeliver, ReadOnlySpan<byte>.Empty);
 
             Assert.False(handled);
             Assert.False(wait.IsCompleted);

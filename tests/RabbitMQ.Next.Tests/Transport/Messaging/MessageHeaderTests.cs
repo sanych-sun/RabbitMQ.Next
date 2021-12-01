@@ -13,11 +13,12 @@ namespace RabbitMQ.Next.Tests.Transport.Messaging
         [MemberData(nameof(MessagePropertiesTestCases))]
         internal void WriteMessageProperties(byte[] expected, MessageProperties props)
         {
-            Memory<byte> buffer = new byte[expected.Length];
-            var result = buffer.WriteMessageProperties(props);
-            var written = buffer.Slice(0, buffer.Length - result.Length);
+            Span<byte> buffer = stackalloc byte[expected.Length];
+            var written = buffer.WriteMessageProperties(props);
+            var bytes = buffer.Slice(0, written);
 
-            Assert.Equal(expected, written.ToArray());
+            Assert.Equal(expected.Length, written);
+            Assert.Equal(expected, bytes.ToArray());
         }
 
         public static IEnumerable<object[]> MessagePropertiesTestCases()

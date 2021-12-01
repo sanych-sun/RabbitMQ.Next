@@ -14,8 +14,6 @@ namespace RabbitMQ.Next.Abstractions.Methods
         IMethodParser<TMethod> GetParser<TMethod>()
             where TMethod : struct, IIncomingMethod;
 
-        IMethodParser GetParser(MethodId methodId);
-
         IMethodFormatter<TMethod> GetFormatter<TMethod>()
             where TMethod : struct, IOutgoingMethod;
     }

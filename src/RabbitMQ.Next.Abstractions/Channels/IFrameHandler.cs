@@ -7,7 +7,7 @@ namespace RabbitMQ.Next.Abstractions.Channels
 {
     public interface IFrameHandler
     {
-        bool HandleMethodFrame(MethodId methodId, ReadOnlyMemory<byte> payload);
+        bool HandleMethodFrame(MethodId methodId, ReadOnlySpan<byte> payload);
 
         ValueTask<bool> HandleContentAsync(IMessageProperties properties, ReadOnlySequence<byte> contentBytes);
 

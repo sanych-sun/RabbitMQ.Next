@@ -28,7 +28,7 @@ namespace RabbitMQ.Next.Publisher
             this.contentAccessor = new ContentAccessor(serializerFactory);
         }
 
-        public bool HandleMethodFrame(MethodId methodId, ReadOnlyMemory<byte> payload)
+        public bool HandleMethodFrame(MethodId methodId, ReadOnlySpan<byte> payload)
         {
             if (methodId != MethodId.BasicReturn)
             {

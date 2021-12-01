@@ -5,7 +5,7 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
 {
     internal class GetMethodFormatter : IMethodFormatter<GetMethod>
     {
-        public int Write(Memory<byte> destination, GetMethod method)
+        public int Write(Span<byte> destination, GetMethod method)
         {
             var result = destination
                 .Write((short) ProtocolConstants.ObsoleteField)

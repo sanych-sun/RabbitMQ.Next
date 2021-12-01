@@ -5,7 +5,7 @@ namespace RabbitMQ.Next.Transport.Methods.Connection
 {
     internal class StartOkMethodFormatter : IMethodFormatter<StartOkMethod>
     {
-        public int Write(Memory<byte> destination, StartOkMethod method)
+        public int Write(Span<byte> destination, StartOkMethod method)
         {
             var result = destination
                 .Write(method.ClientProperties)

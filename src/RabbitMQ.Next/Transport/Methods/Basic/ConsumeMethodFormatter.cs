@@ -5,7 +5,7 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
 {
     internal class ConsumeMethodFormatter : IMethodFormatter<ConsumeMethod>
     {
-        public int Write(Memory<byte> destination, ConsumeMethod method)
+        public int Write(Span<byte> destination, ConsumeMethod method)
         {
             var result = destination
                 .Write((short) ProtocolConstants.ObsoleteField)

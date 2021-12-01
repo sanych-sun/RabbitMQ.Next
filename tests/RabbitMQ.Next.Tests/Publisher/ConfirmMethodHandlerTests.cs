@@ -41,7 +41,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         public void IgnoresOtherMethods()
         {
             IFrameHandler handler = new ConfirmFrameHandler(this.registry);
-            var handled = handler.HandleMethodFrame(MethodId.BasicDeliver, ReadOnlyMemory<byte>.Empty);
+            var handled = handler.HandleMethodFrame(MethodId.BasicDeliver, ReadOnlySpan<byte>.Empty);
             Assert.False(handled);
         }
 
@@ -101,24 +101,6 @@ namespace RabbitMQ.Next.Tests.Publisher
         }
 
         [Fact]
-        public async Task AckMultipleMessagesBeforeWait()
-        {
-            var handler = new ConfirmFrameHandler(this.registry);
-
-            AckMessageAsync(handler, 2, true, true);
-
-            var wait1 = handler.WaitForConfirmAsync(1);
-            var wait2 = handler.WaitForConfirmAsync(2);
-            var wait3 = handler.WaitForConfirmAsync(3);
-            Assert.True(wait1.IsCompleted);
-            Assert.True(wait2.IsCompleted);
-            Assert.False(wait3.IsCompleted);
-
-            Assert.True(await wait1);
-            Assert.True(await wait2);
-        }
-
-        [Fact]
         public async Task NackSingleMessage()
         {
             var handler = new ConfirmFrameHandler(this.registry);
@@ -166,25 +148,6 @@ namespace RabbitMQ.Next.Tests.Publisher
             Assert.False(await wait2);
         }
 
-        [Fact]
-        public async Task NackMultipleMessagesBeforeWait()
-        {
-            var handler = new ConfirmFrameHandler(this.registry);
-
-            AckMessageAsync(handler, 2, false, true);
-
-            var wait1 = handler.WaitForConfirmAsync(1);
-            var wait2 = handler.WaitForConfirmAsync(2);
-            var wait3 = handler.WaitForConfirmAsync(3);
-
-            Assert.True(wait1.IsCompleted);
-            Assert.True(wait2.IsCompleted);
-            Assert.False(wait3.IsCompleted);
-
-            Assert.False(await wait1);
-            Assert.False(await wait2);
-        }
-
         [Theory]
         [InlineData(100, 2)]
         [InlineData(1000, 10)]
@@ -216,17 +179,17 @@ namespace RabbitMQ.Next.Tests.Publisher
 
         private static bool AckMessageAsync(IFrameHandler handler, ulong deliveryTag, bool ack, bool multiple = false)
         {
-            var memory = new byte[9];
+            Span<byte> memory = stackalloc byte[9];
 
             if (ack)
             {
-                ((Memory<byte>) memory)
+                memory
                     .Write(deliveryTag)
                     .Write(multiple);
                 return handler.HandleMethodFrame(MethodId.BasicAck, memory);
             }
 
-            ((Memory<byte>) memory)
+            memory
                 .Write(deliveryTag)
                 .Write(BitConverter.ComposeFlags(multiple, false));
 

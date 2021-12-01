@@ -1,6 +1,7 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using NSubstitute;
 using RabbitMQ.Next.Serialization.PlainText.Formatters;
 using RabbitMQ.Next.Tests.Mocks;
 using Xunit;
@@ -13,12 +14,13 @@ namespace RabbitMQ.Next.Tests.Serialization.PlainText.Formatters
         [MemberData(nameof(GenericTestCases))]
         public void CanFormat(string dateString, byte[] expected)
         {
-            var date = TimeSpan.Parse(dateString);
+            var content = TimeSpan.Parse(dateString);
             var formatter = new TimeSpanFormatter();
             var bufferWriter = new ArrayBufferWriter<byte>(expected.Length);
 
-            formatter.Format(date, bufferWriter);
+            var result = formatter.TryFormat(content, bufferWriter);
 
+            Assert.True(result);
             Assert.Equal(expected, bufferWriter.WrittenMemory.ToArray());
         }
 
@@ -27,12 +29,13 @@ namespace RabbitMQ.Next.Tests.Serialization.PlainText.Formatters
         [MemberData(nameof(NullableTestCases))]
         public void CanFormatNullable(string dateString, byte[] expected)
         {
-            TimeSpan? date = dateString == null ? null : TimeSpan.Parse(dateString);
+            TimeSpan? content = dateString == null ? null : TimeSpan.Parse(dateString);
             var formatter = new TimeSpanFormatter();
             var bufferWriter = new ArrayBufferWriter<byte>(expected.Length == 0 ? 1 : expected.Length);
 
-            formatter.Format(date, bufferWriter);
+            var result = formatter.TryFormat(content, bufferWriter);
 
+            Assert.True(result);
             Assert.Equal(expected, bufferWriter.WrittenMemory.ToArray());
         }
 
@@ -45,9 +48,10 @@ namespace RabbitMQ.Next.Tests.Serialization.PlainText.Formatters
             var formatter = new TimeSpanFormatter();
             var sequence = Helpers.MakeSequence(parts);
 
-            var result = formatter.Parse<TimeSpan>(sequence);
+            var result = formatter.TryParse(sequence, out TimeSpan parsed);
 
-            Assert.Equal(date, result);
+            Assert.True(result);
+            Assert.Equal(date, parsed);
         }
 
         [Theory]
@@ -60,9 +64,10 @@ namespace RabbitMQ.Next.Tests.Serialization.PlainText.Formatters
             var formatter = new TimeSpanFormatter();
             var sequence = Helpers.MakeSequence(parts);
 
-            var result = formatter.Parse<TimeSpan?>(sequence);
+            var result = formatter.TryParse(sequence, out TimeSpan? parsed);
 
-            Assert.Equal(date, result);
+            Assert.True(result);
+            Assert.Equal(date, parsed);
         }
 
 
@@ -75,7 +80,7 @@ namespace RabbitMQ.Next.Tests.Serialization.PlainText.Formatters
             var formatter = new TimeSpanFormatter();
             var sequence = new ReadOnlySequence<byte>(content);
 
-            Assert.Throws<FormatException>(() =>  formatter.Parse<TimeSpan>(sequence));
+            Assert.Throws<FormatException>(() => formatter.TryParse(sequence, out TimeSpan _));
         }
 
         [Fact]
@@ -84,40 +89,30 @@ namespace RabbitMQ.Next.Tests.Serialization.PlainText.Formatters
             var formatter = new TimeSpanFormatter();
             var bufferWriter = new ArrayBufferWriter<byte>(1);
 
-            Assert.Throws<OutOfMemoryException>(() => formatter.Format(TimeSpan.Zero, bufferWriter));
-        }
-
-        [Theory]
-        [InlineData(typeof(byte), false)]
-        [InlineData(typeof(int), false)]
-        [InlineData(typeof(long), false)]
-        [InlineData(typeof(string), false)]
-        [InlineData(typeof(DateTime), false)]
-        [InlineData(typeof(TimeSpan), true)]
-        [InlineData(typeof(TimeSpan?), true)]
-        public void CanHandle(Type type, bool expected)
-        {
-            var formatter = new TimeSpanFormatter();
-
-            Assert.Equal(expected, formatter.CanHandle(type));
+            Assert.Throws<OutOfMemoryException>(() => formatter.TryFormat(TimeSpan.Zero, bufferWriter));
         }
 
         [Fact]
-        public void ThrowsOnInvalidFormat()
+        public void ShouldNotFormatWrongType()
         {
             var formatter = new TimeSpanFormatter();
-            var bufferWriter = new ArrayBufferWriter<byte>();
+            var bufferWriter = Substitute.For<IBufferWriter<byte>>();
 
-            Assert.Throws<ArgumentException>(() => formatter.Format("hello", bufferWriter));
+            var result = formatter.TryFormat("hello", bufferWriter);
+
+            Assert.False(result);
+            bufferWriter.DidNotReceive().Advance(Arg.Any<int>());
         }
 
         [Fact]
-        public void ThrowsOnInvalidParse()
+        public void ShouldNotParseToWrongType()
         {
             var formatter = new TimeSpanFormatter();
             var sequence = Helpers.MakeSequence(new byte[] { 0x30, 0x30, 0x3A, 0x30, 0x31, 0x3A, 0x30, 0x31 });
 
-            Assert.Throws<ArgumentException>(() => formatter.Parse<string>(sequence));
+            var result = formatter.TryParse<string>(sequence, out var _);
+
+            Assert.False(result);
         }
 
         public static IEnumerable<object[]> GenericTestCases()

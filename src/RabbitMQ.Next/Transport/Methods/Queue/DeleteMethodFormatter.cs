@@ -5,7 +5,7 @@ namespace RabbitMQ.Next.Transport.Methods.Queue
 {
     internal class DeleteMethodFormatter : IMethodFormatter<DeleteMethod>
     {
-        public int Write(Memory<byte> destination, DeleteMethod method)
+        public int Write(Span<byte> destination, DeleteMethod method)
         {
             var result = destination
                 .Write((short) ProtocolConstants.ObsoleteField)

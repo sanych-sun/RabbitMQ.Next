@@ -40,7 +40,7 @@ namespace RabbitMQ.Next.Consumer
             this.contentAccessor = new ContentAccessor(serializerFactory);
         }
 
-        public bool HandleMethodFrame(MethodId methodId, ReadOnlyMemory<byte> payload)
+        public bool HandleMethodFrame(MethodId methodId, ReadOnlySpan<byte> payload)
         {
             if (methodId != MethodId.BasicDeliver)
             {

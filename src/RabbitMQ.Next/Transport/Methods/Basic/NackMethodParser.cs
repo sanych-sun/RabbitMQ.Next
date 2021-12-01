@@ -6,7 +6,7 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
 {
     internal class NackMethodParser : IMethodParser<NackMethod>
     {
-        public NackMethod Parse(ReadOnlyMemory<byte> payload)
+        public NackMethod Parse(ReadOnlySpan<byte> payload)
         {
             payload
                 .Read(out ulong deliveryTag)
@@ -14,7 +14,5 @@ namespace RabbitMQ.Next.Transport.Methods.Basic
 
             return new NackMethod(deliveryTag, BitConverter.IsFlagSet(flags, 0), BitConverter.IsFlagSet(flags, 1));
         }
-
-        public IIncomingMethod ParseMethod(ReadOnlyMemory<byte> payload) => this.Parse(payload);
     }
 }

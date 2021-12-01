@@ -76,14 +76,6 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Registry
         }
 
         [Fact]
-        public void GetParserByMethodId()
-        {
-            var result = this.registry.GetParser(MethodId.BasicAck);
-
-            Assert.Equal(this.parser, result);
-        }
-
-        [Fact]
         public void GetFormatter()
         {
             var result = this.registry.GetFormatter<DummyMethod<int>>();
@@ -95,13 +87,6 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Registry
         public void GetParserByTypeReturnsNUllIfNoParser()
         {
             var result = this.registry.GetParser<DummyMethod<int>>();
-            Assert.Null(result);
-        }
-
-        [Fact]
-        public void GetParserByMethodIdReturnsNullIfNoParser()
-        {
-            var result = this.registry.GetParser(MethodId.BasicGet);
             Assert.Null(result);
         }
 
@@ -135,12 +120,6 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Registry
         public void GetParserByTypeThrowsIfNotRegistered()
         {
             Assert.Throws<NotSupportedException>(() => this.registry.GetParser<DummyMethod<long>>());
-        }
-
-        [Fact]
-        public void GetParserByMethodIdThrowsIfNotRegistered()
-        {
-            Assert.Throws<NotSupportedException>(() => this.registry.GetParser(MethodId.Unknown));
         }
 
         [Fact]

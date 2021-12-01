@@ -14,7 +14,7 @@ namespace RabbitMQ.Next.Tests.Buffers
         {
             var memoryBlock = new MemoryBlock(size);
 
-            Assert.Equal(size, memoryBlock.Writer.Length);
+            Assert.Equal(size, memoryBlock.Span.Length);
         }
 
         [Theory]
@@ -33,11 +33,11 @@ namespace RabbitMQ.Next.Tests.Buffers
 
             foreach (var part in data)
             {
-                part.CopyTo(memoryBlock.Writer);
+                part.CopyTo(memoryBlock.Span);
                 memoryBlock.Commit(part.Length);
             }
 
-            Assert.Equal(expected, memoryBlock.Memory.ToArray());
+            Assert.Equal(expected, memoryBlock.Data.ToArray());
         }
 
         [Fact]
@@ -45,16 +45,16 @@ namespace RabbitMQ.Next.Tests.Buffers
         {
             var memoryBlock = new MemoryBlock(10);
 
-            Assert.Equal(0, memoryBlock.Memory.Length);
-            Assert.Equal(10, memoryBlock.Writer.Length);
+            Assert.Equal(0, memoryBlock.Data.Length);
+            Assert.Equal(10, memoryBlock.Span.Length);
 
             memoryBlock.Commit(3);
-            Assert.Equal(3, memoryBlock.Memory.Length);
-            Assert.Equal(7, memoryBlock.Writer.Length);
+            Assert.Equal(3, memoryBlock.Data.Length);
+            Assert.Equal(7, memoryBlock.Span.Length);
 
             memoryBlock.Reset();
-            Assert.Equal(0, memoryBlock.Memory.Length);
-            Assert.Equal(10, memoryBlock.Writer.Length);
+            Assert.Equal(0, memoryBlock.Data.Length);
+            Assert.Equal(10, memoryBlock.Span.Length);
         }
 
         public static IEnumerable<object[]> DataWriterTestCases()
