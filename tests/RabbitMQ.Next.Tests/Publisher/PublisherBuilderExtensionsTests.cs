@@ -12,7 +12,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         {
             var builder = Substitute.For<IPublisherBuilder>();
 
-            builder.AddReturnedMessageHandler((message, props, content) => new ValueTask<bool>(false));
+            builder.AddReturnedMessageHandler((message, content) => new ValueTask<bool>(false));
 
             builder.Received().AddReturnedMessageHandler(Arg.Any<IReturnedMessageHandler>());
         }

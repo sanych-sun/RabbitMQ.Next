@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Consumer.Abstractions.Acknowledger;
 
 namespace RabbitMQ.Next.Consumer.Abstractions
@@ -19,7 +18,7 @@ namespace RabbitMQ.Next.Consumer.Abstractions
             return builder;
         }
 
-        public static IConsumerBuilder AddMessageHandler(this IConsumerBuilder builder, Func<DeliveredMessage, IMessageProperties, IContentAccessor, ValueTask<bool>> handler)
+        public static IConsumerBuilder AddMessageHandler(this IConsumerBuilder builder, Func<DeliveredMessage, IContentAccessor, ValueTask<bool>> handler)
         {
             var messageHandler = new DeliveredMessageDelegateHandler(handler);
             builder.AddMessageHandler(messageHandler);

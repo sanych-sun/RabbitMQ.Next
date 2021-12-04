@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using RabbitMQ.Next.Serialization.Abstractions;
 
 namespace RabbitMQ.Next.Serialization.PlainText
@@ -13,7 +14,17 @@ namespace RabbitMQ.Next.Serialization.PlainText
 
             var serializer = new PlainTextSerializer(innerBuilder.Formatters);
 
-            builder.UseSerializer(serializer, innerBuilder.ContentTypes, innerBuilder.IsDefault);
+            if (innerBuilder.ContentTypes.Count > 1)
+            {
+                for (var i = 0; i < innerBuilder.ContentTypes.Count; i++)
+                {
+                    builder.UseSerializer(serializer, innerBuilder.ContentTypes[i], innerBuilder.IsDefault);
+                }
+            }
+            else
+            {
+                builder.UseSerializer(serializer, innerBuilder.ContentTypes?.First(), innerBuilder.IsDefault);
+            }
 
             return builder;
         }

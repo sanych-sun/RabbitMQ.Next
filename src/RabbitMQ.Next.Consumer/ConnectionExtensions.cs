@@ -9,10 +9,10 @@ namespace RabbitMQ.Next.Consumer
     {
         public static IConsumer Consumer(this IConnection connection, Action<IConsumerBuilder> builder)
         {
-            var consumerBuilder = new ConsumerBuilder(new SerializerFactory());
+            var consumerBuilder = new ConsumerBuilder();
             builder?.Invoke(consumerBuilder);
 
-            var consumer = new Consumer(connection, consumerBuilder.SerializerFactory, consumerBuilder.AcknowledgerFactory,
+            var consumer = new Consumer(connection, SerializerFactory.Create(consumerBuilder.Serializers), consumerBuilder.AcknowledgerFactory,
                 consumerBuilder.Handlers, consumerBuilder.Queues, consumerBuilder.PrefetchSize, consumerBuilder.PrefetchCount,
                 consumerBuilder.OnUnprocessedMessage, consumerBuilder.OnPoisonMessage);
 

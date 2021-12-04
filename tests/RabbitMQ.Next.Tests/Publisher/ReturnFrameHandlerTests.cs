@@ -5,10 +5,9 @@ using System.Threading.Tasks;
 using NSubstitute;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Messaging;
-using RabbitMQ.Next.Abstractions.Methods;
 using RabbitMQ.Next.Publisher;
 using RabbitMQ.Next.Publisher.Abstractions;
-using RabbitMQ.Next.Serialization;
+using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.Tests.Mocks;
 using RabbitMQ.Next.Transport.Methods.Basic;
 using Xunit;
@@ -68,15 +67,15 @@ namespace RabbitMQ.Next.Tests.Publisher
         public async Task ShouldUseHandlers()
         {
             var handler1 = Substitute.For<IReturnedMessageHandler>();
-            handler1.TryHandleAsync(Arg.Any<ReturnedMessage>(), Arg.Any<IMessageProperties>(), Arg.Any<IContentAccessor>())
+            handler1.TryHandleAsync(Arg.Any<ReturnedMessage>(), Arg.Any<IContentAccessor>())
                 .Returns(new ValueTask<bool>(false));
 
             var handler2 = Substitute.For<IReturnedMessageHandler>();
-            handler2.TryHandleAsync(Arg.Any<ReturnedMessage>(), Arg.Any<IMessageProperties>(), Arg.Any<IContentAccessor>())
+            handler2.TryHandleAsync(Arg.Any<ReturnedMessage>(), Arg.Any<IContentAccessor>())
                 .Returns(new ValueTask<bool>(true));
 
             var handler3 = Substitute.For<IReturnedMessageHandler>();
-            handler3.TryHandleAsync(Arg.Any<ReturnedMessage>(), Arg.Any<IMessageProperties>(), Arg.Any<IContentAccessor>())
+            handler3.TryHandleAsync(Arg.Any<ReturnedMessage>(), Arg.Any<IContentAccessor>())
                 .Returns(new ValueTask<bool>(false));
 
             var frameHandler = this.CreateMock(new[] {handler1, handler2, handler3});
@@ -84,9 +83,9 @@ namespace RabbitMQ.Next.Tests.Publisher
             frameHandler.HandleMethodFrame(MethodId.BasicReturn, ReadOnlySpan<byte>.Empty);
             await frameHandler.HandleContentAsync(Substitute.For<IMessageProperties>(), ReadOnlySequence<byte>.Empty);
 
-            await handler1.Received().TryHandleAsync(Arg.Any<ReturnedMessage>(), Arg.Any<IMessageProperties>(), Arg.Any<IContentAccessor>());
-            await handler2.Received().TryHandleAsync(Arg.Any<ReturnedMessage>(), Arg.Any<IMessageProperties>(), Arg.Any<IContentAccessor>());
-            await handler3.DidNotReceive().TryHandleAsync(Arg.Any<ReturnedMessage>(), Arg.Any<IMessageProperties>(), Arg.Any<IContentAccessor>());
+            await handler1.Received().TryHandleAsync(Arg.Any<ReturnedMessage>(), Arg.Any<IContentAccessor>());
+            await handler2.Received().TryHandleAsync(Arg.Any<ReturnedMessage>(), Arg.Any<IContentAccessor>());
+            await handler3.DidNotReceive().TryHandleAsync(Arg.Any<ReturnedMessage>(), Arg.Any<IContentAccessor>());
         }
 
         private ReturnFrameHandler CreateMock(IReadOnlyList<IReturnedMessageHandler> handlers = null)

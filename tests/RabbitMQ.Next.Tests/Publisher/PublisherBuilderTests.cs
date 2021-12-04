@@ -2,7 +2,6 @@ using System;
 using NSubstitute;
 using RabbitMQ.Next.Publisher;
 using RabbitMQ.Next.Publisher.Abstractions;
-using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Serialization.Abstractions;
 using Xunit;
 
@@ -11,28 +10,12 @@ namespace RabbitMQ.Next.Tests.Publisher
     public class PublisherBuilderTests
     {
         [Fact]
-        public void ThrowsOnEmptyFactory()
-        {
-            Assert.Throws<ArgumentNullException>(() => new PublisherBuilder(null));
-        }
-
-        [Fact]
-        public void ReturnsFactory()
-        {
-            var serializerFactory = Substitute.For<ISerializerFactory>();
-
-            var builder = new PublisherBuilder(serializerFactory);
-            Assert.Equal(serializerFactory, builder.SerializerFactory);
-        }
-
-        [Fact]
         public void CanRegisterTransformers()
         {
             var transformer1 = Substitute.For<IMessageInitializer>();
             var transformer2 = Substitute.For<IMessageInitializer>();
-            var serializerFactory = Substitute.For<ISerializerFactory>();
 
-            var builder = new PublisherBuilder(serializerFactory);
+            var builder = new PublisherBuilder();
             ((IPublisherBuilder) builder).UseMessageInitializer(transformer1);
             ((IPublisherBuilder) builder).UseMessageInitializer(transformer2);
 
@@ -43,8 +26,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         [Fact]
         public void ThrowsOnInvalidTransformer()
         {
-            var serializerFactory = Substitute.For<ISerializerFactory>();
-            var builder = new PublisherBuilder(serializerFactory);
+            var builder = new PublisherBuilder();
             
             Assert.Throws<ArgumentNullException>(() => ((IPublisherBuilder)builder).UseMessageInitializer(null));
         }
@@ -52,11 +34,10 @@ namespace RabbitMQ.Next.Tests.Publisher
         [Fact]
         public void CanRegisterReturnedMessageHandlers()
         {
-            var serializerFactory = Substitute.For<ISerializerFactory>();
             var transformer1 = Substitute.For<IReturnedMessageHandler>();
             var transformer2 = Substitute.For<IReturnedMessageHandler>();
 
-            var builder = new PublisherBuilder(serializerFactory);
+            var builder = new PublisherBuilder();
             ((IPublisherBuilder) builder).AddReturnedMessageHandler(transformer1);
             ((IPublisherBuilder) builder).AddReturnedMessageHandler(transformer2);
 
@@ -67,8 +48,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         [Fact]
         public void ThrowsOnInvalidReturnedMessageHandler()
         {
-            var serializerFactory = Substitute.For<ISerializerFactory>();
-            var builder = new PublisherBuilder(serializerFactory);
+            var builder = new PublisherBuilder();
             
             Assert.Throws<ArgumentNullException>(() => ((IPublisherBuilder)builder).AddReturnedMessageHandler(null));
         }
@@ -76,8 +56,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         [Fact]
         public void ConfirmsDefault()
         {
-            var serializerFactory = Substitute.For<ISerializerFactory>();
-            var builder = new PublisherBuilder(serializerFactory);
+            var builder = new PublisherBuilder();
 
             Assert.False(builder.PublisherConfirms);
         }
@@ -85,24 +64,31 @@ namespace RabbitMQ.Next.Tests.Publisher
         [Fact]
         public void Confirms()
         {
-            var serializerFactory = Substitute.For<ISerializerFactory>();
-            var builder = new PublisherBuilder(serializerFactory);
+            var builder = new PublisherBuilder();
             ((IPublisherBuilder)builder).PublisherConfirms();
 
             Assert.True(builder.PublisherConfirms);
         }
 
         [Fact]
-        public void RegisterSerializerCallFactory()
+        public void UseSerializer()
         {
-            var serializerFactory = Substitute.For<ISerializerFactory>();
-            var builder = new PublisherBuilder(serializerFactory);
             var serializer = Substitute.For<ISerializer>();
+            var contentType = "application/json";
+            var isDefault = false;
 
-            var types = new[] { "type" };
-            builder.UseSerializer(serializer, types);
+            var builder = new PublisherBuilder();
 
-            serializerFactory.Received().RegisterSerializer(serializer, types);
+            builder.UseSerializer(serializer, contentType, isDefault);
+
+            Assert.Contains(builder.Serializers, s => s.Serializer == serializer && s.ContentType == contentType && s.Default == isDefault);
+        }
+
+        [Fact]
+        public void UseSerializerThrowsOnNull()
+        {
+            var builder = new PublisherBuilder();
+            Assert.Throws<ArgumentNullException>(() => builder.UseSerializer(null));
         }
     }
 }

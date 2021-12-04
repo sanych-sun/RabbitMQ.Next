@@ -7,7 +7,7 @@ using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Abstractions.Methods;
 using RabbitMQ.Next.Publisher.Abstractions;
-using RabbitMQ.Next.Serialization;
+using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.Transport.Methods.Basic;
 
 namespace RabbitMQ.Next.Publisher
@@ -60,13 +60,13 @@ namespace RabbitMQ.Next.Publisher
         private async ValueTask<bool> HandleReturnedMessageAsync(IMessageProperties properties, ReadOnlySequence<byte> contentBytes)
         {
             var message = new ReturnedMessage(this.currentMethod.Exchange, this.currentMethod.RoutingKey, this.currentMethod.ReplyCode, this.currentMethod.ReplyText);
-            this.contentAccessor.Set(contentBytes, properties.ContentType);
+            this.contentAccessor.Set(contentBytes, properties);
 
             try
             {
                 for (var i = 0; i < this.messageHandlers.Count; i++)
                 {
-                    if (await this.messageHandlers[i].TryHandleAsync(message, properties, this.contentAccessor))
+                    if (await this.messageHandlers[i].TryHandleAsync(message, this.contentAccessor))
                     {
                         break;
                     }

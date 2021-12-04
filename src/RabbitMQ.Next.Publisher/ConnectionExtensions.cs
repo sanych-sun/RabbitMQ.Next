@@ -15,7 +15,7 @@ namespace RabbitMQ.Next.Publisher
                 throw new ArgumentNullException(nameof(exchange));
             }
 
-            var publisherBuilder = new PublisherBuilder(new SerializerFactory());
+            var publisherBuilder = new PublisherBuilder();
             builder?.Invoke(publisherBuilder);
 
             var messagePropsPool = new DefaultObjectPool<MessageBuilder>(
@@ -23,7 +23,7 @@ namespace RabbitMQ.Next.Publisher
                 10);
 
             var publisher = new Publisher(connection, messagePropsPool, exchange,
-                publisherBuilder.PublisherConfirms, publisherBuilder.SerializerFactory,
+                publisherBuilder.PublisherConfirms, SerializerFactory.Create(publisherBuilder.Serializers),
                 publisherBuilder.Initializers, publisherBuilder.ReturnedMessageHandlers);
 
             return publisher;

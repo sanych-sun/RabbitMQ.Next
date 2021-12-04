@@ -9,86 +9,40 @@ namespace RabbitMQ.Next.Tests.Serialization
     public class SerializerFactoryTests
     {
         [Fact]
-        public void RegisterSerializer()
+        public void ThrowsOnNullSerializers()
         {
-            var serializerFactory = new SerializerFactory();
+            Assert.Throws<ArgumentNullException>(() => SerializerFactory.Create(null));
+        }
+
+        [Fact]
+        public void ThrowsOnEmptySerializers()
+        {
+            Assert.Throws<ArgumentNullException>(() => SerializerFactory.Create(Array.Empty<(ISerializer,string,bool)>()));
+        }
+
+        [Fact]
+        public void CreateStaticFactoryForSingle()
+        {
+            var serializer = Substitute.For<ISerializer>();
+
+            var result = SerializerFactory.Create(new[] {(serializer, "some-type", false)});
+
+            Assert.IsType<StaticSerializerFactory>(result);
+        }
+
+        [Fact]
+        public void CreateDynamicFactoryForMultiple()
+        {
             var serializer1 = Substitute.For<ISerializer>();
             var serializer2 = Substitute.For<ISerializer>();
 
-            serializerFactory.RegisterSerializer(serializer1, new[] {"test1"});
-            serializerFactory.RegisterSerializer(serializer2, new[] {"test2"});
+            var result = SerializerFactory.Create(new[]
+            {
+                (serializer1, "some-type", false),
+                (serializer2, "other-type", false)
+            });
 
-            Assert.Equal(serializer1, ((ISerializerFactory)serializerFactory).Get("test1"));
-            Assert.Equal(serializer2, ((ISerializerFactory)serializerFactory).Get("test2"));
-        }
-        
-        [Fact]
-        public void RegisterSerializerAsDefault()
-        {
-            var serializerFactory = new SerializerFactory();
-            var serializer1 = Substitute.For<ISerializer>();
-
-            serializerFactory.RegisterSerializer(serializer1);
-
-            Assert.Equal(serializer1, ((ISerializerFactory)serializerFactory).Get(string.Empty));
-        }
-
-        [Fact]
-        public void RegisterSerializerCanOverride()
-        {
-            var serializerFactory = new SerializerFactory();
-            var serializer1 = Substitute.For<ISerializer>();
-            var serializer2 = Substitute.For<ISerializer>();
-
-            serializerFactory.RegisterSerializer(serializer1, new[] {"test1"}, false);
-            serializerFactory.RegisterSerializer(serializer2, new[] {"test1"}, false);
-
-            Assert.Equal(serializer2, ((ISerializerFactory)serializerFactory).Get("test1"));
-        }
-
-        [Fact]
-        public void RegisterSerializerCanOverrideDefault()
-        {
-            var serializerFactory = new SerializerFactory();
-            var serializer1 = Substitute.For<ISerializer>();
-            var serializer2 = Substitute.For<ISerializer>();
-
-            serializerFactory.RegisterSerializer(serializer1);
-            serializerFactory.RegisterSerializer(serializer2);
-
-            Assert.Equal(serializer2, ((ISerializerFactory)serializerFactory).Get(string.Empty));
-        }
-
-        [Fact]
-        public void NonDefaultRegisterDoesNotOverrideDefault()
-        {
-            var serializerFactory = new SerializerFactory();
-            var serializer1 = Substitute.For<ISerializer>();
-            var serializer2 = Substitute.For<ISerializer>();
-
-            serializerFactory.RegisterSerializer(serializer1);
-            serializerFactory.RegisterSerializer(serializer2, new []{"test"}, false);
-
-            Assert.Equal(serializer1, ((ISerializerFactory)serializerFactory).Get(string.Empty));
-        }
-
-        [Fact]
-        public void ReturnsDefaultForUnknownContentType()
-        {
-            var serializerFactory = new SerializerFactory();
-            var serializer1 = Substitute.For<ISerializer>();
-
-            serializerFactory.RegisterSerializer(serializer1, new[] {"test1"}, true);
-
-            Assert.Equal(serializer1, ((ISerializerFactory)serializerFactory).Get("unknown-type"));
-        }
-
-        [Fact]
-        public void RegisterSerializerThrowsOnNull()
-        {
-            var serializerFactory = new SerializerFactory();
-
-            Assert.Throws<ArgumentNullException>(() => serializerFactory.RegisterSerializer(null));
+            Assert.IsType<DynamicSerializerFactory>(result);
         }
     }
 }

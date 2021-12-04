@@ -31,7 +31,7 @@ namespace RabbitMQ.Next.Tests.Mocks
 
         public Task FlushAsync() => Task.CompletedTask;
 
-        public int Receive(Memory<byte> buffer) => throw new NotImplementedException();
+        public int Receive(Span<byte> buffer) => throw new NotImplementedException();
 
         private void WriteToBuffer(ReadOnlyMemory<byte> payload)
         {

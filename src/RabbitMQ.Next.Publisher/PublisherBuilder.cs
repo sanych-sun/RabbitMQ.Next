@@ -1,30 +1,19 @@
 using System;
 using System.Collections.Generic;
 using RabbitMQ.Next.Publisher.Abstractions;
-using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Serialization.Abstractions;
 
 namespace RabbitMQ.Next.Publisher
 {
     internal sealed class PublisherBuilder : IPublisherBuilder
     {
-        private readonly ISerializerFactory serializerFactory;
-        private List<IMessageInitializer> initializers;
-        private List<IReturnedMessageHandler> returnedMessageHandlers;
-
-        public PublisherBuilder(ISerializerFactory serializerFactory)
-        {
-            if (serializerFactory == null)
-            {
-                throw new ArgumentNullException(nameof(serializerFactory));
-            }
-
-            this.serializerFactory = serializerFactory;
-        }
+        private readonly List<(ISerializer Serializer, string ContentType, bool Default)> serializers = new();
+        private readonly List<IMessageInitializer> initializers = new();
+        private readonly List<IReturnedMessageHandler> returnedMessageHandlers = new();
 
         public IReadOnlyList<IMessageInitializer> Initializers => this.initializers;
 
-        public ISerializerFactory SerializerFactory => this.serializerFactory;
+        public IReadOnlyList<(ISerializer Serializer, string ContentType, bool Default)> Serializers => this.serializers;
 
         public IReadOnlyList<IReturnedMessageHandler> ReturnedMessageHandlers => this.returnedMessageHandlers;
 
@@ -37,7 +26,6 @@ namespace RabbitMQ.Next.Publisher
                 throw new ArgumentNullException(nameof(initializer));
             }
 
-            this.initializers ??= new List<IMessageInitializer>();
             this.initializers.Add(initializer);
             return this;
         }
@@ -49,7 +37,6 @@ namespace RabbitMQ.Next.Publisher
                 throw new ArgumentNullException(nameof(returnedMessageHandler));
             }
 
-            this.returnedMessageHandlers ??= new List<IReturnedMessageHandler>();
             this.returnedMessageHandlers.Add(returnedMessageHandler);
             return this;
         }
@@ -61,10 +48,14 @@ namespace RabbitMQ.Next.Publisher
             return this;
         }
 
-        public IPublisherBuilder UseSerializer(ISerializer serializer, IReadOnlyList<string> contentTypes = null, bool isDefault = true)
+        public IPublisherBuilder UseSerializer(ISerializer serializer, string contentType = null, bool isDefault = true)
         {
-            this.serializerFactory.RegisterSerializer(serializer, contentTypes, isDefault);
+            if (serializer == null)
+            {
+                throw new ArgumentNullException(nameof(serializer));
+            }
 
+            this.serializers.Add((serializer, contentType, isDefault));
             return this;
         }
     }

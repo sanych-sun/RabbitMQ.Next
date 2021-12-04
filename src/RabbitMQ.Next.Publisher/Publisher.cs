@@ -7,7 +7,7 @@ using Microsoft.Extensions.ObjectPool;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Publisher.Abstractions;
-using RabbitMQ.Next.Serialization;
+using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.Transport.Methods.Basic;
 using RabbitMQ.Next.Transport.Methods.Confirm;
 using RabbitMQ.Next.Transport.Methods.Exchange;
@@ -86,20 +86,29 @@ namespace RabbitMQ.Next.Publisher
             return default;
         }
 
-        public async ValueTask PublishAsync<TState, TContent>(TState state, TContent content, Action<TState, IMessageBuilder> propertiesBuilder, PublishFlags flags = PublishFlags.None, CancellationToken cancellation = default)
+        public ValueTask PublishAsync<TContent>(TContent content, Action<IMessageBuilder> propertiesBuilder = null, PublishFlags flags = PublishFlags.None, CancellationToken cancellation = default)
         {
-            this.CheckDisposed();
+            var properties = this.messagePropsPool.Get();
+            this.ApplyInitializers(content, properties);
+            propertiesBuilder?.Invoke(properties);
 
+            return this.PublishAsyncInternal(content, properties, flags, cancellation);
+        }
+
+        public ValueTask PublishAsync<TState, TContent>(TState state, TContent content, Action<TState, IMessageBuilder> propertiesBuilder = null, PublishFlags flags = PublishFlags.None, CancellationToken cancellation = default)
+        {
             var properties = this.messagePropsPool.Get();
             this.ApplyInitializers(content, properties);
             propertiesBuilder?.Invoke(state, properties);
 
-            var serializer = this.serializerFactory.Get(properties.ContentType);
+            return this.PublishAsyncInternal(content, properties, flags, cancellation);
+        }
 
-            if (serializer == null)
-            {
-                throw new NotSupportedException($"Cannot resolve serializer for '{properties.ContentType}' content type.");
-            }
+
+        private async ValueTask PublishAsyncInternal<TContent>(TContent content, MessageBuilder message, PublishFlags flags, CancellationToken cancellation)
+        {
+            this.CheckDisposed();
+            var serializer = this.serializerFactory.Get(message);
 
             try
             {
@@ -111,13 +120,13 @@ namespace RabbitMQ.Next.Publisher
 
                 await ch.PublishAsync(
                     (content, serializer),
-                    this.exchange, properties.RoutingKey, properties,
+                    this.exchange, message.RoutingKey, message,
                     (st, buffer) => st.serializer.Serialize(st.content, buffer),
                     flags, cancellation);
             }
             finally
             {
-                this.messagePropsPool.Return(properties);
+                this.messagePropsPool.Return(message);
             }
 
             var messageDeliveryTag = Interlocked.Increment(ref this.lastDeliveryTag);

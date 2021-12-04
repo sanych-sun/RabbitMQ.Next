@@ -14,7 +14,6 @@ using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Publisher;
 using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Publisher.Initializers;
-using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.Tests.Mocks;
 using RabbitMQ.Next.Transport.Methods.Confirm;
@@ -133,17 +132,6 @@ namespace RabbitMQ.Next.Tests.Publisher
             await mock.channel.Received().CloseAsync();
         }
 
-        [Fact]
-        public async Task ThrowsOnNonSupportedContentType()
-        {
-            var mock = this.Mock();
-
-            var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, "exchange", false, this.MockSerializerFactory(), null, null);
-
-            await Assert.ThrowsAsync<NotSupportedException>(
-                async () => await publisher.PublishAsync("text", m => m.ContentType("unknown-type")));
-        }
-
         [Theory]
         [MemberData(nameof(PublishTestCases))]
         public async Task PublishAsync(
@@ -220,8 +208,7 @@ namespace RabbitMQ.Next.Tests.Publisher
                 .Do(x => x.ArgAt<IBufferWriter<byte>>(1).Write(new byte[] { 0x01, 0x02}));
 
             var serializerFactory = Substitute.For<ISerializerFactory>();
-            serializerFactory.Get(Arg.Any<string>()).Returns(serializer);
-            serializerFactory.Get("unknown-type").Returns((ISerializer)null);
+            serializerFactory.Get(Arg.Any<IMessageProperties>()).Returns(serializer);
 
             return serializerFactory;
         }

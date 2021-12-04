@@ -7,7 +7,7 @@ using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Abstractions.Methods;
 using RabbitMQ.Next.Consumer.Abstractions;
-using RabbitMQ.Next.Serialization;
+using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.Transport.Methods.Basic;
 
 namespace RabbitMQ.Next.Consumer
@@ -72,13 +72,13 @@ namespace RabbitMQ.Next.Consumer
         private async ValueTask<bool> HandleDeliveredMessageAsync(IMessageProperties properties, ReadOnlySequence<byte> contentBytes)
         {
             var message = new DeliveredMessage(this.currentMethod.Exchange, this.currentMethod.RoutingKey, this.currentMethod.Redelivered, this.currentMethod.ConsumerTag, this.currentMethod.DeliveryTag);
-            this.contentAccessor.Set(contentBytes, properties.ContentType);
+            this.contentAccessor.Set(contentBytes, properties);
 
             try
             {
                 for (var i = 0; i < this.messageHandlers.Count; i++)
                 {
-                    var handled = await this.messageHandlers[i].TryHandleAsync(message, properties, this.contentAccessor);
+                    var handled = await this.messageHandlers[i].TryHandleAsync(message, this.contentAccessor);
                     if (handled)
                     {
                         await this.acknowledger.AckAsync(message.DeliveryTag);

@@ -1,9 +1,7 @@
 using System;
-using System.Linq;
 using NSubstitute;
 using RabbitMQ.Next.Consumer;
 using RabbitMQ.Next.Consumer.Abstractions;
-using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Serialization.Abstractions;
 using Xunit;
 
@@ -14,8 +12,7 @@ namespace RabbitMQ.Next.Tests.Consumer
         [Fact]
         public void PrefetchSize()
         {
-            var serializerFactory = Substitute.For<ISerializerFactory>();
-            var consumerBuilder = new ConsumerBuilder(serializerFactory);
+            var consumerBuilder = new ConsumerBuilder();
             uint size = 12345;
 
             ((IConsumerBuilder) consumerBuilder).PrefetchSize(size);
@@ -26,8 +23,7 @@ namespace RabbitMQ.Next.Tests.Consumer
         [Fact]
         public void PrefetchCount()
         {
-            var serializerFactory = Substitute.For<ISerializerFactory>();
-            var consumerBuilder = new ConsumerBuilder(serializerFactory);
+            var consumerBuilder = new ConsumerBuilder();
             ushort count = 42;
 
             ((IConsumerBuilder) consumerBuilder).PrefetchCount(count);
@@ -38,8 +34,7 @@ namespace RabbitMQ.Next.Tests.Consumer
         [Fact]
         public void SetAcknowledger()
         {
-            var serializerFactory = Substitute.For<ISerializerFactory>();
-            var consumerBuilder = new ConsumerBuilder(serializerFactory);
+            var consumerBuilder = new ConsumerBuilder();
             var ackFactory = Substitute.For<Func<IAcknowledgement, IAcknowledger>>();
 
             ((IConsumerBuilder) consumerBuilder).SetAcknowledger(ackFactory);
@@ -50,8 +45,7 @@ namespace RabbitMQ.Next.Tests.Consumer
         [Fact]
         public void SetAcknowledgerThrowsOnNull()
         {
-            var serializerFactory = Substitute.For<ISerializerFactory>();
-            var consumerBuilder = new ConsumerBuilder(serializerFactory);
+            var consumerBuilder = new ConsumerBuilder();
 
             Assert.Throws<ArgumentNullException>(() => ((IConsumerBuilder) consumerBuilder).SetAcknowledger(null));
         }
@@ -59,8 +53,7 @@ namespace RabbitMQ.Next.Tests.Consumer
         [Fact]
         public void OnUnprocessedMessage()
         {
-            var serializerFactory = Substitute.For<ISerializerFactory>();
-            var consumerBuilder = new ConsumerBuilder(serializerFactory);
+            var consumerBuilder = new ConsumerBuilder();
             var val = UnprocessedMessageMode.Drop;
 
             ((IConsumerBuilder) consumerBuilder).OnUnprocessedMessage(val);
@@ -71,8 +64,7 @@ namespace RabbitMQ.Next.Tests.Consumer
         [Fact]
         public void OnPoisonMessage()
         {
-            var serializerFactory = Substitute.For<ISerializerFactory>();
-            var consumerBuilder = new ConsumerBuilder(serializerFactory);
+            var consumerBuilder = new ConsumerBuilder();
             var val = UnprocessedMessageMode.Drop;
 
             ((IConsumerBuilder) consumerBuilder).OnPoisonMessage(val);
@@ -83,8 +75,7 @@ namespace RabbitMQ.Next.Tests.Consumer
         [Fact]
         public void AddMessageHandler()
         {
-            var serializerFactory = Substitute.For<ISerializerFactory>();
-            var consumerBuilder = new ConsumerBuilder(serializerFactory);
+            var consumerBuilder = new ConsumerBuilder();
             var handler1 = Substitute.For<IDeliveredMessageHandler>();
             var handler2 = Substitute.For<IDeliveredMessageHandler>();
 
@@ -98,40 +89,37 @@ namespace RabbitMQ.Next.Tests.Consumer
         [Fact]
         public void AddMessageHandlerThrowsOnNull()
         {
-            var serializerFactory = Substitute.For<ISerializerFactory>();
-            var consumerBuilder = new ConsumerBuilder(serializerFactory);
+            var consumerBuilder = new ConsumerBuilder();
 
-            Assert.Throws<ArgumentNullException>(() => ((IConsumerBuilder) consumerBuilder).AddMessageHandler(null));
+            Assert.Throws<ArgumentNullException>(() => consumerBuilder.AddMessageHandler(null));
         }
 
         [Fact]
-        public void RegisterSerializerCallFactory()
+        public void UseSerializer()
         {
-            var serializerFactory = Substitute.For<ISerializerFactory>();
-            var builder = new ConsumerBuilder(serializerFactory);
             var serializer = Substitute.For<ISerializer>();
+            var contentType = "application/json";
+            var isDefault = false;
 
-            var types = new[] { "type" };
-            builder.UseSerializer(serializer, types);
+            var builder = new ConsumerBuilder();
 
-            serializerFactory.Received().RegisterSerializer(serializer, types);
+            builder.UseSerializer(serializer, contentType, isDefault);
+
+            Assert.Contains(builder.Serializers, s => s.Serializer == serializer && s.ContentType == contentType && s.Default == isDefault);
         }
 
         [Fact]
-        public void ReturnsFactory()
+        public void UseSerializerThrowsOnNull()
         {
-            var serializerFactory = Substitute.For<ISerializerFactory>();
-
-            var builder = new ConsumerBuilder(serializerFactory);
-            Assert.Equal(serializerFactory, builder.SerializerFactory);
+            var builder = new ConsumerBuilder();
+            Assert.Throws<ArgumentNullException>(() => ((IConsumerBuilder) builder).UseSerializer(null));
         }
 
         [Fact]
         public void DefaultBindToQueue()
         {
             var queueName = "q1";
-            var serializerFactory = Substitute.For<ISerializerFactory>();
-            var builder = new ConsumerBuilder(serializerFactory);
+            var builder = new ConsumerBuilder();
 
             ((IConsumerBuilder)builder).BindToQueue(queueName, null);
 
@@ -142,9 +130,8 @@ namespace RabbitMQ.Next.Tests.Consumer
         public void CanBindToQueue()
         {
             var queueName = "q1";
-            var serializerFactory = Substitute.For<ISerializerFactory>();
             var consumerBuilder = Substitute.For<Action<IQueueConsumerBuilder>>();
-            var builder = new ConsumerBuilder(serializerFactory);
+            var builder = new ConsumerBuilder();
 
             ((IConsumerBuilder)builder).BindToQueue(queueName, consumerBuilder);
 

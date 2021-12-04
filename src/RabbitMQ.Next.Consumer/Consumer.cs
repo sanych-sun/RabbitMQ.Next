@@ -6,6 +6,7 @@ using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Consumer.Abstractions;
 using RabbitMQ.Next.Serialization;
+using RabbitMQ.Next.Serialization.Abstractions;
 using RabbitMQ.Next.Transport.Methods.Basic;
 
 namespace RabbitMQ.Next.Consumer

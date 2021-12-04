@@ -1,24 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
 using RabbitMQ.Next.Consumer.Abstractions;
-using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Serialization.Abstractions;
 
 namespace RabbitMQ.Next.Consumer
 {
     internal class ConsumerBuilder : IConsumerBuilder
     {
+        private readonly List<(ISerializer Serializer, string ContentType, bool Default)> serializers = new();
         private readonly List<QueueConsumerBuilder> queues = new();
         private readonly List<IDeliveredMessageHandler> handlers = new();
-        private readonly ISerializerFactory serializerFactory;
 
-        public ConsumerBuilder(ISerializerFactory serializerFactory)
+        public ConsumerBuilder()
         {
             this.EachMessageAcknowledgement();
-            this.serializerFactory = serializerFactory;
         }
 
-        public ISerializerFactory SerializerFactory => this.serializerFactory;
+        public IReadOnlyList<(ISerializer Serializer, string ContentType, bool Default)> Serializers => this.serializers;
 
         public IReadOnlyList<QueueConsumerBuilder> Queues => this.queues;
 
@@ -88,10 +86,14 @@ namespace RabbitMQ.Next.Consumer
             return this;
         }
 
-        public IConsumerBuilder UseSerializer(ISerializer serializer, IReadOnlyList<string> contentTypes = null, bool isDefault = true)
+        public IConsumerBuilder UseSerializer(ISerializer serializer, string contentType = null, bool isDefault = true)
         {
-            this.serializerFactory.RegisterSerializer(serializer, contentTypes, isDefault);
+            if (serializer == null)
+            {
+                throw new ArgumentNullException(nameof(serializer));
+            }
 
+            this.serializers.Add((serializer, contentType, isDefault));
             return this;
         }
     }

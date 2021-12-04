@@ -1,48 +1,26 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using RabbitMQ.Next.Serialization.Abstractions;
 
 namespace RabbitMQ.Next.Serialization
 {
-    public class SerializerFactory : ISerializerFactory
+    public static class SerializerFactory
     {
-        private readonly Dictionary<string, ISerializer> serializers = new();
-        private ISerializer defaultSerializer;
-
-        public void RegisterSerializer(ISerializer serializer, IReadOnlyList<string> contentTypes = null, bool isDefault = true)
+        public static ISerializerFactory Create(IReadOnlyList<(ISerializer Serializer, string ContentType, bool Default)> serializers)
         {
-            if (serializer == null)
+            if (serializers == null || serializers.Count == 0)
             {
-                throw new ArgumentNullException(nameof(serializer));
+                throw new ArgumentNullException(nameof(serializers));
             }
 
-            if (isDefault)
+            if (serializers.Count == 1)
             {
-                this.defaultSerializer = serializer;
+                var s = serializers.First();
+                return new StaticSerializerFactory(s.Serializer, s.Default ? null : s.ContentType);
             }
 
-            if (contentTypes != null)
-            {
-                for (var i = 0; i < contentTypes.Count; i++)
-                {
-                    this.serializers[contentTypes[i]] = serializer;
-                }
-            }
-        }
-
-        ISerializer ISerializerFactory.Get(string contentType)
-        {
-            if (string.IsNullOrEmpty(contentType))
-            {
-                return this.defaultSerializer;
-            }
-
-            if (this.serializers.TryGetValue(contentType, out var serializer))
-            {
-                return serializer;
-            }
-
-            return this.defaultSerializer;
+            return new DynamicSerializerFactory(serializers);
         }
     }
 }
