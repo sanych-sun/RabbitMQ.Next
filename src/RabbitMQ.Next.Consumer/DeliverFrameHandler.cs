@@ -1,6 +1,7 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
@@ -15,7 +16,7 @@ namespace RabbitMQ.Next.Consumer
     internal sealed class DeliverFrameHandler : IFrameHandler
     {
         private readonly IReadOnlyList<IDeliveredMessageHandler> messageHandlers;
-        private readonly IAcknowledger acknowledger;
+        private readonly IAcknowledgement acknowledgement;
         private readonly IMethodParser<DeliverMethod> deliverMethodParser;
         private readonly ContentAccessor contentAccessor;
         private readonly UnprocessedMessageMode onUnprocessedMessage;
@@ -26,13 +27,13 @@ namespace RabbitMQ.Next.Consumer
 
         public DeliverFrameHandler(
             ISerializerFactory serializerFactory,
-            IAcknowledger acknowledger,
+            IAcknowledgement acknowledgement,
             IMethodParser<DeliverMethod> deliverMethodParser,
             IReadOnlyList<IDeliveredMessageHandler> messageHandlers,
             UnprocessedMessageMode onUnprocessedMessage,
             UnprocessedMessageMode onPoisonMessage)
         {
-            this.acknowledger = acknowledger;
+            this.acknowledgement = acknowledgement;
             this.messageHandlers = messageHandlers;
             this.onUnprocessedMessage = onUnprocessedMessage;
             this.onPoisonMessage = onPoisonMessage;
@@ -62,12 +63,8 @@ namespace RabbitMQ.Next.Consumer
             return this.HandleDeliveredMessageAsync(properties, contentBytes);
         }
 
-        public void Reset()
-        {
-            this.expectContent = false;
-            this.currentMethod = default;
-            this.contentAccessor.Reset();
-        }
+        public void Release(Exception ex = null)
+            => this.Reset();
 
         private async ValueTask<bool> HandleDeliveredMessageAsync(IMessageProperties properties, ReadOnlySequence<byte> contentBytes)
         {
@@ -81,14 +78,14 @@ namespace RabbitMQ.Next.Consumer
                     var handled = await this.messageHandlers[i].TryHandleAsync(message, this.contentAccessor);
                     if (handled)
                     {
-                        await this.acknowledger.AckAsync(message.DeliveryTag);
+                        await this.acknowledgement.AckAsync(message.DeliveryTag);
                         return true;
                     }
                 }
             }
             catch (Exception)
             {
-                await this.acknowledger.NackAsync(message.DeliveryTag,this.onPoisonMessage == UnprocessedMessageMode.Requeue);
+                await this.acknowledgement.NackAsync(message.DeliveryTag,this.onPoisonMessage == UnprocessedMessageMode.Requeue);
                 return true;
             }
             finally
@@ -96,8 +93,16 @@ namespace RabbitMQ.Next.Consumer
                 this.Reset();
             }
 
-            await this.acknowledger.NackAsync(message.DeliveryTag, this.onUnprocessedMessage == UnprocessedMessageMode.Requeue);
+            await this.acknowledgement.NackAsync(message.DeliveryTag, this.onUnprocessedMessage == UnprocessedMessageMode.Requeue);
             return true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void Reset()
+        {
+            this.expectContent = false;
+            this.currentMethod = default;
+            this.contentAccessor.Reset();
         }
     }
 }

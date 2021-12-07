@@ -17,19 +17,6 @@ namespace RabbitMQ.Next.Benchmarks.Publisher
         private IConnection connection;
         private RabbitMQ.Client.IConnection theirConnection;
 
-        [GlobalSetup]
-        public async Task Setup()
-        {
-            this.connection = await ConnectionBuilder.Default
-                .AddEndpoint(Helper.RabbitMqConnection)
-                .ConnectAsync();
-
-            ConnectionFactory factory = new ConnectionFactory();
-            factory.Uri = Helper.RabbitMqConnection;
-
-            this.theirConnection = factory.CreateConnection();
-        }
-
         [Benchmark(Baseline = true)]
         [ArgumentsSource(nameof(TestCases))]
         public void PublishBaseLibrary(TestCaseParameters parameters)
@@ -53,7 +40,7 @@ namespace RabbitMQ.Next.Benchmarks.Publisher
         [ArgumentsSource(nameof(TestCases))]
         public async Task PublishParallelAsync(TestCaseParameters parameters)
         {
-            var publisher = this.connection.CreatePublisher("amq.topic",
+            var publisher = this.connection.Publisher("amq.topic",
                 builder => builder
                     .PublisherConfirms()
                     .UsePlainTextSerializer()
@@ -81,7 +68,7 @@ namespace RabbitMQ.Next.Benchmarks.Publisher
         [ArgumentsSource(nameof(TestCases))]
         public async Task PublishAsync(TestCaseParameters parameters)
         {
-            var publisher = this.connection.CreatePublisher("amq.topic",
+            var publisher = this.connection.Publisher("amq.topic",
                 builder => builder
                     .PublisherConfirms()
                     .UsePlainTextSerializer()
@@ -96,6 +83,33 @@ namespace RabbitMQ.Next.Benchmarks.Publisher
 
             await publisher.DisposeAsync();
         }
+
+        [GlobalSetup(Target = nameof(PublishBaseLibrary))]
+        public void SetupOfficialLibrary()
+        {
+            ConnectionFactory factory = new ConnectionFactory();
+            factory.Uri = Helper.RabbitMqConnection;
+
+            this.theirConnection = factory.CreateConnection();
+        }
+
+        [GlobalCleanup(Target = nameof(PublishBaseLibrary))]
+        public void CleanUpOfficialLibrary()
+        {
+            this.theirConnection.Close();
+            this.theirConnection.Dispose();
+        }
+
+        [GlobalSetup(Targets = new[] {nameof(PublishParallelAsync), nameof(PublishAsync)})]
+        public async Task Setup()
+        {
+            this.connection = await ConnectionBuilder.Default
+                .AddEndpoint(Helper.RabbitMqConnection)
+                .ConnectAsync();
+        }
+
+        [GlobalCleanup(Targets = new[] {nameof(PublishParallelAsync), nameof(PublishAsync)})]
+        public ValueTask CleanUp() => this.connection.DisposeAsync();
 
         public static IEnumerable<TestCaseParameters> TestCases()
         {

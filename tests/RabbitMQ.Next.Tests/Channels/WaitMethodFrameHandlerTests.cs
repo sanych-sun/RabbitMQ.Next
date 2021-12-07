@@ -22,7 +22,7 @@ namespace RabbitMQ.Next.Tests.Channels
             var handler = this.CreateHandler<AckMethod>();
 
             var wait = handler.WaitTask;
-            handler.Reset();
+            handler.Release();
 
             await Assert.ThrowsAsync<TaskCanceledException>(async() => await wait);
         }

@@ -114,6 +114,11 @@ namespace RabbitMQ.Next.Channels
             }
 
             this.FrameWriter.TryComplete();
+
+            for (var i = 0; i < this.frameHandlers.Count; i++)
+            {
+                this.frameHandlers[i].Release(ex);
+            }
             return true;
         }
 
@@ -172,11 +177,15 @@ namespace RabbitMQ.Next.Channels
 
                     if (this.registry.HasContent(methodId))
                     {
-                        var contentHeaderFrame = await reader.ReadAsync();
+                        if (!reader.TryRead(out var contentHeaderFrame))
+                        {
+                            contentHeaderFrame = await reader.ReadAsync();
+                        }
+
                         contentHeaderFrame.Payload.Data[4..] // skip 2 obsolete shorts
                             .Span.Read(out ulong contentSize);
 
-                        var payload = contentHeaderFrame.Payload.Data.Slice(12, (int)contentSize);
+                        var payload = contentHeaderFrame.Payload.Data[12..]; // 2 obsolete shorts + ulong
 
                         try
                         {
@@ -185,7 +194,11 @@ namespace RabbitMQ.Next.Channels
                             long receivedContent = 0;
                             while (receivedContent < (long)contentSize)
                             {
-                                var frame = await reader.ReadAsync();
+                                if (!reader.TryRead(out var frame))
+                                {
+                                    frame = await reader.ReadAsync();
+                                }
+
                                 contentChunks.Add(frame.Payload);
                                 receivedContent += frame.Payload.Data.Length;
                             }

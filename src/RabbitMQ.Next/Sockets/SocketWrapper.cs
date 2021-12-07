@@ -18,8 +18,8 @@ namespace RabbitMQ.Next.Sockets
 
             this.stream = new NetworkStream(socket)
             {
-                ReadTimeout = 10000,
-                WriteTimeout = 10000,
+                ReadTimeout = 60000,
+                WriteTimeout = 60000,
             };
 
             if (endpoint.UseSsl)

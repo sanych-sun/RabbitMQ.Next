@@ -12,67 +12,67 @@ namespace RabbitMQ.Next.Transport.Messaging
             var flags = properties.Flags;
             var buffer = target.Write((ushort)flags);
 
-            if (HasFlag(flags, MessageFlags.ContentType))
+            if ((flags & MessageFlags.ContentType) != MessageFlags.None)
             {
                 buffer = buffer.Write(properties.ContentType);
             }
 
-            if (HasFlag(flags, MessageFlags.ContentEncoding))
+            if ((flags & MessageFlags.ContentEncoding) != MessageFlags.None)
             {
                 buffer = buffer.Write(properties.ContentEncoding);
             }
 
-            if (HasFlag(flags, MessageFlags.Headers))
+            if ((flags & MessageFlags.Headers) != MessageFlags.None)
             {
                 buffer = buffer.Write(properties.Headers);
             }
 
-            if (HasFlag(flags, MessageFlags.DeliveryMode))
+            if ((flags & MessageFlags.DeliveryMode) != MessageFlags.None)
             {
                 buffer = buffer.Write((byte)properties.DeliveryMode);
             }
 
-            if (HasFlag(flags, MessageFlags.Priority))
+            if ((flags & MessageFlags.Priority) != MessageFlags.None)
             {
                 buffer = buffer.Write(properties.Priority);
             }
 
-            if (HasFlag(flags, MessageFlags.CorrelationId))
+            if ((flags & MessageFlags.CorrelationId) != MessageFlags.None)
             {
                 buffer = buffer.Write(properties.CorrelationId);
             }
 
-            if (HasFlag(flags, MessageFlags.ReplyTo))
+            if ((flags & MessageFlags.ReplyTo) != MessageFlags.None)
             {
                 buffer = buffer.Write(properties.ReplyTo);
             }
 
-            if (HasFlag(flags, MessageFlags.Expiration))
+            if ((flags & MessageFlags.Expiration) != MessageFlags.None)
             {
                 buffer = buffer.Write(properties.Expiration);
             }
 
-            if (HasFlag(flags, MessageFlags.MessageId))
+            if ((flags & MessageFlags.MessageId) != MessageFlags.None)
             {
                 buffer = buffer.Write(properties.MessageId);
             }
 
-            if (HasFlag(flags, MessageFlags.Timestamp))
+            if ((flags & MessageFlags.Timestamp) != MessageFlags.None)
             {
                 buffer = buffer.Write(properties.Timestamp);
             }
 
-            if (HasFlag(flags, MessageFlags.Type))
+            if ((flags & MessageFlags.Type) != MessageFlags.None)
             {
                 buffer = buffer.Write(properties.Type);
             }
 
-            if (HasFlag(flags, MessageFlags.UserId))
+            if ((flags & MessageFlags.UserId) != MessageFlags.None)
             {
                 buffer = buffer.Write(properties.UserId);
             }
 
-            if (HasFlag(flags, MessageFlags.ApplicationId))
+            if ((flags & MessageFlags.ApplicationId) != MessageFlags.None)
             {
                 buffer = buffer.Write(properties.ApplicationId);
             }
@@ -80,9 +80,10 @@ namespace RabbitMQ.Next.Transport.Messaging
             return target.Length - buffer.Length;
         }
 
-        public static ReadOnlyMemory<byte> SplitStringProperty(this ReadOnlyMemory<byte> source, out ReadOnlyMemory<byte> value, ushort flags, byte bitNumber)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ReadOnlyMemory<byte> SplitStringProperty(this ReadOnlyMemory<byte> source, out ReadOnlyMemory<byte> value, MessageFlags flags, MessageFlags flag)
         {
-            if (!BitConverter.IsFlagSet(flags, bitNumber))
+            if ((flags & flag) == MessageFlags.None)
             {
                 value = ReadOnlyMemory<byte>.Empty;
                 return source;
@@ -94,9 +95,16 @@ namespace RabbitMQ.Next.Transport.Messaging
             return source[(sizeof(byte) + size)..];
         }
 
-        public static ReadOnlyMemory<byte> SplitDynamicProperty(this ReadOnlyMemory<byte> source, out ReadOnlyMemory<byte> value, ushort flags, byte bitNumber)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ReadOnlyMemory<byte> SplitDynamicProperty(this ReadOnlyMemory<byte> source, out ReadOnlyMemory<byte> value, MessageFlags flags, MessageFlags flag)
         {
-            if (!BitConverter.IsFlagSet(flags, bitNumber))
+            if (source.IsEmpty)
+            {
+                value = ReadOnlyMemory<byte>.Empty;
+                return source;
+            }
+
+            if ((flags & flag) == MessageFlags.None)
             {
                 value = ReadOnlyMemory<byte>.Empty;
                 return source;
@@ -108,9 +116,16 @@ namespace RabbitMQ.Next.Transport.Messaging
             return source[(sizeof(uint) + (int)size)..];
         }
 
-        public static ReadOnlyMemory<byte> SplitFixedProperty(this ReadOnlyMemory<byte> source, out ReadOnlyMemory<byte> value, ushort flags, byte bitNumber, int size)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ReadOnlyMemory<byte> SplitFixedProperty(this ReadOnlyMemory<byte> source, out ReadOnlyMemory<byte> value, MessageFlags flags, MessageFlags flag, int size)
         {
-            if (!BitConverter.IsFlagSet(flags, bitNumber))
+            if (source.IsEmpty)
+            {
+                value = ReadOnlyMemory<byte>.Empty;
+                return source;
+            }
+
+            if ((flags & flag) == MessageFlags.None)
             {
                 value = ReadOnlyMemory<byte>.Empty;
                 return source;
@@ -119,8 +134,5 @@ namespace RabbitMQ.Next.Transport.Messaging
             value = source[..size];
             return source[size..];
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool HasFlag(MessageFlags flags, MessageFlags flag) => (flags & flag) == flag;
     }
 }

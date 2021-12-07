@@ -40,9 +40,16 @@ namespace RabbitMQ.Next.Channels
         public ValueTask<bool> HandleContentAsync(IMessageProperties properties, ReadOnlySequence<byte> contentBytes)
             => new ValueTask<bool>(false);
 
-        public void Reset()
+        public void Release(Exception ex = null)
         {
-            this.tcs.TrySetCanceled();
+            if (ex == null)
+            {
+                this.tcs.TrySetCanceled();
+            }
+            else
+            {
+                this.tcs.TrySetException(ex);
+            }
         }
     }
 }

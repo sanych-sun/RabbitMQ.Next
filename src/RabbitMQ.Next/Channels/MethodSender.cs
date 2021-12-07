@@ -1,5 +1,6 @@
 using System;
 using System.Buffers;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -60,6 +61,7 @@ namespace RabbitMQ.Next.Channels
             return this.TransmitFrameAsync(frameBuilder, cancellation);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private async ValueTask TransmitFrameAsync(FrameBuilder frame, CancellationToken cancellation)
         {
             await this.senderSync.WaitAsync(cancellation);

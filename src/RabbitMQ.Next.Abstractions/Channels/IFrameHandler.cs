@@ -11,6 +11,6 @@ namespace RabbitMQ.Next.Abstractions.Channels
 
         ValueTask<bool> HandleContentAsync(IMessageProperties properties, ReadOnlySequence<byte> contentBytes);
 
-        void Reset();
+        void Release(Exception ex = null);
     }
 }

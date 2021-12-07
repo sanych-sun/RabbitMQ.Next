@@ -6,9 +6,9 @@
 // using RabbitMQ.Next.Consumer.Abstractions;
 // using RabbitMQ.Next.Abstractions;
 // using RabbitMQ.Next.Publisher;
-// using RabbitMQ.Next.Publisher.Abstractions;
 // using RabbitMQ.Next.Publisher.Attributes;
 // using RabbitMQ.Next.Serialization.PlainText;
+// using RabbitMQ.Next.TopologyBuilder;
 // using Xunit;
 // using Xunit.Abstractions;
 //
@@ -30,7 +30,9 @@
 //                 .AddEndpoint("amqp://test2:test2@localhost:5672/")
 //                 .ConnectAsync();
 //
-//             var publisher = connection.CreatePublisher("amq.topic",
+//             await connection.QueuePurgeAsync("amq.fanout");
+//
+//             var publisher = connection.Publisher("amq.fanout",
 //                 builder => builder
 //                     .UsePlainTextSerializer()
 //                     .PublisherConfirms()
@@ -38,7 +40,7 @@
 //
 //             var sw = Stopwatch.StartNew();
 //
-//             for (var i = 0; i < 10_000; i++)
+//             for (var i = 0; i < 50_000; i++)
 //             {
 //                 await publisher.PublishAsync(BuildDummyText(100));
 //             }
@@ -59,21 +61,20 @@
 //                 .UseDefaults()
 //                 .ConnectAsync();
 //
-//             var cancelation = new CancellationTokenSource();
 //             var num = 0;
+//             var tcs = new TaskCompletionSource();
 //             var consumer = connection.Consumer(
 //                 builder => builder
 //                     .BindToQueue("test-queue")
-//                     .EachMessageAcknowledgement()
 //                     .PrefetchCount(10)
 //                     .UsePlainTextSerializer()
-//                     .AddMessageHandler((message, properties, content) =>
+//                     .AddMessageHandler((message, content) =>
 //                     {
 //                         num++;
 //
-//                         if (num == 15)
+//                         if (num == 10000)
 //                         {
-//                             cancelation.Cancel();
+//                             tcs.SetResult();
 //                         }
 //
 //                         var body = content.GetContent<string>();
@@ -82,7 +83,11 @@
 //                     })
 //             );
 //
-//             await consumer.ConsumeAsync(cancelation.Token);
+//             var comsumeTask = consumer.ConsumeAsync();
+//
+//             await tcs.Task;
+//             await consumer.DisposeAsync();
+//             await comsumeTask;
 //         }
 //
 //         [Header("test", "wokrs")]

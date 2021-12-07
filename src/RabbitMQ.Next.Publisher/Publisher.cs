@@ -180,7 +180,7 @@ namespace RabbitMQ.Next.Publisher
                     this.lastDeliveryTag = 0;
                     for (var i = 0; i < this.frameHandlers.Count; i++)
                     {
-                        this.frameHandlers[0].Reset();
+                        this.frameHandlers[0].Release();
                     }
 
                     this.channel = await this.connection.OpenChannelAsync(this.frameHandlers, cancellationToken);

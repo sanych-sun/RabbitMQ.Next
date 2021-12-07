@@ -50,12 +50,8 @@ namespace RabbitMQ.Next.Publisher
             return this.HandleReturnedMessageAsync(properties, contentBytes);
         }
 
-        public void Reset()
-        {
-            this.expectContent = false;
-            this.currentMethod = default;
-            this.contentAccessor.Reset();
-        }
+        public void Release(Exception ex = null)
+            => this.Reset();
 
         private async ValueTask<bool> HandleReturnedMessageAsync(IMessageProperties properties, ReadOnlySequence<byte> contentBytes)
         {
@@ -78,6 +74,13 @@ namespace RabbitMQ.Next.Publisher
             }
 
             return true;
+        }
+
+        private void Reset()
+        {
+            this.expectContent = false;
+            this.currentMethod = default;
+            this.contentAccessor.Reset();
         }
     }
 }

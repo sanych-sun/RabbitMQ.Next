@@ -7,6 +7,7 @@ namespace RabbitMQ.Next.Transport.Messaging
 {
     internal sealed class LazyMessageProperties : IMessageProperties
     {
+        private MessageFlags flags;
         private ReadOnlyMemory<byte> contentType;
         private ReadOnlyMemory<byte> contentEncoding;
         private ReadOnlyMemory<byte> headers;
@@ -23,28 +24,28 @@ namespace RabbitMQ.Next.Transport.Messaging
 
         public void Set(ReadOnlyMemory<byte> buffer)
         {
-            buffer.Span.Read(out ushort flags);
-            this.Flags = (MessageFlags)flags;
+            buffer.Span.Read(out ushort fl);
+            this.flags = (MessageFlags)fl;
 
             buffer[sizeof(ushort)..]
-                .SplitStringProperty(out this.contentType, flags, 15)
-                .SplitStringProperty(out this.contentEncoding, flags, 14)
-                .SplitDynamicProperty(out this.headers, flags, 13)
-                .SplitFixedProperty(out this.deliveryMode, flags, 12, sizeof(byte))
-                .SplitFixedProperty(out this.priority, flags, 11, sizeof(byte))
-                .SplitStringProperty(out this.correlationId, flags, 10)
-                .SplitStringProperty(out this.replyTo, flags, 9)
-                .SplitStringProperty(out this.expiration, flags, 8)
-                .SplitStringProperty(out this.messageId, flags, 7)
-                .SplitFixedProperty(out this.timestamp, flags, 6, sizeof(ulong))
-                .SplitStringProperty(out this.type, flags, 5)
-                .SplitStringProperty(out this.userId, flags, 4)
-                .SplitStringProperty(out this.applicationId, flags, 3);
+                .SplitStringProperty(out this.contentType, this.flags, MessageFlags.ContentType)
+                .SplitStringProperty(out this.contentEncoding, this.flags, MessageFlags.ContentEncoding)
+                .SplitDynamicProperty(out this.headers, this.flags, MessageFlags.Headers)
+                .SplitFixedProperty(out this.deliveryMode, this.flags, MessageFlags.DeliveryMode, sizeof(byte))
+                .SplitFixedProperty(out this.priority, this.flags, MessageFlags.Priority, sizeof(byte))
+                .SplitStringProperty(out this.correlationId, this.flags, MessageFlags.CorrelationId)
+                .SplitStringProperty(out this.replyTo, this.flags, MessageFlags.ReplyTo)
+                .SplitStringProperty(out this.expiration, this.flags, MessageFlags.Expiration)
+                .SplitStringProperty(out this.messageId, this.flags, MessageFlags.MessageId)
+                .SplitFixedProperty(out this.timestamp, this.flags, MessageFlags.Timestamp, sizeof(ulong))
+                .SplitStringProperty(out this.type, this.flags, MessageFlags.Type)
+                .SplitStringProperty(out this.userId, this.flags, MessageFlags.UserId)
+                .SplitStringProperty(out this.applicationId, this.flags, MessageFlags.ApplicationId);
         }
 
         public void Reset()
         {
-            this.Flags = MessageFlags.None;
+            this.flags = MessageFlags.None;
             this.contentType = ReadOnlyMemory<byte>.Empty;
             this.contentEncoding = ReadOnlyMemory<byte>.Empty;
             this.headers = ReadOnlyMemory<byte>.Empty;
@@ -60,7 +61,7 @@ namespace RabbitMQ.Next.Transport.Messaging
             this.applicationId = ReadOnlyMemory<byte>.Empty;
         }
 
-        public MessageFlags Flags { get; private set; }
+        public MessageFlags Flags => this.flags;
 
         public string ContentType => this.DecodeString(this.contentType);
 

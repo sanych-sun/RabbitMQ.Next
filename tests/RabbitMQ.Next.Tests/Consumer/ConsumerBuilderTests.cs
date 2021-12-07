@@ -1,5 +1,6 @@
 using System;
 using NSubstitute;
+using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Consumer;
 using RabbitMQ.Next.Consumer.Abstractions;
 using RabbitMQ.Next.Serialization.Abstractions;
@@ -35,11 +36,11 @@ namespace RabbitMQ.Next.Tests.Consumer
         public void SetAcknowledger()
         {
             var consumerBuilder = new ConsumerBuilder();
-            var ackFactory = Substitute.For<Func<IAcknowledgement, IAcknowledger>>();
+            var ackFactory = Substitute.For<Func<IChannel, IAcknowledgement>>();
 
-            ((IConsumerBuilder) consumerBuilder).SetAcknowledger(ackFactory);
+            ((IConsumerBuilder) consumerBuilder).SetAcknowledgement(ackFactory);
 
-            Assert.Equal(ackFactory, consumerBuilder.AcknowledgerFactory);
+            Assert.Equal(ackFactory, consumerBuilder.AcknowledgementFactory);
         }
 
         [Fact]
@@ -47,7 +48,7 @@ namespace RabbitMQ.Next.Tests.Consumer
         {
             var consumerBuilder = new ConsumerBuilder();
 
-            Assert.Throws<ArgumentNullException>(() => ((IConsumerBuilder) consumerBuilder).SetAcknowledger(null));
+            Assert.Throws<ArgumentNullException>(() => ((IConsumerBuilder) consumerBuilder).SetAcknowledgement(null));
         }
 
         [Fact]

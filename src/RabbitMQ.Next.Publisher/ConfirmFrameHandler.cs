@@ -86,11 +86,18 @@ namespace RabbitMQ.Next.Publisher
         ValueTask<bool> IFrameHandler.HandleContentAsync(IMessageProperties properties, ReadOnlySequence<byte> contentBytes)
             => new(false);
 
-        void IFrameHandler.Reset()
+        void IFrameHandler.Release(Exception ex)
         {
             foreach (var task in this.pendingConfirms)
             {
-                task.Value.SetCanceled();
+                if (ex == null)
+                {
+                    task.Value.TrySetCanceled();
+                }
+                else
+                {
+                    task.Value.TrySetException(ex);
+                }
             }
             this.pendingConfirms.Clear();
         }

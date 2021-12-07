@@ -1,20 +1,13 @@
 using System;
 using System.Threading.Tasks;
-using RabbitMQ.Next.Consumer.Abstractions.Acknowledger;
 
 namespace RabbitMQ.Next.Consumer.Abstractions
 {
     public static class ConsumerBuilderExtensions
     {
-        public static IConsumerBuilder EachMessageAcknowledgement(this IConsumerBuilder builder)
+        public static IConsumerBuilder NoAcknowledgement(this IConsumerBuilder builder)
         {
-            builder.SetAcknowledger(ack => new EachMessageAcknowledger(ack));
-            return builder;
-        }
-
-        public static IConsumerBuilder MultipleMessageAcknowledgement(this IConsumerBuilder builder, TimeSpan timeout, int count)
-        {
-            builder.SetAcknowledger(ack => new MultipleMessageAcknowledger(ack, timeout, count));
+            builder.SetAcknowledgement(_ => null);
             return builder;
         }
 

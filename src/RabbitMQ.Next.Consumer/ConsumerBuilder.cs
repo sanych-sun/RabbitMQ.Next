@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Consumer.Abstractions;
 using RabbitMQ.Next.Serialization.Abstractions;
 
@@ -13,7 +14,7 @@ namespace RabbitMQ.Next.Consumer
 
         public ConsumerBuilder()
         {
-            this.EachMessageAcknowledgement();
+            this.AcknowledgementFactory = ch => new DefaultAcknowledgement(ch);
         }
 
         public IReadOnlyList<(ISerializer Serializer, string ContentType, bool Default)> Serializers => this.serializers;
@@ -26,7 +27,7 @@ namespace RabbitMQ.Next.Consumer
 
         public ushort PrefetchCount { get; private set; }
 
-        public Func<IAcknowledgement, IAcknowledger> AcknowledgerFactory { get; private set; }
+        public Func<IChannel, IAcknowledgement> AcknowledgementFactory { get; private set; }
 
         public UnprocessedMessageMode OnUnprocessedMessage { get; private set; } = UnprocessedMessageMode.Requeue;
 
@@ -52,14 +53,14 @@ namespace RabbitMQ.Next.Consumer
             return this;
         }
 
-        IConsumerBuilder IConsumerBuilder.SetAcknowledger(Func<IAcknowledgement, IAcknowledger> acknowledgerFactory)
+        IConsumerBuilder IConsumerBuilder.SetAcknowledgement(Func<IChannel, IAcknowledgement> acknowledgerFactory)
         {
             if (acknowledgerFactory == null)
             {
                 throw new ArgumentNullException(nameof(acknowledgerFactory));
             }
 
-            this.AcknowledgerFactory = acknowledgerFactory;
+            this.AcknowledgementFactory = acknowledgerFactory;
             return this;
         }
 
