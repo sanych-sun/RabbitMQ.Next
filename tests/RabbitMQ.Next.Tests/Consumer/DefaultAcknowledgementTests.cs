@@ -55,7 +55,7 @@ namespace RabbitMQ.Next.Tests.Consumer
             var acknowledgement = new DefaultAcknowledgement(channel);
 
             await acknowledgement.AckAsync(1);
-            await Task.Delay(10);
+            await Task.Delay(50);
 
             await acknowledgement.AckAsync(2);
             await acknowledgement.AckAsync(3);
@@ -82,7 +82,7 @@ namespace RabbitMQ.Next.Tests.Consumer
             var acknowledgement = new DefaultAcknowledgement(channel);
 
             await acknowledgement.AckAsync(1);
-            await Task.Delay(10);
+            await Task.Delay(50);
 
             await acknowledgement.AckAsync(2);
             await acknowledgement.NackAsync(3, false);
