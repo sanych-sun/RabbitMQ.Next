@@ -27,7 +27,7 @@ namespace RabbitMQ.Next.Benchmarks.Consumer
         public async Task Setup()
         {
             this.connection = await ConnectionBuilder.Default
-                .AddEndpoint(Helper.RabbitMqConnection)
+                .Endpoint(Helper.RabbitMqConnection)
                 .ConnectAsync();
 
             ConnectionFactory factory = new ConnectionFactory();
@@ -112,7 +112,7 @@ namespace RabbitMQ.Next.Benchmarks.Consumer
                     .BindToQueue("test-queue")
                     .PrefetchCount(10)
                     .UsePlainTextSerializer()
-                    .AddMessageHandler((message, content) =>
+                    .MessageHandler((message, content) =>
                     {
                         var data = content.GetContent<string>();
                         var messageId = content.Properties.MessageId;

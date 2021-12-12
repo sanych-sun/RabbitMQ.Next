@@ -21,7 +21,7 @@ namespace RabbitMQ.Next.Benchmarks.Publisher
         public async Task Setup()
         {
             this.connection = await ConnectionBuilder.Default
-                .AddEndpoint(Helper.RabbitMqConnection)
+                .Endpoint(Helper.RabbitMqConnection)
                 .ConnectAsync();
 
             ConnectionFactory factory = new ConnectionFactory();

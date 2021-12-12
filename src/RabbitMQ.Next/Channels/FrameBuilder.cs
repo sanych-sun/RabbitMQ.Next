@@ -67,11 +67,17 @@ namespace RabbitMQ.Next.Channels
 
             this.EndFrame(FrameType.ContentHeader);
 
+            var beforeContentOffset = this.buffer.Offset;
             var beforeContent = this.totalPayloadSize;
             this.BeginFrame();
             contentBuilder.Invoke(state, this);
             this.EndFrame(FrameType.ContentBody);
             var contentSize = this.totalPayloadSize - beforeContent;
+
+            if (contentSize == 0)
+            {
+                this.buffer.Rollback(beforeContentOffset);
+            }
 
             contentSizeBuffer.Write((ulong)contentSize);
         }

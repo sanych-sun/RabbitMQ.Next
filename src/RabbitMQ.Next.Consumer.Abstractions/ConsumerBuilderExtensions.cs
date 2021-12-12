@@ -11,10 +11,32 @@ namespace RabbitMQ.Next.Consumer.Abstractions
             return builder;
         }
 
-        public static IConsumerBuilder AddMessageHandler(this IConsumerBuilder builder, Func<DeliveredMessage, IContentAccessor, ValueTask<bool>> handler)
+        public static IConsumerBuilder MessageHandler(this IConsumerBuilder builder, Func<DeliveredMessage, IContentAccessor, ValueTask<bool>> handler)
         {
             var messageHandler = new DeliveredMessageDelegateHandler(handler);
-            builder.AddMessageHandler(messageHandler);
+            builder.MessageHandler(messageHandler);
+
+            return builder;
+        }
+
+        public static IConsumerBuilder MessageHandler(this IConsumerBuilder builder, Func<DeliveredMessage, IContentAccessor, bool> handler)
+        {
+            var messageHandler = new DeliveredMessageDelegateHandler(
+                (message, content) => new ValueTask<bool>(handler(message, content)));
+            builder.MessageHandler(messageHandler);
+
+            return builder;
+        }
+
+        public static IConsumerBuilder MessageHandler(this IConsumerBuilder builder, Action<DeliveredMessage, IContentAccessor> handler)
+        {
+            var messageHandler = new DeliveredMessageDelegateHandler(
+                (message, content) =>
+                {
+                    handler(message, content);
+                    return new ValueTask<bool>(true);
+                });
+            builder.MessageHandler(messageHandler);
 
             return builder;
         }

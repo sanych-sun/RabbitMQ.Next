@@ -84,7 +84,7 @@ namespace RabbitMQ.Next.Tests
 
             foreach (var endpoint in endpoints)
             {
-                builder.AddEndpoint(endpoint.host, endpoint.port, endpoint.ssl);
+                builder.Endpoint(endpoint.host, endpoint.port, endpoint.ssl);
             }
 
             await builder.ConnectAsync();

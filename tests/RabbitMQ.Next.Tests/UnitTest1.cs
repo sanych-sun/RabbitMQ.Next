@@ -27,10 +27,8 @@
 //         public async Task Test1()
 //         {
 //             await using var connection = await ConnectionBuilder.Default
-//                 .AddEndpoint("amqp://test2:test2@localhost:5672/")
+//                 .Endpoint("amqp://test2:test2@localhost:5672/")
 //                 .ConnectAsync();
-//
-//             await connection.QueuePurgeAsync("amq.fanout");
 //
 //             var publisher = connection.Publisher("amq.fanout",
 //                 builder => builder
@@ -40,9 +38,9 @@
 //
 //             var sw = Stopwatch.StartNew();
 //
-//             for (var i = 0; i < 50_000; i++)
+//             //for (var i = 0; i < 10_000; i++)
 //             {
-//                 await publisher.PublishAsync(BuildDummyText(100));
+//                 await publisher.PublishAsync(string.Empty);
 //             }
 //
 //             await publisher.DisposeAsync();
@@ -57,7 +55,7 @@
 //         {
 //             //var connection = new Connection(ConnectionString.Create("amqp://rpeesesf:naQF5gZbGA9GzNHkSKE4QxwBt__Lsmu-@beaver.rmq.cloudamqp.com/rpeesesf"));
 //             await using var connection = await ConnectionBuilder.Default
-//                 .AddEndpoint("amqp://test1:test1@localhost:5672/")
+//                 .Endpoint("amqp://test1:test1@localhost:5672/")
 //                 .UseDefaults()
 //                 .ConnectAsync();
 //
@@ -68,7 +66,7 @@
 //                     .BindToQueue("test-queue")
 //                     .PrefetchCount(10)
 //                     .UsePlainTextSerializer()
-//                     .AddMessageHandler((message, content) =>
+//                     .MessageHandler((message, content) =>
 //                     {
 //                         num++;
 //

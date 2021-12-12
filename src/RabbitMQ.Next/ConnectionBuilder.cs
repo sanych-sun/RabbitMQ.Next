@@ -55,7 +55,7 @@ namespace RabbitMQ.Next
             return this;
         }
 
-        public IConnectionBuilder AddEndpoint(string host, int port, bool ssl)
+        public IConnectionBuilder Endpoint(string host, int port, bool ssl)
         {
             this.endpoints.Add(new Endpoint(host, port, ssl));
             return this;

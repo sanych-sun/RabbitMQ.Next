@@ -15,6 +15,7 @@ namespace RabbitMQ.Next.Consumer
         public ConsumerBuilder()
         {
             this.AcknowledgementFactory = ch => new DefaultAcknowledgement(ch);
+            this.PrefetchCount = 10;
         }
 
         public IReadOnlyList<(ISerializer Serializer, string ContentType, bool Default)> Serializers => this.serializers;
@@ -76,7 +77,7 @@ namespace RabbitMQ.Next.Consumer
             return this;
         }
 
-        IConsumerBuilder IConsumerBuilder.AddMessageHandler(IDeliveredMessageHandler handler)
+        IConsumerBuilder IConsumerBuilder.MessageHandler(IDeliveredMessageHandler handler)
         {
             if (handler == null)
             {
@@ -87,7 +88,7 @@ namespace RabbitMQ.Next.Consumer
             return this;
         }
 
-        public IConsumerBuilder UseSerializer(ISerializer serializer, string contentType = null, bool isDefault = true)
+        IConsumerBuilder ISerializationBuilder<IConsumerBuilder>.UseSerializer(ISerializer serializer, string contentType, bool isDefault)
         {
             if (serializer == null)
             {

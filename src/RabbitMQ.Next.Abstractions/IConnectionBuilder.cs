@@ -11,7 +11,7 @@ namespace RabbitMQ.Next.Abstractions
 
         IConnectionBuilder VirtualHost(string vhost);
 
-        IConnectionBuilder AddEndpoint(string host, int port, bool ssl = false);
+        IConnectionBuilder Endpoint(string host, int port, bool ssl = false);
 
         IConnectionBuilder ConfigureMethodRegistry(Action<IMethodRegistryBuilder> builder);
 

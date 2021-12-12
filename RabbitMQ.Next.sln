@@ -32,6 +32,14 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Serializers", "Serializers"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMQ.Next.Serialization.PlainText", "src\RabbitMQ.Next.Serialization.PlainText\RabbitMQ.Next.Serialization.PlainText.csproj", "{EBD41BA4-57E2-4CE0-ABA7-75E5FF6DFD0F}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{2D85D85A-2481-409A-9D98-613AF36C7A10}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "examples", "examples", "{750B1D71-E43B-4714-8AA3-AB9B0EC7E931}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMQ.Next.Examples.SimplePublisher", "docs\examples\RabbitMQ.Next.Examples.SimplePublisher\RabbitMQ.Next.Examples.SimplePublisher.csproj", "{ECBCB520-1E19-4AC6-9CCD-AF3DE864A5F1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMQ.Next.Examples.SimpleConsumer", "docs\examples\RabbitMQ.Next.Examples.SimpleConsumer\RabbitMQ.Next.Examples.SimpleConsumer.csproj", "{1946230B-BC32-4C27-88E2-8D2938DF2E5A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -90,6 +98,14 @@ Global
 		{EBD41BA4-57E2-4CE0-ABA7-75E5FF6DFD0F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EBD41BA4-57E2-4CE0-ABA7-75E5FF6DFD0F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EBD41BA4-57E2-4CE0-ABA7-75E5FF6DFD0F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ECBCB520-1E19-4AC6-9CCD-AF3DE864A5F1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ECBCB520-1E19-4AC6-9CCD-AF3DE864A5F1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ECBCB520-1E19-4AC6-9CCD-AF3DE864A5F1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ECBCB520-1E19-4AC6-9CCD-AF3DE864A5F1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1946230B-BC32-4C27-88E2-8D2938DF2E5A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1946230B-BC32-4C27-88E2-8D2938DF2E5A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1946230B-BC32-4C27-88E2-8D2938DF2E5A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1946230B-BC32-4C27-88E2-8D2938DF2E5A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{AB00A6F3-C3E0-4E61-B302-F9CF0288819E} = {C895EE24-13DF-45C3-AF1D-B6B6EE4A10A9}
@@ -106,5 +122,8 @@ Global
 		{C1AECBDF-D38D-40E0-B76F-2E3A784F8D95} = {B0A5F08B-AC73-4D1C-BB59-983C7363E986}
 		{AD3AF1AA-71EE-4A2C-84DD-5C7DF141C187} = {C895EE24-13DF-45C3-AF1D-B6B6EE4A10A9}
 		{EBD41BA4-57E2-4CE0-ABA7-75E5FF6DFD0F} = {AD3AF1AA-71EE-4A2C-84DD-5C7DF141C187}
+		{750B1D71-E43B-4714-8AA3-AB9B0EC7E931} = {2D85D85A-2481-409A-9D98-613AF36C7A10}
+		{ECBCB520-1E19-4AC6-9CCD-AF3DE864A5F1} = {750B1D71-E43B-4714-8AA3-AB9B0EC7E931}
+		{1946230B-BC32-4C27-88E2-8D2938DF2E5A} = {750B1D71-E43B-4714-8AA3-AB9B0EC7E931}
 	EndGlobalSection
 EndGlobal

@@ -74,25 +74,25 @@ namespace RabbitMQ.Next.Tests.Consumer
         }
 
         [Fact]
-        public void AddMessageHandler()
+        public void MessageHandler()
         {
             var consumerBuilder = new ConsumerBuilder();
             var handler1 = Substitute.For<IDeliveredMessageHandler>();
             var handler2 = Substitute.For<IDeliveredMessageHandler>();
 
-            ((IConsumerBuilder) consumerBuilder).AddMessageHandler(handler1);
-            ((IConsumerBuilder) consumerBuilder).AddMessageHandler(handler2);
+            ((IConsumerBuilder) consumerBuilder).MessageHandler(handler1);
+            ((IConsumerBuilder) consumerBuilder).MessageHandler(handler2);
 
             Assert.Contains(handler1, consumerBuilder.Handlers);
             Assert.Contains(handler2, consumerBuilder.Handlers);
         }
 
         [Fact]
-        public void AddMessageHandlerThrowsOnNull()
+        public void MessageHandlerThrowsOnNull()
         {
             var consumerBuilder = new ConsumerBuilder();
 
-            Assert.Throws<ArgumentNullException>(() => consumerBuilder.AddMessageHandler(null));
+            Assert.Throws<ArgumentNullException>(() => ((IConsumerBuilder)consumerBuilder).MessageHandler(null));
         }
 
         [Fact]
@@ -104,7 +104,7 @@ namespace RabbitMQ.Next.Tests.Consumer
 
             var builder = new ConsumerBuilder();
 
-            builder.UseSerializer(serializer, contentType, isDefault);
+            ((IConsumerBuilder)builder).UseSerializer(serializer, contentType, isDefault);
 
             Assert.Contains(builder.Serializers, s => s.Serializer == serializer && s.ContentType == contentType && s.Default == isDefault);
         }
@@ -113,7 +113,7 @@ namespace RabbitMQ.Next.Tests.Consumer
         public void UseSerializerThrowsOnNull()
         {
             var builder = new ConsumerBuilder();
-            Assert.Throws<ArgumentNullException>(() => ((IConsumerBuilder) builder).UseSerializer(null));
+            Assert.Throws<ArgumentNullException>(() => ((IConsumerBuilder)builder).UseSerializer(null));
         }
 
         [Fact]

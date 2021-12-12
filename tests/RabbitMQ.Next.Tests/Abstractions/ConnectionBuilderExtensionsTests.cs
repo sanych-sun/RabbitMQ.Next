@@ -16,7 +16,7 @@ namespace RabbitMQ.Next.Tests.Abstractions
             var password = "pwd";
             var builder = Substitute.For<IConnectionBuilder>();
 
-            builder.UsePlainAuth(user, password);
+            builder.PlainAuth(user, password);
 
             builder.Received().Auth(Arg.Is<PlainAuthMechanism>(a => a.UserName == user && a.Password == password));
         }
@@ -26,7 +26,7 @@ namespace RabbitMQ.Next.Tests.Abstractions
         {
             var builder = Substitute.For<IConnectionBuilder>();
 
-            Assert.Throws<ArgumentException>(() => builder.AddEndpoint("some random text"));
+            Assert.Throws<ArgumentException>(() => builder.Endpoint("some random text"));
         }
 
         [Fact]
@@ -34,7 +34,7 @@ namespace RabbitMQ.Next.Tests.Abstractions
         {
             var builder = Substitute.For<IConnectionBuilder>();
 
-            Assert.Throws<ArgumentException>(() => builder.AddEndpoint("http://rabbitmq.com"));
+            Assert.Throws<ArgumentException>(() => builder.Endpoint("http://rabbitmq.com"));
         }
 
         [Fact]
@@ -42,7 +42,7 @@ namespace RabbitMQ.Next.Tests.Abstractions
         {
             var builder = Substitute.For<IConnectionBuilder>();
 
-            Assert.Throws<ArgumentException>(() => builder.AddEndpoint(new Uri("http://rabbitmq.com")));
+            Assert.Throws<ArgumentException>(() => builder.Endpoint(new Uri("http://rabbitmq.com")));
         }
 
         [Theory]
@@ -51,9 +51,9 @@ namespace RabbitMQ.Next.Tests.Abstractions
         {
             var builder = Substitute.For<IConnectionBuilder>();
 
-            builder.AddEndpoint(endpoint);
+            builder.Endpoint(endpoint);
 
-            builder.Received().AddEndpoint(host, port, ssl);
+            builder.Received().Endpoint(host, port, ssl);
             builder.Received().VirtualHost(vhost);
             if (auth == null)
             {

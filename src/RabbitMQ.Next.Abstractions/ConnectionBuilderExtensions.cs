@@ -12,28 +12,28 @@ namespace RabbitMQ.Next.Abstractions
         private const int DefaultSslPort = 5671;
         private const string DefaultVirtualHost = "/";
 
-        public static IConnectionBuilder UsePlainAuth(this IConnectionBuilder builder, string user, string password)
+        public static IConnectionBuilder PlainAuth(this IConnectionBuilder builder, string user, string password)
         {
             builder.Auth(new PlainAuthMechanism(user, password));
             return builder;
         }
 
-        public static IConnectionBuilder AddEndpoint(this IConnectionBuilder builder, string endpoint)
+        public static IConnectionBuilder Endpoint(this IConnectionBuilder builder, string endpoint)
         {
             endpoint = WebUtility.UrlDecode(endpoint);
             if (Uri.TryCreate(endpoint, UriKind.Absolute, out var uri))
             {
-                return builder.AddEndpoint(uri);
+                return builder.Endpoint(uri);
             }
 
             throw new ArgumentException("Cannot parse endpoint as Uri.",nameof(endpoint));
         }
 
-        public static IConnectionBuilder AddEndpoint(this IConnectionBuilder builder, Uri endpoint)
+        public static IConnectionBuilder Endpoint(this IConnectionBuilder builder, Uri endpoint)
         {
             var parsed = ParseAmqpUri(endpoint);
 
-            builder.AddEndpoint(parsed.host, parsed.port, parsed.ssl);
+            builder.Endpoint(parsed.host, parsed.port, parsed.ssl);
             builder.VirtualHost(parsed.vhost);
             if (parsed.authMechanism != null)
             {
