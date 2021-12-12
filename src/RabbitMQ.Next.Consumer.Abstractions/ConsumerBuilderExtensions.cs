@@ -27,18 +27,5 @@ namespace RabbitMQ.Next.Consumer.Abstractions
 
             return builder;
         }
-
-        public static IConsumerBuilder MessageHandler(this IConsumerBuilder builder, Action<DeliveredMessage, IContentAccessor> handler)
-        {
-            var messageHandler = new DeliveredMessageDelegateHandler(
-                (message, content) =>
-                {
-                    handler(message, content);
-                    return new ValueTask<bool>(true);
-                });
-            builder.MessageHandler(messageHandler);
-
-            return builder;
-        }
     }
 }

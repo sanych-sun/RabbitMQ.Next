@@ -26,7 +26,7 @@ namespace RabbitMQ.Next.Consumer.Abstractions
         {
             if (this.wrapped == null)
             {
-                return new ValueTask<bool>(false);
+                throw new ObjectDisposedException(nameof(DeliveredMessageDelegateHandler));
             }
 
             return this.wrapped(message, content);

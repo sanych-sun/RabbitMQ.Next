@@ -10,6 +10,23 @@ namespace RabbitMQ.Next.Tests.Consumer
     public class DetachedMessagePropertiesTests
     {
         [Fact]
+        public void FlagsProperty()
+        {
+            var val = MessageFlags.ContentType | MessageFlags.Priority;
+            var src = Substitute.For<IMessageProperties>();
+            src.Flags.Returns(val);
+            var prop = new DetachedMessageProperties(src);
+
+            var result = src.Received().Flags;
+            src.ClearReceivedCalls();
+
+            result = prop.Flags;
+            Assert.Equal(val, result);
+
+            result = src.DidNotReceive().Flags;
+        }
+
+        [Fact]
         public void ContentTypeProperty()
         {
             var val = "contentType";

@@ -25,7 +25,11 @@ namespace RabbitMQ.Next.Examples.SimpleConsumer
                     .BindToQueue("test-queue")
                     .PrefetchCount(10)
                     .UsePlainTextSerializer()
-                    .MessageHandler((message, content) => { Console.WriteLine($"[{DateTimeOffset.Now.TimeOfDay}] Message received via '{message.Exchange}' exchange: {content.GetContent<string>()}"); }));
+                    .MessageHandler((message, content) =>
+                    {
+                        Console.WriteLine($"[{DateTimeOffset.Now.TimeOfDay}] Message received via '{message.Exchange}' exchange: {content.GetContent<string>()}");
+                        return true;
+                    }));
 
             Console.WriteLine("Consumer created. Press Ctrl+C to exit.");
 
