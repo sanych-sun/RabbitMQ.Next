@@ -1,7 +1,6 @@
 using System;
 using System.Threading.Tasks;
 using NSubstitute;
-using RabbitMQ.Next.Abstractions.Messaging;
 using RabbitMQ.Next.Publisher.Abstractions;
 using Xunit;
 

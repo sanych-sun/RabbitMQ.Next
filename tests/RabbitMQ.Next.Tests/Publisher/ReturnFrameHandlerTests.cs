@@ -90,7 +90,7 @@ namespace RabbitMQ.Next.Tests.Publisher
 
         private ReturnFrameHandler CreateMock(IReadOnlyList<IReturnedMessageHandler> handlers = null)
         {
-            var returnMethodParser = new DummyParser<ReturnMethod>(); // cannot use mock here, because of ref-like parameter
+            var returnMethodParser = new DummyParser<ReturnMethod>(); // cannot use mock here, because of Span in interface parameters
             var serializerFactory = Substitute.For<ISerializerFactory>();
 
             return new ReturnFrameHandler(serializerFactory, handlers ?? new [] { Substitute.For<IReturnedMessageHandler>() }, returnMethodParser);
