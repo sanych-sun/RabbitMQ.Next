@@ -67,6 +67,11 @@ namespace RabbitMQ.Next.Consumer
 
         private async ValueTask CancelConsumeAsync(Exception ex = null)
         {
+            if (this.channel == null)
+            {
+                return;
+            }
+
             for (var i = 0; i < this.queues.Count; i++)
             {
                 var queue = this.queues[i];

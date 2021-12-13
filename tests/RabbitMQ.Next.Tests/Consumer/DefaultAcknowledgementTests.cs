@@ -63,7 +63,7 @@ namespace RabbitMQ.Next.Tests.Consumer
             await acknowledgement.AckAsync(5);
 
             tcs.SetResult();
-
+            await Task.Delay(50);
 
             Received.InOrder(async () => {
                 await channel.Received().SendAsync(
