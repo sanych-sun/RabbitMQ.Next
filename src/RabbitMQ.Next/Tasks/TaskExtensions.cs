@@ -5,6 +5,18 @@ namespace RabbitMQ.Next.Tasks
 {
     public static class TaskExtensions
     {
+        public static Task AsTask(this CancellationToken cancellation)
+        {
+            if (cancellation.IsCancellationRequested)
+            {
+                return Task.CompletedTask;
+            }
+
+            var tcs = new TaskCompletionSource();
+            cancellation.Register(s => ((TaskCompletionSource)s).TrySetResult(), tcs);
+            return tcs.Task;
+        }
+
         public static Task<TResult> WithCancellation<TResult>(this Task<TResult> task, CancellationToken cancellation)
         {
             if (task.IsCompleted)
