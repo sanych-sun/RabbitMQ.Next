@@ -21,7 +21,6 @@ namespace RabbitMQ.Next.Examples.SimplePublisher
 
             var publisher = connection.Publisher("amq.fanout",
                 builder => builder
-                    .PublisherConfirms()
                     .UsePlainTextSerializer());
 
             Console.WriteLine("Publisher created. Type any text to send it to the 'amq.fanout' exchange. Enter empty string to exit");

@@ -58,16 +58,16 @@ namespace RabbitMQ.Next.Tests.Publisher
         {
             var builder = new PublisherBuilder();
 
-            Assert.False(builder.PublisherConfirms);
+            Assert.True(builder.PublisherConfirms);
         }
 
         [Fact]
-        public void Confirms()
+        public void NoConfirms()
         {
             var builder = new PublisherBuilder();
-            ((IPublisherBuilder)builder).PublisherConfirms();
+            ((IPublisherBuilder)builder).NoConfirm();
 
-            Assert.True(builder.PublisherConfirms);
+            Assert.False(builder.PublisherConfirms);
         }
 
         [Fact]

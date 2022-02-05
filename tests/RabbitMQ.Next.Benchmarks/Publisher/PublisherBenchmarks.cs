@@ -12,29 +12,17 @@ using IConnection = RabbitMQ.Next.Abstractions.IConnection;
 
 namespace RabbitMQ.Next.Benchmarks.Publisher
 {
-    public class FireAndForgetPublishBenchmarks
+    public class PublisherBenchmarks
     {
         private IConnection connection;
         private RabbitMQ.Client.IConnection theirConnection;
-
-        [GlobalSetup]
-        public async Task Setup()
-        {
-            this.connection = await ConnectionBuilder.Default
-                .Endpoint(Helper.RabbitMqConnection)
-                .ConnectAsync();
-
-            ConnectionFactory factory = new ConnectionFactory();
-            factory.Uri = Helper.RabbitMqConnection;
-
-            this.theirConnection = factory.CreateConnection();
-        }
 
         [Benchmark(Baseline = true)]
         [ArgumentsSource(nameof(TestCases))]
         public void PublishBaseLibrary(TestCaseParameters parameters)
         {
             var model = this.theirConnection.CreateModel();
+            model.ConfirmSelect();
 
             for (var i = 0; i < parameters.Messages.Count; i++)
             {
@@ -42,6 +30,7 @@ namespace RabbitMQ.Next.Benchmarks.Publisher
                 var props = model.CreateBasicProperties();
                 props.CorrelationId = data.CorrelationId;
                 model.BasicPublish("amq.topic", "", props, Encoding.UTF8.GetBytes(data.Payload));
+                model.WaitForConfirms();
             }
 
             model.Close();
@@ -93,6 +82,33 @@ namespace RabbitMQ.Next.Benchmarks.Publisher
             await publisher.DisposeAsync();
         }
 
+        [GlobalSetup(Target = nameof(PublishBaseLibrary))]
+        public void SetupOfficialLibrary()
+        {
+            ConnectionFactory factory = new ConnectionFactory();
+            factory.Uri = Helper.RabbitMqConnection;
+
+            this.theirConnection = factory.CreateConnection();
+        }
+
+        [GlobalCleanup(Target = nameof(PublishBaseLibrary))]
+        public void CleanUpOfficialLibrary()
+        {
+            this.theirConnection.Close();
+            this.theirConnection.Dispose();
+        }
+
+        [GlobalSetup(Targets = new[] {nameof(PublishParallelAsync), nameof(PublishAsync)})]
+        public async Task Setup()
+        {
+            this.connection = await ConnectionBuilder.Default
+                .Endpoint(Helper.RabbitMqConnection)
+                .ConnectAsync();
+        }
+
+        [GlobalCleanup(Targets = new[] {nameof(PublishParallelAsync), nameof(PublishAsync)})]
+        public ValueTask CleanUp() => this.connection.DisposeAsync();
+
         public static IEnumerable<TestCaseParameters> TestCases()
         {
             TestCaseParameters GenerateTestCase(int payloadLen, int count, string name)
@@ -107,11 +123,11 @@ namespace RabbitMQ.Next.Benchmarks.Publisher
                 return new TestCaseParameters(name, messages);
             }
 
-            yield return GenerateTestCase(128, 10_000, "10_000 (128 B)");
-            yield return GenerateTestCase(1024, 10_000, "10_000 (1 kB)");
-            yield return GenerateTestCase(10240, 10_000, "10_000 (10 kB)");
-            yield return GenerateTestCase(102400, 10_000, "10_000 (100 kB)");
-            yield return GenerateTestCase(1048576, 1_000, "1_000 (1 MB)");
+            yield return GenerateTestCase(100, 10_000, "100 (100 B)");
+            yield return GenerateTestCase(1024, 10_000, "1024 (1 kB)");
+            yield return GenerateTestCase(10240, 10_000, "10240 (10 kB)");
+            yield return GenerateTestCase(102400, 10_000, "102400 (100 kB)");
+            yield return GenerateTestCase(102400, 10_000, "204800 (200 kB)");
         }
 
         public class TestCaseParameters

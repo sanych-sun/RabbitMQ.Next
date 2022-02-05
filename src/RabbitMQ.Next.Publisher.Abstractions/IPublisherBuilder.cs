@@ -8,6 +8,6 @@ namespace RabbitMQ.Next.Publisher.Abstractions
 
         IPublisherBuilder AddReturnedMessageHandler(IReturnedMessageHandler returnedMessageHandler);
 
-        IPublisherBuilder PublisherConfirms();
+        IPublisherBuilder NoConfirm();
     }
 }

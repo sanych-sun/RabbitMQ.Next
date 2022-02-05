@@ -17,7 +17,7 @@ namespace RabbitMQ.Next.Publisher
 
         public IReadOnlyList<IReturnedMessageHandler> ReturnedMessageHandlers => this.returnedMessageHandlers;
 
-        public bool PublisherConfirms { get; private set; }
+        public bool PublisherConfirms { get; private set; } = true;
 
         IPublisherBuilder IPublisherBuilder.UseMessageInitializer(IMessageInitializer initializer)
         {
@@ -42,9 +42,9 @@ namespace RabbitMQ.Next.Publisher
         }
 
 
-        IPublisherBuilder IPublisherBuilder.PublisherConfirms()
+        IPublisherBuilder IPublisherBuilder.NoConfirm()
         {
-            this.PublisherConfirms = true;
+            this.PublisherConfirms = false;
             return this;
         }
 
