@@ -11,7 +11,7 @@ namespace RabbitMQ.Next.Transport.Methods.Exchange
                 .Write((short) ProtocolConstants.ObsoleteField)
                 .Write(method.Exchange)
                 .Write(method.Type)
-                .Write(method.Flags)
+                .Write(BitConverter.ComposeFlags(method.Passive, method.Durable, method.AutoDelete, method.Internal))
                 .Write(method.Arguments);
 
             return destination.Length - result.Length;

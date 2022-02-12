@@ -8,11 +8,11 @@ namespace RabbitMQ.Next.Publisher
     public class MessageBuilder : IMessageBuilder, IMessageProperties
     {
         private readonly Dictionary<string, object> headers = new();
-        private MessageFlags flags;
+        private MessageFlags flags = MessageFlags.DeliveryMode;
         private string routingKey;
         private string contentType;
         private string contentEncoding;
-        private DeliveryMode deliveryMode;
+        private DeliveryMode deliveryMode = DeliveryMode.Persistent;
         private byte priority;
         private string correlationId;
         private string replyTo;
@@ -25,12 +25,12 @@ namespace RabbitMQ.Next.Publisher
 
         public void Reset()
         {
-            this.flags = MessageFlags.None;
+            this.flags = MessageFlags.DeliveryMode;
             this.routingKey = null;
             this.contentType = null;
             this.contentEncoding = null;
             this.headers.Clear();
-            this.deliveryMode = DeliveryMode.Unset;
+            this.deliveryMode = DeliveryMode.Persistent;
             this.priority = default;
             this.correlationId = null;
             this.replyTo = null;

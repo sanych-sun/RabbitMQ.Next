@@ -6,7 +6,11 @@ namespace RabbitMQ.Next.TopologyBuilder
 
         string Type { get; }
 
-        IExchangeBuilder Flags(ExchangeFlags flag);
+        IExchangeBuilder Transient();
+
+        IExchangeBuilder Internal();
+
+        IExchangeBuilder AutoDelete();
 
         IExchangeBuilder Argument(string key, object value);
     }

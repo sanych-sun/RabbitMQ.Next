@@ -10,7 +10,7 @@ namespace RabbitMQ.Next.Transport.Methods.Queue
             var result = destination
                 .Write((short) ProtocolConstants.ObsoleteField)
                 .Write(method.Queue)
-                .Write(method.Flags)
+                .Write(BitConverter.ComposeFlags(method.Passive, method.Durable, method.Exclusive, method.AutoDelete))
                 .Write(method.Arguments);
 
             return destination.Length - result.Length;

@@ -23,7 +23,6 @@ namespace RabbitMQ.Next.Examples.SimpleConsumer
             var consumer = connection.Consumer(
                 builder => builder
                     .BindToQueue("test-queue")
-                    .PrefetchCount(10)
                     .UsePlainTextSerializer()
                     .MessageHandler((message, content) =>
                     {

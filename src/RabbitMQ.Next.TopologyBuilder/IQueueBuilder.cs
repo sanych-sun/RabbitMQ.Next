@@ -4,7 +4,11 @@ namespace RabbitMQ.Next.TopologyBuilder
     {
         string Name { get; }
 
-        IQueueBuilder Flags(QueueFlags flag);
+        IQueueBuilder Transient();
+
+        IQueueBuilder Exclusive();
+
+        IQueueBuilder AutoDelete();
 
         IQueueBuilder Argument(string key, object value);
     }

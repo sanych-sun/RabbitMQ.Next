@@ -217,10 +217,10 @@ namespace RabbitMQ.Next.Tests.Publisher
         {
             var messageBuilder = new MessageBuilder();
 
-            ((IMessageBuilder)messageBuilder).DeliveryMode(DeliveryMode.Persistent);
+            ((IMessageBuilder)messageBuilder).DeliveryMode(DeliveryMode.NonPersistent);
             messageBuilder.Reset();
 
-            Assert.Equal(default, messageBuilder.DeliveryMode);
+            Assert.Equal(DeliveryMode.Persistent, messageBuilder.DeliveryMode);
         }
         
         [Theory]

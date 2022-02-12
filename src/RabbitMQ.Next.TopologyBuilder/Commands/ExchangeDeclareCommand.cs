@@ -11,7 +11,9 @@ namespace RabbitMQ.Next.TopologyBuilder.Commands
 {
     internal class ExchangeDeclareCommand : IExchangeBuilder, ICommand
     {
-        private ExchangeFlags flags;
+        private bool isDurable = true;
+        private bool isInternal = false;
+        private bool isAutoDelete = false;
         private Dictionary<string, object> arguments;
 
         public ExchangeDeclareCommand(string name, string type)
@@ -24,12 +26,24 @@ namespace RabbitMQ.Next.TopologyBuilder.Commands
 
         public string Type { get; }
 
-        public IExchangeBuilder Flags(ExchangeFlags flag)
+        public IExchangeBuilder Transient()
         {
-            this.flags |= flag;
-
+            this.isDurable = false;
             return this;
         }
+
+        public IExchangeBuilder Internal()
+        {
+            this.isInternal = true;
+            return this;
+        }
+
+        public IExchangeBuilder AutoDelete()
+        {
+            this.isAutoDelete = true;
+            return this;
+        }
+
 
         public IExchangeBuilder Argument(string key, object value)
         {
@@ -44,7 +58,7 @@ namespace RabbitMQ.Next.TopologyBuilder.Commands
             try
             {
                 await channel.SendAsync<DeclareMethod, DeclareOkMethod>(
-                    new (this.Name, this.Type, (byte)this.flags, this.arguments));
+                    new (this.Name, this.Type, this.isDurable, this.isAutoDelete, this.isInternal, this.arguments));
             }
             catch (ChannelException ex)
             {

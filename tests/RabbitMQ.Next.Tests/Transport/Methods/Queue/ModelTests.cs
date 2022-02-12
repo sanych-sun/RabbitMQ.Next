@@ -7,44 +7,48 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Queue
 {
     public class ModelTests
     {
-        [Fact]
-        public void DeclareMethod()
+        [Theory]
+        [MemberData(nameof(DeclareTestCases))]
+        public void DeclareMethod(string name, bool durable, bool exclusive, bool autoDelete, IReadOnlyDictionary<string, object> arguments)
         {
-            var name = "queueName";
-            var flags = (byte)42;
-            var arguments = new Dictionary<string, object>()
-            {
-                ["a"] = "a",
-            };
-
-            var method = new DeclareMethod(name, flags, arguments);
+            var method = new DeclareMethod(name, durable, exclusive, autoDelete, arguments);
 
             Assert.Equal(MethodId.QueueDeclare, method.MethodId);
             Assert.Equal(name, method.Queue);
-            Assert.Equal(flags, method.Flags);
+            Assert.False(method.Passive);
+            Assert.Equal(durable, method.Durable);
+            Assert.Equal(exclusive, method.Exclusive);
+            Assert.Equal(autoDelete, method.AutoDelete);
             Assert.Equal(arguments, method.Arguments);
+        }
+
+        public static IEnumerable<object[]> DeclareTestCases()
+        {
+            yield return new object[] {"queue", false, false, false, null};
+            yield return new object[] { "queue", true, false, false, null};
+            yield return new object[] { "queue", false, true, false, null};
+            yield return new object[] { "queue", false, false, true, null};
+            yield return new object[] { "queue", true, true, true, null};
+            yield return new object[] { "queue", true, true, true, new Dictionary<string, object>()
+            {
+                ["a"] = "a",
+            }};
         }
 
         [Fact]
         public void DeclarePassiveMethod()
         {
-            var method = new DeclareMethod("queue");
+            var name = "queue";
 
-            Assert.Equal(0b_0000001, method.Flags);
+            var method = new DeclareMethod(name);
+
+            Assert.Equal(MethodId.QueueDeclare, method.MethodId);
+            Assert.Equal(name, method.Queue);
+            Assert.True(method.Passive);
+            Assert.False(method.Durable);
+            Assert.False(method.AutoDelete);
+            Assert.False(method.Exclusive);
             Assert.Null(method.Arguments);
-            Assert.Equal("queue", method.Queue);
-        }
-
-        [Theory]
-        [InlineData(0b_00000010, true, false, false)]
-        [InlineData(0b_00000100, false, true, false)]
-        [InlineData(0b_00001000, false, false, true)]
-        [InlineData(0b_00000000, false, false, false)]
-        public void DeclareMethodFlags(byte expected, bool durable, bool exclusive, bool autoDelete)
-        {
-            var method = new DeclareMethod("queue", durable, exclusive, autoDelete, null);
-
-            Assert.Equal(expected, method.Flags);
         }
 
         [Fact]

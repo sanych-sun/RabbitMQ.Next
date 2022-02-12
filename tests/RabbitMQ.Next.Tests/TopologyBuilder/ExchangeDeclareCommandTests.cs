@@ -53,30 +53,78 @@ namespace RabbitMQ.Next.Tests.TopologyBuilder
         }
 
         [Fact]
-        public async Task CanPassFlag()
+        public async Task DurableByDefault()
         {
             var channel = Substitute.For<IChannel>();
             var builder = new ExchangeDeclareCommand("exchange", ExchangeType.Direct);
-            builder.Flags(ExchangeFlags.Durable);
 
             await builder.ExecuteAsync(channel);
 
             await channel.Received().SendAsync<DeclareMethod, DeclareOkMethod>(Arg.Is<DeclareMethod>(
-                m => m.Flags == (byte)ExchangeFlags.Durable));
+                m => m.Durable));
         }
 
         [Fact]
-        public async Task CanCombineFlags()
+        public async Task CanMakeTransient()
         {
             var channel = Substitute.For<IChannel>();
             var builder = new ExchangeDeclareCommand("exchange", ExchangeType.Direct);
-            builder.Flags(ExchangeFlags.AutoDelete);
-            builder.Flags(ExchangeFlags.Internal);
+            builder.Transient();
 
             await builder.ExecuteAsync(channel);
 
             await channel.Received().SendAsync<DeclareMethod, DeclareOkMethod>(Arg.Is<DeclareMethod>(
-                m => m.Flags == (byte)(ExchangeFlags.AutoDelete | ExchangeFlags.Internal)));
+                m => !m.Durable));
+        }
+
+        [Fact]
+        public async Task NoAutoDeleteByDefault()
+        {
+            var channel = Substitute.For<IChannel>();
+            var builder = new ExchangeDeclareCommand("exchange", ExchangeType.Direct);
+
+            await builder.ExecuteAsync(channel);
+
+            await channel.Received().SendAsync<DeclareMethod, DeclareOkMethod>(Arg.Is<DeclareMethod>(
+                m => !m.AutoDelete));
+        }
+
+        [Fact]
+        public async Task CanMakeAutoDelete()
+        {
+            var channel = Substitute.For<IChannel>();
+            var builder = new ExchangeDeclareCommand("exchange", ExchangeType.Direct);
+            builder.AutoDelete();
+
+            await builder.ExecuteAsync(channel);
+
+            await channel.Received().SendAsync<DeclareMethod, DeclareOkMethod>(Arg.Is<DeclareMethod>(
+                m => m.AutoDelete));
+        }
+
+        [Fact]
+        public async Task NoInternalByDefault()
+        {
+            var channel = Substitute.For<IChannel>();
+            var builder = new ExchangeDeclareCommand("exchange", ExchangeType.Direct);
+
+            await builder.ExecuteAsync(channel);
+
+            await channel.Received().SendAsync<DeclareMethod, DeclareOkMethod>(Arg.Is<DeclareMethod>(
+                m => !m.Internal));
+        }
+
+        [Fact]
+        public async Task CanMakeInternal()
+        {
+            var channel = Substitute.For<IChannel>();
+            var builder = new ExchangeDeclareCommand("exchange", ExchangeType.Direct);
+            builder.Internal();
+
+            await builder.ExecuteAsync(channel);
+
+            await channel.Received().SendAsync<DeclareMethod, DeclareOkMethod>(Arg.Is<DeclareMethod>(
+                m => m.Internal));
         }
 
         [Fact]

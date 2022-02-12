@@ -11,7 +11,9 @@ namespace RabbitMQ.Next.TopologyBuilder.Commands
 {
     internal class QueueDeclareCommand : IQueueBuilder, ICommand
     {
-        private QueueFlags flags;
+        private bool isDurable = true;
+        private bool isExclusive = false;
+        private bool isAutoDelete = false;
         private Dictionary<string, object> arguments;
 
         public QueueDeclareCommand(string name)
@@ -21,10 +23,21 @@ namespace RabbitMQ.Next.TopologyBuilder.Commands
 
         public string Name { get; }
 
-        public IQueueBuilder Flags(QueueFlags flag)
+        public IQueueBuilder Transient()
         {
-            this.flags |= flag;
+            this.isDurable = false;
+            return this;
+        }
 
+        public IQueueBuilder Exclusive()
+        {
+            this.isExclusive = true;
+            return this;
+        }
+
+        public IQueueBuilder AutoDelete()
+        {
+            this.isAutoDelete = true;
             return this;
         }
 
@@ -41,7 +54,7 @@ namespace RabbitMQ.Next.TopologyBuilder.Commands
             try
             {
                 await channel.SendAsync<DeclareMethod, DeclareOkMethod>(
-                    new(this.Name, (byte)this.flags, this.arguments));
+                    new(this.Name, this.isDurable, this.isExclusive, this.isAutoDelete, this.arguments));
             }
             catch (ChannelException ex)
             {

@@ -7,46 +7,50 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Exchange
 {
     public class ModelTests
     {
-        [Fact]
-        public void DeclareMethod()
+        [Theory]
+        [MemberData(nameof(DeclareTestCases))]
+        public void DeclareMethod(string name, string type, bool durable, bool autoDelete, bool @internal, IReadOnlyDictionary<string, object> arguments)
         {
-            var name = "exchangeName";
-            var type = "exchangeType";
-            var flags = (byte)42;
-            var arguments = new Dictionary<string, object>()
-            {
-                ["a"] = "a",
-            };
-
-            var method = new DeclareMethod(name, type, flags, arguments);
+            var method = new DeclareMethod(name, type, durable, autoDelete, @internal, arguments);
 
             Assert.Equal(MethodId.ExchangeDeclare, method.MethodId);
             Assert.Equal(name, method.Exchange);
             Assert.Equal(type, method.Type);
-            Assert.Equal(flags, method.Flags);
+            Assert.False(method.Passive);
+            Assert.Equal(durable, method.Durable);
+            Assert.Equal(autoDelete, method.AutoDelete);
+            Assert.Equal(@internal, method.Internal);
             Assert.Equal(arguments, method.Arguments);
         }
 
-        [Theory]
-        [InlineData(0b_00000000, false, false, false)]
-        [InlineData(0b_00000010, true, false, false)]
-        [InlineData(0b_00000100, false, true, false)]
-        [InlineData(0b_00001000, false, false, true)]
-        public void DeclareMethodFlags(byte expected, bool durable, bool autoDelete, bool @internal)
+        public static IEnumerable<object[]> DeclareTestCases()
         {
-            var method = new DeclareMethod("exchange", "type", durable, autoDelete, @internal, null);
-
-            Assert.Equal(expected, method.Flags);
+            yield return new object[] {"exchangeName", "type", false, false, false, null};
+            yield return new object[] { "exchangeName", "type", true, false, false, null};
+            yield return new object[] { "exchangeName", "type", false, true, false, null};
+            yield return new object[] { "exchangeName", "type", false, false, true, null};
+            yield return new object[] { "exchangeName", "type", true, true, true, null};
+            yield return new object[] { "exchangeName", "type", true, true, true, new Dictionary<string, object>()
+            {
+                ["a"] = "a",
+            }};
         }
 
         [Fact]
         public void DeclarePassiveMethod()
         {
-            var method = new DeclareMethod("exchange");
+            var name = "exchangeName";
 
-            Assert.Equal(0b_0000001, method.Flags);
+            var method = new DeclareMethod(name);
+
+            Assert.Equal(MethodId.ExchangeDeclare, method.MethodId);
+            Assert.Equal(name, method.Exchange);
+            Assert.True(method.Passive);
+            Assert.False(method.Durable);
+            Assert.False(method.AutoDelete);
+            Assert.False(method.Internal);
+            Assert.Null(method.Type);
             Assert.Null(method.Arguments);
-            Assert.Equal("exchange", method.Exchange);
         }
 
         [Fact]

@@ -160,7 +160,7 @@ namespace RabbitMQ.Next.Tests.Publisher
                 "myExchange", "key",
                 (Action<IMessageBuilder>)(m => m.RoutingKey("key")),
                 PublishFlags.None,
-                new MessageProperties()
+                new MessageProperties { DeliveryMode = DeliveryMode.Persistent }
             };
 
             yield return new object[]
@@ -169,7 +169,7 @@ namespace RabbitMQ.Next.Tests.Publisher
                 "myExchange", "key",
                 (Action<IMessageBuilder>)(m => m.RoutingKey("key")),
                 PublishFlags.Immediate,
-                new MessageProperties()
+                new MessageProperties{ DeliveryMode = DeliveryMode.Persistent }
             };
 
             yield return new object[]
@@ -178,7 +178,7 @@ namespace RabbitMQ.Next.Tests.Publisher
                 "myExchange", "key",
                 (Action<IMessageBuilder>)(m => m.RoutingKey("key")),
                 PublishFlags.None,
-                new MessageProperties { UserId = "testUser"}
+                new MessageProperties { UserId = "testUser", DeliveryMode = DeliveryMode.Persistent}
             };
 
             yield return new object[]
@@ -187,7 +187,7 @@ namespace RabbitMQ.Next.Tests.Publisher
                 "myExchange", "key",
                 (Action<IMessageBuilder>)(m => m.RoutingKey("key").Priority(1).Type("test")),
                 PublishFlags.None,
-                new MessageProperties { Priority = 1, Type = "test"}
+                new MessageProperties { Priority = 1, Type = "test", DeliveryMode = DeliveryMode.Persistent}
             };
 
             yield return new object[]
@@ -196,7 +196,7 @@ namespace RabbitMQ.Next.Tests.Publisher
                 "exchange", "key",
                 (Action<IMessageBuilder>)(m =>m.RoutingKey("key").Priority(1).Type("test")),
                 PublishFlags.None,
-                new MessageProperties { Priority = 1, Type = "test", UserId = "testUser"}
+                new MessageProperties { Priority = 1, Type = "test", UserId = "testUser", DeliveryMode = DeliveryMode.Persistent}
             };
         }
 

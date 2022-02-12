@@ -7,21 +7,25 @@ namespace RabbitMQ.Next.Transport.Methods.Exchange
     public readonly struct DeclareMethod : IOutgoingMethod
     {
         public DeclareMethod(string exchange, string type, bool durable, bool autoDelete, bool @internal, IReadOnlyDictionary<string, object> arguments)
-            : this(exchange, type, BitConverter.ComposeFlags(false, durable, autoDelete, @internal), arguments)
-        {
-        }
-
-        public DeclareMethod(string exchange)
-            : this(exchange, null, BitConverter.ComposeFlags(true), null)
-        {
-        }
-
-        public DeclareMethod(string exchange, string type, byte flags, IReadOnlyDictionary<string, object> arguments)
         {
             this.Exchange = exchange;
             this.Type = type;
-            this.Flags = flags;
+            this.Passive = false;
+            this.Durable = durable;
+            this.AutoDelete = autoDelete;
+            this.Internal = @internal;
             this.Arguments = arguments;
+        }
+
+        public DeclareMethod(string exchange)
+        {
+            this.Exchange = exchange;
+            this.Passive = true;
+            this.Type = null;
+            this.Durable = false;
+            this.AutoDelete = false;
+            this.Internal = false;
+            this.Arguments = null;
         }
 
         public MethodId MethodId => MethodId.ExchangeDeclare;
@@ -30,7 +34,13 @@ namespace RabbitMQ.Next.Transport.Methods.Exchange
 
         public string Type { get; }
 
-        public byte Flags { get; }
+        public bool Passive { get; }
+
+        public bool Durable { get; }
+
+        public bool AutoDelete { get; }
+
+        public bool Internal { get; }
 
         public IReadOnlyDictionary<string, object> Arguments { get; }
     }

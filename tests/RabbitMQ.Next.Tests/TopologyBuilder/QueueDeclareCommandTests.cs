@@ -6,7 +6,6 @@ using NSubstitute;
 using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Abstractions.Exceptions;
-using RabbitMQ.Next.TopologyBuilder;
 using RabbitMQ.Next.TopologyBuilder.Commands;
 using RabbitMQ.Next.TopologyBuilder.Exceptions;
 using RabbitMQ.Next.Transport.Methods.Queue;
@@ -40,31 +39,79 @@ namespace RabbitMQ.Next.Tests.TopologyBuilder
                 m => m.Queue == queueName));
         }
 
-        [Fact]
-        public async Task CanPassFlag()
+                [Fact]
+        public async Task DurableByDefault()
         {
             var channel = Substitute.For<IChannel>();
             var builder = new QueueDeclareCommand("queue");
-            builder.Flags(QueueFlags.Durable);
 
             await builder.ExecuteAsync(channel);
 
             await channel.Received().SendAsync<DeclareMethod, DeclareOkMethod>(Arg.Is<DeclareMethod>(
-                m => m.Flags == (byte)QueueFlags.Durable));
+                m => m.Durable));
         }
 
         [Fact]
-        public async Task CanCombineFlags()
+        public async Task CanMakeTransient()
         {
             var channel = Substitute.For<IChannel>();
             var builder = new QueueDeclareCommand("queue");
-            builder.Flags(QueueFlags.Exclusive);
-            builder.Flags(QueueFlags.AutoDelete);
+            builder.Transient();
 
             await builder.ExecuteAsync(channel);
 
             await channel.Received().SendAsync<DeclareMethod, DeclareOkMethod>(Arg.Is<DeclareMethod>(
-                m => m.Flags == (byte)(QueueFlags.Exclusive | QueueFlags.AutoDelete)));
+                m => !m.Durable));
+        }
+
+        [Fact]
+        public async Task NoAutoDeleteByDefault()
+        {
+            var channel = Substitute.For<IChannel>();
+            var builder = new QueueDeclareCommand("queue");
+
+            await builder.ExecuteAsync(channel);
+
+            await channel.Received().SendAsync<DeclareMethod, DeclareOkMethod>(Arg.Is<DeclareMethod>(
+                m => !m.AutoDelete));
+        }
+
+        [Fact]
+        public async Task CanMakeAutoDelete()
+        {
+            var channel = Substitute.For<IChannel>();
+            var builder = new QueueDeclareCommand("queue");
+            builder.AutoDelete();
+
+            await builder.ExecuteAsync(channel);
+
+            await channel.Received().SendAsync<DeclareMethod, DeclareOkMethod>(Arg.Is<DeclareMethod>(
+                m => m.AutoDelete));
+        }
+
+        [Fact]
+        public async Task NoExclusiveByDefault()
+        {
+            var channel = Substitute.For<IChannel>();
+            var builder = new QueueDeclareCommand("queue");
+
+            await builder.ExecuteAsync(channel);
+
+            await channel.Received().SendAsync<DeclareMethod, DeclareOkMethod>(Arg.Is<DeclareMethod>(
+                m => !m.Exclusive));
+        }
+
+        [Fact]
+        public async Task CanMakeExclusive()
+        {
+            var channel = Substitute.For<IChannel>();
+            var builder = new QueueDeclareCommand("queue");
+            builder.Exclusive();
+
+            await builder.ExecuteAsync(channel);
+
+            await channel.Received().SendAsync<DeclareMethod, DeclareOkMethod>(Arg.Is<DeclareMethod>(
+                m => m.Exclusive));
         }
 
         [Fact]
