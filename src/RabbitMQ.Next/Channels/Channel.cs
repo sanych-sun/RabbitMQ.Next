@@ -48,7 +48,7 @@ namespace RabbitMQ.Next.Channels
             var channelCloseWait = new WaitMethodFrameHandler<CloseMethod>(this.registry);
             channelCloseWait.WaitTask.ContinueWith(t =>
             {
-                if (t.IsCompleted)
+                if (t.IsCompletedSuccessfully)
                 {
                     this.TryComplete(new ChannelException(t.Result.StatusCode, t.Result.Description, t.Result.FailedMethodId));
                 }
