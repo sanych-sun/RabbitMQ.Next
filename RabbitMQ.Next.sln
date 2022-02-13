@@ -40,6 +40,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMQ.Next.Examples.Simp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMQ.Next.Examples.SimpleConsumer", "docs\examples\RabbitMQ.Next.Examples.SimpleConsumer\RabbitMQ.Next.Examples.SimpleConsumer.csproj", "{1946230B-BC32-4C27-88E2-8D2938DF2E5A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMQ.Next.Examples.TopologyBuilder", "docs\examples\RabbitMQ.Next.Examples.TopologyBuilder\RabbitMQ.Next.Examples.TopologyBuilder.csproj", "{CA01E04C-3659-4426-A9F6-A4145C63B70A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -106,6 +108,10 @@ Global
 		{1946230B-BC32-4C27-88E2-8D2938DF2E5A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1946230B-BC32-4C27-88E2-8D2938DF2E5A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1946230B-BC32-4C27-88E2-8D2938DF2E5A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CA01E04C-3659-4426-A9F6-A4145C63B70A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CA01E04C-3659-4426-A9F6-A4145C63B70A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CA01E04C-3659-4426-A9F6-A4145C63B70A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CA01E04C-3659-4426-A9F6-A4145C63B70A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{AB00A6F3-C3E0-4E61-B302-F9CF0288819E} = {C895EE24-13DF-45C3-AF1D-B6B6EE4A10A9}
@@ -125,5 +131,6 @@ Global
 		{750B1D71-E43B-4714-8AA3-AB9B0EC7E931} = {2D85D85A-2481-409A-9D98-613AF36C7A10}
 		{ECBCB520-1E19-4AC6-9CCD-AF3DE864A5F1} = {750B1D71-E43B-4714-8AA3-AB9B0EC7E931}
 		{1946230B-BC32-4C27-88E2-8D2938DF2E5A} = {750B1D71-E43B-4714-8AA3-AB9B0EC7E931}
+		{CA01E04C-3659-4426-A9F6-A4145C63B70A} = {750B1D71-E43B-4714-8AA3-AB9B0EC7E931}
 	EndGlobalSection
 EndGlobal
