@@ -6,6 +6,6 @@ namespace RabbitMQ.Next.Serialization.PlainText
 
         IPlainTextSerializerBuilder ContentType(string contentType);
 
-        IPlainTextSerializerBuilder UseFormatter(IFormatter formatter);
+        IPlainTextSerializerBuilder UseConverter(IConverter converter);
     }
 }

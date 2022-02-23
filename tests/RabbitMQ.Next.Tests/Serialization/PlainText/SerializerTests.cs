@@ -12,7 +12,7 @@ namespace RabbitMQ.Next.Tests.Serialization.PlainText
     {
         [Theory]
         [MemberData(nameof(EmptyFormattersTestCases))]
-        public void ThrowsOnEmptyFormatters(IEnumerable<IFormatter> formatters)
+        public void ThrowsOnEmptyFormatters(IEnumerable<IConverter> formatters)
         {
             Assert.Throws<ArgumentNullException>(() => new PlainTextSerializer(formatters));
         }
@@ -63,9 +63,9 @@ namespace RabbitMQ.Next.Tests.Serialization.PlainText
             doubleFormatter.DidNotReceive().TryParse<string>(Arg.Any<ReadOnlySequence<byte>>(), out var _);
         }
 
-        private IFormatter MockFormatter<TContent>()
+        private IConverter MockFormatter<TContent>()
         {
-            var formatter = Substitute.For<IFormatter>();
+            var formatter = Substitute.For<IConverter>();
             formatter.TryFormat<TContent>(Arg.Any<TContent>(), Arg.Any<IBufferWriter<byte>>()).Returns(true);
             formatter.TryParse<TContent>(Arg.Any<ReadOnlySequence<byte>>(), out Arg.Any<TContent>()).Returns(true);
             return formatter;
@@ -74,8 +74,8 @@ namespace RabbitMQ.Next.Tests.Serialization.PlainText
         public static IEnumerable<object[]> EmptyFormattersTestCases()
         {
             yield return new object[] { null };
-            yield return new object[] { Enumerable.Empty<IFormatter>() };
-            yield return new object[] { new IFormatter[0] };
+            yield return new object[] { Enumerable.Empty<IConverter>() };
+            yield return new object[] { new IConverter[0] };
         }
     }
 }

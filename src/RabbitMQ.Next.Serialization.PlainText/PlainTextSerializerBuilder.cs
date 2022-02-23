@@ -1,39 +1,39 @@
 using System.Collections.Generic;
-using RabbitMQ.Next.Serialization.PlainText.Formatters;
+using RabbitMQ.Next.Serialization.PlainText.Converters;
 
 namespace RabbitMQ.Next.Serialization.PlainText
 {
     internal class PlainTextSerializerBuilder : IPlainTextSerializerBuilder
     {
         private static readonly string[] DefaultContentTypes = { "text/plain" };
-        private static readonly IFormatter[] DefaultFormatters = {
-            new StringFormatter(),
-            new GuidFormatter(),
-            new DateTimeOffsetFormatter(),
-            new TimeSpanFormatter(),
-            new ByteFormatter(),
-            new Int16Formatter(),
-            new Int32Formatter(),
-            new Int64Formatter(),
-            new SingleFormatter(),
-            new DoubleFormatter(),
-            new DecimalFormatter(),
-            new BooleanFormatter(),
-            new SByteFormatter(),
-            new UInt16Formatter(),
-            new UInt32Formatter(),
-            new UInt64Formatter(),
+        private static readonly IConverter[] DefaultFormatters = {
+            new StringConverter(),
+            new GuidConverter(),
+            new DateTimeOffsetConverter(),
+            new TimeSpanConverter(),
+            new ByteConverter(),
+            new Int16Converter(),
+            new Int32Converter(),
+            new Int64Converter(),
+            new SingleConverter(),
+            new DoubleConverter(),
+            new DecimalConverter(),
+            new BooleanConverter(),
+            new SByteConverter(),
+            new UInt16Converter(),
+            new UInt32Converter(),
+            new UInt64Converter(),
         };
 
         private List<string> contentTypes;
-        private List<IFormatter> formatters;
+        private List<IConverter> converters;
         public bool IsDefault { get; private set; } = true;
 
         public IReadOnlyList<string> ContentTypes
             => this.contentTypes == null ? DefaultContentTypes : this.contentTypes;
 
-        public IReadOnlyList<IFormatter> Formatters
-            => this.formatters == null ? DefaultFormatters : this.formatters;
+        public IReadOnlyList<IConverter> Converters
+            => this.converters == null ? DefaultFormatters : this.converters;
 
         IPlainTextSerializerBuilder IPlainTextSerializerBuilder.AsDefault()
         {
@@ -49,10 +49,10 @@ namespace RabbitMQ.Next.Serialization.PlainText
             return this;
         }
 
-        IPlainTextSerializerBuilder IPlainTextSerializerBuilder.UseFormatter(IFormatter formatter)
+        IPlainTextSerializerBuilder IPlainTextSerializerBuilder.UseConverter(IConverter converter)
         {
-            this.formatters ??= new List<IFormatter>(DefaultFormatters);
-            this.formatters.Add(formatter);
+            this.converters ??= new List<IConverter>(DefaultFormatters);
+            this.converters.Add(converter);
 
             return this;
         }

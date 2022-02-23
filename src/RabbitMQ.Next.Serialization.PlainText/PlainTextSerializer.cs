@@ -8,9 +8,9 @@ namespace RabbitMQ.Next.Serialization.PlainText
 {
     internal class PlainTextSerializer : ISerializer
     {
-        private readonly IFormatter[] formatters;
+        private readonly IConverter[] formatters;
 
-        public PlainTextSerializer(IEnumerable<IFormatter> formatters)
+        public PlainTextSerializer(IEnumerable<IConverter> formatters)
         {
             this.formatters = formatters?.ToArray();
 
