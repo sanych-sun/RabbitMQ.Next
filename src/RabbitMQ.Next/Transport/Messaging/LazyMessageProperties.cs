@@ -7,7 +7,6 @@ namespace RabbitMQ.Next.Transport.Messaging
 {
     internal sealed class LazyMessageProperties : IMessageProperties
     {
-        private MessageFlags flags;
         private ReadOnlyMemory<byte> contentType;
         private ReadOnlyMemory<byte> contentEncoding;
         private ReadOnlyMemory<byte> headers;
@@ -25,27 +24,27 @@ namespace RabbitMQ.Next.Transport.Messaging
         public void Set(ReadOnlyMemory<byte> buffer)
         {
             buffer.Span.Read(out ushort fl);
-            this.flags = (MessageFlags)fl;
+            this.Flags = (MessageFlags)fl;
 
             buffer[sizeof(ushort)..]
-                .SplitStringProperty(out this.contentType, this.flags, MessageFlags.ContentType)
-                .SplitStringProperty(out this.contentEncoding, this.flags, MessageFlags.ContentEncoding)
-                .SplitDynamicProperty(out this.headers, this.flags, MessageFlags.Headers)
-                .SplitFixedProperty(out this.deliveryMode, this.flags, MessageFlags.DeliveryMode, sizeof(byte))
-                .SplitFixedProperty(out this.priority, this.flags, MessageFlags.Priority, sizeof(byte))
-                .SplitStringProperty(out this.correlationId, this.flags, MessageFlags.CorrelationId)
-                .SplitStringProperty(out this.replyTo, this.flags, MessageFlags.ReplyTo)
-                .SplitStringProperty(out this.expiration, this.flags, MessageFlags.Expiration)
-                .SplitStringProperty(out this.messageId, this.flags, MessageFlags.MessageId)
-                .SplitFixedProperty(out this.timestamp, this.flags, MessageFlags.Timestamp, sizeof(ulong))
-                .SplitStringProperty(out this.type, this.flags, MessageFlags.Type)
-                .SplitStringProperty(out this.userId, this.flags, MessageFlags.UserId)
-                .SplitStringProperty(out this.applicationId, this.flags, MessageFlags.ApplicationId);
+                .SplitStringProperty(out this.contentType, this.Flags, MessageFlags.ContentType)
+                .SplitStringProperty(out this.contentEncoding, this.Flags, MessageFlags.ContentEncoding)
+                .SplitDynamicProperty(out this.headers, this.Flags, MessageFlags.Headers)
+                .SplitFixedProperty(out this.deliveryMode, this.Flags, MessageFlags.DeliveryMode, sizeof(byte))
+                .SplitFixedProperty(out this.priority, this.Flags, MessageFlags.Priority, sizeof(byte))
+                .SplitStringProperty(out this.correlationId, this.Flags, MessageFlags.CorrelationId)
+                .SplitStringProperty(out this.replyTo, this.Flags, MessageFlags.ReplyTo)
+                .SplitStringProperty(out this.expiration, this.Flags, MessageFlags.Expiration)
+                .SplitStringProperty(out this.messageId, this.Flags, MessageFlags.MessageId)
+                .SplitFixedProperty(out this.timestamp, this.Flags, MessageFlags.Timestamp, sizeof(ulong))
+                .SplitStringProperty(out this.type, this.Flags, MessageFlags.Type)
+                .SplitStringProperty(out this.userId, this.Flags, MessageFlags.UserId)
+                .SplitStringProperty(out this.applicationId, this.Flags, MessageFlags.ApplicationId);
         }
 
         public void Reset()
         {
-            this.flags = MessageFlags.None;
+            this.Flags = MessageFlags.None;
             this.contentType = ReadOnlyMemory<byte>.Empty;
             this.contentEncoding = ReadOnlyMemory<byte>.Empty;
             this.headers = ReadOnlyMemory<byte>.Empty;
@@ -61,36 +60,36 @@ namespace RabbitMQ.Next.Transport.Messaging
             this.applicationId = ReadOnlyMemory<byte>.Empty;
         }
 
-        public MessageFlags Flags => this.flags;
+        public MessageFlags Flags { get; private set; }
 
-        public string ContentType => this.DecodeString(this.contentType);
+        public string ContentType => DecodeString(this.contentType);
 
-        public string ContentEncoding => this.DecodeString(this.contentEncoding);
+        public string ContentEncoding => DecodeString(this.contentEncoding);
 
-        public IReadOnlyDictionary<string, object> Headers => this.DecodeTable(this.headers);
+        public IReadOnlyDictionary<string, object> Headers => DecodeTable(this.headers);
 
-        public DeliveryMode DeliveryMode => (DeliveryMode)this.DecodeByte(this.deliveryMode);
+        public DeliveryMode DeliveryMode => (DeliveryMode)DecodeByte(this.deliveryMode);
 
-        public byte Priority => this.DecodeByte(this.priority);
+        public byte Priority => DecodeByte(this.priority);
 
-        public string CorrelationId => this.DecodeString(this.correlationId);
+        public string CorrelationId => DecodeString(this.correlationId);
 
-        public string ReplyTo => this.DecodeString(this.replyTo);
+        public string ReplyTo => DecodeString(this.replyTo);
 
-        public string Expiration => this.DecodeString(this.expiration);
+        public string Expiration => DecodeString(this.expiration);
 
-        public string MessageId => this.DecodeString(this.messageId);
+        public string MessageId => DecodeString(this.messageId);
 
-        public DateTimeOffset Timestamp => this.DecodeTimestamp(this.timestamp);
+        public DateTimeOffset Timestamp => DecodeTimestamp(this.timestamp);
 
-        public string Type => this.DecodeString(this.type);
+        public string Type => DecodeString(this.type);
 
-        public string UserId => this.DecodeString(this.userId);
+        public string UserId => DecodeString(this.userId);
 
-        public string ApplicationId => this.DecodeString(this.applicationId);
+        public string ApplicationId => DecodeString(this.applicationId);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private string DecodeString(ReadOnlyMemory<byte> data)
+        private static string DecodeString(ReadOnlyMemory<byte> data)
         {
             if (data.IsEmpty)
             {
@@ -101,7 +100,7 @@ namespace RabbitMQ.Next.Transport.Messaging
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private DateTimeOffset DecodeTimestamp(ReadOnlyMemory<byte> data)
+        private static DateTimeOffset DecodeTimestamp(ReadOnlyMemory<byte> data)
         {
             if (data.IsEmpty)
             {
@@ -113,7 +112,7 @@ namespace RabbitMQ.Next.Transport.Messaging
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private IReadOnlyDictionary<string, object> DecodeTable(ReadOnlyMemory<byte> data)
+        private static IReadOnlyDictionary<string, object> DecodeTable(ReadOnlyMemory<byte> data)
         {
             if (data.IsEmpty)
             {
@@ -125,7 +124,7 @@ namespace RabbitMQ.Next.Transport.Messaging
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private byte DecodeByte(ReadOnlyMemory<byte> data)
+        private static byte DecodeByte(ReadOnlyMemory<byte> data)
         {
             if (data.IsEmpty)
             {

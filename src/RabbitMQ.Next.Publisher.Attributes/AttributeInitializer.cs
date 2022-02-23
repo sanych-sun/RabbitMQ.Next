@@ -38,13 +38,13 @@ namespace RabbitMQ.Next.Publisher.Attributes
             var type = typeof(TPayload);
 
             var typeAttributes = this.typeAttributesMap.GetOrAdd(type, TypeAttributesFactory);
-            this.ApplyAttributes(message, typeAttributes);
+            ApplyAttributes(message, typeAttributes);
 
             var assemblyAttributes = this.assemblyAttributesMap.GetOrAdd(type.Assembly, AssemblyAttributesFactory);
-            this.ApplyAttributes(message, assemblyAttributes);
+            ApplyAttributes(message, assemblyAttributes);
         }
 
-        private void ApplyAttributes(IMessageBuilder message, IReadOnlyList<MessageAttributeBase> attributes)
+        private static void ApplyAttributes(IMessageBuilder message, IReadOnlyList<MessageAttributeBase> attributes)
         {
             for (var i = 0; i < attributes.Count; i++)
             {

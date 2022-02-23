@@ -7,88 +7,74 @@ namespace RabbitMQ.Next.Publisher
     public class MessageBuilder : IMessageBuilder, IMessageProperties
     {
         private readonly Dictionary<string, object> headers = new();
-        private MessageFlags flags = MessageFlags.DeliveryMode;
-        private string routingKey;
-        private string contentType;
-        private string contentEncoding;
-        private DeliveryMode deliveryMode = DeliveryMode.Persistent;
-        private byte priority;
-        private string correlationId;
-        private string replyTo;
-        private string expiration;
-        private string messageId;
-        private DateTimeOffset timestamp;
-        private string type;
-        private string userId;
-        private string applicationId;
 
         public void Reset()
         {
-            this.flags = MessageFlags.DeliveryMode;
-            this.routingKey = null;
-            this.contentType = null;
-            this.contentEncoding = null;
+            this.Flags = MessageFlags.DeliveryMode;
+            this.RoutingKey = null;
+            this.ContentType = null;
+            this.ContentEncoding = null;
             this.headers.Clear();
-            this.deliveryMode = DeliveryMode.Persistent;
-            this.priority = default;
-            this.correlationId = null;
-            this.replyTo = null;
-            this.expiration = null;
-            this.messageId = null;
-            this.timestamp = default;
-            this.type = null;
-            this.userId = null;
-            this.applicationId = null;
+            this.DeliveryMode = DeliveryMode.Persistent;
+            this.Priority = default;
+            this.CorrelationId = null;
+            this.ReplyTo = null;
+            this.Expiration = null;
+            this.MessageId = null;
+            this.Timestamp = default;
+            this.Type = null;
+            this.UserId = null;
+            this.ApplicationId = null;
         }
 
-        public MessageFlags Flags => this.flags;
+        public MessageFlags Flags { get; private set; } = MessageFlags.DeliveryMode;
 
-        public string RoutingKey => this.routingKey;
+        public string RoutingKey { get; private set; }
 
-        public string ContentType => this.contentType;
+        public string ContentType { get; private set; }
 
-        public string ContentEncoding => this.contentEncoding;
+        public string ContentEncoding { get; private set; }
 
         public IReadOnlyDictionary<string, object> Headers
-            => (this.flags & MessageFlags.Headers) == MessageFlags.Headers ? this.headers : null;
+            => (this.Flags & MessageFlags.Headers) == MessageFlags.Headers ? this.headers : null;
 
-        public DeliveryMode DeliveryMode => this.deliveryMode;
+        public DeliveryMode DeliveryMode { get; private set; } = DeliveryMode.Persistent;
 
-        public byte Priority => this.priority;
+        public byte Priority { get; private set; }
 
-        public string CorrelationId => this.correlationId;
+        public string CorrelationId { get; private set; }
 
-        public string ReplyTo => this.replyTo;
+        public string ReplyTo { get; private set; }
 
-        public string Expiration => this.expiration;
+        public string Expiration { get; private set; }
 
-        public string MessageId => this.messageId;
+        public string MessageId { get; private set; }
 
-        public DateTimeOffset Timestamp => this.timestamp;
+        public DateTimeOffset Timestamp { get; private set; }
 
-        public string Type => this.type;
+        public string Type { get; private set; }
 
-        public string UserId => this.userId;
+        public string UserId { get; private set; }
 
-        public string ApplicationId => this.applicationId;
+        public string ApplicationId { get; private set; }
 
         IMessageBuilder IMessageBuilder.RoutingKey(string value)
         {
-            this.routingKey = value;
+            this.RoutingKey = value;
             return this;
         }
 
         IMessageBuilder IMessageBuilder.ContentType(string value)
         {
-            this.contentType = value;
-            this.flags |= MessageFlags.ContentType;
+            this.ContentType = value;
+            this.Flags |= MessageFlags.ContentType;
             return this;
         }
 
         IMessageBuilder IMessageBuilder.ContentEncoding(string value)
         {
-            this.contentEncoding = value;
-            this.flags |= MessageFlags.ContentEncoding;
+            this.ContentEncoding = value;
+            this.Flags |= MessageFlags.ContentEncoding;
             return this;
         }
 
@@ -100,77 +86,77 @@ namespace RabbitMQ.Next.Publisher
             }
 
             this.headers[key] = value;
-            this.flags |= MessageFlags.Headers;
+            this.Flags |= MessageFlags.Headers;
             return this;
         }
 
         IMessageBuilder IMessageBuilder.DeliveryMode(DeliveryMode value)
         {
-            this.deliveryMode = value;
-            this.flags |= MessageFlags.DeliveryMode;
+            this.DeliveryMode = value;
+            this.Flags |= MessageFlags.DeliveryMode;
             return this;
         }
 
         IMessageBuilder IMessageBuilder.Priority(byte value)
         {
-            this.priority = value;
-            this.flags |= MessageFlags.Priority;
+            this.Priority = value;
+            this.Flags |= MessageFlags.Priority;
             return this;
         }
 
         IMessageBuilder IMessageBuilder.CorrelationId(string value)
         {
-            this.correlationId = value;
-            this.flags |= MessageFlags.CorrelationId;
+            this.CorrelationId = value;
+            this.Flags |= MessageFlags.CorrelationId;
             return this;
         }
 
         IMessageBuilder IMessageBuilder.ReplyTo(string value)
         {
-            this.replyTo = value;
-            this.flags |= MessageFlags.ReplyTo;
+            this.ReplyTo = value;
+            this.Flags |= MessageFlags.ReplyTo;
             return this;
         }
 
         IMessageBuilder IMessageBuilder.Expiration(string value)
         {
-            this.expiration = value;
-            this.flags |= MessageFlags.Expiration;
+            this.Expiration = value;
+            this.Flags |= MessageFlags.Expiration;
             return this;
         }
 
         IMessageBuilder IMessageBuilder.MessageId(string value)
         {
-            this.messageId = value;
-            this.flags |= MessageFlags.MessageId;
+            this.MessageId = value;
+            this.Flags |= MessageFlags.MessageId;
             return this;
         }
 
         IMessageBuilder IMessageBuilder.Timestamp(DateTimeOffset value)
         {
-            this.timestamp = value;
-            this.flags |= MessageFlags.Timestamp;
+            this.Timestamp = value;
+            this.Flags |= MessageFlags.Timestamp;
             return this;
         }
 
         IMessageBuilder IMessageBuilder.Type(string value)
         {
-            this.type = value;
-            this.flags |= MessageFlags.Type;
+            this.Type = value;
+            this.Flags |= MessageFlags.Type;
             return this;
         }
 
         IMessageBuilder IMessageBuilder.UserId(string value)
         {
-            this.userId = value;
-            this.flags |= MessageFlags.UserId;
+            this.UserId = value;
+            this.Flags |= MessageFlags.UserId;
             return this;
         }
 
         IMessageBuilder IMessageBuilder.ApplicationId(string value)
         {
-            this.applicationId = value;
-            this.flags |= MessageFlags.ApplicationId;
+            this.ApplicationId = value;
+            this.Flags |= MessageFlags.ApplicationId;
             return this;
         }
     }

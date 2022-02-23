@@ -18,16 +18,16 @@ namespace RabbitMQ.Next.Serialization
 
             for(var i = 0; i < serializers.Count; i++)
             {
-                var s = serializers[i];
+                var (serializer, contentType, @default) = serializers[i];
 
-                if (!string.IsNullOrEmpty(s.ContentType))
+                if (!string.IsNullOrEmpty(contentType))
                 {
-                    this.serializers[s.ContentType] = s.Serializer;
+                    this.serializers[contentType] = serializer;
                 }
 
-                if (s.Default)
+                if (@default)
                 {
-                    this.defaultSerializer = s.Serializer;
+                    this.defaultSerializer = serializer;
                 }
             }
         }

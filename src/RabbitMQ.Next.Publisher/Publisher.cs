@@ -173,20 +173,22 @@ namespace RabbitMQ.Next.Publisher
 
             try
             {
-                if (this.channel == null)
+                if (this.channel != null)
                 {
-                    this.lastDeliveryTag = 0;
-                    for (var i = 0; i < this.frameHandlers.Count; i++)
-                    {
-                        this.frameHandlers[0].Release();
-                    }
+                    return this.channel;
+                }
 
-                    this.channel = await this.connection.OpenChannelAsync(this.frameHandlers, cancellationToken);
-                    await this.channel.SendAsync<DeclareMethod, DeclareOkMethod>(new DeclareMethod(this.exchange), cancellationToken);
-                    if (this.confirms != null)
-                    {
-                        await this.channel.SendAsync<SelectMethod, SelectOkMethod>(new SelectMethod(), cancellationToken);
-                    }
+                this.lastDeliveryTag = 0;
+                for (var i = 0; i < this.frameHandlers.Count; i++)
+                {
+                    this.frameHandlers[0].Release();
+                }
+
+                this.channel = await this.connection.OpenChannelAsync(this.frameHandlers, cancellationToken);
+                await this.channel.SendAsync<DeclareMethod, DeclareOkMethod>(new DeclareMethod(this.exchange), cancellationToken);
+                if (this.confirms != null)
+                {
+                    await this.channel.SendAsync<SelectMethod, SelectOkMethod>(new SelectMethod(), cancellationToken);
                 }
 
                 return this.channel;

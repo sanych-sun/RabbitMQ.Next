@@ -42,7 +42,7 @@ namespace RabbitMQ.Next.Publisher
         {
             if (!this.expectContent)
             {
-                return new(false);
+                return new ValueTask<bool>(false);
             }
 
             return this.HandleReturnedMessageAsync(properties, contentBytes);

@@ -73,8 +73,8 @@ namespace RabbitMQ.Next
                 var delimiterPosition = endpoint.UserInfo.IndexOf(':');
                 if (delimiterPosition >= 0)
                 {
-                    user = endpoint.UserInfo.Substring(0, delimiterPosition);
-                    password = endpoint.UserInfo.Substring(delimiterPosition + 1);
+                    user = endpoint.UserInfo[..delimiterPosition];
+                    password = endpoint.UserInfo[(delimiterPosition + 1)..];
                 }
                 else
                 {

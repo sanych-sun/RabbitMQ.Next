@@ -20,7 +20,7 @@ namespace RabbitMQ.Next.TopologyBuilder.Commands
             try
             {
                 await channel.SendAsync<PurgeMethod, PurgeOkMethod>(
-                    new(this.queueName));
+                    new PurgeMethod(this.queueName));
             }
             catch (ChannelException ex)
             {

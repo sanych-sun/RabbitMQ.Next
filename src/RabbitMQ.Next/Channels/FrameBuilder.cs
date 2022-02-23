@@ -49,7 +49,7 @@ namespace RabbitMQ.Next.Channels
             this.EndFrame(FrameType.Method);
         }
 
-        private static readonly uint ContentHeaderPrefix = (ushort)ClassId.Basic << 16;
+        private const uint ContentHeaderPrefix = (ushort)ClassId.Basic << 16;
 
         public void WriteContentFrame<TState>(TState state, IMessageProperties properties, Action<TState, IBufferWriter<byte>> contentBuilder)
         {
@@ -102,11 +102,13 @@ namespace RabbitMQ.Next.Channels
             this.buffer.Commit(1);
             this.totalPayloadSize += frameSize;
 
-            if (rotateBuffers)
+            if (!rotateBuffers)
             {
-                this.chunks.Add(this.buffer);
-                this.buffer = this.memoryPool.Get();
+                return;
             }
+
+            this.chunks.Add(this.buffer);
+            this.buffer = this.memoryPool.Get();
         }
 
         public ValueTask WriteToAsync(ChannelWriter<MemoryBlock> channel)

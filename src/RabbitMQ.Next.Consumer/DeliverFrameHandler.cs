@@ -55,7 +55,7 @@ namespace RabbitMQ.Next.Consumer
         {
             if (!this.expectContent)
             {
-                return new(false);
+                return new ValueTask<bool>(false);
             }
 
             return this.HandleDeliveredMessageAsync(properties, contentBytes);

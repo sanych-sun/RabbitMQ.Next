@@ -15,8 +15,8 @@ namespace RabbitMQ.Next.Serialization
 
             if (serializers.Count == 1)
             {
-                var s = serializers.First();
-                return new StaticSerializerFactory(s.Serializer, s.Default ? null : s.ContentType);
+                var (serializer, contentType, @default) = serializers.First();
+                return new StaticSerializerFactory(serializer, @default ? null : contentType);
             }
 
             return new DynamicSerializerFactory(serializers);

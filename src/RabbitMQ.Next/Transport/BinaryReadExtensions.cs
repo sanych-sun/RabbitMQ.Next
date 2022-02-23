@@ -25,7 +25,7 @@ namespace RabbitMQ.Next.Transport
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ReadOnlySpan<byte> Read(this ReadOnlySpan<byte> source, out bool result)
         {
-            result = (source[0] != 0);
+            result = source[0] != 0;
             return source[sizeof(byte)..];
         }
 
@@ -133,8 +133,8 @@ namespace RabbitMQ.Next.Transport
         public static ReadOnlySpan<byte> Read(this ReadOnlySpan<byte> source, out byte[] result)
         {
             source = source.Read(out uint size);
-            result = source.Slice(0, (int)size).ToArray();
-            return source.Slice((int)size);
+            result = source[..(int)size].ToArray();
+            return source[(int)size..];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -20,7 +20,7 @@ namespace RabbitMQ.Next.Sockets
             {
                 try
                 {
-                    return await EndpointResolver.OpenSocketAsync(endpoint, cancellation);
+                    return await OpenSocketAsync(endpoint, cancellation);
                 }
                 catch (Exception e)
                 {

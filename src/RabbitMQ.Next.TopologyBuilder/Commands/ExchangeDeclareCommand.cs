@@ -57,7 +57,7 @@ namespace RabbitMQ.Next.TopologyBuilder.Commands
             try
             {
                 await channel.SendAsync<DeclareMethod, DeclareOkMethod>(
-                    new (this.Name, this.Type, this.isDurable, this.isAutoDelete, this.isInternal, this.arguments));
+                    new DeclareMethod(this.Name, this.Type, this.isDurable, this.isAutoDelete, this.isInternal, this.arguments));
             }
             catch (ChannelException ex)
             {

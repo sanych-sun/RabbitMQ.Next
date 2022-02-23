@@ -47,13 +47,13 @@ namespace RabbitMQ.Next.TopologyBuilder.Commands
                     for (var i = 0; i < this.routingKeys.Count; i++)
                     {
                         await channel.SendAsync<BindMethod, BindOkMethod>(
-                            new(this.Destination, this.Source, this.routingKeys[i], this.arguments));
+                            new BindMethod(this.Destination, this.Source, this.routingKeys[i], this.arguments));
                     }
                 }
                 else
                 {
                     await channel.SendAsync<BindMethod, BindOkMethod>(
-                        new(this.Destination, this.Source, null, this.arguments));
+                        new BindMethod(this.Destination, this.Source, null, this.arguments));
                 }
             }
             catch (ChannelException ex)

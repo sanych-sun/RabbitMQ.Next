@@ -49,9 +49,7 @@ namespace RabbitMQ.Next.Sockets
         }
 
         private bool IsConnectionClosedByServer()
-        {
-            return this.socket.Poll(1000, SelectMode.SelectRead) && this.socket.Available == 0;
-        }
+            => this.socket.Poll(1000, SelectMode.SelectRead) && this.socket.Available == 0;
 
         public void Dispose()
         {

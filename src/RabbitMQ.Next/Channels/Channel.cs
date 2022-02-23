@@ -173,46 +173,48 @@ namespace RabbitMQ.Next.Channels
                     // 2. Process method frame
                     var methodId = this.ProcessMethodFrame(methodFrame.Payload);
 
-                    if (this.registry.HasContent(methodId))
+                    if (!this.registry.HasContent(methodId))
                     {
-                        if (!reader.TryRead(out var contentHeaderFrame))
+                        continue;
+                    }
+
+                    if (!reader.TryRead(out var contentHeaderFrame))
+                    {
+                        contentHeaderFrame = await reader.ReadAsync();
+                    }
+
+                    contentHeaderFrame.Payload.Data[4..] // skip 2 obsolete shorts
+                        .Span.Read(out ulong contentSize);
+
+                    var payload = contentHeaderFrame.Payload.Data[12..]; // 2 obsolete shorts + ulong
+
+                    try
+                    {
+                        messageProperty.Set(payload);
+
+                        long receivedContent = 0;
+                        while (receivedContent < (long)contentSize)
                         {
-                            contentHeaderFrame = await reader.ReadAsync();
-                        }
-
-                        contentHeaderFrame.Payload.Data[4..] // skip 2 obsolete shorts
-                            .Span.Read(out ulong contentSize);
-
-                        var payload = contentHeaderFrame.Payload.Data[12..]; // 2 obsolete shorts + ulong
-
-                        try
-                        {
-                            messageProperty.Set(payload);
-
-                            long receivedContent = 0;
-                            while (receivedContent < (long)contentSize)
+                            if (!reader.TryRead(out var frame))
                             {
-                                if (!reader.TryRead(out var frame))
-                                {
-                                    frame = await reader.ReadAsync();
-                                }
-
-                                contentChunks.Add(frame.Payload);
-                                receivedContent += frame.Payload.Data.Length;
+                                frame = await reader.ReadAsync();
                             }
 
-                            await this.ProcessContentAsync(messageProperty, contentChunks);
+                            contentChunks.Add(frame.Payload);
+                            receivedContent += frame.Payload.Data.Length;
                         }
-                        finally
+
+                        await this.ProcessContentAsync(messageProperty, contentChunks);
+                    }
+                    finally
+                    {
+                        this.memoryPool.Return(contentHeaderFrame.Payload);
+                        messageProperty.Reset();
+                        for (var i = 0; i < contentChunks.Count; i++)
                         {
-                            this.memoryPool.Return(contentHeaderFrame.Payload);
-                            messageProperty.Reset();
-                            for (var i = 0; i < contentChunks.Count; i++)
-                            {
-                                this.memoryPool.Return(contentChunks[i]);
-                            }
-                            contentChunks.Clear();
+                            this.memoryPool.Return(contentChunks[i]);
                         }
+                        contentChunks.Clear();
                     }
                 }
             }

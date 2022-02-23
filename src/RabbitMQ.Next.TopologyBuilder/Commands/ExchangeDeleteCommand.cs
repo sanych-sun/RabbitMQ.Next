@@ -30,7 +30,7 @@ namespace RabbitMQ.Next.TopologyBuilder.Commands
             try
             {
                 await channel.SendAsync<DeleteMethod, DeleteOkMethod>(
-                    new (this.Name, !this.cancelBindings));
+                    new DeleteMethod(this.Name, !this.cancelBindings));
             }
             catch (ChannelException ex)
             {

@@ -221,10 +221,10 @@ namespace RabbitMQ.Next.Transport
 
             target = target[sizeof(uint)..];
             var before = target.Length;
-            foreach (var item in value)
+            foreach (var (key, o) in value)
             {
-                target = target.Write(item.Key);
-                target = target.WriteField(item.Value);
+                target = target.Write(key);
+                target = target.WriteField(o);
             }
 
             var tableLen = (uint)(before - target.Length);

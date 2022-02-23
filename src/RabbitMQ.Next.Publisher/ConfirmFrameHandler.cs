@@ -49,37 +49,39 @@ namespace RabbitMQ.Next.Publisher
 
         bool IFrameHandler.HandleMethodFrame(MethodId methodId, ReadOnlySpan<byte> payload)
         {
-            if (methodId == MethodId.BasicAck)
+            switch (methodId)
             {
-                var ack = this.ackMethodParser.Parse(payload);
-                if (ack.Multiple)
+                case MethodId.BasicAck:
                 {
-                    this.AckMultiple(ack.DeliveryTag, true);
-                }
-                else
-                {
-                    this.AckSingle(ack.DeliveryTag, true);
-                }
+                    var ack = this.ackMethodParser.Parse(payload);
+                    if (ack.Multiple)
+                    {
+                        this.AckMultiple(ack.DeliveryTag, true);
+                    }
+                    else
+                    {
+                        this.AckSingle(ack.DeliveryTag, true);
+                    }
 
-                return true;
+                    return true;
+                }
+                case MethodId.BasicNack:
+                {
+                    var nack = this.nackMethodParser.Parse(payload);
+                    if (nack.Multiple)
+                    {
+                        this.AckMultiple(nack.DeliveryTag, false);
+                    }
+                    else
+                    {
+                        this.AckSingle(nack.DeliveryTag, false);
+                    }
+
+                    return true;
+                }
+                default:
+                    return false;
             }
-
-            if (methodId == MethodId.BasicNack)
-            {
-                var nack = this.nackMethodParser.Parse(payload);
-                if (nack.Multiple)
-                {
-                    this.AckMultiple(nack.DeliveryTag, false);
-                }
-                else
-                {
-                    this.AckSingle(nack.DeliveryTag, false);
-                }
-
-                return true;
-            }
-
-            return false;
         }
 
         ValueTask<bool> IFrameHandler.HandleContentAsync(IMessageProperties properties, ReadOnlySequence<byte> contentBytes)
@@ -117,10 +119,10 @@ namespace RabbitMQ.Next.Publisher
         {
             var items = this.pendingConfirms.Where(t => t.Key <= deliveryTag).ToArray();
 
-            foreach (var item in items)
+            foreach (var (key, value) in items)
             {
-                item.Value.TrySetResult(isPositive);
-                this.pendingConfirms.TryRemove(item.Key, out var _);
+                value.TrySetResult(isPositive);
+                this.pendingConfirms.TryRemove(key, out _);
             }
         }
     }

@@ -5,7 +5,6 @@ namespace RabbitMQ.Next.Buffers
     internal sealed class MemoryBlock
     {
         private readonly byte[] buffer;
-        private int commited;
 
         public MemoryBlock(int size)
         {
@@ -17,32 +16,32 @@ namespace RabbitMQ.Next.Buffers
             this.buffer = new byte[size];
         }
 
-        public int Offset => this.commited;
+        public int Offset { get; private set; }
 
         public bool Reset()
         {
-            this.commited = 0;
+            this.Offset = 0;
             return true;
         }
 
         public ReadOnlyMemory<byte> Data
-            =>  new (this.buffer, 0, this.commited);
+            =>  new (this.buffer, 0, this.Offset);
 
         public void Commit(int length)
         {
-            this.commited += length;
+            this.Offset += length;
         }
 
         public void Rollback(int offset)
         {
-            this.commited = offset;
+            this.Offset = offset;
         }
 
         public Memory<byte> Memory
-            => new Memory<byte>(this.buffer)[this.commited..];
+            => new Memory<byte>(this.buffer)[this.Offset..];
 
         public Span<byte> Span
-            => new Span<byte>(this.buffer)[this.commited..];
+            => new Span<byte>(this.buffer)[this.Offset..];
 
         public Span<byte> Access(int start, int length)
             => new (this.buffer, start, length);
