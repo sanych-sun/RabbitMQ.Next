@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.TopologyBuilder.Commands;
 
 namespace RabbitMQ.Next.TopologyBuilder

@@ -1,9 +1,9 @@
 using System;
 using System.Buffers;
 using NSubstitute;
-using RabbitMQ.Next.Abstractions.Messaging;
+using RabbitMQ.Next.Messaging;
 using RabbitMQ.Next.Publisher;
-using RabbitMQ.Next.Serialization.Abstractions;
+using RabbitMQ.Next.Serialization;
 using Xunit;
 
 namespace RabbitMQ.Next.Tests.Publisher

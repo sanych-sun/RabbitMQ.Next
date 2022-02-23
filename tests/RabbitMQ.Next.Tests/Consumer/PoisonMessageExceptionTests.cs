@@ -1,7 +1,7 @@
 using System;
 using NSubstitute;
-using RabbitMQ.Next.Abstractions.Messaging;
-using RabbitMQ.Next.Consumer.Abstractions;
+using RabbitMQ.Next.Messaging;
+using RabbitMQ.Next.Consumer;
 using Xunit;
 
 namespace RabbitMQ.Next.Tests.Consumer

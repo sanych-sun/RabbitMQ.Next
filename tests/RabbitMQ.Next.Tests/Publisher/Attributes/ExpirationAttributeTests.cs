@@ -1,7 +1,7 @@
 using System;
 using System.Globalization;
 using NSubstitute;
-using RabbitMQ.Next.Publisher.Abstractions;
+using RabbitMQ.Next.Publisher;
 using RabbitMQ.Next.Publisher.Attributes;
 using Xunit;
 

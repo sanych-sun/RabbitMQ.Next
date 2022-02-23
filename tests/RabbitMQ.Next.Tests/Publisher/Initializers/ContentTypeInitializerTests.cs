@@ -1,6 +1,6 @@
 using System;
 using NSubstitute;
-using RabbitMQ.Next.Publisher.Abstractions;
+using RabbitMQ.Next.Publisher;
 using RabbitMQ.Next.Publisher.Initializers;
 using Xunit;
 

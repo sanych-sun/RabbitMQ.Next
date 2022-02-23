@@ -1,6 +1,6 @@
 using System;
 
-namespace RabbitMQ.Next.Abstractions.Methods
+namespace RabbitMQ.Next.Methods
 {
     public interface IMethodParser<out TMethod>
         where TMethod : struct, IMethod

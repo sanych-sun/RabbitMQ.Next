@@ -1,5 +1,5 @@
 using System;
-using RabbitMQ.Next.Abstractions.Methods;
+using RabbitMQ.Next.Methods;
 
 namespace RabbitMQ.Next.Transport.Methods.Connection
 {

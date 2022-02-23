@@ -1,4 +1,4 @@
-using RabbitMQ.Next.Publisher.Abstractions;
+using RabbitMQ.Next.Publisher;
 using Xunit;
 
 namespace RabbitMQ.Next.Tests.Publisher

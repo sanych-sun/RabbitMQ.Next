@@ -1,6 +1,5 @@
 using System;
 using System.Globalization;
-using RabbitMQ.Next.Publisher.Abstractions;
 
 namespace RabbitMQ.Next.Publisher.Initializers
 {

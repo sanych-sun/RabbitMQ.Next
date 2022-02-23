@@ -1,5 +1,3 @@
-using RabbitMQ.Next.Publisher.Abstractions;
-
 namespace RabbitMQ.Next.Publisher.Attributes
 {
     public static class PublisherBuilderExtensions

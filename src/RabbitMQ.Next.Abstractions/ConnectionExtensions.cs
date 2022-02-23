@@ -1,8 +1,8 @@
 using System;
 using System.Threading.Tasks;
-using RabbitMQ.Next.Abstractions.Channels;
+using RabbitMQ.Next.Channels;
 
-namespace RabbitMQ.Next.Abstractions
+namespace RabbitMQ.Next
 {
     public static class ConnectionExtensions
     {

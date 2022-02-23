@@ -1,7 +1,7 @@
 using System;
-using RabbitMQ.Next.Abstractions.Messaging;
+using RabbitMQ.Next.Messaging;
 
-namespace RabbitMQ.Next.Consumer.Abstractions
+namespace RabbitMQ.Next.Consumer
 {
     public class PoisonMessageException : Exception
     {

@@ -5,9 +5,8 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Extensions.ObjectPool;
-using RabbitMQ.Next.Abstractions.Channels;
-using RabbitMQ.Next.Abstractions.Messaging;
-using RabbitMQ.Next.Abstractions.Methods;
+using RabbitMQ.Next.Messaging;
+using RabbitMQ.Next.Methods;
 using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Transport.Methods.Basic;
 

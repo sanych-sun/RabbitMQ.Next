@@ -1,10 +1,8 @@
 using System;
 using System.Buffers;
 using System.Threading.Tasks;
-using RabbitMQ.Next.Abstractions;
-using RabbitMQ.Next.Abstractions.Channels;
-using RabbitMQ.Next.Abstractions.Messaging;
-using RabbitMQ.Next.Abstractions.Methods;
+using RabbitMQ.Next.Messaging;
+using RabbitMQ.Next.Methods;
 
 namespace RabbitMQ.Next.Channels
 {

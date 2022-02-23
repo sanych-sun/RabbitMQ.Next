@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Consumer;
-using RabbitMQ.Next.Consumer.Abstractions;
 using RabbitMQ.Next.Serialization.PlainText;
 
 namespace RabbitMQ.Next.Examples.SimpleConsumer

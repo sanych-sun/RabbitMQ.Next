@@ -1,6 +1,6 @@
-using RabbitMQ.Next.Serialization.Abstractions;
+using RabbitMQ.Next.Serialization;
 
-namespace RabbitMQ.Next.Publisher.Abstractions
+namespace RabbitMQ.Next.Publisher
 {
     public interface IPublisherBuilder : ISerializationBuilder<IPublisherBuilder>
     {

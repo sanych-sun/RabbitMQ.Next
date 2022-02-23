@@ -1,9 +1,8 @@
 using System;
 using System.Threading.Tasks;
 using NSubstitute;
-using RabbitMQ.Next.Abstractions;
-using RabbitMQ.Next.Abstractions.Channels;
-using RabbitMQ.Next.Abstractions.Exceptions;
+using RabbitMQ.Next.Channels;
+using RabbitMQ.Next.Exceptions;
 using RabbitMQ.Next.TopologyBuilder.Commands;
 using RabbitMQ.Next.Transport.Methods.Queue;
 using Xunit;

@@ -5,7 +5,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using RabbitMQ.Next.Abstractions.Exceptions;
+using RabbitMQ.Next.Exceptions;
 using RabbitMQ.Next.Transport;
 
 namespace RabbitMQ.Next.Sockets

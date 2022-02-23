@@ -2,8 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using RabbitMQ.Next.Abstractions;
-using RabbitMQ.Next.Abstractions.Methods;
+using RabbitMQ.Next.Methods;
 using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Methods.Registry;
 

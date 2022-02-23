@@ -2,12 +2,10 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using RabbitMQ.Next.Abstractions;
-using RabbitMQ.Next.Abstractions.Channels;
-using RabbitMQ.Next.Abstractions.Messaging;
-using RabbitMQ.Next.Abstractions.Methods;
-using RabbitMQ.Next.Publisher.Abstractions;
-using RabbitMQ.Next.Serialization.Abstractions;
+using RabbitMQ.Next.Channels;
+using RabbitMQ.Next.Messaging;
+using RabbitMQ.Next.Methods;
+using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Transport.Methods.Basic;
 
 namespace RabbitMQ.Next.Publisher

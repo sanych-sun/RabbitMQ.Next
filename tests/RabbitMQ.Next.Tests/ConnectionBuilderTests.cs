@@ -4,8 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using NSubstitute;
-using RabbitMQ.Next.Abstractions;
-using RabbitMQ.Next.Abstractions.Methods;
+using RabbitMQ.Next.Methods;
 using Xunit;
 
 namespace RabbitMQ.Next.Tests

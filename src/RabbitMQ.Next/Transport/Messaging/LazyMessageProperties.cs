@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using RabbitMQ.Next.Abstractions.Messaging;
+using RabbitMQ.Next.Messaging;
 
 namespace RabbitMQ.Next.Transport.Messaging
 {

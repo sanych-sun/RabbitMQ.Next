@@ -1,8 +1,8 @@
 using System;
 using NSubstitute;
-using RabbitMQ.Next.Abstractions.Messaging;
+using RabbitMQ.Next.Messaging;
 using RabbitMQ.Next.Serialization;
-using RabbitMQ.Next.Serialization.Abstractions;
+using RabbitMQ.Next.Serialization;
 using Xunit;
 
 namespace RabbitMQ.Next.Tests.Serialization

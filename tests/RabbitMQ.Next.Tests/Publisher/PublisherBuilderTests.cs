@@ -1,8 +1,8 @@
 using System;
 using NSubstitute;
 using RabbitMQ.Next.Publisher;
-using RabbitMQ.Next.Publisher.Abstractions;
-using RabbitMQ.Next.Serialization.Abstractions;
+using RabbitMQ.Next.Publisher;
+using RabbitMQ.Next.Serialization;
 using Xunit;
 
 namespace RabbitMQ.Next.Tests.Publisher

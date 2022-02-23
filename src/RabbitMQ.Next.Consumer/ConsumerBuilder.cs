@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using RabbitMQ.Next.Abstractions.Channels;
-using RabbitMQ.Next.Consumer.Abstractions;
-using RabbitMQ.Next.Serialization.Abstractions;
+using RabbitMQ.Next.Channels;
+using RabbitMQ.Next.Serialization;
 
 namespace RabbitMQ.Next.Consumer
 {

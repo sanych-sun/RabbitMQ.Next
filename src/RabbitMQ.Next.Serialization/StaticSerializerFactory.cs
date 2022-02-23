@@ -1,6 +1,5 @@
 using System;
-using RabbitMQ.Next.Abstractions.Messaging;
-using RabbitMQ.Next.Serialization.Abstractions;
+using RabbitMQ.Next.Messaging;
 
 namespace RabbitMQ.Next.Serialization
 {

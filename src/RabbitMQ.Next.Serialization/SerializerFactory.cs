@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using RabbitMQ.Next.Serialization.Abstractions;
 
 namespace RabbitMQ.Next.Serialization
 {

@@ -1,9 +1,9 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using RabbitMQ.Next.Abstractions.Channels;
+using RabbitMQ.Next.Channels;
 
-namespace RabbitMQ.Next.Publisher.Abstractions
+namespace RabbitMQ.Next.Publisher
 {
     public interface IPublisher : IAsyncDisposable
     {

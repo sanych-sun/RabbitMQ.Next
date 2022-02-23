@@ -1,7 +1,5 @@
 using System;
 using System.Threading.Channels;
-using RabbitMQ.Next.Abstractions;
-using RabbitMQ.Next.Abstractions.Channels;
 using RabbitMQ.Next.Buffers;
 
 namespace RabbitMQ.Next.Channels

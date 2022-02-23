@@ -1,4 +1,4 @@
-namespace RabbitMQ.Next.Abstractions.Auth
+namespace RabbitMQ.Next.Auth
 {
     public class PlainAuthMechanism : IAuthMechanism
     {

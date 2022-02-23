@@ -1,9 +1,8 @@
 using System;
 using System.Buffers;
 using System.Runtime.CompilerServices;
-using RabbitMQ.Next.Abstractions.Messaging;
-using RabbitMQ.Next.Publisher.Abstractions;
-using RabbitMQ.Next.Serialization.Abstractions;
+using RabbitMQ.Next.Messaging;
+using RabbitMQ.Next.Serialization;
 
 namespace RabbitMQ.Next.Publisher
 {

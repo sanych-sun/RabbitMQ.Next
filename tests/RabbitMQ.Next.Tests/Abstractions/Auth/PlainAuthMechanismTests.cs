@@ -1,6 +1,5 @@
 using NSubstitute;
-using RabbitMQ.Next.Abstractions;
-using RabbitMQ.Next.Abstractions.Auth;
+using RabbitMQ.Next.Auth;
 using Xunit;
 
 namespace RabbitMQ.Next.Tests.Abstractions.Auth

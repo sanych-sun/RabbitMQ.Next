@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using RabbitMQ.Next.Abstractions;
-using RabbitMQ.Next.Abstractions.Channels;
-using RabbitMQ.Next.Abstractions.Exceptions;
+using RabbitMQ.Next.Channels;
+using RabbitMQ.Next.Exceptions;
 using RabbitMQ.Next.TopologyBuilder.Exceptions;
 using RabbitMQ.Next.Transport.Methods.Queue;
 
@@ -12,8 +11,8 @@ namespace RabbitMQ.Next.TopologyBuilder.Commands
     internal class QueueDeclareCommand : IQueueBuilder, ICommand
     {
         private bool isDurable = true;
-        private bool isExclusive = false;
-        private bool isAutoDelete = false;
+        private bool isExclusive;
+        private bool isAutoDelete;
         private Dictionary<string, object> arguments;
 
         public QueueDeclareCommand(string name)

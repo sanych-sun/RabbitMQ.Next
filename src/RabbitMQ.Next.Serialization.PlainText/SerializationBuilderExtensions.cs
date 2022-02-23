@@ -1,5 +1,4 @@
 using System;
-using RabbitMQ.Next.Serialization.Abstractions;
 
 namespace RabbitMQ.Next.Serialization.PlainText
 {

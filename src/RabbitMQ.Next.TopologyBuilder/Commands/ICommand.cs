@@ -1,5 +1,5 @@
 using System.Threading.Tasks;
-using RabbitMQ.Next.Abstractions.Channels;
+using RabbitMQ.Next.Channels;
 
 namespace RabbitMQ.Next.TopologyBuilder.Commands
 {

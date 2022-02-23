@@ -1,5 +1,3 @@
-using RabbitMQ.Next.Abstractions;
-
 namespace RabbitMQ.Next.Transport
 {
     internal static class ProtocolConstants

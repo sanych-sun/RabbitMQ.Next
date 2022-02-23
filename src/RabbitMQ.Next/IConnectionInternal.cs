@@ -1,6 +1,5 @@
 using System.Threading.Channels;
 using Microsoft.Extensions.ObjectPool;
-using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Channels;
 

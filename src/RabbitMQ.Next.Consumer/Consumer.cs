@@ -2,10 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using RabbitMQ.Next.Abstractions;
-using RabbitMQ.Next.Abstractions.Channels;
-using RabbitMQ.Next.Consumer.Abstractions;
-using RabbitMQ.Next.Serialization.Abstractions;
+using RabbitMQ.Next.Channels;
+using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Tasks;
 using RabbitMQ.Next.Transport.Methods.Basic;
 

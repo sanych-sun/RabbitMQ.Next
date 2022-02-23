@@ -1,6 +1,5 @@
 ﻿using System.Buffers;
 using System.Text.Json;
-using RabbitMQ.Next.Serialization.Abstractions;
 
 namespace RabbitMQ.Next.Serialization.SystemJson
 {

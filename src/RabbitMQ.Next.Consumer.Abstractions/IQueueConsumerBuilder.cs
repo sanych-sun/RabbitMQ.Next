@@ -1,4 +1,4 @@
-namespace RabbitMQ.Next.Consumer.Abstractions
+namespace RabbitMQ.Next.Consumer
 {
     public interface IQueueConsumerBuilder
     {

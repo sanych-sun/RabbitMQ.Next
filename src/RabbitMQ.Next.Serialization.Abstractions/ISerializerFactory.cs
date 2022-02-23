@@ -1,6 +1,6 @@
-using RabbitMQ.Next.Abstractions.Messaging;
+using RabbitMQ.Next.Messaging;
 
-namespace RabbitMQ.Next.Serialization.Abstractions
+namespace RabbitMQ.Next.Serialization
 {
     public interface ISerializerFactory
     {

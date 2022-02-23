@@ -1,8 +1,8 @@
 ﻿using System;
-using RabbitMQ.Next.Abstractions.Channels;
-using RabbitMQ.Next.Serialization.Abstractions;
+using RabbitMQ.Next.Channels;
+using RabbitMQ.Next.Serialization;
 
-namespace RabbitMQ.Next.Consumer.Abstractions
+namespace RabbitMQ.Next.Consumer
 {
     public interface IConsumerBuilder : ISerializationBuilder<IConsumerBuilder>
     {

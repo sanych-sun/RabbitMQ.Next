@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
-using RabbitMQ.Next.Abstractions.Messaging;
+using RabbitMQ.Next.Messaging;
 using RabbitMQ.Next.Publisher;
-using RabbitMQ.Next.Publisher.Abstractions;
+using RabbitMQ.Next.Publisher;
 using Xunit;
 
 namespace RabbitMQ.Next.Tests.Publisher

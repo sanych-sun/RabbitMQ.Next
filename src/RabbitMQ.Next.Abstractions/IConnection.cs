@@ -2,10 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using RabbitMQ.Next.Abstractions.Channels;
-using RabbitMQ.Next.Abstractions.Methods;
+using RabbitMQ.Next.Channels;
+using RabbitMQ.Next.Methods;
 
-namespace RabbitMQ.Next.Abstractions
+namespace RabbitMQ.Next
 {
     public interface IConnection : IAsyncDisposable
     {

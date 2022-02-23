@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using RabbitMQ.Next.Consumer.Abstractions;
 
 namespace RabbitMQ.Next.Consumer
 {

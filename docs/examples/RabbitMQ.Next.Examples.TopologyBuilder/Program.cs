@@ -2,7 +2,6 @@ using System;
 using System.Threading.Tasks;
 using RabbitMQ.Next.TopologyBuilder;
 
-using RabbitMQ.Next.Abstractions;
 
 namespace RabbitMQ.Next.Examples.TopologyBuilder
 {

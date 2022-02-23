@@ -1,6 +1,5 @@
 using System;
 using System.Runtime.CompilerServices;
-using RabbitMQ.Next.Abstractions;
 
 namespace RabbitMQ.Next.Transport
 {

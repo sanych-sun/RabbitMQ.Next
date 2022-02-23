@@ -1,7 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using NSubstitute;
-using RabbitMQ.Next.Abstractions.Channels;
+using RabbitMQ.Next.Channels;
 using RabbitMQ.Next.Consumer;
 using RabbitMQ.Next.Transport.Methods.Basic;
 using Xunit;

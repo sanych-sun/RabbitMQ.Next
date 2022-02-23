@@ -1,6 +1,6 @@
 using System;
 
-namespace RabbitMQ.Next.Abstractions.Exceptions
+namespace RabbitMQ.Next.Exceptions
 {
     public abstract class ProtocolException : Exception
     {

@@ -1,4 +1,4 @@
-namespace RabbitMQ.Next.Abstractions.Messaging
+namespace RabbitMQ.Next.Messaging
 {
     public enum DeliveryMode : byte
     {

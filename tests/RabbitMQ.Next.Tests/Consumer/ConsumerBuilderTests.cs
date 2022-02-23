@@ -1,9 +1,8 @@
 using System;
 using NSubstitute;
-using RabbitMQ.Next.Abstractions.Channels;
+using RabbitMQ.Next.Channels;
 using RabbitMQ.Next.Consumer;
-using RabbitMQ.Next.Consumer.Abstractions;
-using RabbitMQ.Next.Serialization.Abstractions;
+using RabbitMQ.Next.Serialization;
 using Xunit;
 
 namespace RabbitMQ.Next.Tests.Consumer

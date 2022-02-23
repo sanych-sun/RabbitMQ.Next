@@ -5,10 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
 using RabbitMQ.Client;
-using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Publisher;
 using RabbitMQ.Next.Serialization.PlainText;
-using IConnection = RabbitMQ.Next.Abstractions.IConnection;
 
 namespace RabbitMQ.Next.Benchmarks.Publisher
 {

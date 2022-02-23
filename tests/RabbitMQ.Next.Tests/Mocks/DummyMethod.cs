@@ -1,5 +1,4 @@
-using RabbitMQ.Next.Abstractions;
-using RabbitMQ.Next.Abstractions.Methods;
+using RabbitMQ.Next.Methods;
 
 namespace RabbitMQ.Next.Tests.Mocks
 {

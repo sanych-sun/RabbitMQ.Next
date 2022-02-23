@@ -1,6 +1,5 @@
 using System;
-using RabbitMQ.Next.Abstractions;
-using RabbitMQ.Next.Abstractions.Exceptions;
+using RabbitMQ.Next.Exceptions;
 using Xunit;
 
 namespace RabbitMQ.Next.Tests.Abstractions

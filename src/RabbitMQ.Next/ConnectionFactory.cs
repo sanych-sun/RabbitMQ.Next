@@ -1,8 +1,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.ObjectPool;
-using RabbitMQ.Next.Abstractions;
-using RabbitMQ.Next.Abstractions.Methods;
+using RabbitMQ.Next.Methods;
 using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Channels;
 using RabbitMQ.Next.Transport;

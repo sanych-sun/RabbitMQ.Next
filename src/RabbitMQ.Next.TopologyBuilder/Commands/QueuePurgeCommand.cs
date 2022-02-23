@@ -1,8 +1,7 @@
 using System;
 using System.Threading.Tasks;
-using RabbitMQ.Next.Abstractions;
-using RabbitMQ.Next.Abstractions.Channels;
-using RabbitMQ.Next.Abstractions.Exceptions;
+using RabbitMQ.Next.Channels;
+using RabbitMQ.Next.Exceptions;
 using RabbitMQ.Next.Transport.Methods.Queue;
 
 namespace RabbitMQ.Next.TopologyBuilder.Commands

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
 
-using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Publisher;
 using RabbitMQ.Next.Serialization.PlainText;
 

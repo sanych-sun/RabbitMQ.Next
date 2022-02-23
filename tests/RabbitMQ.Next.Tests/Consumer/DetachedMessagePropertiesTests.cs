@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using NSubstitute;
-using RabbitMQ.Next.Abstractions.Messaging;
+using RabbitMQ.Next.Messaging;
 using RabbitMQ.Next.Consumer;
 using Xunit;
 

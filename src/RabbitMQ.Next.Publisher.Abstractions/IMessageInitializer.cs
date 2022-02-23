@@ -1,4 +1,4 @@
-namespace RabbitMQ.Next.Publisher.Abstractions
+namespace RabbitMQ.Next.Publisher
 {
     public interface IMessageInitializer
     {

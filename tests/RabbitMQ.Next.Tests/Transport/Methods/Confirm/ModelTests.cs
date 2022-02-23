@@ -1,4 +1,3 @@
-using RabbitMQ.Next.Abstractions;
 using RabbitMQ.Next.Transport.Methods.Confirm;
 using Xunit;
 

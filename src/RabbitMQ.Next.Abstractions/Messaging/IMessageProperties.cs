@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace RabbitMQ.Next.Abstractions.Messaging
+namespace RabbitMQ.Next.Messaging
 {
     public interface IMessageProperties
     {

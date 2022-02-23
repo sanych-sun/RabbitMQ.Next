@@ -5,10 +5,8 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Extensions.ObjectPool;
-using RabbitMQ.Next.Abstractions;
-using RabbitMQ.Next.Abstractions.Channels;
-using RabbitMQ.Next.Abstractions.Exceptions;
-using RabbitMQ.Next.Abstractions.Methods;
+using RabbitMQ.Next.Exceptions;
+using RabbitMQ.Next.Methods;
 using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Channels;
 using RabbitMQ.Next.Sockets;
@@ -94,8 +92,8 @@ namespace RabbitMQ.Next
 
             this.SocketWriter = socketChannel.Writer;
             this.socketIoCancellation = new CancellationTokenSource();
-            Task.Factory.StartNew(() => ReceiveLoop(this.socketIoCancellation.Token), TaskCreationOptions.LongRunning);
-            Task.Factory.StartNew(() => SendLoop(socketChannel.Reader), TaskCreationOptions.LongRunning);
+            Task.Factory.StartNew(() => this.ReceiveLoop(this.socketIoCancellation.Token), TaskCreationOptions.LongRunning);
+            Task.Factory.StartNew(() => this.SendLoop(socketChannel.Reader), TaskCreationOptions.LongRunning);
 
             this.connectionChannel = new Channel(this, ProtocolConstants.ConnectionChannel, ProtocolConstants.FrameMinSize);
             var connectionCloseWait = new WaitMethodFrameHandler<CloseMethod>(this.MethodRegistry);

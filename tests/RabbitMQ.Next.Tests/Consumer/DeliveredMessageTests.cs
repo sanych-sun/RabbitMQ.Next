@@ -1,4 +1,4 @@
-using RabbitMQ.Next.Consumer.Abstractions;
+using RabbitMQ.Next.Consumer;
 using Xunit;
 
 namespace RabbitMQ.Next.Tests.Consumer

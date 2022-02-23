@@ -1,9 +1,9 @@
 using System;
 using System.Buffers;
 using System.Threading.Tasks;
-using RabbitMQ.Next.Abstractions.Messaging;
+using RabbitMQ.Next.Messaging;
 
-namespace RabbitMQ.Next.Abstractions.Channels
+namespace RabbitMQ.Next.Channels
 {
     public interface IFrameHandler
     {

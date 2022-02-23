@@ -5,11 +5,9 @@ using System.Threading.Tasks;
 using Xunit;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
-using RabbitMQ.Next.Abstractions;
-using RabbitMQ.Next.Abstractions.Messaging;
+using RabbitMQ.Next.Messaging;
 using RabbitMQ.Next.Consumer;
-using RabbitMQ.Next.Consumer.Abstractions;
-using RabbitMQ.Next.Serialization.Abstractions;
+using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Tests.Mocks;
 using RabbitMQ.Next.Transport.Methods.Basic;
 

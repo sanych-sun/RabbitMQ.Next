@@ -1,7 +1,7 @@
 using System;
-using RabbitMQ.Next.Abstractions.Messaging;
+using RabbitMQ.Next.Messaging;
 
-namespace RabbitMQ.Next.Publisher.Abstractions
+namespace RabbitMQ.Next.Publisher
 {
     public interface IMessageBuilder
     {

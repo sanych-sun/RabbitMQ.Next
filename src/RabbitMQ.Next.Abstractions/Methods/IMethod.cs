@@ -1,4 +1,4 @@
-namespace RabbitMQ.Next.Abstractions.Methods
+namespace RabbitMQ.Next.Methods
 {
     public interface IMethod
     {

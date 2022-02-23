@@ -1,7 +1,5 @@
 using System;
 using Microsoft.Extensions.ObjectPool;
-using RabbitMQ.Next.Abstractions;
-using RabbitMQ.Next.Publisher.Abstractions;
 using RabbitMQ.Next.Serialization;
 
 namespace RabbitMQ.Next.Publisher

@@ -1,6 +1,4 @@
 using RabbitMQ.Next.Consumer;
-using RabbitMQ.Next.Consumer.Abstractions;
-using RabbitMQ.Next.TopologyBuilder;
 using Xunit;
 
 namespace RabbitMQ.Next.Tests.Consumer

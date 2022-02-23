@@ -1,4 +1,4 @@
-namespace RabbitMQ.Next.Abstractions.Exceptions
+namespace RabbitMQ.Next.Exceptions
 {
     public class ChannelException : ProtocolException
     {

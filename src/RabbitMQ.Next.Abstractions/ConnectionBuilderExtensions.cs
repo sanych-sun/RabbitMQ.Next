@@ -1,8 +1,8 @@
 using System;
 using System.Net;
-using RabbitMQ.Next.Abstractions.Auth;
+using RabbitMQ.Next.Auth;
 
-namespace RabbitMQ.Next.Abstractions
+namespace RabbitMQ.Next
 {
     public static class ConnectionBuilderExtensions
     {

@@ -1,5 +1,3 @@
-using RabbitMQ.Next.Publisher.Abstractions;
-
 namespace RabbitMQ.Next.Publisher.Initializers
 {
     public class PriorityInitializer : IMessageInitializer
