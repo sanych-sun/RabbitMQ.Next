@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RabbitMQ.Next.Serialization.Abstractions\RabbitMQ.Next.Serialization.Abstractions.csproj" />
+  </ItemGroup>
+  
+</Project>
