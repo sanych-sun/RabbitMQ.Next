@@ -1,15 +1,16 @@
 using System;
+using System.Collections.Generic;
 
 namespace RabbitMQ.Next.Exceptions
 {
     public class EndPointResolutionException : Exception
     {
-        public EndPointResolutionException(Uri endpoint, Exception innerException)
-            : base("Cannot resolve endpoint.", innerException)
+        public EndPointResolutionException(IReadOnlyDictionary<Uri, Exception> exceptions)
+            : base("Cannot establish connection to RabbitMQ cluster. See InnerExceptions for more details.")
         {
-            this.Endpoint = endpoint;
+            this.InnerExceptions = exceptions;
         }
 
-        public Uri Endpoint { get; }
+        public IReadOnlyDictionary<Uri, Exception> InnerExceptions { get; }
     }
 }

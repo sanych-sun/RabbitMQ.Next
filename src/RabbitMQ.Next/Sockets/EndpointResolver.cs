@@ -14,7 +14,7 @@ namespace RabbitMQ.Next.Sockets
     {
         public static async Task<ISocket> OpenSocketAsync(IReadOnlyList<Endpoint> endpoints, CancellationToken cancellation)
         {
-            List<Exception> exceptions = null;
+            Dictionary<Uri, Exception> exceptions = null;
 
             foreach (var endpoint in endpoints)
             {
@@ -25,12 +25,12 @@ namespace RabbitMQ.Next.Sockets
                 catch (Exception e)
                 {
                     // todo: report exception to diagnostic source
-                    exceptions ??= new List<Exception>();
-                    exceptions.Add(new EndPointResolutionException(endpoint.ToUri(), e));
+                    exceptions ??= new Dictionary<Uri, Exception>();
+                    exceptions.Add(endpoint.ToUri(), e);
                 }
             }
 
-            throw new AggregateException("Cannot establish connection RabbitMQ cluster. See inner exceptions for more details.", exceptions);
+            throw new EndPointResolutionException(exceptions);
         }
 
         public static async Task<ISocket> OpenSocketAsync(Endpoint endpoint, CancellationToken cancellation)
