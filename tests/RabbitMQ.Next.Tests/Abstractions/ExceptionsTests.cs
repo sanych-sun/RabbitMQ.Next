@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using RabbitMQ.Next.Exceptions;
 using Xunit;
 
@@ -39,10 +40,10 @@ namespace RabbitMQ.Next.Tests.Abstractions
             var endpoint = new Uri("ampq://localhost:8182/");
             var inner = new Exception();
 
-            var ex = new EndPointResolutionException(endpoint, inner);
+            var ex = new EndPointResolutionException(new Dictionary<Uri, Exception>{ [endpoint] = inner });
 
-            Assert.Equal(endpoint, ex.Endpoint);
-            Assert.Equal(inner, ex.InnerException);
+            Assert.True(ex.InnerExceptions.ContainsKey(endpoint));
+            Assert.Equal(inner, ex.InnerExceptions[endpoint]);
         }
     }
 }

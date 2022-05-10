@@ -33,7 +33,7 @@ namespace RabbitMQ.Next.Examples.SimpleConsumer
             var cancellation = new CancellationTokenSource();
 
             var consumeTask = consumer.ConsumeAsync(cancellation.Token);
-            while (true)
+            while (!consumeTask.IsCompleted)
             {
                 var key = Console.ReadKey();
                 if (key.Key == ConsoleKey.C && key.Modifiers == ConsoleModifiers.Control)
