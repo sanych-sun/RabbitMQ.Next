@@ -7,7 +7,7 @@ namespace RabbitMQ.Next.Serialization.SystemJson
     internal class SystemJsonSerializerBuilder: ISystemJsonSerializerBuilder
     {
         private static readonly string[] DefaultContentTypes = { "application/json" };
-        private List<string> contentTypes = new();
+        private List<string> contentTypes;
 
         public bool IsDefault { get; private set; } = true;
 

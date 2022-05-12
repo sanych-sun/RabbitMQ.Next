@@ -44,6 +44,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMQ.Next.Examples.Topo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMQ.Next.Serialization.SystemJson", "src\RabbitMQ.Next.Serialization.SystemJson\RabbitMQ.Next.Serialization.SystemJson.csproj", "{A44E120A-C992-41F0-8484-296AAA95668A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMQ.Next.Serialization.MessagePack", "src\RabbitMQ.Next.Serialization.MessagePack\RabbitMQ.Next.Serialization.MessagePack.csproj", "{973AEE92-6A7E-4C5A-8295-F89B3384F393}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -118,6 +120,10 @@ Global
 		{A44E120A-C992-41F0-8484-296AAA95668A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A44E120A-C992-41F0-8484-296AAA95668A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A44E120A-C992-41F0-8484-296AAA95668A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{973AEE92-6A7E-4C5A-8295-F89B3384F393}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{973AEE92-6A7E-4C5A-8295-F89B3384F393}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{973AEE92-6A7E-4C5A-8295-F89B3384F393}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{973AEE92-6A7E-4C5A-8295-F89B3384F393}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{AB00A6F3-C3E0-4E61-B302-F9CF0288819E} = {C895EE24-13DF-45C3-AF1D-B6B6EE4A10A9}
@@ -139,5 +145,6 @@ Global
 		{1946230B-BC32-4C27-88E2-8D2938DF2E5A} = {750B1D71-E43B-4714-8AA3-AB9B0EC7E931}
 		{CA01E04C-3659-4426-A9F6-A4145C63B70A} = {750B1D71-E43B-4714-8AA3-AB9B0EC7E931}
 		{A44E120A-C992-41F0-8484-296AAA95668A} = {AD3AF1AA-71EE-4A2C-84DD-5C7DF141C187}
+		{973AEE92-6A7E-4C5A-8295-F89B3384F393} = {AD3AF1AA-71EE-4A2C-84DD-5C7DF141C187}
 	EndGlobalSection
 EndGlobal
