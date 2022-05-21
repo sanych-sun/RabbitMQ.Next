@@ -33,7 +33,15 @@ namespace RabbitMQ.Next.Examples.SimplePublisher
                     break;
                 }
 
-                await publisher.PublishAsync(input);
+                try
+                {
+                    await publisher.PublishAsync(input);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                    throw;
+                }
             }
         }
     }

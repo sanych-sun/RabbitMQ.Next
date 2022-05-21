@@ -32,18 +32,29 @@ namespace RabbitMQ.Next.Examples.SimpleConsumer
 
             var cancellation = new CancellationTokenSource();
 
-            var consumeTask = consumer.ConsumeAsync(cancellation.Token);
-            while (!consumeTask.IsCompleted)
+            MonitorKeypressAsync(cancellation);
+
+            await consumer.ConsumeAsync(cancellation.Token);
+        }
+        
+        private static Task MonitorKeypressAsync(CancellationTokenSource cancellation)
+        {
+            void WaitForInput()
             {
-                var key = Console.ReadKey();
-                if (key.Key == ConsoleKey.C && key.Modifiers == ConsoleModifiers.Control)
+                ConsoleKeyInfo key;
+                do 
+                {
+                    key = Console.ReadKey(true);
+    
+                } while (key.Key != ConsoleKey.C && key.Modifiers != ConsoleModifiers.Control);
+
+                if (!cancellation.IsCancellationRequested)
                 {
                     cancellation.Cancel();
-                    break;
                 }
             }
 
-            await consumeTask;
+            return Task.Run(WaitForInput);
         }
     }
 }
