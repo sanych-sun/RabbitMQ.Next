@@ -1,6 +1,5 @@
 using System;
 using System.Buffers;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -16,16 +15,15 @@ namespace RabbitMQ.Next.Channels
     internal class FrameBuilder : IBufferWriter<byte>
     {
         private readonly ObjectPool<MemoryBlock> memoryPool;
-        private readonly List<MemoryBlock> chunks;
         private ushort chNumber;
         private int frameMaxSize;
+        private MemoryBlock initialBlock;
         private MemoryBlock buffer;
         private int currentFrameHeaderOffset;
         private int totalPayloadSize;
 
         public FrameBuilder(ObjectPool<MemoryBlock> memoryPool)
         {
-            this.chunks = new List<MemoryBlock>();
             this.memoryPool = memoryPool;
             this.chNumber = ushort.MaxValue;
         }
@@ -35,6 +33,7 @@ namespace RabbitMQ.Next.Channels
             this.chNumber = channelNumber;
             this.frameMaxSize = frameMaxSize;
             this.buffer = this.memoryPool.Get();
+            this.initialBlock = this.buffer;
         }
 
         public void WriteMethodFrame<TMethod>(TMethod method, IMethodFormatter<TMethod> formatter)
@@ -107,48 +106,29 @@ namespace RabbitMQ.Next.Channels
                 return;
             }
 
-            this.chunks.Add(this.buffer);
-            this.buffer = this.memoryPool.Get();
+            this.buffer = this.buffer.Append(this.memoryPool.Get());
         }
 
-        public ValueTask WriteToAsync(ChannelWriter<MemoryBlock> channel)
+        public async ValueTask WriteToAsync(ChannelWriter<MemoryBlock> channel)
         {
-            if (this.chunks.Count > 0)
+            var current = this.initialBlock;
+
+            while (current != null)
             {
-                return this.WriteMultipartAsync(channel);
-            }
-
-            if (channel.TryWrite(this.buffer))
-            {
-                return default;
-            }
-
-            return channel.WriteAsync(this.buffer);
-        }
-
-        private async ValueTask WriteMultipartAsync(ChannelWriter<MemoryBlock> channel)
-        {
-            for (var i = 0; i < this.chunks.Count; i++)
-            {
-                var chunk = this.chunks[i];
-
-                if (!channel.TryWrite(chunk))
+                if (!channel.TryWrite(current))
                 {
-                    await channel.WriteAsync(chunk);
+                    await channel.WriteAsync(current);
                 }
-            }
 
-            if (!channel.TryWrite(this.buffer))
-            {
-                await channel.WriteAsync(this.buffer);
+                current = current.Next;
             }
         }
 
         public void Reset()
         {
             // Should not release memory blocks here! It will be done on the frame sending in Connection.SendLoop
+            this.initialBlock = default;
             this.buffer = default;
-            this.chunks.Clear();
             this.chNumber = ushort.MaxValue;
             this.currentFrameHeaderOffset = 0;
             this.totalPayloadSize = 0;

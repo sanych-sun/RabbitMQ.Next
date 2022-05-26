@@ -17,10 +17,13 @@ namespace RabbitMQ.Next.Buffers
         }
 
         public int Offset { get; private set; }
+        
+        public MemoryBlock Next { get; private set; }
 
         public bool Reset()
         {
             this.Offset = 0;
+            this.Next = null;
             return true;
         }
 
@@ -35,6 +38,12 @@ namespace RabbitMQ.Next.Buffers
         public void Rollback(int offset)
         {
             this.Offset = offset;
+        }
+
+        public MemoryBlock Append(MemoryBlock next)
+        {
+            this.Next = next;
+            return next;
         }
 
         public Memory<byte> Memory

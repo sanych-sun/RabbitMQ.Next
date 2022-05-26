@@ -15,21 +15,45 @@ namespace RabbitMQ.Next
         public async Task<IConnection> ConnectAsync(ConnectionSettings settings, IMethodRegistry registry, CancellationToken cancellation)
         {
             var bufferSize = ProtocolConstants.FrameHeaderSize + settings.MaxFrameSize + 1; // 2 * (frame header + frame + frame-end) - to be sure that method and content header fit
-            var memoryPool = new DefaultObjectPool<MemoryBlock>(new ObjectPoolPolicy<MemoryBlock>(
-                () => new MemoryBlock(bufferSize),
-                memory => memory.Reset()), 100);
+            var memoryPool = new DefaultObjectPool<MemoryBlock>(new MemoryBlockPolicy(bufferSize), 100);
 
-            var frameBuilderPool = new DefaultObjectPool<FrameBuilder>(new ObjectPoolPolicy<FrameBuilder>(
-                () => new FrameBuilder(memoryPool),
-                builder =>
-                {
-                    builder.Reset();
-                    return true;
-                }), 200);
+            var frameBuilderPool = new DefaultObjectPool<FrameBuilder>(new FrameBuilderPolicy(memoryPool), 200);
 
             var connection = new Connection(settings, registry, memoryPool, frameBuilderPool);
             await connection.OpenConnectionAsync(cancellation);
             return connection;
+        }
+
+        private class MemoryBlockPolicy : PooledObjectPolicy<MemoryBlock>
+        {
+            private readonly int bufferSize;
+
+            public MemoryBlockPolicy(int bufferSize)
+            {
+                this.bufferSize = bufferSize;
+            }
+            
+            public override MemoryBlock Create() => new (this.bufferSize);
+
+            public override bool Return(MemoryBlock obj) => obj.Reset();
+        }
+        
+        private class FrameBuilderPolicy : PooledObjectPolicy<FrameBuilder>
+        {
+            private readonly ObjectPool<MemoryBlock> memoryPool;
+
+            public FrameBuilderPolicy(ObjectPool<MemoryBlock> memoryPool)
+            {
+                this.memoryPool = memoryPool;
+            }
+            
+            public override FrameBuilder Create() => new (this.memoryPool);
+
+            public override bool Return(FrameBuilder obj)
+            {
+                obj.Reset();
+                return true;
+            }
         }
     }
 }

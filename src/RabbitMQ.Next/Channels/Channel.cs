@@ -151,7 +151,6 @@ namespace RabbitMQ.Next.Channels
 
         private async Task LoopAsync(ChannelReader<(FrameType Type, MemoryBlock Payload)> reader)
         {
-            var contentChunks = new List<MemoryBlock>();
             var messageProperty = new LazyMessageProperties();
 
             try
@@ -188,11 +187,14 @@ namespace RabbitMQ.Next.Channels
 
                     var payload = contentHeaderFrame.Payload.Data[12..]; // 2 obsolete shorts + ulong
 
+                    MemoryBlock contentBlock = null;
                     try
                     {
                         messageProperty.Set(payload);
+                        contentBlock = (await reader.ReadAsync()).Payload;
 
-                        long receivedContent = 0;
+                        var current = contentBlock;
+                        long receivedContent = contentBlock.Data.Length;
                         while (receivedContent < (long)contentSize)
                         {
                             if (!reader.TryRead(out var frame))
@@ -200,21 +202,23 @@ namespace RabbitMQ.Next.Channels
                                 frame = await reader.ReadAsync();
                             }
 
-                            contentChunks.Add(frame.Payload);
+                            current = current.Append(frame.Payload);
                             receivedContent += frame.Payload.Data.Length;
                         }
 
-                        await this.ProcessContentAsync(messageProperty, contentChunks);
+                        await this.ProcessContentAsync(messageProperty, contentBlock);
                     }
                     finally
                     {
                         this.memoryPool.Return(contentHeaderFrame.Payload);
                         messageProperty.Reset();
-                        for (var i = 0; i < contentChunks.Count; i++)
+
+                        var current = contentBlock;
+                        while (current != null)
                         {
-                            this.memoryPool.Return(contentChunks[i]);
+                            this.memoryPool.Return(current);
+                            current = current.Next;
                         }
-                        contentChunks.Clear();
                     }
                 }
             }
@@ -258,9 +262,9 @@ namespace RabbitMQ.Next.Channels
             }
         }
 
-        private async ValueTask ProcessContentAsync(LazyMessageProperties props, IReadOnlyList<MemoryBlock> contentFrames)
+        private async ValueTask ProcessContentAsync(LazyMessageProperties props, MemoryBlock contentMemoryBlock)
         {
-            var content = contentFrames.ToSequence();
+            var content = contentMemoryBlock.ToSequence();
 
             for (var i = 0; i < this.frameHandlers.Count; i++)
             {

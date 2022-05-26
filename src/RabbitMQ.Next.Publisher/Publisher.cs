@@ -151,7 +151,7 @@ namespace RabbitMQ.Next.Publisher
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ApplyInitializers<TContent>(TContent content, IMessageBuilder properties)
         {
-            if (this.transformers == null)
+            if (this.transformers == null || this.transformers.Count == 0)
             {
                 return;
             }

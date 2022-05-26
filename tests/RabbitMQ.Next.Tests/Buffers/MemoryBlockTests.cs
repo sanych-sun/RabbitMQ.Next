@@ -41,20 +41,24 @@ namespace RabbitMQ.Next.Tests.Buffers
         }
 
         [Fact]
-        public void CanResetWrittenBytes()
+        public void CanReset()
         {
             var memoryBlock = new MemoryBlock(10);
 
             Assert.Equal(0, memoryBlock.Data.Length);
             Assert.Equal(10, memoryBlock.Span.Length);
+            Assert.Null(memoryBlock.Next);
 
+            var nextBlock = memoryBlock.Append(new MemoryBlock(12));
             memoryBlock.Commit(3);
             Assert.Equal(3, memoryBlock.Data.Length);
             Assert.Equal(7, memoryBlock.Span.Length);
+            Assert.Equal(nextBlock, memoryBlock.Next);
 
             memoryBlock.Reset();
             Assert.Equal(0, memoryBlock.Data.Length);
             Assert.Equal(10, memoryBlock.Span.Length);
+            Assert.Null(memoryBlock.Next);
         }
 
         public static IEnumerable<object[]> DataWriterTestCases()

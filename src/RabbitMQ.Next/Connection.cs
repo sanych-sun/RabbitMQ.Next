@@ -139,9 +139,7 @@ namespace RabbitMQ.Next
         private ValueTask WriteToSocket(ReadOnlyMemory<byte> bytes)
         {
             var memoryBlock = this.MemoryPool.Get();
-
-            bytes.CopyTo(memoryBlock.Memory);
-            memoryBlock.Commit(ProtocolConstants.AmqpHeader.Length);
+            memoryBlock.Write(bytes.Span);
 
             // Should not return memory block here, it will be done in SendLoop
             return this.SocketWriter.WriteAsync(memoryBlock);
