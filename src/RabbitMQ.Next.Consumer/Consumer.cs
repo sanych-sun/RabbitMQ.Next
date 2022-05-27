@@ -87,7 +87,7 @@ namespace RabbitMQ.Next.Consumer
 
         private async ValueTask InitConsumerAsync()
         {
-            this.channel = await this.connection.OpenChannelAsync(null);
+            this.channel = await this.connection.OpenChannelAsync();
             this.acknowledgement = this.acknowledgementFactory(this.channel);
 
             var deliverMethodParser = this.connection.MethodRegistry.GetParser<DeliverMethod>();

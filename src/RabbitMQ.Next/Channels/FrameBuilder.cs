@@ -110,16 +110,8 @@ namespace RabbitMQ.Next.Channels
             this.buffer = this.buffer.Append(this.memoryPool.Get());
         }
 
-        public ValueTask WriteToAsync(ChannelWriter<MemoryBlock> channel, CancellationToken cancellation)
-        {
-            if (channel.TryWrite(this.initialBlock))
-            {
-                return default;
-                
-            }
-
-            return channel.WriteAsync(this.initialBlock, cancellation);
-        }
+        public MemoryBlock Complete()
+            => this.initialBlock;
 
         public void Reset()
         {

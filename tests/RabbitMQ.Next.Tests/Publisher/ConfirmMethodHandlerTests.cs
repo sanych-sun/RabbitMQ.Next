@@ -155,7 +155,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             var handler = new ConfirmFrameHandler(this.registry);
 
             var waitTasks = Enumerable.Range(1, messages)
-                .Select(i => handler.WaitForConfirmAsync((ulong)i).AsTask())
+                .Select(i => handler.WaitForConfirmAsync((ulong)i))
                 .ToArray();
 
             var confirms = new ConcurrentQueue<ulong>();

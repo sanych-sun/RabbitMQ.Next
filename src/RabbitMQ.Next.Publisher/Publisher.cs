@@ -184,7 +184,12 @@ namespace RabbitMQ.Next.Publisher
                     this.frameHandlers[0].Release();
                 }
 
-                this.channel = await this.connection.OpenChannelAsync(this.frameHandlers, cancellationToken);
+                this.channel = await this.connection.OpenChannelAsync(cancellationToken);
+                for (var i = 0; i < this.frameHandlers.Count; i++)
+                {
+                    this.channel.AddFrameHandler(this.frameHandlers[i]);
+                }
+                
                 await this.channel.SendAsync<DeclareMethod, DeclareOkMethod>(new DeclareMethod(this.exchange), cancellationToken);
                 if (this.confirms != null)
                 {

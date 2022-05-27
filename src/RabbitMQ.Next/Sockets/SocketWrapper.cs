@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using System.Net.Security;
 using System.Net.Sockets;
-using System.Threading.Tasks;
 using RabbitMQ.Next.Transport;
 
 namespace RabbitMQ.Next.Sockets
@@ -31,10 +30,10 @@ namespace RabbitMQ.Next.Sockets
             }
         }
 
-        public ValueTask SendAsync(ReadOnlyMemory<byte> payload)
-            => this.stream.WriteAsync(payload);
+        public void Send(ReadOnlyMemory<byte> payload)
+            => this.stream.Write(payload.Span);
 
-        public Task FlushAsync() => this.stream.FlushAsync();
+        public void Flush() => this.stream.Flush();
 
         public int Receive(Span<byte> buffer)
         {

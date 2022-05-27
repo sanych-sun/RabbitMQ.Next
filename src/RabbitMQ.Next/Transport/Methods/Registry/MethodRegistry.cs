@@ -7,8 +7,8 @@ namespace RabbitMQ.Next.Transport.Methods.Registry
 {
     internal sealed class MethodRegistry : IMethodRegistry
     {
-        private readonly IReadOnlyDictionary<MethodId, IMethodRegistration> methods;
-        private readonly IReadOnlyDictionary<Type, IMethodRegistration> types;
+        private readonly Dictionary<MethodId, IMethodRegistration> methods;
+        private readonly Dictionary<Type, IMethodRegistration> types;
 
         public MethodRegistry(IReadOnlyList<IMethodRegistration> items)
         {

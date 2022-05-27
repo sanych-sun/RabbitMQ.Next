@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Channels;
@@ -9,7 +8,7 @@ namespace RabbitMQ.Next
 {
     public interface IConnection : IAsyncDisposable
     {
-        Task<IChannel> OpenChannelAsync(IReadOnlyList<IFrameHandler> handlers = null, CancellationToken cancellationToken = default);
+        Task<IChannel> OpenChannelAsync(CancellationToken cancellationToken = default);
 
         ConnectionState State { get; }
 

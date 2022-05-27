@@ -32,7 +32,7 @@ namespace RabbitMQ.Next.Channels
             this.registry = connection.MethodRegistry;
             this.memoryPool = connection.MemoryPool;
 
-            this.methodSender = new MethodSender(this.ChannelNumber, connection.SocketWriter, connection.MethodRegistry, connection.FrameBuilderPool, frameMaxSize);
+            this.methodSender = new MethodSender(this.ChannelNumber, connection, frameMaxSize);
 
             this.channelCompletion = new TaskCompletionSource<bool>();
             var receiveChannel = System.Threading.Channels.Channel.CreateUnbounded<(FrameType Type, MemoryBlock Payload)>(new UnboundedChannelOptions

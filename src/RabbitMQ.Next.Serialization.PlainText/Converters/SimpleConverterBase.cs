@@ -9,13 +9,13 @@ namespace RabbitMQ.Next.Serialization.PlainText.Converters
     {
         public bool TryFormat<TContent>(TContent content, IBufferWriter<byte> writer)
         {
-            if (content is not T typed)
+            if (content is T typed)
             {
-                return content == null && typeof(TContent) == typeof(T?);
+                this.FormatInternal(typed, writer);
+                return true;
             }
 
-            this.FormatInternal(typed, writer);
-            return true;
+            return content == null && typeof(TContent) == typeof(T?);
         }
 
         public bool TryParse<TContent>(ReadOnlySequence<byte> bytes, out TContent value)

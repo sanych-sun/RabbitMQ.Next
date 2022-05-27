@@ -1,5 +1,4 @@
 using System;
-using System.Threading.Tasks;
 using RabbitMQ.Next.Sockets;
 
 namespace RabbitMQ.Next.Tests.Mocks
@@ -23,13 +22,14 @@ namespace RabbitMQ.Next.Tests.Mocks
             return ((Memory<byte>) this.buffer)[0..this.offset];
         }
 
-        public ValueTask SendAsync(ReadOnlyMemory<byte> payload)
+        public void Send(ReadOnlyMemory<byte> payload)
         {
             this.WriteToBuffer(payload);
-            return default;
         }
 
-        public Task FlushAsync() => Task.CompletedTask;
+        public void Flush()
+        {
+        }
 
         public int Receive(Span<byte> buffer) => throw new NotImplementedException();
 

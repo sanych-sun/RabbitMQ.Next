@@ -9,8 +9,6 @@ using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using RabbitMQ.Next.Channels;
 using RabbitMQ.Next.Messaging;
-using RabbitMQ.Next.Buffers;
-using RabbitMQ.Next.Publisher;
 using RabbitMQ.Next.Publisher;
 using RabbitMQ.Next.Publisher.Initializers;
 using RabbitMQ.Next.Serialization;
@@ -213,7 +211,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         }
 
         private ObjectPool<MessageBuilder> PoolStub = new DefaultObjectPool<MessageBuilder>(
-            new MessageBuilderPoolPolicy());
+            new NoResetMessagePropertiesPolicy());
 
         private (IConnection connection, IChannel channel) Mock()
         {
@@ -221,10 +219,17 @@ namespace RabbitMQ.Next.Tests.Publisher
 
             var connection = Substitute.For<IConnection>();
             connection.State.Returns(ConnectionState.Open);
-            connection.OpenChannelAsync(Arg.Any<IReadOnlyList<IFrameHandler>>())
+            connection.OpenChannelAsync()
                 .Returns(args => Task.FromResult(channel));
 
             return (connection, channel);
+        }
+
+        private class NoResetMessagePropertiesPolicy : IPooledObjectPolicy<MessageBuilder>
+        {
+            public MessageBuilder Create() => new();
+
+            public bool Return(MessageBuilder obj) => false;
         }
     }
 }

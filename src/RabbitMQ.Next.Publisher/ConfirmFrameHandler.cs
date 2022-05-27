@@ -36,7 +36,7 @@ namespace RabbitMQ.Next.Publisher
             this.nackMethodParser = registry.GetParser<NackMethod>();
         }
 
-        public ValueTask<bool> WaitForConfirmAsync(ulong deliveryTag)
+        public Task<bool> WaitForConfirmAsync(ulong deliveryTag)
         {
             var tcs = this.pendingConfirms.GetOrAdd(deliveryTag, _ => new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously));
             if (tcs.Task.IsCompleted)
@@ -44,7 +44,7 @@ namespace RabbitMQ.Next.Publisher
                 this.pendingConfirms.TryRemove(deliveryTag, out _);
             }
 
-            return new ValueTask<bool>(tcs.Task);
+            return tcs.Task;
         }
 
         bool IFrameHandler.HandleMethodFrame(MethodId methodId, ReadOnlySpan<byte> payload)

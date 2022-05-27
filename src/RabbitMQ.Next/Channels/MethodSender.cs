@@ -1,13 +1,10 @@
 using System;
 using System.Buffers;
-using System.Runtime.CompilerServices;
 using System.Threading;
-using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Extensions.ObjectPool;
 using RabbitMQ.Next.Messaging;
 using RabbitMQ.Next.Methods;
-using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Transport.Methods.Basic;
 
 namespace RabbitMQ.Next.Channels
@@ -15,21 +12,21 @@ namespace RabbitMQ.Next.Channels
     internal class MethodSender
     {
         private readonly ObjectPool<FrameBuilder> frameBuilderPool;
-        private readonly ChannelWriter<MemoryBlock> socketWriter;
 
+        private readonly IConnectionInternal connection;
         private readonly IMethodFormatter<PublishMethod> publishMethodFormatter;
         private readonly IMethodRegistry registry;
         private readonly ushort channelNumber;
         private readonly int frameMaxSize;
 
-        public MethodSender(ushort channelNumber, ChannelWriter<MemoryBlock> socketWriter, IMethodRegistry registry, ObjectPool<FrameBuilder> frameBuilderPool, int frameMaxSize)
+        public MethodSender(ushort channelNumber, IConnectionInternal connection, int frameMaxSize)
         {
             this.channelNumber = channelNumber;
             this.frameMaxSize = frameMaxSize;
-            this.socketWriter = socketWriter;
-            this.registry = registry;
+            this.connection = connection;
+            this.registry = connection.MethodRegistry;
             this.publishMethodFormatter = registry.GetFormatter<PublishMethod>();
-            this.frameBuilderPool = frameBuilderPool;
+            this.frameBuilderPool = connection.FrameBuilderPool;
         }
 
         public ValueTask SendAsync<TRequest>(TRequest request, CancellationToken cancellation = default)
@@ -40,7 +37,7 @@ namespace RabbitMQ.Next.Channels
             var formatter = this.registry.GetFormatter<TRequest>();
             frameBuilder.WriteMethodFrame(request, formatter);
 
-            return frameBuilder.WriteToAsync(this.socketWriter, cancellation);
+            return this.connection.WriteToSocketAsync(frameBuilder.Complete(), cancellation);
         }
 
         public ValueTask PublishAsync<TState>(
@@ -55,7 +52,7 @@ namespace RabbitMQ.Next.Channels
             frameBuilder.WriteMethodFrame(publishMethod, this.publishMethodFormatter);
             frameBuilder.WriteContentFrame(state, properties, contentBody);
 
-            return frameBuilder.WriteToAsync(this.socketWriter, cancellation);
+            return this.connection.WriteToSocketAsync(frameBuilder.Complete(), cancellation);
         }
     }
 }
