@@ -153,10 +153,11 @@ namespace RabbitMQ.Next
                 {
                     while (memoryBlock != null)
                     {
-                        await this.socket.SendAsync(memoryBlock.Data);
-                        this.MemoryPool.Return(memoryBlock);
-
+                        var current = memoryBlock;
                         memoryBlock = memoryBlock.Next;
+                        
+                        await this.socket.SendAsync(current.Data);
+                        this.MemoryPool.Return(current);
                     }
                 }
 
