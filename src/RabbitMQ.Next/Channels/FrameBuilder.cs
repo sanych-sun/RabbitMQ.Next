@@ -1,6 +1,7 @@
 using System;
 using System.Buffers;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Extensions.ObjectPool;
@@ -109,19 +110,15 @@ namespace RabbitMQ.Next.Channels
             this.buffer = this.buffer.Append(this.memoryPool.Get());
         }
 
-        public async ValueTask WriteToAsync(ChannelWriter<MemoryBlock> channel)
+        public ValueTask WriteToAsync(ChannelWriter<MemoryBlock> channel, CancellationToken cancellation)
         {
-            var current = this.initialBlock;
-
-            while (current != null)
+            if (channel.TryWrite(this.initialBlock))
             {
-                if (!channel.TryWrite(current))
-                {
-                    await channel.WriteAsync(current);
-                }
-
-                current = current.Next;
+                return default;
+                
             }
+
+            return channel.WriteAsync(this.initialBlock, cancellation);
         }
 
         public void Reset()

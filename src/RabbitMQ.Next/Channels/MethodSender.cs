@@ -16,7 +16,6 @@ namespace RabbitMQ.Next.Channels
     {
         private readonly ObjectPool<FrameBuilder> frameBuilderPool;
         private readonly ChannelWriter<MemoryBlock> socketWriter;
-        private readonly SemaphoreSlim senderSync;
 
         private readonly IMethodFormatter<PublishMethod> publishMethodFormatter;
         private readonly IMethodRegistry registry;
@@ -31,7 +30,6 @@ namespace RabbitMQ.Next.Channels
             this.registry = registry;
             this.publishMethodFormatter = registry.GetFormatter<PublishMethod>();
             this.frameBuilderPool = frameBuilderPool;
-            this.senderSync = new SemaphoreSlim(1,1);
         }
 
         public ValueTask SendAsync<TRequest>(TRequest request, CancellationToken cancellation = default)
@@ -42,7 +40,7 @@ namespace RabbitMQ.Next.Channels
             var formatter = this.registry.GetFormatter<TRequest>();
             frameBuilder.WriteMethodFrame(request, formatter);
 
-            return this.TransmitFrameAsync(frameBuilder, cancellation);
+            return frameBuilder.WriteToAsync(this.socketWriter, cancellation);
         }
 
         public ValueTask PublishAsync<TState>(
@@ -57,23 +55,7 @@ namespace RabbitMQ.Next.Channels
             frameBuilder.WriteMethodFrame(publishMethod, this.publishMethodFormatter);
             frameBuilder.WriteContentFrame(state, properties, contentBody);
 
-            return this.TransmitFrameAsync(frameBuilder, cancellation);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private async ValueTask TransmitFrameAsync(FrameBuilder frame, CancellationToken cancellation)
-        {
-            await this.senderSync.WaitAsync(cancellation);
-
-            try
-            {
-                await frame.WriteToAsync(this.socketWriter);
-            }
-            finally
-            {
-                this.senderSync.Release();
-                this.frameBuilderPool.Return(frame);
-            }
+            return frameBuilder.WriteToAsync(this.socketWriter, cancellation);
         }
     }
 }
