@@ -213,7 +213,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         }
 
         private ObjectPool<MessageBuilder> PoolStub = new DefaultObjectPool<MessageBuilder>(
-            new ObjectPoolPolicy<MessageBuilder>(() => new MessageBuilder(), _ => true));
+            new MessageBuilderPoolPolicy());
 
         private (IConnection connection, IChannel channel) Mock()
         {
