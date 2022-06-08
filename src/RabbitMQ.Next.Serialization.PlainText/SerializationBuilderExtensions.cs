@@ -4,8 +4,7 @@ namespace RabbitMQ.Next.Serialization.PlainText
 {
     public static class SerializationBuilderExtensions
     {
-        public static TBuilder UsePlainTextSerializer<TBuilder>(this TBuilder builder, Action<IPlainTextSerializerBuilder> registration = null)
-            where TBuilder : ISerializationBuilder<TBuilder>
+        public static ISerializationBuilder UsePlainTextSerializer(this ISerializationBuilder builder, Action<IPlainTextSerializerBuilder> registration = null)
         {
             var innerBuilder = new PlainTextSerializerBuilder();
             registration?.Invoke(innerBuilder);
@@ -14,7 +13,12 @@ namespace RabbitMQ.Next.Serialization.PlainText
 
             for (var i = 0; i < innerBuilder.ContentTypes.Count; i++)
             {
-                builder.UseSerializer(serializer, innerBuilder.ContentTypes[i], innerBuilder.IsDefault);
+                builder.UseSerializer(serializer, innerBuilder.ContentTypes[i]);
+            }
+
+            if (innerBuilder.IsDefault)
+            {
+                builder.DefaultSerializer(serializer);
             }
 
             return builder;

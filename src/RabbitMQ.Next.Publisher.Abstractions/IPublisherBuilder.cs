@@ -1,8 +1,6 @@
-using RabbitMQ.Next.Serialization;
-
 namespace RabbitMQ.Next.Publisher
 {
-    public interface IPublisherBuilder : ISerializationBuilder<IPublisherBuilder>
+    public interface IPublisherBuilder
     {
         IPublisherBuilder UseMessageInitializer(IMessageInitializer initializer);
 

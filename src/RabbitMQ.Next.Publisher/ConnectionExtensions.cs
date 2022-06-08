@@ -1,12 +1,11 @@
 using System;
 using Microsoft.Extensions.ObjectPool;
-using RabbitMQ.Next.Serialization;
 
 namespace RabbitMQ.Next.Publisher
 {
     public static class ConnectionExtensions
     {
-        public static IPublisher Publisher(this IConnection connection, string exchange, Action<IPublisherBuilder> builder)
+        public static IPublisher Publisher(this IConnection connection, string exchange, Action<IPublisherBuilder> builder = null)
         {
             if (string.IsNullOrWhiteSpace(exchange))
             {
@@ -21,7 +20,7 @@ namespace RabbitMQ.Next.Publisher
                 10);
 
             var publisher = new Publisher(connection, messagePropsPool, exchange,
-                publisherBuilder.PublisherConfirms, SerializerFactory.Create(publisherBuilder.Serializers),
+                publisherBuilder.PublisherConfirms, 
                 publisherBuilder.Initializers, publisherBuilder.ReturnedMessageHandlers);
 
             return publisher;

@@ -20,6 +20,7 @@ namespace RabbitMQ.Next.Benchmarks.Publisher
         {
             this.connection = await ConnectionBuilder.Default
                 .Endpoint(Helper.RabbitMqConnection)
+                .ConfigureSerialization(builder => builder.UsePlainTextSerializer())
                 .ConnectAsync();
 
             ConnectionFactory factory = new ConnectionFactory();
@@ -52,8 +53,7 @@ namespace RabbitMQ.Next.Benchmarks.Publisher
             var publisher = this.connection.Publisher("amq.topic",
                 builder => builder
                     .NoConfirm()
-                    .UsePlainTextSerializer()
-                );
+            );
 
             await Task.WhenAll(Enumerable.Range(0, 10)
                 .Select(async num =>
@@ -79,8 +79,7 @@ namespace RabbitMQ.Next.Benchmarks.Publisher
         {
             var publisher = this.connection.Publisher("amq.topic",
                 builder => builder
-                    .UsePlainTextSerializer()
-                );
+                    .NoConfirm());
 
             for (int i = 0; i < parameters.Messages.Count; i++)
             {

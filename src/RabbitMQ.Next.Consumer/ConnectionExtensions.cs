@@ -1,5 +1,4 @@
 using System;
-using RabbitMQ.Next.Serialization;
 
 namespace RabbitMQ.Next.Consumer
 {
@@ -10,7 +9,7 @@ namespace RabbitMQ.Next.Consumer
             var consumerBuilder = new ConsumerBuilder();
             builder?.Invoke(consumerBuilder);
 
-            var consumer = new Consumer(connection, SerializerFactory.Create(consumerBuilder.Serializers), consumerBuilder.AcknowledgementFactory,
+            var consumer = new Consumer(connection, consumerBuilder.AcknowledgementFactory,
                 consumerBuilder.Handlers, consumerBuilder.Queues, consumerBuilder.PrefetchSize, consumerBuilder.PrefetchCount,
                 consumerBuilder.OnUnprocessedMessage, consumerBuilder.OnPoisonMessage);
 

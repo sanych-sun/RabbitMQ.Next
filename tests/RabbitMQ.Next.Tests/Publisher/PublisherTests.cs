@@ -26,7 +26,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         {
             var mock = this.Mock();
 
-            var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, "exchange", false, this.MockSerializerFactory(), null, null);
+            var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, "exchange", false, null, null);
 
             await publisher.InitializeAsync();
 
@@ -40,7 +40,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             mock.channel.SendAsync<DeclareMethod, DeclareOkMethod>(Arg.Any<DeclareMethod>())
                 .Throws(new ChannelClosedException("Exchange does not exists"));
 
-            var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, "exchange", false, this.MockSerializerFactory(), null, null);
+            var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, "exchange", false, null, null);
 
             await Assert.ThrowsAsync<ChannelClosedException>(async () => await publisher.InitializeAsync());
         }
@@ -50,7 +50,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         {
             var mock = this.Mock();
 
-            var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, "exchange", true, this.MockSerializerFactory(), null, null);
+            var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, "exchange", true, null, null);
 
             await publisher.InitializeAsync();
 
@@ -62,7 +62,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         {
             var mock = this.Mock();
 
-            var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, "exchange", false, this.MockSerializerFactory(), null, null);
+            var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, "exchange", false, null, null);
 
             await publisher.InitializeAsync();
 
@@ -75,7 +75,7 @@ namespace RabbitMQ.Next.Tests.Publisher
             var mock = this.Mock();
             mock.connection.State.Returns(ConnectionState.Closed);
 
-            var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, "exchange", false, this.MockSerializerFactory(), null, null);
+            var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, "exchange", false, null, null);
 
             await Assert.ThrowsAsync<InvalidOperationException>(async () => await publisher.InitializeAsync());
         }
@@ -85,7 +85,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         {
             var mock = this.Mock();
 
-            var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, "exchange", false, this.MockSerializerFactory(), null, null);
+            var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, "exchange", false, null, null);
             await publisher.DisposeAsync();
 
             await Assert.ThrowsAsync<ObjectDisposedException>(async () => await publisher.PublishAsync("test"));
@@ -96,7 +96,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         {
             var mock = this.Mock();
 
-            var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, "exchange", false, this.MockSerializerFactory(), null, null);
+            var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, "exchange", false,  null, null);
             await publisher.DisposeAsync();
 
             var ex = await Record.ExceptionAsync(async () => await publisher.DisposeAsync());
@@ -111,7 +111,7 @@ namespace RabbitMQ.Next.Tests.Publisher
 
             var returnedMessageHandler = Substitute.For<IReturnedMessageHandler>();
 
-            var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, "exchange", false, this.MockSerializerFactory(), null, new[] {returnedMessageHandler});
+            var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, "exchange", false, null, new[] {returnedMessageHandler});
             await publisher.DisposeAsync();
 
             returnedMessageHandler.Received().Dispose();
@@ -122,7 +122,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         {
             var mock = this.Mock();
 
-            var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, "exchange", false, this.MockSerializerFactory(), null, null);
+            var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, "exchange", false, null, null);
             await publisher.InitializeAsync();
             await publisher.DisposeAsync();
 
@@ -138,7 +138,7 @@ namespace RabbitMQ.Next.Tests.Publisher
         {
             var mock = this.Mock();
 
-            var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, exchange, false, this.MockSerializerFactory(), transformers, null);
+            var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, exchange, false, transformers, null);
 
             await publisher.PublishAsync("a", "test", (state, message) => builder?.Invoke(message), flags);
 
@@ -195,19 +195,6 @@ namespace RabbitMQ.Next.Tests.Publisher
                 PublishFlags.None,
                 new MessageProperties { Priority = 1, Type = "test", UserId = "testUser", DeliveryMode = DeliveryMode.Persistent}
             };
-        }
-
-        private ISerializerFactory MockSerializerFactory()
-        {
-            var serializer = Substitute.For<ISerializer>();
-            serializer
-                .When(x => x.Serialize(Arg.Any<string>(), Arg.Any<IBufferWriter<byte>>()))
-                .Do(x => x.ArgAt<IBufferWriter<byte>>(1).Write(new byte[] { 0x01, 0x02}));
-
-            var serializerFactory = Substitute.For<ISerializerFactory>();
-            serializerFactory.Get(Arg.Any<IMessageProperties>()).Returns(serializer);
-
-            return serializerFactory;
         }
 
         private ObjectPool<MessageBuilder> PoolStub = new DefaultObjectPool<MessageBuilder>(

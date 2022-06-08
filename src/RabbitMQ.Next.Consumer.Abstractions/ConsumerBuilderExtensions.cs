@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using RabbitMQ.Next.Messaging;
 
 namespace RabbitMQ.Next.Consumer
 {
@@ -11,7 +12,7 @@ namespace RabbitMQ.Next.Consumer
             return builder;
         }
 
-        public static IConsumerBuilder MessageHandler(this IConsumerBuilder builder, Func<DeliveredMessage, IContentAccessor, ValueTask<bool>> handler)
+        public static IConsumerBuilder MessageHandler(this IConsumerBuilder builder, Func<DeliveredMessage, IContent, ValueTask<bool>> handler)
         {
             var messageHandler = new DeliveredMessageDelegateHandler(handler);
             builder.MessageHandler(messageHandler);
@@ -19,7 +20,7 @@ namespace RabbitMQ.Next.Consumer
             return builder;
         }
 
-        public static IConsumerBuilder MessageHandler(this IConsumerBuilder builder, Func<DeliveredMessage, IContentAccessor, bool> handler)
+        public static IConsumerBuilder MessageHandler(this IConsumerBuilder builder, Func<DeliveredMessage, IContent, bool> handler)
         {
             var messageHandler = new DeliveredMessageDelegateHandler(
                 (message, content) => new ValueTask<bool>(handler(message, content)));

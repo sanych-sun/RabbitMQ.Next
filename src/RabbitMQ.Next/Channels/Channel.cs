@@ -10,7 +10,7 @@ using RabbitMQ.Next.Exceptions;
 using RabbitMQ.Next.Messaging;
 using RabbitMQ.Next.Methods;
 using RabbitMQ.Next.Buffers;
-using RabbitMQ.Next.Tasks;
+using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Messaging;
 using RabbitMQ.Next.Transport.Methods.Channel;
@@ -21,17 +21,19 @@ namespace RabbitMQ.Next.Channels
     {
         private readonly IMethodRegistry registry;
         private readonly ObjectPool<MemoryBlock> memoryPool;
+        private readonly ObjectPool<LazyMessageProperties> messagePropertiesPool;
         private readonly MethodSender methodSender;
         private readonly TaskCompletionSource<bool> channelCompletion;
-
-        private readonly IList<IFrameHandler> frameHandlers;
+        private readonly ISerializerFactory serializerFactory;
+        private readonly Dictionary<uint, IMessageProcessor> methodProcessors = new();
 
         public Channel(IConnectionInternal connection, ushort channelNumber, int frameMaxSize)
         {
             this.ChannelNumber = channelNumber;
             this.registry = connection.MethodRegistry;
             this.memoryPool = connection.MemoryPool;
-
+            this.messagePropertiesPool = connection.MessagePropertiesPool;
+            this.serializerFactory = connection.SerializerFactory;
             this.methodSender = new MethodSender(this.ChannelNumber, connection, frameMaxSize);
 
             this.channelCompletion = new TaskCompletionSource<bool>();
@@ -43,7 +45,7 @@ namespace RabbitMQ.Next.Channels
             });
             this.FrameWriter = receiveChannel.Writer;
 
-            var channelCloseWait = new WaitMethodFrameHandler<CloseMethod>(this.registry);
+            var channelCloseWait = new WaitMethodMessageHandler<CloseMethod>();
             channelCloseWait.WaitTask.ContinueWith(t =>
             {
                 if (t.IsCompletedSuccessfully)
@@ -52,18 +54,25 @@ namespace RabbitMQ.Next.Channels
                 }
             });
 
-            this.frameHandlers = new List<IFrameHandler> { channelCloseWait };
+            this.WithMessageHandler(channelCloseWait);
 
             Task.Factory.StartNew(() => this.LoopAsync(receiveChannel.Reader), TaskCreationOptions.LongRunning);
         }
 
         public ushort ChannelNumber { get; }
 
-        public void AddFrameHandler(IFrameHandler handler)
-            => this.frameHandlers.Insert(0, handler);
+        public IDisposable WithMessageHandler<TMethod>(IMessageHandler<TMethod> handler)
+            where TMethod : struct, IIncomingMethod
+        {
+            var methodId = (uint)this.registry.GetMethodId<TMethod>();
+            if (!this.methodProcessors.TryGetValue(methodId, out var processor))
+            {
+                processor = new MessageProcessor<TMethod>(this.registry.GetParser<TMethod>());
+                this.methodProcessors[methodId] = processor;
+            }
 
-        public bool RemoveFrameHandler(IFrameHandler handler)
-            => this.frameHandlers.Remove(handler);
+            return processor.WithMessageHandler(handler);
+        }
 
         public Task Completion => this.channelCompletion.Task;
         public ValueTask SendAsync<TRequest>(TRequest request, CancellationToken cancellation = default)
@@ -113,10 +122,13 @@ namespace RabbitMQ.Next.Channels
 
             this.FrameWriter.TryComplete();
 
-            for (var i = 0; i < this.frameHandlers.Count; i++)
+            foreach (var processor in this.methodProcessors.Values)
             {
-                this.frameHandlers[i].Release(ex);
+                processor.Dispose();
             }
+            
+            this.methodProcessors.Clear();
+            
             return true;
         }
 
@@ -124,17 +136,13 @@ namespace RabbitMQ.Next.Channels
             where TMethod : struct, IIncomingMethod
         {
             this.ValidateState();
-            var waitHandler = new WaitMethodFrameHandler<TMethod>(this.registry);
-            this.AddFrameHandler(waitHandler);
+            var waitHandler = new WaitMethodMessageHandler<TMethod>();
+            var disposer = this.WithMessageHandler(waitHandler);
 
-            try
-            {
-                return await waitHandler.WaitTask.WithCancellation(cancellation);
-            }
-            finally
-            {
-                this.frameHandlers.Remove(waitHandler);
-            }
+            var result = await waitHandler.WaitTask;
+            
+            disposer.Dispose();
+            return result;
         }
 
         public async ValueTask CloseAsync(Exception ex = null)
@@ -151,8 +159,6 @@ namespace RabbitMQ.Next.Channels
 
         private async Task LoopAsync(ChannelReader<(FrameType Type, MemoryBlock Payload)> reader)
         {
-            var messageProperty = new LazyMessageProperties();
-
             try
             {
                 while (!reader.Completion.IsCompleted)
@@ -162,64 +168,59 @@ namespace RabbitMQ.Next.Channels
                         methodFrame = await reader.ReadAsync();
                     }
 
-                    // 1. Expect method frame here
-                    if (methodFrame.Type != FrameType.Method)
+                    // 2. Get method Id
+                    methodFrame.Payload.Data.Span.Read(out uint method);
+                    var methodId = (MethodId) method;
+                        
+                    // 3. Get content if exists
+                    ContentAccessor content = null;
+                   
+                    if (this.registry.HasContent(methodId))
                     {
-                        // TODO: connection exception?
-                        throw new InvalidOperationException($"Unexpected frame type: {methodFrame.Type}");
-                    }
+                        // 3.1 Get content header frame
+                        if (!reader.TryRead(out var contentHeader))
+                        {
+                            contentHeader = await reader.ReadAsync();
+                        }
 
-                    // 2. Process method frame
-                    var methodId = this.ProcessMethodFrame(methodFrame.Payload);
+                        // 3.2 Extract content body size
+                        contentHeader.Payload.Data[4..] // skip 2 obsolete shorts
+                            .Span.Read(out ulong contentSize);   
+                        
+                        if (!reader.TryRead(out var contentBody))
+                        {
+                            contentBody = await reader.ReadAsync();
+                        }
 
-                    if (!this.registry.HasContent(methodId))
-                    {
-                        continue;
-                    }
-
-                    if (!reader.TryRead(out var contentHeaderFrame))
-                    {
-                        contentHeaderFrame = await reader.ReadAsync();
-                    }
-
-                    contentHeaderFrame.Payload.Data[4..] // skip 2 obsolete shorts
-                        .Span.Read(out ulong contentSize);
-
-                    var payload = contentHeaderFrame.Payload.Data[12..]; // 2 obsolete shorts + ulong
-
-                    MemoryBlock contentBlock = null;
-                    try
-                    {
-                        messageProperty.Set(payload);
-                        contentBlock = (await reader.ReadAsync()).Payload;
-
-                        var current = contentBlock;
-                        long receivedContent = contentBlock.Data.Length;
+                        var current = contentBody.Payload;
+                        long receivedContent = contentBody.Payload.Data.Length;
                         while (receivedContent < (long)contentSize)
                         {
                             if (!reader.TryRead(out var frame))
                             {
                                 frame = await reader.ReadAsync();
                             }
-
+                            
                             current = current.Append(frame.Payload);
                             receivedContent += frame.Payload.Data.Length;
                         }
 
-                        await this.ProcessContentAsync(messageProperty, contentBlock);
+                        content = new ContentAccessor(this.messagePropertiesPool, this.memoryPool, this.serializerFactory, contentHeader.Payload, contentBody.Payload);
                     }
-                    finally
-                    {
-                        this.memoryPool.Return(contentHeaderFrame.Payload);
-                        messageProperty.Reset();
 
-                        var current = contentBlock;
-                        while (current != null)
-                        {
-                            this.memoryPool.Return(current);
-                            current = current.Next;
-                        }
+                    var handled = false;
+                    if (this.methodProcessors.TryGetValue((uint)methodId, out var processor))
+                    {
+                        handled = processor.ProcessMessage(methodFrame.Payload.Data.Span[sizeof(uint)..], content);
                     }
+
+                    // TODO: should throw on unhandled methods?
+                    if (!handled && content != null)
+                    {
+                        ((IDisposable)content).Dispose();
+                    }
+                    
+                    this.memoryPool.Return(methodFrame.Payload);
                 }
             }
             catch (Exception e)
@@ -235,46 +236,6 @@ namespace RabbitMQ.Next.Channels
             {
                 throw new InvalidOperationException("Cannot perform operation on closed channel");
             }
-        }
-
-        private MethodId ProcessMethodFrame(MemoryBlock payload)
-        {
-            try
-            {
-                var payloadBytes = payload.Data.Span.Read(out uint method);
-                var methodId = (MethodId) method;
-                for (var i = 0; i < this.frameHandlers.Count; i++)
-                {
-                    var handled = this.frameHandlers[i].HandleMethodFrame(methodId, payloadBytes);
-                    if (handled)
-                    {
-                        break;
-                    }
-                }
-
-                // todo: throw if not processed?
-
-                return methodId;
-            }
-            finally
-            {
-                this.memoryPool.Return(payload);
-            }
-        }
-
-        private async ValueTask ProcessContentAsync(LazyMessageProperties props, MemoryBlock contentMemoryBlock)
-        {
-            var content = contentMemoryBlock.ToSequence();
-
-            for (var i = 0; i < this.frameHandlers.Count; i++)
-            {
-                var handled = await this.frameHandlers[i].HandleContentAsync(props, content);
-                if (handled)
-                {
-                    return;
-                }
-            }
-            // todo: throw if not processed?
         }
     }
 }

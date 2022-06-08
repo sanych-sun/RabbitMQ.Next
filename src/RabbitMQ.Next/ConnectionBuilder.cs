@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Methods;
+using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Methods.Registry;
 
@@ -14,6 +15,7 @@ namespace RabbitMQ.Next
         private const int DefaultMaxFrameSize = 131_072; // 128kB
 
         private readonly IConnectionFactory factory;
+        private readonly SerializerFactory serializerFactory = new();
         private readonly IMethodRegistryBuilder methodRegistry = new MethodRegistryBuilder();
         private readonly List<Endpoint> endpoints = new();
         private readonly Dictionary<string, object> clientProperties = new();
@@ -66,6 +68,12 @@ namespace RabbitMQ.Next
             return this;
         }
 
+        public IConnectionBuilder ConfigureSerialization(Action<ISerializationBuilder> builder)
+        {
+            builder?.Invoke(this.serializerFactory);
+            return this;
+        }
+
         public  IConnectionBuilder ClientProperty(string key, object value)
         {
             this.clientProperties[key] = value;
@@ -101,7 +109,7 @@ namespace RabbitMQ.Next
                 MaxFrameSize = this.maxFrameSize
             };
 
-            return this.factory.ConnectAsync(settings, this.methodRegistry.Build(), cancellation);
+            return this.factory.ConnectAsync(settings, this.methodRegistry.Build(), this.serializerFactory, cancellation);
         }
     }
 }

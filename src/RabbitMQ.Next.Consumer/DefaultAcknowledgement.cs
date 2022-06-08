@@ -21,7 +21,7 @@ namespace RabbitMQ.Next.Consumer
             var ackItemsCh = Channel.CreateUnbounded<(ulong, bool?)>(new UnboundedChannelOptions
             {
                 SingleReader = true,
-                SingleWriter = true,
+                SingleWriter = false,
                 AllowSynchronousContinuations = false
             });
 

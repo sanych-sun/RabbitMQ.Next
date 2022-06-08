@@ -18,11 +18,10 @@ namespace RabbitMQ.Next.Publisher
         private readonly SemaphoreSlim channelOpenSync = new(1,1);
         private readonly IReadOnlyList<IReturnedMessageHandler> returnedMessageHandlers;
         private readonly IConnection connection;
-        private readonly IReadOnlyList<IFrameHandler> frameHandlers;
         private readonly string exchange;
         private readonly ISerializerFactory serializerFactory;
         private readonly IReadOnlyList<IMessageInitializer> transformers;
-        private readonly ConfirmFrameHandler confirms;
+        private readonly ConfirmMessageHandler confirms;
         private ulong lastDeliveryTag;
         private bool isDisposed;
 
@@ -33,26 +32,18 @@ namespace RabbitMQ.Next.Publisher
             ObjectPool<MessageBuilder> messagePropsPool,
             string exchange,
             bool publisherConfirms,
-            ISerializerFactory serializerFactory,
             IReadOnlyList<IMessageInitializer> transformers,
             IReadOnlyList<IReturnedMessageHandler> returnedMessageHandlers)
         {
             this.connection = connection;
-            var handlers = new List<IFrameHandler>
-            {
-                new ReturnFrameHandler(serializerFactory, returnedMessageHandlers, connection.MethodRegistry.GetParser<ReturnMethod>()),
-            };
-
+            this.serializerFactory = connection.SerializerFactory;
             if (publisherConfirms)
             {
-                this.confirms = new ConfirmFrameHandler(this.connection.MethodRegistry);
-                handlers.Add(this.confirms);
+                this.confirms = new ConfirmMessageHandler();
             }
 
-            this.frameHandlers = handlers;
             this.messagePropsPool = messagePropsPool;
             this.exchange = exchange;
-            this.serializerFactory = serializerFactory;
             this.transformers = transformers;
             this.returnedMessageHandlers = returnedMessageHandlers;
         }
@@ -106,7 +97,7 @@ namespace RabbitMQ.Next.Publisher
         private async ValueTask PublishAsyncInternal<TContent>(TContent content, MessageBuilder message, PublishFlags flags, CancellationToken cancellation)
         {
             this.CheckDisposed();
-            var serializer = this.serializerFactory.Get(message);
+            var serializer = this.serializerFactory.Get(message.ContentType);
 
             try
             {
@@ -179,17 +170,15 @@ namespace RabbitMQ.Next.Publisher
                 }
 
                 this.lastDeliveryTag = 0;
-                for (var i = 0; i < this.frameHandlers.Count; i++)
-                {
-                    this.frameHandlers[0].Release();
-                }
 
                 this.channel = await this.connection.OpenChannelAsync(cancellationToken);
-                for (var i = 0; i < this.frameHandlers.Count; i++)
+                this.channel.WithMessageHandler(new ReturnMessageHandler(this.returnedMessageHandlers));
+                if (this.confirms != null)
                 {
-                    this.channel.AddFrameHandler(this.frameHandlers[i]);
+                    this.channel.WithMessageHandler<AckMethod>(this.confirms);
+                    this.channel.WithMessageHandler<NackMethod>(this.confirms);
                 }
-                
+
                 await this.channel.SendAsync<DeclareMethod, DeclareOkMethod>(new DeclareMethod(this.exchange), cancellationToken);
                 if (this.confirms != null)
                 {

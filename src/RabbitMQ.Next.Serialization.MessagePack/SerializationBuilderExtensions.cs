@@ -4,8 +4,7 @@ namespace RabbitMQ.Next.Serialization.MessagePack
 {
     public static class SerializationBuilderExtensions
     {
-        public static TBuilder UseMessagePackSerializer<TBuilder>(this TBuilder builder, Action<IMessagePackSerializerBuilder> registration = null)
-            where TBuilder : ISerializationBuilder<TBuilder>
+        public static ISerializationBuilder UseMessagePackSerializer(this ISerializationBuilder builder, Action<IMessagePackSerializerBuilder> registration = null)
         {
             var innerBuilder = new MessagePackSerializerBuilder();
             registration?.Invoke(innerBuilder);
@@ -13,7 +12,12 @@ namespace RabbitMQ.Next.Serialization.MessagePack
             var serializer = new MessagePackSerializer();
             for (var i = 0; i < innerBuilder.ContentTypes.Count; i++)
             {
-                builder.UseSerializer(serializer, innerBuilder.ContentTypes[i], innerBuilder.IsDefault);
+                builder.UseSerializer(serializer, innerBuilder.ContentTypes[i]);
+            }
+            
+            if (innerBuilder.IsDefault)
+            {
+                builder.DefaultSerializer(serializer);
             }
 
             return builder;

@@ -14,17 +14,18 @@ namespace RabbitMQ.Next.Examples.SimpleConsumer
 
             var connection = await ConnectionBuilder.Default
                 .Endpoint("amqp://test:pass@localhost:5672/")
+                .ConfigureSerialization(builder => builder.UsePlainTextSerializer())
                 .ConnectAsync();
 
             Console.WriteLine("Connection opened");
 
             var consumer = connection.Consumer(
                 builder => builder
-                    .BindToQueue("my-queue")
-                    .UsePlainTextSerializer()
+                    .BindToQueue("test-queue")
+                    .PrefetchCount(10)
                     .MessageHandler((message, content) =>
                     {
-                        Console.WriteLine($"[{DateTimeOffset.Now.TimeOfDay}] Message received via '{message.Exchange}' exchange: {content.GetContent<string>()}");
+                        Console.WriteLine($"[{DateTimeOffset.Now.TimeOfDay}] Message received via '{message.Exchange}' exchange: {content.Content<string>()}");
                         return true;
                     }));
 

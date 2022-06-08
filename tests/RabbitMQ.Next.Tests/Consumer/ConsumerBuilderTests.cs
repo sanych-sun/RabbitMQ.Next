@@ -2,7 +2,6 @@ using System;
 using NSubstitute;
 using RabbitMQ.Next.Channels;
 using RabbitMQ.Next.Consumer;
-using RabbitMQ.Next.Serialization;
 using Xunit;
 
 namespace RabbitMQ.Next.Tests.Consumer
@@ -92,27 +91,6 @@ namespace RabbitMQ.Next.Tests.Consumer
             var consumerBuilder = new ConsumerBuilder();
 
             Assert.Throws<ArgumentNullException>(() => ((IConsumerBuilder)consumerBuilder).MessageHandler(null));
-        }
-
-        [Fact]
-        public void UseSerializer()
-        {
-            var serializer = Substitute.For<ISerializer>();
-            var contentType = "application/json";
-            var isDefault = false;
-
-            var builder = new ConsumerBuilder();
-
-            ((IConsumerBuilder)builder).UseSerializer(serializer, contentType, isDefault);
-
-            Assert.Contains(builder.Serializers, s => s.Serializer == serializer && s.ContentType == contentType && s.Default == isDefault);
-        }
-
-        [Fact]
-        public void UseSerializerThrowsOnNull()
-        {
-            var builder = new ConsumerBuilder();
-            Assert.Throws<ArgumentNullException>(() => ((IConsumerBuilder)builder).UseSerializer(null));
         }
 
         [Fact]

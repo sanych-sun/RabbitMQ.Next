@@ -1,13 +1,14 @@
 using System;
 using System.Threading.Tasks;
+using RabbitMQ.Next.Messaging;
 
 namespace RabbitMQ.Next.Consumer
 {
     internal class DeliveredMessageDelegateHandler : IDeliveredMessageHandler
     {
-        private Func<DeliveredMessage, IContentAccessor, ValueTask<bool>> wrapped;
+        private Func<DeliveredMessage, IContent, ValueTask<bool>> wrapped;
 
-        public DeliveredMessageDelegateHandler(Func<DeliveredMessage, IContentAccessor, ValueTask<bool>> handler)
+        public DeliveredMessageDelegateHandler(Func<DeliveredMessage, IContent, ValueTask<bool>> handler)
         {
             if (handler == null)
             {
@@ -22,7 +23,7 @@ namespace RabbitMQ.Next.Consumer
             this.wrapped = null;
         }
 
-        public ValueTask<bool> TryHandleAsync(DeliveredMessage message, IContentAccessor content)
+        public ValueTask<bool> TryHandleAsync(DeliveredMessage message, IContent content)
         {
             if (this.wrapped == null)
             {

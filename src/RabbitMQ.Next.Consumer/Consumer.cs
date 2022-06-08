@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Channels;
-using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Tasks;
 using RabbitMQ.Next.Transport.Methods.Basic;
 
@@ -12,7 +11,6 @@ namespace RabbitMQ.Next.Consumer
     internal class Consumer : IConsumer
     {
         private readonly IConnection connection;
-        private readonly ISerializerFactory serializerFactory;
         private readonly Func<IChannel, IAcknowledgement> acknowledgementFactory;
         private readonly IReadOnlyList<IDeliveredMessageHandler> handlers;
         private readonly IReadOnlyList<QueueConsumerBuilder> queues;
@@ -26,7 +24,6 @@ namespace RabbitMQ.Next.Consumer
 
         public Consumer(
             IConnection connection,
-            ISerializerFactory serializerFactory,
             Func<IChannel, IAcknowledgement> acknowledgementFactory,
             IReadOnlyList<IDeliveredMessageHandler> handlers,
             IReadOnlyList<QueueConsumerBuilder> queues,
@@ -36,7 +33,6 @@ namespace RabbitMQ.Next.Consumer
             UnprocessedMessageMode onPoisonMessage)
         {
             this.connection = connection;
-            this.serializerFactory = serializerFactory;
             this.acknowledgementFactory = acknowledgementFactory;
             this.handlers = handlers;
             this.queues = queues;
@@ -90,9 +86,8 @@ namespace RabbitMQ.Next.Consumer
             this.channel = await this.connection.OpenChannelAsync();
             this.acknowledgement = this.acknowledgementFactory(this.channel);
 
-            var deliverMethodParser = this.connection.MethodRegistry.GetParser<DeliverMethod>();
-            var deliverHandler = new DeliverFrameHandler(this.serializerFactory, this.acknowledgement, deliverMethodParser, this.handlers, this.onUnprocessedMessage, this.onPoisonMessage);
-            this.channel.AddFrameHandler(deliverHandler);
+            var deliverHandler = new DeliverMessageHandler(this.acknowledgement, this.handlers, this.onUnprocessedMessage, this.onPoisonMessage);
+            this.channel.WithMessageHandler(deliverHandler);
 
             await this.channel.SendAsync<QosMethod, QosOkMethod>(new QosMethod(this.prefetchSize, this.prefetchCount, false));
 

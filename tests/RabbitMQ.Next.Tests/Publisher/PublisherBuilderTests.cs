@@ -69,26 +69,5 @@ namespace RabbitMQ.Next.Tests.Publisher
 
             Assert.False(builder.PublisherConfirms);
         }
-
-        [Fact]
-        public void UseSerializer()
-        {
-            var serializer = Substitute.For<ISerializer>();
-            var contentType = "application/json";
-            var isDefault = false;
-
-            var builder = new PublisherBuilder();
-
-            builder.UseSerializer(serializer, contentType, isDefault);
-
-            Assert.Contains(builder.Serializers, s => s.Serializer == serializer && s.ContentType == contentType && s.Default == isDefault);
-        }
-
-        [Fact]
-        public void UseSerializerThrowsOnNull()
-        {
-            var builder = new PublisherBuilder();
-            Assert.Throws<ArgumentNullException>(() => builder.UseSerializer(null));
-        }
     }
 }

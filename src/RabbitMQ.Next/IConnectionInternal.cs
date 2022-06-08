@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.ObjectPool;
 using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Channels;
+using RabbitMQ.Next.Transport.Messaging;
 
 namespace RabbitMQ.Next
 {
@@ -11,6 +12,8 @@ namespace RabbitMQ.Next
         ValueTask WriteToSocketAsync(MemoryBlock memory, CancellationToken cancellation = default);
 
         ObjectPool<MemoryBlock> MemoryPool { get; }
+        
+        ObjectPool<LazyMessageProperties> MessagePropertiesPool { get; }
 
         ObjectPool<FrameBuilder> FrameBuilderPool { get; }
     }

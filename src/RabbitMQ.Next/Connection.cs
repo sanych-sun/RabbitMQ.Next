@@ -1,17 +1,20 @@
 using System;
-using System.Collections.Concurrent;
 using System.Net.Sockets;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Extensions.ObjectPool;
 using RabbitMQ.Next.Exceptions;
 using RabbitMQ.Next.Methods;
 using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Channels;
+using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Sockets;
 using RabbitMQ.Next.Tasks;
 using RabbitMQ.Next.Transport;
+using RabbitMQ.Next.Transport.Messaging;
 using RabbitMQ.Next.Transport.Methods.Connection;
+using Channel = RabbitMQ.Next.Channels.Channel;
 
 namespace RabbitMQ.Next
 {
@@ -19,19 +22,26 @@ namespace RabbitMQ.Next
     {
         private readonly ChannelPool channelPool;
         private readonly ConnectionDetails connectionDetails;
-
-        private readonly SemaphoreSlim sendLoopQueueSync = new(100);
-        private readonly BlockingCollection<MemoryBlock> sendQueue = new(new ConcurrentQueue<MemoryBlock>());
+        private readonly Channel<MemoryBlock> socketSender;
 
         private ISocket socket;
         private CancellationTokenSource socketIoCancellation;
         private IChannelInternal connectionChannel;
 
-        public Connection(ConnectionSettings settings, IMethodRegistry methodRegistry, ObjectPool<MemoryBlock> memoryPool, ObjectPool<FrameBuilder> frameBuilderPool)
+        public Connection(ConnectionSettings settings, IMethodRegistry methodRegistry, ObjectPool<MemoryBlock> memoryPool, ObjectPool<FrameBuilder> frameBuilderPool, ISerializerFactory serializerFactory)
         {
             this.connectionDetails = new ConnectionDetails(settings);
             this.MethodRegistry = methodRegistry;
-
+            this.SerializerFactory = serializerFactory;
+            this.MessagePropertiesPool = new DefaultObjectPool<LazyMessageProperties>(new LazyMessagePropertiesPolicy());
+            this.socketSender = System.Threading.Channels.Channel.CreateBounded<MemoryBlock>(new BoundedChannelOptions(100)
+            {
+                FullMode = BoundedChannelFullMode.Wait,
+                SingleReader = true,
+                SingleWriter = false,
+                AllowSynchronousContinuations = false,
+            });
+            
             this.State = ConnectionState.Pending;
             this.MemoryPool = memoryPool;
             this.FrameBuilderPool = frameBuilderPool;
@@ -43,13 +53,21 @@ namespace RabbitMQ.Next
         public IMethodRegistry MethodRegistry { get; }
 
         public ObjectPool<MemoryBlock> MemoryPool { get; }
+        
+        public ObjectPool<LazyMessageProperties> MessagePropertiesPool { get; set; }
 
         public ObjectPool<FrameBuilder> FrameBuilderPool { get; }
         
-        public async ValueTask WriteToSocketAsync(MemoryBlock memory, CancellationToken cancellation = default)
+        public ISerializerFactory SerializerFactory { get; }
+
+        public ValueTask WriteToSocketAsync(MemoryBlock memory, CancellationToken cancellation = default)
         {
-            await this.sendLoopQueueSync.WaitAsync(cancellation);
-            this.sendQueue.Add(memory);
+            if (this.socketSender.Writer.TryWrite(memory))
+            {
+                return default;
+            }
+
+            return this.socketSender.Writer.WriteAsync(memory, cancellation);
         }
 
         public async Task<IChannel> OpenChannelAsync(CancellationToken cancellationToken = default)
@@ -85,7 +103,7 @@ namespace RabbitMQ.Next
             Task.Factory.StartNew(this.SendLoop, TaskCreationOptions.LongRunning);
 
             this.connectionChannel = new Channel(this, ProtocolConstants.ConnectionChannel, ProtocolConstants.FrameMinSize);
-            var connectionCloseWait = new WaitMethodFrameHandler<CloseMethod>(this.MethodRegistry);
+            var connectionCloseWait = new WaitMethodMessageHandler<CloseMethod>();
             connectionCloseWait.WaitTask.ContinueWith(t =>
             {
                 if (t.IsCompleted)
@@ -94,7 +112,7 @@ namespace RabbitMQ.Next
                 }
             });
 
-            this.connectionChannel.AddFrameHandler(connectionCloseWait);
+            this.connectionChannel.WithMessageHandler(connectionCloseWait);
             this.connectionChannel.Completion.ContinueWith(t =>
             {
                 var ex = t.Exception?.InnerException ?? t.Exception;
@@ -105,7 +123,7 @@ namespace RabbitMQ.Next
             // TODO: adopt authentication_failure_close capability to handle auth errors
 
             var negotiateTask = NegotiateConnectionAsync(this.connectionChannel, this.connectionDetails.Settings, cancellation);
-            await this.WriteToSocket(ProtocolConstants.AmqpHeader);
+            await this.WriteToSocketAsync(ProtocolConstants.AmqpHeader);
 
             this.connectionDetails.Negotiated = await negotiateTask;
 
@@ -121,11 +139,11 @@ namespace RabbitMQ.Next
             while (!cancellation.IsCancellationRequested)
             {
                 await Task.Delay(interval, cancellation);
-                await this.WriteToSocket(ProtocolConstants.HeartbeatFrame);
+                await this.WriteToSocketAsync(ProtocolConstants.HeartbeatFrame);
             }
         }
 
-        private ValueTask WriteToSocket(ReadOnlyMemory<byte> bytes)
+        private ValueTask WriteToSocketAsync(ReadOnlyMemory<byte> bytes)
         {
             var memoryBlock = this.MemoryPool.Get();
             memoryBlock.Write(bytes.Span);
@@ -134,25 +152,27 @@ namespace RabbitMQ.Next
             return this.WriteToSocketAsync(memoryBlock);
         }
 
-        private void SendLoop()
+        private async Task SendLoop()
         {
-            using var enumerator = this.sendQueue.GetConsumingEnumerable().GetEnumerator();
-
-            while (enumerator.MoveNext())
+            var socketChannel = this.socketSender.Reader;
+            while (await socketChannel.WaitToReadAsync())
             {
-                var memoryBlock = enumerator.Current;
-
-                while (memoryBlock != null)
+                while (socketChannel.TryRead(out var memoryBlock))
                 {
                     var current = memoryBlock;
-                    memoryBlock = memoryBlock.Next;
-                    
-                    this.socket.Send(current.Data);
-                    this.MemoryPool.Return(current);
+                    while (current != null)
+                    {
+                        this.socket.Send(current.Data);
+                        current = current.Next;
+                    }
+
+                    if (memoryBlock != null)
+                    {
+                        this.MemoryPool.Return(memoryBlock);
+                    }
+
+                    this.socket.Flush();
                 }
-                
-                this.socket.Flush();
-                this.sendLoopQueueSync.Release();
             }
         }
 
@@ -222,7 +242,7 @@ namespace RabbitMQ.Next
 
             this.State = ConnectionState.Closed;
             this.socketIoCancellation.Cancel();
-            this.sendQueue.CompleteAdding();
+            this.socketSender.Writer.TryComplete();
 
             this.channelPool.ReleaseAll(ex);
             this.connectionChannel.TryComplete(ex);

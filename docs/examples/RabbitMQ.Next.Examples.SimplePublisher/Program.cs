@@ -14,13 +14,13 @@ namespace RabbitMQ.Next.Examples.SimplePublisher
 
             var connection = await ConnectionBuilder.Default
                 .Endpoint("amqp://test:pass@localhost:5672/")
+                .ConfigureSerialization(builder => builder
+                    .UsePlainTextSerializer())
                 .ConnectAsync();
 
             Console.WriteLine("Connection opened");
 
-            var publisher = connection.Publisher("amq.fanout",
-                builder => builder
-                    .UsePlainTextSerializer());
+            var publisher = connection.Publisher("amq.fanout");
 
             Console.WriteLine("Publisher created. Type any text to send it to the 'amq.fanout' exchange. Enter empty string to exit");
 

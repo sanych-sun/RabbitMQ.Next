@@ -1,10 +1,9 @@
 ﻿using System;
 using RabbitMQ.Next.Channels;
-using RabbitMQ.Next.Serialization;
 
 namespace RabbitMQ.Next.Consumer
 {
-    public interface IConsumerBuilder : ISerializationBuilder<IConsumerBuilder>
+    public interface IConsumerBuilder
     {
         IConsumerBuilder BindToQueue(string queue, Action<IQueueConsumerBuilder> builder = null);
 

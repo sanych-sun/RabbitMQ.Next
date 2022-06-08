@@ -12,14 +12,12 @@ namespace RabbitMQ.Next.Tests.Consumer
         public void PoisonMessageException()
         {
             var message = new DeliveredMessage();
-            var properties = Substitute.For<IMessageProperties>();
-            var content = Substitute.For<IContentAccessor>();
+            var content = Substitute.For<IContent>();
             var ex = new Exception();
 
-            var exception = new PoisonMessageException(message, properties, content, ex);
+            var exception = new PoisonMessageException(message, content, ex);
 
             Assert.Equal(message, exception.DeliveredMessage);
-            Assert.Equal(properties, exception.Properties);
             Assert.Equal(content, exception.Content);
             Assert.Equal(ex, exception.InnerException);
         }

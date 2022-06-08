@@ -1,5 +1,6 @@
 using System;
 using NSubstitute;
+using RabbitMQ.Next.Messaging;
 using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Serialization;
 using Xunit;
@@ -8,41 +9,85 @@ namespace RabbitMQ.Next.Tests.Serialization
 {
     public class SerializerFactoryTests
     {
-        [Fact]
-        public void ThrowsOnNullSerializers()
-        {
-            Assert.Throws<ArgumentNullException>(() => SerializerFactory.Create(null));
-        }
 
         [Fact]
-        public void ThrowsOnEmptySerializers()
-        {
-            Assert.Throws<ArgumentNullException>(() => SerializerFactory.Create(Array.Empty<(ISerializer,string,bool)>()));
-        }
-
-        [Fact]
-        public void CreateStaticFactoryForSingle()
-        {
-            var serializer = Substitute.For<ISerializer>();
-
-            var result = SerializerFactory.Create(new[] {(serializer, "some-type", false)});
-
-            Assert.IsType<StaticSerializerFactory>(result);
-        }
-
-        [Fact]
-        public void CreateDynamicFactoryForMultiple()
+        public void CanGetByTypeSerializer()
         {
             var serializer1 = Substitute.For<ISerializer>();
             var serializer2 = Substitute.For<ISerializer>();
 
-            var result = SerializerFactory.Create(new[]
-            {
-                (serializer1, "some-type", false),
-                (serializer2, "other-type", false)
-            });
+            var factory = new SerializerFactory();
+            factory.UseSerializer(serializer1, "some-type");
+            factory.UseSerializer(serializer2, "other-type");
 
-            Assert.IsType<DynamicSerializerFactory>(result);
+            var result = factory.Get("some-type");
+
+            Assert.Equal(serializer1, result);
+        }
+
+        [Fact]
+        public void CanGetDefaultSerializer()
+        {
+            var serializer1 = Substitute.For<ISerializer>();
+            var serializer2 = Substitute.For<ISerializer>();
+
+            var factory = new SerializerFactory();
+            factory.UseSerializer(serializer1, "some-type");
+            factory.UseSerializer(serializer2, "other-type");
+            factory.DefaultSerializer(serializer1);
+            
+
+            var result = factory.Get("another-type");
+
+            Assert.Equal(serializer1, result);
+        }
+
+        [Fact]
+        public void GetByTypeWithDefault()
+        {
+            var serializer1 = Substitute.For<ISerializer>();
+            var serializer2 = Substitute.For<ISerializer>();
+
+            var factory = new SerializerFactory();
+            factory.UseSerializer(serializer1, "some-type");
+            factory.UseSerializer(serializer2, "other-type");
+            factory.DefaultSerializer(serializer2);
+            
+
+            var result = factory.Get("some-type");
+
+            Assert.Equal(serializer1, result);
+        }
+
+        [Fact]
+        public void GetLastDefault()
+        {
+            var serializer1 = Substitute.For<ISerializer>();
+            var serializer2 = Substitute.For<ISerializer>();
+
+            var factory = new SerializerFactory();
+            factory.UseSerializer(serializer1, "some-type");
+            factory.UseSerializer(serializer2, "other-type");
+            factory.DefaultSerializer(serializer2);
+            factory.DefaultSerializer(serializer1);
+            
+
+            var result = factory.Get("any-type");
+
+            Assert.Equal(serializer1, result);
+        }
+
+        [Fact]
+        public void ThrowsIfCannotResolve()
+        {
+            var serializer1 = Substitute.For<ISerializer>();
+            var serializer2 = Substitute.For<ISerializer>();
+            
+            var factory = new SerializerFactory();
+            factory.UseSerializer(serializer1, "some-type");
+            factory.UseSerializer(serializer2, "other-type");
+
+            Assert.Throws<NotSupportedException>(() => factory.Get("not-supported"));
         }
     }
 }

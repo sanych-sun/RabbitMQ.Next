@@ -11,13 +11,11 @@ namespace RabbitMQ.Next.Tests.Consumer
         public void UnprocessedMessageException()
         {
             var message = new DeliveredMessage();
-            var properties = Substitute.For<IMessageProperties>();
-            var content = Substitute.For<IContentAccessor>();
+            var content = Substitute.For<IContent>();
 
-            var exception = new UnprocessedMessageException(message, properties, content);
+            var exception = new UnprocessedMessageException(message, content);
 
             Assert.Equal(message, exception.DeliveredMessage);
-            Assert.Equal(properties, exception.Properties);
             Assert.Equal(content, exception.Content);
         }
     }

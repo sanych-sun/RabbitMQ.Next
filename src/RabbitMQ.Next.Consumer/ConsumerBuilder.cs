@@ -1,13 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using RabbitMQ.Next.Channels;
-using RabbitMQ.Next.Serialization;
 
 namespace RabbitMQ.Next.Consumer
 {
     internal class ConsumerBuilder : IConsumerBuilder
     {
-        private readonly List<(ISerializer Serializer, string ContentType, bool Default)> serializers = new();
         private readonly List<QueueConsumerBuilder> queues = new();
         private readonly List<IDeliveredMessageHandler> handlers = new();
 
@@ -16,9 +14,7 @@ namespace RabbitMQ.Next.Consumer
             this.AcknowledgementFactory = ch => new DefaultAcknowledgement(ch);
             this.PrefetchCount = 10;
         }
-
-        public IReadOnlyList<(ISerializer Serializer, string ContentType, bool Default)> Serializers => this.serializers;
-
+        
         public IReadOnlyList<QueueConsumerBuilder> Queues => this.queues;
 
         public IReadOnlyList<IDeliveredMessageHandler> Handlers => this.handlers;
@@ -84,17 +80,6 @@ namespace RabbitMQ.Next.Consumer
             }
 
             this.handlers.Add(handler);
-            return this;
-        }
-
-        IConsumerBuilder ISerializationBuilder<IConsumerBuilder>.UseSerializer(ISerializer serializer, string contentType, bool isDefault)
-        {
-            if (serializer == null)
-            {
-                throw new ArgumentNullException(nameof(serializer));
-            }
-
-            this.serializers.Add((serializer, contentType, isDefault));
             return this;
         }
     }

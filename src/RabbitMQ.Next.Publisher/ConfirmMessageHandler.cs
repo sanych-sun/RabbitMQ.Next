@@ -1,39 +1,28 @@
 using System;
-using System.Buffers;
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Channels;
 using RabbitMQ.Next.Messaging;
-using RabbitMQ.Next.Methods;
 using RabbitMQ.Next.Transport.Methods.Basic;
 
 namespace RabbitMQ.Next.Publisher
 {
-    internal class ConfirmFrameHandler : IFrameHandler
+    internal class ConfirmMessageHandler : IMessageHandler<AckMethod>, IMessageHandler<NackMethod> 
     {
         private static readonly TaskCompletionSource<bool> PositiveCompletedTcs;
         private static readonly TaskCompletionSource<bool> NegativeCompletedTcs;
 
-        private readonly ConcurrentDictionary<ulong, TaskCompletionSource<bool>> pendingConfirms;
-        private readonly IMethodParser<AckMethod> ackMethodParser;
-        private readonly IMethodParser<NackMethod> nackMethodParser;
+        private readonly ConcurrentDictionary<ulong, TaskCompletionSource<bool>> pendingConfirms = new();
 
-        static ConfirmFrameHandler()
+        static ConfirmMessageHandler()
         {
             PositiveCompletedTcs = new TaskCompletionSource<bool>();
             PositiveCompletedTcs.SetResult(true);
 
             NegativeCompletedTcs = new TaskCompletionSource<bool>();
             NegativeCompletedTcs.SetResult(false);
-        }
-
-        public ConfirmFrameHandler(IMethodRegistry registry)
-        {
-            this.pendingConfirms = new ConcurrentDictionary<ulong, TaskCompletionSource<bool>>();
-            this.ackMethodParser = registry.GetParser<AckMethod>();
-            this.nackMethodParser = registry.GetParser<NackMethod>();
         }
 
         public Task<bool> WaitForConfirmAsync(ulong deliveryTag)
@@ -47,47 +36,35 @@ namespace RabbitMQ.Next.Publisher
             return tcs.Task;
         }
 
-        bool IFrameHandler.HandleMethodFrame(MethodId methodId, ReadOnlySpan<byte> payload)
+        public bool Handle(AckMethod method, IContent content)
         {
-            switch (methodId)
+            if (method.Multiple)
             {
-                case MethodId.BasicAck:
-                {
-                    var ack = this.ackMethodParser.Parse(payload);
-                    if (ack.Multiple)
-                    {
-                        this.AckMultiple(ack.DeliveryTag, true);
-                    }
-                    else
-                    {
-                        this.AckSingle(ack.DeliveryTag, true);
-                    }
-
-                    return true;
-                }
-                case MethodId.BasicNack:
-                {
-                    var nack = this.nackMethodParser.Parse(payload);
-                    if (nack.Multiple)
-                    {
-                        this.AckMultiple(nack.DeliveryTag, false);
-                    }
-                    else
-                    {
-                        this.AckSingle(nack.DeliveryTag, false);
-                    }
-
-                    return true;
-                }
-                default:
-                    return false;
+                this.AckMultiple(method.DeliveryTag, true);
             }
+            else
+            {
+                this.AckSingle(method.DeliveryTag, true);
+            }
+
+            return true;
         }
 
-        ValueTask<bool> IFrameHandler.HandleContentAsync(IMessageProperties properties, ReadOnlySequence<byte> contentBytes)
-            => new(false);
+        public bool Handle(NackMethod method, IContent content)
+        {
+            if (method.Multiple)
+            {
+                this.AckMultiple(method.DeliveryTag, false);
+            }
+            else
+            {
+                this.AckSingle(method.DeliveryTag, false);
+            }
 
-        void IFrameHandler.Release(Exception ex)
+            return true;
+        }
+
+        public void Release(Exception ex)
         {
             foreach (var task in this.pendingConfirms)
             {
