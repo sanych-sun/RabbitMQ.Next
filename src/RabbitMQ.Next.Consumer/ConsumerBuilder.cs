@@ -13,6 +13,7 @@ namespace RabbitMQ.Next.Consumer
         {
             this.AcknowledgementFactory = ch => new DefaultAcknowledgement(ch);
             this.PrefetchCount = 10;
+            this.ConcurrencyLevel = 1;
         }
         
         public IReadOnlyList<QueueConsumerBuilder> Queues => this.queues;
@@ -22,6 +23,8 @@ namespace RabbitMQ.Next.Consumer
         public uint PrefetchSize { get; private set; }
 
         public ushort PrefetchCount { get; private set; }
+        
+        public byte ConcurrencyLevel { get; private set; }
 
         public Func<IChannel, IAcknowledgement> AcknowledgementFactory { get; private set; }
 
@@ -46,6 +49,17 @@ namespace RabbitMQ.Next.Consumer
         IConsumerBuilder IConsumerBuilder.PrefetchCount(ushort messages)
         {
             this.PrefetchCount = messages;
+            return this;
+        }
+
+        IConsumerBuilder IConsumerBuilder.ConcurrencyLevel(byte concurrency)
+        {
+            if (concurrency == 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(concurrency));
+            }
+
+            this.ConcurrencyLevel = concurrency;
             return this;
         }
 

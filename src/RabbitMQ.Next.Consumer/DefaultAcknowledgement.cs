@@ -83,8 +83,6 @@ namespace RabbitMQ.Next.Consumer
         {
             while (await ackItemsReader.WaitToReadAsync())
             {
-                ulong deliveryTag = 0;
-
                 while (ackItemsReader.TryRead(out var ack))
                 {
                     if (ack.Requeue.HasValue)
@@ -93,14 +91,10 @@ namespace RabbitMQ.Next.Consumer
                     }
                     else
                     {
-                        deliveryTag = ack.DeliveryTag;
+                        await channel.SendAsync(new AckMethod(ack.DeliveryTag, false));
                     }
                 }
 
-                if (deliveryTag != 0)
-                {
-                    await channel.SendAsync(new AckMethod(deliveryTag, true));
-                }
             }
         }
     }

@@ -16,6 +16,7 @@ namespace RabbitMQ.Next.Consumer
         private readonly IReadOnlyList<QueueConsumerBuilder> queues;
         private readonly uint prefetchSize;
         private readonly ushort prefetchCount;
+        private readonly byte concurrencyLevel;
         private readonly UnprocessedMessageMode onUnprocessedMessage;
         private readonly UnprocessedMessageMode onPoisonMessage;
 
@@ -29,6 +30,7 @@ namespace RabbitMQ.Next.Consumer
             IReadOnlyList<QueueConsumerBuilder> queues,
             uint prefetchSize,
             ushort prefetchCount,
+            byte concurrencyLevel,
             UnprocessedMessageMode onUnprocessedMessage,
             UnprocessedMessageMode onPoisonMessage)
         {
@@ -38,6 +40,7 @@ namespace RabbitMQ.Next.Consumer
             this.queues = queues;
             this.prefetchSize = prefetchSize;
             this.prefetchCount = prefetchCount;
+            this.concurrencyLevel = concurrencyLevel;
             this.onUnprocessedMessage = onUnprocessedMessage;
             this.onPoisonMessage = onPoisonMessage;
         }
@@ -86,7 +89,7 @@ namespace RabbitMQ.Next.Consumer
             this.channel = await this.connection.OpenChannelAsync();
             this.acknowledgement = this.acknowledgementFactory(this.channel);
 
-            var deliverHandler = new DeliverMessageHandler(this.acknowledgement, this.handlers, this.onUnprocessedMessage, this.onPoisonMessage);
+            var deliverHandler = new DeliverMessageHandler(this.acknowledgement, this.handlers, this.onUnprocessedMessage, this.onPoisonMessage, this.concurrencyLevel);
             this.channel.WithMessageHandler(deliverHandler);
 
             await this.channel.SendAsync<QosMethod, QosOkMethod>(new QosMethod(this.prefetchSize, this.prefetchCount, false));

@@ -11,7 +11,7 @@ namespace RabbitMQ.Next.Consumer
 
             var consumer = new Consumer(connection, consumerBuilder.AcknowledgementFactory,
                 consumerBuilder.Handlers, consumerBuilder.Queues, consumerBuilder.PrefetchSize, consumerBuilder.PrefetchCount,
-                consumerBuilder.OnUnprocessedMessage, consumerBuilder.OnPoisonMessage);
+                consumerBuilder.ConcurrencyLevel, consumerBuilder.OnUnprocessedMessage, consumerBuilder.OnPoisonMessage);
 
             return consumer;
         }

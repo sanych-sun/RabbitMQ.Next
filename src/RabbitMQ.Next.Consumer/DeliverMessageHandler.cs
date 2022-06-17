@@ -20,7 +20,8 @@ namespace RabbitMQ.Next.Consumer
             IAcknowledgement acknowledgement,
             IReadOnlyList<IDeliveredMessageHandler> messageHandlers,
             UnprocessedMessageMode onUnprocessedMessage,
-            UnprocessedMessageMode onPoisonMessage)
+            UnprocessedMessageMode onPoisonMessage,
+            byte concurrencyLevel)
         {
             this.acknowledgement = acknowledgement;
             this.messageHandlers = messageHandlers;
@@ -30,12 +31,15 @@ namespace RabbitMQ.Next.Consumer
             this.deliverChannel = Channel.CreateUnbounded<(DeliveredMessage message, IContent content)>(new UnboundedChannelOptions
             {
                 SingleWriter = true,
-                SingleReader = false, // TODO: make it dependent on concurrency level
+                SingleReader = concurrencyLevel == 1,
                 AllowSynchronousContinuations = false
             });
-            
-            // TODO: make it dependent on concurrency level
-            Task.Factory.StartNew(this.ProcessDeliveredMessagesAsync, TaskCreationOptions.LongRunning);
+
+
+            for (var i = 0; i < concurrencyLevel; i++)
+            {
+                Task.Factory.StartNew(this.ProcessDeliveredMessagesAsync, TaskCreationOptions.LongRunning);    
+            }
         }
 
         public bool Handle(DeliverMethod method, IContent content)

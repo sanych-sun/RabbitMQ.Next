@@ -11,6 +11,8 @@ namespace RabbitMQ.Next.Consumer
 
         IConsumerBuilder PrefetchCount(ushort messages);
 
+        IConsumerBuilder ConcurrencyLevel(byte concurrency);
+
         IConsumerBuilder SetAcknowledgement(Func<IChannel, IAcknowledgement> acknowledgementFactory);
 
         IConsumerBuilder OnUnprocessedMessage(UnprocessedMessageMode mode);
