@@ -50,7 +50,17 @@ namespace RabbitMQ.Next.Channels
             return false;
         }
 
-        private class HandlerDisposer : IDisposable
+        public void Release(Exception ex = null)
+        {
+            foreach (var handler in this.handlers)
+            {
+                handler.Release(ex);
+            }
+            
+            this.handlers.Clear();
+        }
+        
+        private sealed class HandlerDisposer : IDisposable
         {
             private readonly List<IMessageHandler<TMethod>> handlers;
             private IMessageHandler<TMethod> handler;
@@ -72,16 +82,6 @@ namespace RabbitMQ.Next.Channels
                 this.handlers.Remove(this.handler);
                 this.handler = null;
             }
-        }
-
-        public void Dispose()
-        {
-            foreach (var handler in this.handlers)
-            {
-                handler.Release();
-            }
-            
-            this.handlers.Clear();
         }
     }
 }

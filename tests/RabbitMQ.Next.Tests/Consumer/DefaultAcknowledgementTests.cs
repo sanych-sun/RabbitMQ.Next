@@ -27,7 +27,7 @@ namespace RabbitMQ.Next.Tests.Consumer
             await Task.Delay(10);
 
             await channel.Received().SendAsync(
-                Arg.Is<AckMethod>(m => m.Multiple == true && m.DeliveryTag == 142));
+                Arg.Is<AckMethod>(m => m.Multiple == false && m.DeliveryTag == 142));
         }
 
         [Theory]
@@ -47,81 +47,42 @@ namespace RabbitMQ.Next.Tests.Consumer
         }
 
         [Fact]
-        public async Task CanAckMultiple()
+        public async Task CanAckAndNack()
         {
-            var tcs = new TaskCompletionSource();
             var channel = Substitute.For<IChannel>();
-            channel.SendAsync(Arg.Any<AckMethod>()).Returns(new ValueTask(tcs.Task));
             var acknowledgement = new DefaultAcknowledgement(channel);
 
             await acknowledgement.AckAsync(1);
-            await Task.Delay(50);
-
             await acknowledgement.AckAsync(2);
-            await acknowledgement.AckAsync(3);
-            await acknowledgement.AckAsync(4);
+            await acknowledgement.NackAsync(3, true);
+            await acknowledgement.NackAsync(4, false);
             await acknowledgement.AckAsync(5);
-
-            tcs.SetResult();
+            
             await Task.Delay(50);
-
-            Received.InOrder(async () => {
-                await channel.Received().SendAsync(
-                    Arg.Is<AckMethod>(m => m.Multiple == true && m.DeliveryTag == 1));
-                await channel.Received().SendAsync(
-                    Arg.Is<AckMethod>(m => m.Multiple == true && m.DeliveryTag == 5));
-            });
+            
+            await channel.Received().SendAsync(
+                Arg.Is<AckMethod>(m => m.Multiple == false && m.DeliveryTag == 1));
+            await channel.Received().SendAsync(
+                Arg.Is<AckMethod>(m => m.Multiple == false && m.DeliveryTag == 2));
+            await channel.Received().SendAsync(
+                Arg.Is<NackMethod>(m => m.Multiple == false && m.DeliveryTag == 3 && m.Requeue ));
+            await channel.Received().SendAsync(
+                Arg.Is<NackMethod>(m => m.Multiple == false && m.DeliveryTag == 4 && !m.Requeue));
+            await channel.Received().SendAsync(
+                Arg.Is<AckMethod>(m => m.Multiple == false && m.DeliveryTag == 5));
+            
         }
 
         [Fact]
-        public async Task ShouldNackAtFirstOnMultiple()
-        {
-            var tcs = new TaskCompletionSource();
-            var channel = Substitute.For<IChannel>();
-            channel.SendAsync(Arg.Any<AckMethod>()).Returns(new ValueTask(tcs.Task));
-            var acknowledgement = new DefaultAcknowledgement(channel);
-
-            await acknowledgement.AckAsync(1);
-            await Task.Delay(50);
-
-            await acknowledgement.AckAsync(2);
-            await acknowledgement.NackAsync(3, false);
-            await acknowledgement.AckAsync(4);
-            await acknowledgement.AckAsync(5);
-
-            tcs.SetResult();
-
-
-            Received.InOrder(async () => {
-                await channel.Received().SendAsync(
-                    Arg.Is<AckMethod>(m => m.Multiple == true && m.DeliveryTag == 1));
-                await channel.Received().SendAsync(
-                    Arg.Is<NackMethod>(m => m.Multiple == false && m.DeliveryTag == 3 && m.Requeue == false));
-                await channel.Received().SendAsync(
-                    Arg.Is<AckMethod>(m => m.Multiple == true && m.DeliveryTag == 5));
-            });
-        }
-
-        [Fact]
-        public async Task AskThrowsIfDisposed()
+        public async Task CanDisposeMultiple()
         {
             var channel = Substitute.For<IChannel>();
             var acknowledgement = new DefaultAcknowledgement(channel);
 
             await acknowledgement.DisposeAsync();
 
-            await Assert.ThrowsAsync<ObjectDisposedException>(async () => await acknowledgement.AckAsync(22));
-        }
-
-        [Fact]
-        public async Task NaskThrowsIfDisposed()
-        {
-            var channel = Substitute.For<IChannel>();
-            var acknowledgement = new DefaultAcknowledgement(channel);
-
-            await acknowledgement.DisposeAsync();
-
-            await Assert.ThrowsAsync<ObjectDisposedException>(async () => await acknowledgement.NackAsync(22, false));
+            var record = await Record.ExceptionAsync(async () => await acknowledgement.DisposeAsync());
+            Assert.Null(record);
         }
     }
 }

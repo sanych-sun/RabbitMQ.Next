@@ -124,7 +124,7 @@ namespace RabbitMQ.Next.Channels
 
             foreach (var processor in this.methodProcessors.Values)
             {
-                processor.Dispose();
+                processor.Release(ex);
             }
             
             this.methodProcessors.Clear();
@@ -185,27 +185,32 @@ namespace RabbitMQ.Next.Channels
 
                         // 3.2 Extract content body size
                         contentHeader.Payload.Data[4..] // skip 2 obsolete shorts
-                            .Span.Read(out ulong contentSize);   
-                        
-                        if (!reader.TryRead(out var contentBody))
-                        {
-                            contentBody = await reader.ReadAsync();
-                        }
+                            .Span.Read(out ulong contentSize);
 
-                        var current = contentBody.Payload;
-                        long receivedContent = contentBody.Payload.Data.Length;
+                        MemoryBlock head = null;
+                        MemoryBlock current = null;
+                        long receivedContent = 0;
                         while (receivedContent < (long)contentSize)
                         {
                             if (!reader.TryRead(out var frame))
                             {
                                 frame = await reader.ReadAsync();
                             }
-                            
-                            current = current.Append(frame.Payload);
+
+                            if (head == null)
+                            {
+                                head = frame.Payload;
+                                current = head;
+                            }
+                            else
+                            {
+                                current = current.Append(frame.Payload);    
+                            }
+
                             receivedContent += frame.Payload.Data.Length;
                         }
 
-                        content = new ContentAccessor(this.messagePropertiesPool, this.memoryPool, this.serializerFactory, contentHeader.Payload, contentBody.Payload);
+                        content = new ContentAccessor(this.messagePropertiesPool, this.memoryPool, this.serializerFactory, contentHeader.Payload, head);
                     }
 
                     var handled = false;

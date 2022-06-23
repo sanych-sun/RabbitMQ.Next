@@ -29,6 +29,26 @@ namespace RabbitMQ.Next.Tests.Consumer
 
             Assert.Equal(count, consumerBuilder.PrefetchCount);
         }
+        
+        [Fact]
+        public void ConcurrencyLevel()
+        {
+            var consumerBuilder = new ConsumerBuilder();
+            byte level = 7;
+
+            ((IConsumerBuilder) consumerBuilder).ConcurrencyLevel(level);
+
+            Assert.Equal(level, consumerBuilder.ConcurrencyLevel);
+        }
+        
+        [Fact]
+        public void ThrowsOnIncorrectConcurrencyLevel()
+        {
+            var consumerBuilder = new ConsumerBuilder();
+            byte level = 0;
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => ((IConsumerBuilder) consumerBuilder).ConcurrencyLevel(level));
+        }
 
         [Fact]
         public void SetAcknowledger()

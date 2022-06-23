@@ -14,7 +14,7 @@ namespace RabbitMQ.Next.Benchmarks.Consumer
 {
     public class ConsumerBenchmarks
     {
-        private readonly int messagesCount = 1000;
+        private readonly int messagesCount = 5000;
         private readonly string queueName = "test-queue";
         private IConnection connection;
         private RabbitMQ.Client.IConnection theirConnection;
@@ -40,7 +40,7 @@ namespace RabbitMQ.Next.Benchmarks.Consumer
             
             var payload = Helper.BuildDummyText(10240);
             
-            for (int i = 0; i < this.messagesCount * 30; i++) // 25 runs for benchmark
+            for (int i = 0; i < this.messagesCount * 20; i++) // 15 runs for benchmark
             {
                 await publisher.PublishAsync(payload,
                     message => message
@@ -108,6 +108,35 @@ namespace RabbitMQ.Next.Benchmarks.Consumer
                 b => b
                     .BindToQueue(this.queueName)
                     .PrefetchCount(10)
+                    .MessageHandler((message, content) =>
+                    {
+                        var data = content.Content<string>();
+                        var messageId = content.MessageId;
+                        num++;
+                        if (num >= this.messagesCount)
+                        {
+                            cs.Cancel();
+                        }
+
+                        return new ValueTask<bool>(true);
+                    }));
+
+            var consumeTask = consumer.ConsumeAsync(cs.Token);
+            await consumeTask;
+
+            Console.WriteLine($"Consumed: {num}");
+        }
+        
+        //[Benchmark]
+        public async Task ConsumeParallelAsync()
+        {
+            var num = 0;
+            var cs = new CancellationTokenSource();
+            var consumer = this.connection.Consumer(
+                b => b
+                    .BindToQueue(this.queueName)
+                    .PrefetchCount(10)
+                    .ConcurrencyLevel(5)
                     .MessageHandler((message, content) =>
                     {
                         var data = content.Content<string>();

@@ -10,7 +10,7 @@ namespace RabbitMQ.Next.Consumer
             this.ConsumerTag = consumerTag;
             this.DeliveryTag = deliveryTag;
         }
-
+        
         public string Exchange { get; }
 
         public string RoutingKey { get; }

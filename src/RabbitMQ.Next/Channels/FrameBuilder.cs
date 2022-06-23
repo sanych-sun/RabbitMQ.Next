@@ -1,9 +1,6 @@
 using System;
 using System.Buffers;
 using System.Runtime.CompilerServices;
-using System.Threading;
-using System.Threading.Channels;
-using System.Threading.Tasks;
 using Microsoft.Extensions.ObjectPool;
 using RabbitMQ.Next.Messaging;
 using RabbitMQ.Next.Methods;

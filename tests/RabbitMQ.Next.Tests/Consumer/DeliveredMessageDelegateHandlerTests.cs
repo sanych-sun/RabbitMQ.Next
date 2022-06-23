@@ -12,10 +12,11 @@ namespace RabbitMQ.Next.Tests.Consumer
         [Fact]
         public void CanCallHandler()
         {
+            var message = new DeliveredMessage();
             var fn = Substitute.For<Func<DeliveredMessage, IContent, ValueTask<bool>>>();
             var handler = new DeliveredMessageDelegateHandler(fn);
 
-            handler.TryHandleAsync(new DeliveredMessage(), Substitute.For<IContent>());
+            handler.TryHandleAsync(message, Substitute.For<IContent>());
 
             fn.Received()(Arg.Any<DeliveredMessage>(), Arg.Any<IContent>());
         }
@@ -29,12 +30,13 @@ namespace RabbitMQ.Next.Tests.Consumer
         [Fact]
         public void CanDispose()
         {
+            var message = new DeliveredMessage();
             var fn = Substitute.For<Func<DeliveredMessage, IContent, ValueTask<bool>>>();
             var handler = new DeliveredMessageDelegateHandler(fn);
 
             handler.Dispose();
 
-            Assert.Throws<ObjectDisposedException>(() => handler.TryHandleAsync(new DeliveredMessage(), Substitute.For<IContent>()));
+            Assert.Throws<ObjectDisposedException>(() => handler.TryHandleAsync(message, Substitute.For<IContent>()));
         }
 
         [Fact]

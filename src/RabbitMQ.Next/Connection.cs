@@ -166,12 +166,8 @@ namespace RabbitMQ.Next
                         current = current.Next;
                     }
 
-                    if (memoryBlock != null)
-                    {
-                        this.MemoryPool.Return(memoryBlock);
-                    }
-
                     this.socket.Flush();
+                    this.MemoryPool.Return(memoryBlock);
                 }
             }
         }

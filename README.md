@@ -12,8 +12,7 @@ Too much packages instead of a single... explained:
 - RabbitMQ.Next.Consumer.Abstractions – contract library for the RabbitMQ.Next.Consumer
 - RabbitMQ.Next.Publisher – provides high-level event publishing API
 - RabbitMQ.Next.Publisher.Abstractions – contract library for the RabbitMQ.Next.Publisher
-- RabbitMQ.Next.Publisher.Attributes – helper library that allow declarative attribute-based message creation.
-- RabbitMQ.Next.Serialization.Abstractions – contract library for custom serializers
+- RabbitMQ.Next.Publisher.Attributes – helper library that allow declarative attribute-based message initialization.
 
 Serializers:
 - RabbitMQ.Next.Serialization.PlainText – provides set of formatters for most common types to produce text/plain encoded messages
