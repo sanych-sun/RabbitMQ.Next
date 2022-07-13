@@ -1,16 +1,15 @@
 using RabbitMQ.Next.Methods;
 
-namespace RabbitMQ.Next.Transport.Methods.Connection
+namespace RabbitMQ.Next.Transport.Methods.Connection;
+
+public readonly struct BlockedMethod : IIncomingMethod
 {
-    public readonly struct BlockedMethod : IIncomingMethod
+    public BlockedMethod(string reason)
     {
-        public BlockedMethod(string reason)
-        {
-            this.Reason = reason;
-        }
-
-        public MethodId MethodId => MethodId.ConnectionBlocked;
-
-        public string Reason { get; }
+        this.Reason = reason;
     }
+
+    public MethodId MethodId => MethodId.ConnectionBlocked;
+
+    public string Reason { get; }
 }

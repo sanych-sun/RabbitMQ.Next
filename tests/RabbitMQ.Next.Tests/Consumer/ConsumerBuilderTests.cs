@@ -4,137 +4,136 @@ using RabbitMQ.Next.Channels;
 using RabbitMQ.Next.Consumer;
 using Xunit;
 
-namespace RabbitMQ.Next.Tests.Consumer
+namespace RabbitMQ.Next.Tests.Consumer;
+
+public class ConsumerBuilderTests
 {
-    public class ConsumerBuilderTests
+    [Fact]
+    public void PrefetchSize()
     {
-        [Fact]
-        public void PrefetchSize()
-        {
-            var consumerBuilder = new ConsumerBuilder();
-            uint size = 12345;
+        var consumerBuilder = new ConsumerBuilder();
+        uint size = 12345;
 
-            ((IConsumerBuilder) consumerBuilder).PrefetchSize(size);
+        ((IConsumerBuilder) consumerBuilder).PrefetchSize(size);
 
-            Assert.Equal(size, consumerBuilder.PrefetchSize);
-        }
+        Assert.Equal(size, consumerBuilder.PrefetchSize);
+    }
         
-        [Fact]
-        public void PrefetchCount()
-        {
-            var consumerBuilder = new ConsumerBuilder();
-            ushort count = 42;
+    [Fact]
+    public void PrefetchCount()
+    {
+        var consumerBuilder = new ConsumerBuilder();
+        ushort count = 42;
 
-            ((IConsumerBuilder) consumerBuilder).PrefetchCount(count);
+        ((IConsumerBuilder) consumerBuilder).PrefetchCount(count);
 
-            Assert.Equal(count, consumerBuilder.PrefetchCount);
-        }
+        Assert.Equal(count, consumerBuilder.PrefetchCount);
+    }
         
-        [Fact]
-        public void ConcurrencyLevel()
-        {
-            var consumerBuilder = new ConsumerBuilder();
-            byte level = 7;
+    [Fact]
+    public void ConcurrencyLevel()
+    {
+        var consumerBuilder = new ConsumerBuilder();
+        byte level = 7;
 
-            ((IConsumerBuilder) consumerBuilder).ConcurrencyLevel(level);
+        ((IConsumerBuilder) consumerBuilder).ConcurrencyLevel(level);
 
-            Assert.Equal(level, consumerBuilder.ConcurrencyLevel);
-        }
+        Assert.Equal(level, consumerBuilder.ConcurrencyLevel);
+    }
         
-        [Fact]
-        public void ThrowsOnIncorrectConcurrencyLevel()
-        {
-            var consumerBuilder = new ConsumerBuilder();
-            byte level = 0;
+    [Fact]
+    public void ThrowsOnIncorrectConcurrencyLevel()
+    {
+        var consumerBuilder = new ConsumerBuilder();
+        byte level = 0;
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => ((IConsumerBuilder) consumerBuilder).ConcurrencyLevel(level));
-        }
+        Assert.Throws<ArgumentOutOfRangeException>(() => ((IConsumerBuilder) consumerBuilder).ConcurrencyLevel(level));
+    }
 
-        [Fact]
-        public void SetAcknowledger()
-        {
-            var consumerBuilder = new ConsumerBuilder();
-            var ackFactory = Substitute.For<Func<IChannel, IAcknowledgement>>();
+    [Fact]
+    public void SetAcknowledger()
+    {
+        var consumerBuilder = new ConsumerBuilder();
+        var ackFactory = Substitute.For<Func<IChannel, IAcknowledgement>>();
 
-            ((IConsumerBuilder) consumerBuilder).SetAcknowledgement(ackFactory);
+        ((IConsumerBuilder) consumerBuilder).SetAcknowledgement(ackFactory);
 
-            Assert.Equal(ackFactory, consumerBuilder.AcknowledgementFactory);
-        }
+        Assert.Equal(ackFactory, consumerBuilder.AcknowledgementFactory);
+    }
 
-        [Fact]
-        public void SetAcknowledgerThrowsOnNull()
-        {
-            var consumerBuilder = new ConsumerBuilder();
+    [Fact]
+    public void SetAcknowledgerThrowsOnNull()
+    {
+        var consumerBuilder = new ConsumerBuilder();
 
-            Assert.Throws<ArgumentNullException>(() => ((IConsumerBuilder) consumerBuilder).SetAcknowledgement(null));
-        }
+        Assert.Throws<ArgumentNullException>(() => ((IConsumerBuilder) consumerBuilder).SetAcknowledgement(null));
+    }
 
-        [Fact]
-        public void OnUnprocessedMessage()
-        {
-            var consumerBuilder = new ConsumerBuilder();
-            var val = UnprocessedMessageMode.Drop;
+    [Fact]
+    public void OnUnprocessedMessage()
+    {
+        var consumerBuilder = new ConsumerBuilder();
+        var val = UnprocessedMessageMode.Drop;
 
-            ((IConsumerBuilder) consumerBuilder).OnUnprocessedMessage(val);
+        ((IConsumerBuilder) consumerBuilder).OnUnprocessedMessage(val);
 
-            Assert.Equal(val, consumerBuilder.OnUnprocessedMessage);
-        }
+        Assert.Equal(val, consumerBuilder.OnUnprocessedMessage);
+    }
 
-        [Fact]
-        public void OnPoisonMessage()
-        {
-            var consumerBuilder = new ConsumerBuilder();
-            var val = UnprocessedMessageMode.Drop;
+    [Fact]
+    public void OnPoisonMessage()
+    {
+        var consumerBuilder = new ConsumerBuilder();
+        var val = UnprocessedMessageMode.Drop;
 
-            ((IConsumerBuilder) consumerBuilder).OnPoisonMessage(val);
+        ((IConsumerBuilder) consumerBuilder).OnPoisonMessage(val);
 
-            Assert.Equal(val, consumerBuilder.OnPoisonMessage);
-        }
+        Assert.Equal(val, consumerBuilder.OnPoisonMessage);
+    }
 
-        [Fact]
-        public void MessageHandler()
-        {
-            var consumerBuilder = new ConsumerBuilder();
-            var handler1 = Substitute.For<IDeliveredMessageHandler>();
-            var handler2 = Substitute.For<IDeliveredMessageHandler>();
+    [Fact]
+    public void MessageHandler()
+    {
+        var consumerBuilder = new ConsumerBuilder();
+        var handler1 = Substitute.For<IDeliveredMessageHandler>();
+        var handler2 = Substitute.For<IDeliveredMessageHandler>();
 
-            ((IConsumerBuilder) consumerBuilder).MessageHandler(handler1);
-            ((IConsumerBuilder) consumerBuilder).MessageHandler(handler2);
+        ((IConsumerBuilder) consumerBuilder).MessageHandler(handler1);
+        ((IConsumerBuilder) consumerBuilder).MessageHandler(handler2);
 
-            Assert.Contains(handler1, consumerBuilder.Handlers);
-            Assert.Contains(handler2, consumerBuilder.Handlers);
-        }
+        Assert.Contains(handler1, consumerBuilder.Handlers);
+        Assert.Contains(handler2, consumerBuilder.Handlers);
+    }
 
-        [Fact]
-        public void MessageHandlerThrowsOnNull()
-        {
-            var consumerBuilder = new ConsumerBuilder();
+    [Fact]
+    public void MessageHandlerThrowsOnNull()
+    {
+        var consumerBuilder = new ConsumerBuilder();
 
-            Assert.Throws<ArgumentNullException>(() => ((IConsumerBuilder)consumerBuilder).MessageHandler(null));
-        }
+        Assert.Throws<ArgumentNullException>(() => ((IConsumerBuilder)consumerBuilder).MessageHandler(null));
+    }
 
-        [Fact]
-        public void DefaultBindToQueue()
-        {
-            var queueName = "q1";
-            var builder = new ConsumerBuilder();
+    [Fact]
+    public void DefaultBindToQueue()
+    {
+        var queueName = "q1";
+        var builder = new ConsumerBuilder();
 
-            ((IConsumerBuilder)builder).BindToQueue(queueName, null);
+        ((IConsumerBuilder)builder).BindToQueue(queueName);
 
-            Assert.Contains(builder.Queues, x => x.Queue == queueName);
-        }
+        Assert.Contains(builder.Queues, x => x.Queue == queueName);
+    }
 
-        [Fact]
-        public void CanBindToQueue()
-        {
-            var queueName = "q1";
-            var consumerBuilder = Substitute.For<Action<IQueueConsumerBuilder>>();
-            var builder = new ConsumerBuilder();
+    [Fact]
+    public void CanBindToQueue()
+    {
+        var queueName = "q1";
+        var consumerBuilder = Substitute.For<Action<IQueueConsumerBuilder>>();
+        var builder = new ConsumerBuilder();
 
-            ((IConsumerBuilder)builder).BindToQueue(queueName, consumerBuilder);
+        ((IConsumerBuilder)builder).BindToQueue(queueName, consumerBuilder);
 
-            consumerBuilder.Received();
-            Assert.Contains(builder.Queues, x => x.Queue == queueName);
-        }
+        consumerBuilder.Received();
+        Assert.Contains(builder.Queues, x => x.Queue == queueName);
     }
 }

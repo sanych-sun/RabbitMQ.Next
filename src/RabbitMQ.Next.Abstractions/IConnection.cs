@@ -5,16 +5,15 @@ using RabbitMQ.Next.Channels;
 using RabbitMQ.Next.Methods;
 using RabbitMQ.Next.Serialization;
 
-namespace RabbitMQ.Next
+namespace RabbitMQ.Next;
+
+public interface IConnection : IAsyncDisposable
 {
-    public interface IConnection : IAsyncDisposable
-    {
-        Task<IChannel> OpenChannelAsync(CancellationToken cancellationToken = default);
+    Task<IChannel> OpenChannelAsync(CancellationToken cancellationToken = default);
 
-        ConnectionState State { get; }
+    ConnectionState State { get; }
 
-        IMethodRegistry MethodRegistry { get; }
+    IMethodRegistry MethodRegistry { get; }
         
-        ISerializerFactory SerializerFactory { get; }
-    }
+    ISerializerFactory SerializerFactory { get; }
 }

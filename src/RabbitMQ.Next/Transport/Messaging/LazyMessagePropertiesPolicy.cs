@@ -1,15 +1,14 @@
 using Microsoft.Extensions.ObjectPool;
 
-namespace RabbitMQ.Next.Transport.Messaging
-{
-    internal class LazyMessagePropertiesPolicy: PooledObjectPolicy<LazyMessageProperties>
-    {
-        public override LazyMessageProperties Create() => new();
+namespace RabbitMQ.Next.Transport.Messaging;
 
-        public override bool Return(LazyMessageProperties obj)
-        {
-            obj.Reset();
-            return true;
-        }
+internal class LazyMessagePropertiesPolicy: PooledObjectPolicy<LazyMessageProperties>
+{
+    public override LazyMessageProperties Create() => new();
+
+    public override bool Return(LazyMessageProperties obj)
+    {
+        obj.Reset();
+        return true;
     }
 }

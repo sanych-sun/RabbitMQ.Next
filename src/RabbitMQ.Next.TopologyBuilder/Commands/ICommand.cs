@@ -1,10 +1,9 @@
 using System.Threading.Tasks;
 using RabbitMQ.Next.Channels;
 
-namespace RabbitMQ.Next.TopologyBuilder.Commands
+namespace RabbitMQ.Next.TopologyBuilder.Commands;
+
+internal interface ICommand
 {
-    internal interface ICommand
-    {
-        Task ExecuteAsync(IChannel channel);
-    }
+    Task ExecuteAsync(IChannel channel);
 }

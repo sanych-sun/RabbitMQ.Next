@@ -1,36 +1,35 @@
 using System;
 using System.Collections.Generic;
 
-namespace RabbitMQ.Next.Messaging
+namespace RabbitMQ.Next.Messaging;
+
+public interface IMessageProperties
 {
-    public interface IMessageProperties
-    {
-        MessageFlags Flags { get; }
+    MessageFlags Flags { get; }
 
-        string ContentType { get; }
+    string ContentType { get; }
 
-        string ContentEncoding { get; }
+    string ContentEncoding { get; }
 
-        IReadOnlyDictionary<string, object> Headers { get; }
+    IReadOnlyDictionary<string, object> Headers { get; }
 
-        DeliveryMode DeliveryMode { get; }
+    DeliveryMode DeliveryMode { get; }
 
-        byte Priority { get; }
+    byte Priority { get; }
 
-        string CorrelationId { get; }
+    string CorrelationId { get; }
 
-        string ReplyTo { get; }
+    string ReplyTo { get; }
 
-        string Expiration { get; }
+    string Expiration { get; }
 
-        string MessageId { get; }
+    string MessageId { get; }
 
-        DateTimeOffset Timestamp { get; }
+    DateTimeOffset Timestamp { get; }
 
-        string Type { get; }
+    string Type { get; }
 
-        string UserId { get; }
+    string UserId { get; }
 
-        string ApplicationId { get; }
-    }
+    string ApplicationId { get; }
 }

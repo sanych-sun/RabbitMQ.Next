@@ -1,19 +1,18 @@
 using System;
 using RabbitMQ.Next.Messaging;
 
-namespace RabbitMQ.Next.Consumer
-{
-    public class PoisonMessageException : Exception
-    {
-        public PoisonMessageException(DeliveredMessage message, IContent content, Exception inner)
-            : base("Failed to handle the delivered message", inner)
-        {
-            this.DeliveredMessage = message;
-            this.Content = content;
-        }
+namespace RabbitMQ.Next.Consumer;
 
-        public DeliveredMessage DeliveredMessage { get; }
-        
-        public IContent Content { get; }
+public class PoisonMessageException : Exception
+{
+    public PoisonMessageException(DeliveredMessage message, IContent content, Exception inner)
+        : base("Failed to handle the delivered message", inner)
+    {
+        this.DeliveredMessage = message;
+        this.Content = content;
     }
+
+    public DeliveredMessage DeliveredMessage { get; }
+        
+    public IContent Content { get; }
 }

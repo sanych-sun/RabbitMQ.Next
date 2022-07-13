@@ -1,14 +1,13 @@
 using System;
 using System.Text.Json;
 
-namespace RabbitMQ.Next.Serialization.SystemJson
+namespace RabbitMQ.Next.Serialization.SystemJson;
+
+public interface ISystemJsonSerializerBuilder
 {
-    public interface ISystemJsonSerializerBuilder
-    {
-        ISystemJsonSerializerBuilder AsDefault();
+    ISystemJsonSerializerBuilder AsDefault();
 
-        ISystemJsonSerializerBuilder ContentType(string contentType);
+    ISystemJsonSerializerBuilder ContentType(string contentType);
 
-        ISystemJsonSerializerBuilder Configure(Action<JsonSerializerOptions> func);
-    }
+    ISystemJsonSerializerBuilder Configure(Action<JsonSerializerOptions> func);
 }

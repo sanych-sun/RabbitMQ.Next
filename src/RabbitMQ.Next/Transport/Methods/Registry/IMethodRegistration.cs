@@ -1,17 +1,16 @@
 using System;
 
-namespace RabbitMQ.Next.Transport.Methods.Registry
+namespace RabbitMQ.Next.Transport.Methods.Registry;
+
+internal interface IMethodRegistration
 {
-    internal interface IMethodRegistration
-    {
-        MethodId MethodId { get; }
+    MethodId MethodId { get; }
 
-        Type Type { get; }
+    Type Type { get; }
 
-        bool HasContent { get; }
+    bool HasContent { get; }
 
-        object Parser { get; }
+    object Parser { get; }
 
-        object Formatter { get; }
-    }
+    object Formatter { get; }
 }

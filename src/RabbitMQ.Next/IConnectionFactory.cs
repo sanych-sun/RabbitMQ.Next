@@ -3,10 +3,9 @@ using System.Threading.Tasks;
 using RabbitMQ.Next.Methods;
 using RabbitMQ.Next.Serialization;
 
-namespace RabbitMQ.Next
+namespace RabbitMQ.Next;
+
+internal interface IConnectionFactory
 {
-    internal interface IConnectionFactory
-    {
-        Task<IConnection> ConnectAsync(ConnectionSettings settings, IMethodRegistry registry, ISerializerFactory serializerFactory, CancellationToken cancellation);
-    }
+    Task<IConnection> ConnectAsync(ConnectionSettings settings, IMethodRegistry registry, ISerializerFactory serializerFactory, CancellationToken cancellation);
 }

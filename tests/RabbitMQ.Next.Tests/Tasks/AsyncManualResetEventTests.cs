@@ -4,188 +4,187 @@ using System.Threading.Tasks;
 using RabbitMQ.Next.Tasks;
 using Xunit;
 
-namespace RabbitMQ.Next.Tests.Tasks
+namespace RabbitMQ.Next.Tests.Tasks;
+
+public class AsyncManualResetEventTests
 {
-    public class AsyncManualResetEventTests
+    [Fact]
+    public async Task DisposeShouldCancelWait()
     {
-        [Fact]
-        public async Task DisposeShouldCancelWait()
-        {
-            var evt = new AsyncManualResetEvent();
-            var wait = evt.WaitAsync();
+        var evt = new AsyncManualResetEvent();
+        var wait = evt.WaitAsync();
 
-            await Task.Yield();
+        await Task.Yield();
 
-            evt.Dispose();
-            await Task.Yield();
+        evt.Dispose();
+        await Task.Yield();
 
-            Assert.True(wait.IsCanceled);
-            await Assert.ThrowsAsync<TaskCanceledException>(async () => await wait);
-        }
+        Assert.True(wait.IsCanceled);
+        await Assert.ThrowsAsync<TaskCanceledException>(async () => await wait);
+    }
 
-        [Fact]
-        public async Task DisposedThrowsOnWait()
-        {
-            var evt = new AsyncManualResetEvent();
-            evt.Dispose();
-            await Assert.ThrowsAsync<ObjectDisposedException>(async () => await evt.WaitAsync());
-        }
+    [Fact]
+    public async Task DisposedThrowsOnWait()
+    {
+        var evt = new AsyncManualResetEvent();
+        evt.Dispose();
+        await Assert.ThrowsAsync<ObjectDisposedException>(async () => await evt.WaitAsync());
+    }
 
-        [Fact]
-        public void DisposedThrowsOnSet()
-        {
-            var evt = new AsyncManualResetEvent();
-            evt.Dispose();
-            Assert.Throws<ObjectDisposedException>(() => evt.Set());
-        }
+    [Fact]
+    public void DisposedThrowsOnSet()
+    {
+        var evt = new AsyncManualResetEvent();
+        evt.Dispose();
+        Assert.Throws<ObjectDisposedException>(() => evt.Set());
+    }
 
-        [Fact]
-        public void DisposedThrowsOnReset()
-        {
-            var evt = new AsyncManualResetEvent();
-            evt.Dispose();
-            Assert.Throws<ObjectDisposedException>(() => evt.Reset());
-        }
+    [Fact]
+    public void DisposedThrowsOnReset()
+    {
+        var evt = new AsyncManualResetEvent();
+        evt.Dispose();
+        Assert.Throws<ObjectDisposedException>(() => evt.Reset());
+    }
 
-        [Fact]
-        public void MultipleDispose()
-        {
-            var evt = new AsyncManualResetEvent();
+    [Fact]
+    public void MultipleDispose()
+    {
+        var evt = new AsyncManualResetEvent();
 
-            evt.Dispose();
-            var ex = Record.Exception(() => evt.Dispose());
-            Assert.Null(ex);
-        }
+        evt.Dispose();
+        var ex = Record.Exception(() => evt.Dispose());
+        Assert.Null(ex);
+    }
 
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void ShouldAcceptDefaultState(bool isSet)
-        {
-            var evt = new AsyncManualResetEvent(isSet);
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ShouldAcceptDefaultState(bool isSet)
+    {
+        var evt = new AsyncManualResetEvent(isSet);
 
-            var wait = evt.WaitAsync();
+        var wait = evt.WaitAsync();
 
-            Assert.Equal(isSet, wait.IsCompleted);
-        }
+        Assert.Equal(isSet, wait.IsCompleted);
+    }
 
-        [Fact]
-        public async Task SetShouldCompleteWait()
-        {
-            var evt = new AsyncManualResetEvent();
+    [Fact]
+    public async Task SetShouldCompleteWait()
+    {
+        var evt = new AsyncManualResetEvent();
 
-            var wait = evt.WaitAsync();
-            Assert.False(wait.IsCompleted);
+        var wait = evt.WaitAsync();
+        Assert.False(wait.IsCompleted);
 
-            evt.Set();
-            Assert.True(await wait);
-        }
+        evt.Set();
+        Assert.True(await wait);
+    }
 
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void CanSetMultiple(bool initialState)
-        {
-            var evt = new AsyncManualResetEvent(initialState);
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void CanSetMultiple(bool initialState)
+    {
+        var evt = new AsyncManualResetEvent(initialState);
 
-            evt.Set();
+        evt.Set();
 
-            var ex = Record.Exception(() => evt.Set());
-            Assert.Null(ex);
-        }
+        var ex = Record.Exception(() => evt.Set());
+        Assert.Null(ex);
+    }
 
-        [Fact]
-        public async Task AlreadySetReturnCompletedTask()
-        {
-            var evt = new AsyncManualResetEvent();
-            evt.Set();
+    [Fact]
+    public async Task AlreadySetReturnCompletedTask()
+    {
+        var evt = new AsyncManualResetEvent();
+        evt.Set();
 
-            var wait = evt.WaitAsync();
+        var wait = evt.WaitAsync();
 
-            Assert.True(wait.IsCompleted);
-            Assert.True(await wait);
-        }
+        Assert.True(wait.IsCompleted);
+        Assert.True(await wait);
+    }
 
-        [Fact]
-        public void Reset()
-        {
-            var evt = new AsyncManualResetEvent();
-            evt.Set();
+    [Fact]
+    public void Reset()
+    {
+        var evt = new AsyncManualResetEvent();
+        evt.Set();
 
-            Assert.True(evt.WaitAsync().IsCompleted);
+        Assert.True(evt.WaitAsync().IsCompleted);
 
-            evt.Reset();
-            var wait = evt.WaitAsync();
+        evt.Reset();
+        var wait = evt.WaitAsync();
 
-            Assert.False(wait.IsCompleted);
-        }
+        Assert.False(wait.IsCompleted);
+    }
 
-        [Fact]
-        public void CanResetMultiple()
-        {
-            var evt = new AsyncManualResetEvent();
+    [Fact]
+    public void CanResetMultiple()
+    {
+        var evt = new AsyncManualResetEvent();
 
-            evt.Reset();
-            var ex = Record.Exception(() => evt.Reset());
-            Assert.Null(ex);
-        }
+        evt.Reset();
+        var ex = Record.Exception(() => evt.Reset());
+        Assert.Null(ex);
+    }
 
-        [Fact]
-        public async Task SetAfterReset()
-        {
-            var evt = new AsyncManualResetEvent();
-            evt.Set();
+    [Fact]
+    public async Task SetAfterReset()
+    {
+        var evt = new AsyncManualResetEvent();
+        evt.Set();
 
-            Assert.True(evt.WaitAsync().IsCompleted);
+        Assert.True(evt.WaitAsync().IsCompleted);
 
-            evt.Reset();
-            var wait = evt.WaitAsync();
-            evt.Set();
+        evt.Reset();
+        var wait = evt.WaitAsync();
+        evt.Set();
 
-            await Task.Yield();
+        await Task.Yield();
 
-            Assert.True(wait.IsCompleted);
-            Assert.True(await wait);
-        }
+        Assert.True(wait.IsCompleted);
+        Assert.True(await wait);
+    }
 
-        [Fact]
-        public async Task WaitWithTimeout()
-        {
-            var evt = new AsyncManualResetEvent();
+    [Fact]
+    public async Task WaitWithTimeout()
+    {
+        var evt = new AsyncManualResetEvent();
 
-            var wait = evt.WaitAsync(10);
-            await Task.Delay(50);
+        var wait = evt.WaitAsync(10);
+        await Task.Delay(50);
 
-            Assert.True(wait.IsCompleted);
-            Assert.False(await wait);
-        }
+        Assert.True(wait.IsCompleted);
+        Assert.False(await wait);
+    }
 
-        [Fact]
-        public async Task WaitWithCancellation()
-        {
-            var evt = new AsyncManualResetEvent();
-            var cs = new CancellationTokenSource();
+    [Fact]
+    public async Task WaitWithCancellation()
+    {
+        var evt = new AsyncManualResetEvent();
+        var cs = new CancellationTokenSource();
 
-            var wait = evt.WaitAsync(0, cs.Token);
-            Assert.False(wait.IsCompleted);
-            cs.Cancel();
-            await Task.Yield();
+        var wait = evt.WaitAsync(0, cs.Token);
+        Assert.False(wait.IsCompleted);
+        cs.Cancel();
+        await Task.Yield();
 
-            await Assert.ThrowsAsync<TaskCanceledException>(async () => await wait);
-        }
+        await Assert.ThrowsAsync<TaskCanceledException>(async () => await wait);
+    }
 
-        [Fact]
-        public async Task WaitWithTimeoutAndCancellation()
-        {
-            var evt = new AsyncManualResetEvent();
-            var cs = new CancellationTokenSource();
+    [Fact]
+    public async Task WaitWithTimeoutAndCancellation()
+    {
+        var evt = new AsyncManualResetEvent();
+        var cs = new CancellationTokenSource();
 
-            var wait = evt.WaitAsync(100, cs.Token);
-            Assert.False(wait.IsCompleted);
-            cs.Cancel();
-            await Task.Yield();
+        var wait = evt.WaitAsync(100, cs.Token);
+        Assert.False(wait.IsCompleted);
+        cs.Cancel();
+        await Task.Yield();
 
-            await Assert.ThrowsAsync<TaskCanceledException>(async () => await wait);
-        }
+        await Assert.ThrowsAsync<TaskCanceledException>(async () => await wait);
     }
 }

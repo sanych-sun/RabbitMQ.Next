@@ -2,35 +2,34 @@ using System;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Messaging;
 
-namespace RabbitMQ.Next.Publisher
+namespace RabbitMQ.Next.Publisher;
+
+internal class ReturnedMessageDelegateHandler : IReturnedMessageHandler
 {
-    internal class ReturnedMessageDelegateHandler : IReturnedMessageHandler
+    private Func<ReturnedMessage, IContent, ValueTask<bool>> wrapped;
+
+    public ReturnedMessageDelegateHandler(Func<ReturnedMessage, IContent, ValueTask<bool>> handler)
     {
-        private Func<ReturnedMessage, IContent, ValueTask<bool>> wrapped;
-
-        public ReturnedMessageDelegateHandler(Func<ReturnedMessage, IContent, ValueTask<bool>> handler)
+        if (handler == null)
         {
-            if (handler == null)
-            {
-                throw new ArgumentNullException(nameof(handler));
-            }
-
-            this.wrapped = handler;
+            throw new ArgumentNullException(nameof(handler));
         }
 
-        public void Dispose()
+        this.wrapped = handler;
+    }
+
+    public void Dispose()
+    {
+        this.wrapped = null;
+    }
+
+    public ValueTask<bool> TryHandleAsync(ReturnedMessage message, IContent content)
+    {
+        if (this.wrapped == null)
         {
-            this.wrapped = null;
+            return new ValueTask<bool>(false);
         }
 
-        public ValueTask<bool> TryHandleAsync(ReturnedMessage message, IContent content)
-        {
-            if (this.wrapped == null)
-            {
-                return new ValueTask<bool>(false);
-            }
-
-            return this.wrapped(message, content);
-        }
+        return this.wrapped(message, content);
     }
 }

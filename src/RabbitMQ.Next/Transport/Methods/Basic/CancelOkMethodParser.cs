@@ -1,15 +1,14 @@
 using System;
 using RabbitMQ.Next.Methods;
 
-namespace RabbitMQ.Next.Transport.Methods.Basic
-{
-    internal class CancelOkMethodParser : IMethodParser<CancelOkMethod>
-    {
-        public CancelOkMethod Parse(ReadOnlySpan<byte> payload)
-        {
-            payload.Read(out string consumerTag);
+namespace RabbitMQ.Next.Transport.Methods.Basic;
 
-            return new CancelOkMethod(consumerTag);
-        }
+internal class CancelOkMethodParser : IMethodParser<CancelOkMethod>
+{
+    public CancelOkMethod Parse(ReadOnlySpan<byte> payload)
+    {
+        payload.Read(out string consumerTag);
+
+        return new CancelOkMethod(consumerTag);
     }
 }

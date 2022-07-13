@@ -3,18 +3,17 @@ using RabbitMQ.Next.Publisher;
 using RabbitMQ.Next.Publisher.Attributes;
 using Xunit;
 
-namespace RabbitMQ.Next.Tests.Publisher.Attributes
+namespace RabbitMQ.Next.Tests.Publisher.Attributes;
+
+public class PublisherBuilderExtensionsTests
 {
-    public class PublisherBuilderExtensionsTests
+    [Fact]
+    public void UseAttributesTransformer()
     {
-        [Fact]
-        public void UseAttributesTransformer()
-        {
-            var publisherBuilder = Substitute.For<IPublisherBuilder>();
+        var publisherBuilder = Substitute.For<IPublisherBuilder>();
 
-            publisherBuilder.UseAttributesInitializer();
+        publisherBuilder.UseAttributesInitializer();
 
-            publisherBuilder.Received().UseMessageInitializer(Arg.Any<AttributeInitializer>());
-        }
+        publisherBuilder.Received().UseMessageInitializer(Arg.Any<AttributeInitializer>());
     }
 }

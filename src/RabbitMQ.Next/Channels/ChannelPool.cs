@@ -3,92 +3,91 @@ using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-namespace RabbitMQ.Next.Channels
+namespace RabbitMQ.Next.Channels;
+
+internal class ChannelPool
 {
-    internal class ChannelPool
+    private readonly ReaderWriterLockSlim channelsLock;
+    private readonly Func<ushort, IChannelInternal> factory;
+    private readonly ConcurrentQueue<ushort> releasedItems;
+    private IChannelInternal[] channels;
+    private int lastId;
+
+    public ChannelPool(Func<ushort, IChannelInternal> factory, int initialPoolSize = 10)
     {
-        private readonly ReaderWriterLockSlim channelsLock;
-        private readonly Func<ushort, IChannelInternal> factory;
-        private readonly ConcurrentQueue<ushort> releasedItems;
-        private IChannelInternal[] channels;
-        private int lastId;
+        this.factory = factory;
+        this.channelsLock = new ReaderWriterLockSlim();
+        this.releasedItems = new ConcurrentQueue<ushort>();
+        this.channels = new IChannelInternal[initialPoolSize];
+    }
 
-        public ChannelPool(Func<ushort, IChannelInternal> factory, int initialPoolSize = 10)
+    public IChannelInternal Create()
+    {
+        var channelNumber = this.GetNextIndex();
+        var channel = this.factory(channelNumber);
+        channel.Completion.ContinueWith(_ =>
         {
-            this.factory = factory;
-            this.channelsLock = new ReaderWriterLockSlim();
-            this.releasedItems = new ConcurrentQueue<ushort>();
-            this.channels = new IChannelInternal[initialPoolSize];
+            this.ExchangeChannel(channel.ChannelNumber, null);
+            this.releasedItems.Enqueue(channel.ChannelNumber);
+        });
+
+        this.ExchangeChannel(channelNumber, channel);
+        return channel;
+    }
+
+    public IChannelInternal Get(ushort channelNumber)
+    {
+        if (channelNumber >= this.channels.Length)
+        {
+            throw new ArgumentOutOfRangeException();
         }
 
-        public IChannelInternal Create()
-        {
-            var channelNumber = this.GetNextIndex();
-            var channel = this.factory(channelNumber);
-            channel.Completion.ContinueWith(_ =>
-            {
-                this.ExchangeChannel(channel.ChannelNumber, null);
-                this.releasedItems.Enqueue(channel.ChannelNumber);
-            });
+        var result = this.channels[channelNumber];
 
-            this.ExchangeChannel(channelNumber, channel);
-            return channel;
+        if (result == null)
+        {
+            throw new ArgumentOutOfRangeException();
         }
 
-        public IChannelInternal Get(ushort channelNumber)
+        return result;
+    }
+
+    public void ReleaseAll(Exception ex = null)
+    {
+        for (var i = this.lastId; i >= 0; i--)
         {
-            if (channelNumber >= this.channels.Length)
-            {
-                throw new ArgumentOutOfRangeException();
-            }
+            this.channels[i]?.TryComplete(ex);
+        }
+    }
 
-            var result = this.channels[channelNumber];
-
-            if (result == null)
-            {
-                throw new ArgumentOutOfRangeException();
-            }
-
+    private ushort GetNextIndex()
+    {
+        if (this.releasedItems.TryDequeue(out var result))
+        {
             return result;
         }
 
-        public void ReleaseAll(Exception ex = null)
+        return (ushort)Interlocked.Increment(ref this.lastId);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void ExchangeChannel(int index, IChannelInternal channel)
+    {
+        this.channelsLock.EnterWriteLock();
+        try
         {
-            for (var i = this.lastId; i >= 0; i--)
+            if (index >= this.channels.Length)
             {
-                this.channels[i]?.TryComplete(ex);
+                var channelsTmp = this.channels;
+                this.channels = new IChannelInternal[channelsTmp.Length * 2];
+                channelsTmp.CopyTo(this.channels, 0);
             }
+
+            this.channels[index] = channel;
         }
-
-        private ushort GetNextIndex()
+        finally
         {
-            if (this.releasedItems.TryDequeue(out var result))
-            {
-                return result;
-            }
-
-            return (ushort)Interlocked.Increment(ref this.lastId);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void ExchangeChannel(int index, IChannelInternal channel)
-        {
-            this.channelsLock.EnterWriteLock();
-            try
-            {
-                if (index >= this.channels.Length)
-                {
-                    var channelsTmp = this.channels;
-                    this.channels = new IChannelInternal[channelsTmp.Length * 2];
-                    channelsTmp.CopyTo(this.channels, 0);
-                }
-
-                this.channels[index] = channel;
-            }
-            finally
-            {
-                this.channelsLock.ExitWriteLock();
-            }
+            this.channelsLock.ExitWriteLock();
         }
     }
 }

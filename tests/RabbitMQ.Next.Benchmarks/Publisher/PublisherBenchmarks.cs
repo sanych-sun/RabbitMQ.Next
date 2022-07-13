@@ -8,132 +8,131 @@ using RabbitMQ.Client;
 using RabbitMQ.Next.Publisher;
 using RabbitMQ.Next.Serialization.PlainText;
 
-namespace RabbitMQ.Next.Benchmarks.Publisher
+namespace RabbitMQ.Next.Benchmarks.Publisher;
+
+public class PublisherBenchmarks
 {
-    public class PublisherBenchmarks
+    private IConnection connection;
+    private RabbitMQ.Client.IConnection theirConnection;
+
+    [Benchmark(Baseline = true)]
+    [ArgumentsSource(nameof(TestCases))]
+    public void PublishBaseLibrary(TestCaseParameters parameters)
     {
-        private IConnection connection;
-        private RabbitMQ.Client.IConnection theirConnection;
+        var model = this.theirConnection.CreateModel();
+        model.ConfirmSelect();
 
-        [Benchmark(Baseline = true)]
-        [ArgumentsSource(nameof(TestCases))]
-        public void PublishBaseLibrary(TestCaseParameters parameters)
+        for (var i = 0; i < parameters.Messages.Count; i++)
         {
-            var model = this.theirConnection.CreateModel();
-            model.ConfirmSelect();
-
-            for (var i = 0; i < parameters.Messages.Count; i++)
-            {
-                var data = parameters.Messages[i];
-                var props = model.CreateBasicProperties();
-                props.CorrelationId = data.CorrelationId;
-                model.BasicPublish("amq.topic", "", props, Encoding.UTF8.GetBytes(data.Payload));
-                model.WaitForConfirms();
-            }
-
-            model.Close();
+            var data = parameters.Messages[i];
+            var props = model.CreateBasicProperties();
+            props.CorrelationId = data.CorrelationId;
+            model.BasicPublish("amq.topic", "", props, Encoding.UTF8.GetBytes(data.Payload));
+            model.WaitForConfirms();
         }
 
-        [Benchmark]
-        [ArgumentsSource(nameof(TestCases))]
-        public async Task PublishParallelAsync(TestCaseParameters parameters)
-        {
-            var publisher = this.connection.Publisher("amq.topic");
+        model.Close();
+    }
 
-            await Task.WhenAll(Enumerable.Range(0, 10)
-                .Select(async num =>
+    [Benchmark]
+    [ArgumentsSource(nameof(TestCases))]
+    public async Task PublishParallelAsync(TestCaseParameters parameters)
+    {
+        var publisher = this.connection.Publisher("amq.topic");
+
+        await Task.WhenAll(Enumerable.Range(0, 10)
+            .Select(async num =>
+            {
+                await Task.Yield();
+
+                for (int i = num; i < parameters.Messages.Count; i += 10)
                 {
-                    await Task.Yield();
-
-                    for (int i = num; i < parameters.Messages.Count; i += 10)
-                    {
-                        var data = parameters.Messages[i];
-                        await publisher.PublishAsync(data, data.Payload,
-                            (state, message) => message.CorrelationId(state.CorrelationId));
-                    }
-                })
-                .ToArray());
-
-            await publisher.DisposeAsync();
-        }
-
-        [Benchmark]
-        [ArgumentsSource(nameof(TestCases))]
-        public async Task PublishAsync(TestCaseParameters parameters)
-        {
-            var publisher = this.connection.Publisher("amq.topic");
-
-            for (int i = 0; i < parameters.Messages.Count; i++)
-            {
-                var data = parameters.Messages[i];
-                await publisher.PublishAsync(data, data.Payload,
-                    (state, message) => message.CorrelationId(state.CorrelationId));
-            }
-
-            await publisher.DisposeAsync();
-        }
-
-        [GlobalSetup(Target = nameof(PublishBaseLibrary))]
-        public void SetupOfficialLibrary()
-        {
-            ConnectionFactory factory = new ConnectionFactory();
-            factory.Uri = Helper.RabbitMqConnection;
-
-            this.theirConnection = factory.CreateConnection();
-        }
-
-        [GlobalCleanup(Target = nameof(PublishBaseLibrary))]
-        public void CleanUpOfficialLibrary()
-        {
-            this.theirConnection.Close();
-            this.theirConnection.Dispose();
-        }
-
-        [GlobalSetup(Targets = new[] {nameof(PublishParallelAsync), nameof(PublishAsync)})]
-        public async Task Setup()
-        {
-            this.connection = await ConnectionBuilder.Default
-                .Endpoint(Helper.RabbitMqConnection)
-                .ConfigureSerialization(builder => builder.UsePlainTextSerializer())
-                .ConnectAsync();
-        }
-
-        [GlobalCleanup(Targets = new[] {nameof(PublishParallelAsync), nameof(PublishAsync)})]
-        public ValueTask CleanUp() => this.connection.DisposeAsync();
-
-        public static IEnumerable<TestCaseParameters> TestCases()
-        {
-            TestCaseParameters GenerateTestCase(int payloadLen, int count, string name)
-            {
-                var payload = Helper.BuildDummyText(payloadLen);
-                var messages = new List<(string Payload, string CorrelationId)>(count);
-                for (int i = 0; i < count; i++)
-                {
-                    messages.Add((payload, Guid.NewGuid().ToString()));
+                    var data = parameters.Messages[i];
+                    await publisher.PublishAsync(data, data.Payload,
+                        (state, message) => message.CorrelationId(state.CorrelationId));
                 }
+            })
+            .ToArray());
 
-                return new TestCaseParameters(name, messages);
-            }
+        await publisher.DisposeAsync();
+    }
 
-            yield return GenerateTestCase(1024, 1_000, "1024 (1 kB)");
-            yield return GenerateTestCase(10240, 1_000, "10240 (10 kB)");
-            yield return GenerateTestCase(102400, 1_000, "102400 (100 kB)");
-            yield return GenerateTestCase(204800, 1_000, "204800 (200 kB)");
-        }
+    [Benchmark]
+    [ArgumentsSource(nameof(TestCases))]
+    public async Task PublishAsync(TestCaseParameters parameters)
+    {
+        var publisher = this.connection.Publisher("amq.topic");
 
-        public class TestCaseParameters
+        for (int i = 0; i < parameters.Messages.Count; i++)
         {
-            public TestCaseParameters(string name, IReadOnlyList<(string Payload, string CorrelationId)> messages)
+            var data = parameters.Messages[i];
+            await publisher.PublishAsync(data, data.Payload,
+                (state, message) => message.CorrelationId(state.CorrelationId));
+        }
+
+        await publisher.DisposeAsync();
+    }
+
+    [GlobalSetup(Target = nameof(PublishBaseLibrary))]
+    public void SetupOfficialLibrary()
+    {
+        ConnectionFactory factory = new ConnectionFactory();
+        factory.Uri = Helper.RabbitMqConnection;
+
+        this.theirConnection = factory.CreateConnection();
+    }
+
+    [GlobalCleanup(Target = nameof(PublishBaseLibrary))]
+    public void CleanUpOfficialLibrary()
+    {
+        this.theirConnection.Close();
+        this.theirConnection.Dispose();
+    }
+
+    [GlobalSetup(Targets = new[] {nameof(PublishParallelAsync), nameof(PublishAsync)})]
+    public async Task Setup()
+    {
+        this.connection = await ConnectionBuilder.Default
+            .Endpoint(Helper.RabbitMqConnection)
+            .ConfigureSerialization(builder => builder.UsePlainTextSerializer())
+            .ConnectAsync();
+    }
+
+    [GlobalCleanup(Targets = new[] {nameof(PublishParallelAsync), nameof(PublishAsync)})]
+    public ValueTask CleanUp() => this.connection.DisposeAsync();
+
+    public static IEnumerable<TestCaseParameters> TestCases()
+    {
+        TestCaseParameters GenerateTestCase(int payloadLen, int count, string name)
+        {
+            var payload = Helper.BuildDummyText(payloadLen);
+            var messages = new List<(string Payload, string CorrelationId)>(count);
+            for (int i = 0; i < count; i++)
             {
-                this.Name = name;
-                this.Messages = messages;
+                messages.Add((payload, Guid.NewGuid().ToString()));
             }
 
-            public IReadOnlyList<(string Payload, string CorrelationId)> Messages { get; }
-
-            public string Name { get; }
-
-            public override string ToString() => this.Name;
+            return new TestCaseParameters(name, messages);
         }
+
+        yield return GenerateTestCase(1024, 1_000, "1024 (1 kB)");
+        yield return GenerateTestCase(10240, 1_000, "10240 (10 kB)");
+        yield return GenerateTestCase(102400, 1_000, "102400 (100 kB)");
+        yield return GenerateTestCase(204800, 1_000, "204800 (200 kB)");
+    }
+
+    public class TestCaseParameters
+    {
+        public TestCaseParameters(string name, IReadOnlyList<(string Payload, string CorrelationId)> messages)
+        {
+            this.Name = name;
+            this.Messages = messages;
+        }
+
+        public IReadOnlyList<(string Payload, string CorrelationId)> Messages { get; }
+
+        public string Name { get; }
+
+        public override string ToString() => this.Name;
     }
 }

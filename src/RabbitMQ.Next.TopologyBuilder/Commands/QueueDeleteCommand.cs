@@ -5,52 +5,51 @@ using RabbitMQ.Next.Exceptions;
 using RabbitMQ.Next.TopologyBuilder.Exceptions;
 using RabbitMQ.Next.Transport.Methods.Queue;
 
-namespace RabbitMQ.Next.TopologyBuilder.Commands
+namespace RabbitMQ.Next.TopologyBuilder.Commands;
+
+internal class QueueDeleteCommand : IQueueDeleteBuilder, ICommand
 {
-    internal class QueueDeleteCommand : IQueueDeleteBuilder, ICommand
+    private bool cancelConsumers;
+    private bool discardMessages;
+
+    public QueueDeleteCommand(string name)
     {
-        private bool cancelConsumers;
-        private bool discardMessages;
+        this.Name = name;
+    }
 
-        public QueueDeleteCommand(string name)
+    public string Name { get; }
+
+    public IQueueDeleteBuilder CancelConsumers()
+    {
+        this.cancelConsumers = true;
+
+        return this;
+    }
+
+    public IQueueDeleteBuilder DiscardMessages()
+    {
+        this.discardMessages = true;
+
+        return this;
+    }
+
+    public async Task ExecuteAsync(IChannel channel)
+    {
+        try
         {
-            this.Name = name;
+            await channel.SendAsync<DeleteMethod, DeleteOkMethod>(
+                new DeleteMethod(this.Name, !this.cancelConsumers, !this.discardMessages));
         }
-
-        public string Name { get; }
-
-        public IQueueDeleteBuilder CancelConsumers()
+        catch (ChannelException ex)
         {
-            this.cancelConsumers = true;
-
-            return this;
-        }
-
-        public IQueueDeleteBuilder DiscardMessages()
-        {
-            this.discardMessages = true;
-
-            return this;
-        }
-
-        public async Task ExecuteAsync(IChannel channel)
-        {
-            try
+            switch (ex.ErrorCode)
             {
-                await channel.SendAsync<DeleteMethod, DeleteOkMethod>(
-                    new DeleteMethod(this.Name, !this.cancelConsumers, !this.discardMessages));
+                case (ushort)ReplyCode.NotFound:
+                    throw new ArgumentOutOfRangeException("Specified queue does not exist.", ex);
+                case (ushort)ReplyCode.PreconditionFailed:
+                    throw new ConflictException("Specified queue is in use.", ex);
             }
-            catch (ChannelException ex)
-            {
-                switch (ex.ErrorCode)
-                {
-                    case (ushort)ReplyCode.NotFound:
-                        throw new ArgumentOutOfRangeException("Specified queue does not exist.", ex);
-                    case (ushort)ReplyCode.PreconditionFailed:
-                        throw new ConflictException("Specified queue is in use.", ex);
-                }
-                throw;
-            }
+            throw;
         }
     }
 }

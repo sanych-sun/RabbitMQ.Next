@@ -4,33 +4,32 @@ using RabbitMQ.Next.Channels;
 using RabbitMQ.Next.Exceptions;
 using RabbitMQ.Next.Transport.Methods.Queue;
 
-namespace RabbitMQ.Next.TopologyBuilder.Commands
+namespace RabbitMQ.Next.TopologyBuilder.Commands;
+
+internal class QueuePurgeCommand : ICommand
 {
-    internal class QueuePurgeCommand : ICommand
+    private readonly string queueName;
+
+    public QueuePurgeCommand(string queueName)
     {
-        private readonly string queueName;
+        this.queueName = queueName;
+    }
 
-        public QueuePurgeCommand(string queueName)
+    public async Task ExecuteAsync(IChannel channel)
+    {
+        try
         {
-            this.queueName = queueName;
+            await channel.SendAsync<PurgeMethod, PurgeOkMethod>(
+                new PurgeMethod(this.queueName));
         }
-
-        public async Task ExecuteAsync(IChannel channel)
+        catch (ChannelException ex)
         {
-            try
+            switch (ex.ErrorCode)
             {
-                await channel.SendAsync<PurgeMethod, PurgeOkMethod>(
-                    new PurgeMethod(this.queueName));
+                case (ushort)ReplyCode.NotFound:
+                    throw new ArgumentOutOfRangeException("Specified queue does not exist.", ex);
             }
-            catch (ChannelException ex)
-            {
-                switch (ex.ErrorCode)
-                {
-                    case (ushort)ReplyCode.NotFound:
-                        throw new ArgumentOutOfRangeException("Specified queue does not exist.", ex);
-                }
-                throw;
-            }
+            throw;
         }
     }
 }

@@ -1,11 +1,10 @@
-namespace RabbitMQ.Next.Publisher
+namespace RabbitMQ.Next.Publisher;
+
+public interface IPublisherBuilder
 {
-    public interface IPublisherBuilder
-    {
-        IPublisherBuilder UseMessageInitializer(IMessageInitializer initializer);
+    IPublisherBuilder UseMessageInitializer(IMessageInitializer initializer);
 
-        IPublisherBuilder AddReturnedMessageHandler(IReturnedMessageHandler returnedMessageHandler);
+    IPublisherBuilder AddReturnedMessageHandler(IReturnedMessageHandler returnedMessageHandler);
 
-        IPublisherBuilder NoConfirm();
-    }
+    IPublisherBuilder NoConfirm();
 }

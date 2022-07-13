@@ -4,56 +4,55 @@ using System.Net.Security;
 using System.Net.Sockets;
 using RabbitMQ.Next.Transport;
 
-namespace RabbitMQ.Next.Sockets
+namespace RabbitMQ.Next.Sockets;
+
+internal class SocketWrapper : ISocket
 {
-    internal class SocketWrapper : ISocket
+    private readonly Socket socket;
+    private readonly Stream stream;
+
+    public SocketWrapper(Socket socket, Endpoint endpoint)
     {
-        private readonly Socket socket;
-        private readonly Stream stream;
+        this.socket = socket;
 
-        public SocketWrapper(Socket socket, Endpoint endpoint)
+        this.stream = new NetworkStream(socket)
         {
-            this.socket = socket;
+            ReadTimeout = 60000,
+            WriteTimeout = 60000,
+        };
 
-            this.stream = new NetworkStream(socket)
-            {
-                ReadTimeout = 60000,
-                WriteTimeout = 60000,
-            };
+        if (endpoint.UseSsl)
+        {
+            var sslStream = new SslStream(this.stream, false);
+            sslStream.AuthenticateAsClient(endpoint.Host);
 
-            if (endpoint.UseSsl)
-            {
-                var sslStream = new SslStream(this.stream, false);
-                sslStream.AuthenticateAsClient(endpoint.Host);
+            this.stream = sslStream;
+        }
+    }
 
-                this.stream = sslStream;
-            }
+    public void Send(ReadOnlyMemory<byte> payload)
+        => this.stream.Write(payload.Span);
+
+    public void Flush() => this.stream.Flush();
+
+    public int Receive(Span<byte> buffer)
+    {
+        var result = this.stream.Read(buffer);
+
+        if (result == 0 && this.IsConnectionClosedByServer())
+        {
+            throw new SocketException();
         }
 
-        public void Send(ReadOnlyMemory<byte> payload)
-            => this.stream.Write(payload.Span);
+        return result;
+    }
 
-        public void Flush() => this.stream.Flush();
+    private bool IsConnectionClosedByServer()
+        => this.socket.Poll(1000, SelectMode.SelectRead) && this.socket.Available == 0;
 
-        public int Receive(Span<byte> buffer)
-        {
-            var result = this.stream.Read(buffer);
-
-            if (result == 0 && this.IsConnectionClosedByServer())
-            {
-                throw new SocketException();
-            }
-
-            return result;
-        }
-
-        private bool IsConnectionClosedByServer()
-            => this.socket.Poll(1000, SelectMode.SelectRead) && this.socket.Available == 0;
-
-        public void Dispose()
-        {
-            this.stream?.Dispose();
-            this.socket?.Dispose();
-        }
+    public void Dispose()
+    {
+        this.stream?.Dispose();
+        this.socket?.Dispose();
     }
 }

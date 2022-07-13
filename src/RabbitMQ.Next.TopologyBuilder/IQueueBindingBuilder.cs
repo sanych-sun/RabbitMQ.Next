@@ -1,13 +1,12 @@
-namespace RabbitMQ.Next.TopologyBuilder
+namespace RabbitMQ.Next.TopologyBuilder;
+
+public interface IQueueBindingBuilder
 {
-    public interface IQueueBindingBuilder
-    {
-        string Exchange { get; }
+    string Exchange { get; }
 
-        string Queue { get; }
+    string Queue { get; }
 
-        IQueueBindingBuilder RoutingKey(string routingKey);
+    IQueueBindingBuilder RoutingKey(string routingKey);
 
-        IQueueBindingBuilder Argument(string key, object value);
-    }
+    IQueueBindingBuilder Argument(string key, object value);
 }

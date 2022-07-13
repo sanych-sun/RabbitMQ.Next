@@ -5,16 +5,15 @@ using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Channels;
 using RabbitMQ.Next.Transport.Messaging;
 
-namespace RabbitMQ.Next
+namespace RabbitMQ.Next;
+
+internal interface IConnectionInternal : IConnection
 {
-    internal interface IConnectionInternal : IConnection
-    {
-        ValueTask WriteToSocketAsync(MemoryBlock memory, CancellationToken cancellation = default);
+    ValueTask WriteToSocketAsync(MemoryBlock memory, CancellationToken cancellation = default);
 
-        ObjectPool<MemoryBlock> MemoryPool { get; }
+    ObjectPool<MemoryBlock> MemoryPool { get; }
         
-        ObjectPool<LazyMessageProperties> MessagePropertiesPool { get; }
+    ObjectPool<LazyMessageProperties> MessagePropertiesPool { get; }
 
-        ObjectPool<FrameBuilder> FrameBuilderPool { get; }
-    }
+    ObjectPool<FrameBuilder> FrameBuilderPool { get; }
 }

@@ -1,36 +1,35 @@
 using System;
 using RabbitMQ.Next.Messaging;
 
-namespace RabbitMQ.Next.Publisher
+namespace RabbitMQ.Next.Publisher;
+
+public interface IMessageBuilder
 {
-    public interface IMessageBuilder
-    {
-        IMessageBuilder RoutingKey(string routingKey);
+    IMessageBuilder RoutingKey(string routingKey);
 
-        IMessageBuilder ContentType(string contentType);
+    IMessageBuilder ContentType(string contentType);
 
-        IMessageBuilder ContentEncoding(string contentEncoding);
+    IMessageBuilder ContentEncoding(string contentEncoding);
 
-        IMessageBuilder SetHeader(string key, object value);
+    IMessageBuilder SetHeader(string key, object value);
 
-        IMessageBuilder DeliveryMode(DeliveryMode deliveryMode);
+    IMessageBuilder DeliveryMode(DeliveryMode deliveryMode);
 
-        IMessageBuilder Priority(byte priority);
+    IMessageBuilder Priority(byte priority);
 
-        IMessageBuilder CorrelationId(string correlationId);
+    IMessageBuilder CorrelationId(string correlationId);
 
-        IMessageBuilder ReplyTo(string replyTo);
+    IMessageBuilder ReplyTo(string replyTo);
 
-        IMessageBuilder Expiration(string expiration);
+    IMessageBuilder Expiration(string expiration);
 
-        IMessageBuilder MessageId(string messageId);
+    IMessageBuilder MessageId(string messageId);
 
-        IMessageBuilder Timestamp(DateTimeOffset timestamp);
+    IMessageBuilder Timestamp(DateTimeOffset timestamp);
 
-        IMessageBuilder Type(string type);
+    IMessageBuilder Type(string type);
 
-        IMessageBuilder UserId(string userId);
+    IMessageBuilder UserId(string userId);
 
-        IMessageBuilder ApplicationId(string applicationId);
-    }
+    IMessageBuilder ApplicationId(string applicationId);
 }

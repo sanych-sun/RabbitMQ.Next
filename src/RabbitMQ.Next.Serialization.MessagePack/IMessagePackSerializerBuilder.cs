@@ -1,9 +1,8 @@
-namespace RabbitMQ.Next.Serialization.MessagePack
-{
-    public interface IMessagePackSerializerBuilder
-    {
-        IMessagePackSerializerBuilder AsDefault();
+namespace RabbitMQ.Next.Serialization.MessagePack;
 
-        IMessagePackSerializerBuilder ContentType(string contentType);
-    }
+public interface IMessagePackSerializerBuilder
+{
+    IMessagePackSerializerBuilder AsDefault();
+
+    IMessagePackSerializerBuilder ContentType(string contentType);
 }

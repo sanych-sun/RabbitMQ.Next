@@ -4,38 +4,37 @@ using RabbitMQ.Next.Publisher;
 using RabbitMQ.Next.Publisher.Attributes;
 using Xunit;
 
-namespace RabbitMQ.Next.Tests.Publisher.Attributes
+namespace RabbitMQ.Next.Tests.Publisher.Attributes;
+
+public class HeaderAttributeTests
 {
-    public class HeaderAttributeTests
+    [Theory]
+    [InlineData("header", "value")]
+    public void HeaderAttribute(string key, string value)
     {
-        [Theory]
-        [InlineData("header", "value")]
-        public void HeaderAttribute(string key, string value)
-        {
-            var attr = new HeaderAttribute(key, value);
-            Assert.Equal(key, attr.Name);
-            Assert.Equal(value, attr.Value);
-        }
+        var attr = new HeaderAttribute(key, value);
+        Assert.Equal(key, attr.Name);
+        Assert.Equal(value, attr.Value);
+    }
 
-        [Theory]
-        [InlineData("", "value")]
-        [InlineData(" ", "value")]
-        [InlineData(null, "value")]
-        public void ThrowsOnInvalidValue(string key, string value)
-        {
-            Assert.Throws<ArgumentNullException>(() => new HeaderAttribute(key, value));
-        }
+    [Theory]
+    [InlineData("", "value")]
+    [InlineData(" ", "value")]
+    [InlineData(null, "value")]
+    public void ThrowsOnInvalidValue(string key, string value)
+    {
+        Assert.Throws<ArgumentNullException>(() => new HeaderAttribute(key, value));
+    }
 
-        [Theory]
-        [InlineData("header", "value")]
-        public void CanTransform(string key, string value)
-        {
-            var attr = new HeaderAttribute(key, value);
-            var builder = Substitute.For<IMessageBuilder>();
+    [Theory]
+    [InlineData("header", "value")]
+    public void CanTransform(string key, string value)
+    {
+        var attr = new HeaderAttribute(key, value);
+        var builder = Substitute.For<IMessageBuilder>();
 
-            attr.Apply(builder);
+        attr.Apply(builder);
 
-            builder.Received().SetHeader(key, value);
-        }
+        builder.Received().SetHeader(key, value);
     }
 }

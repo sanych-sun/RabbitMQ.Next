@@ -10,150 +10,149 @@ using RabbitMQ.Next.Serialization.PlainText;
 using RabbitMQ.Next.TopologyBuilder;
 using ConnectionFactory = RabbitMQ.Client.ConnectionFactory;
 
-namespace RabbitMQ.Next.Benchmarks.Consumer
+namespace RabbitMQ.Next.Benchmarks.Consumer;
+
+public class ConsumerBenchmarks
 {
-    public class ConsumerBenchmarks
+    private readonly int messagesCount = 5000;
+    private readonly string queueName = "test-queue";
+    private IConnection connection;
+    private RabbitMQ.Client.IConnection theirConnection;
+
+
+    [GlobalSetup]
+    public async Task Setup()
     {
-        private readonly int messagesCount = 5000;
-        private readonly string queueName = "test-queue";
-        private IConnection connection;
-        private RabbitMQ.Client.IConnection theirConnection;
+        this.connection = await ConnectionBuilder.Default
+            .Endpoint(Helper.RabbitMqConnection)
+            .ConfigureSerialization(builder => builder.UsePlainTextSerializer())
+            .ConnectAsync();
 
-
-        [GlobalSetup]
-        public async Task Setup()
+        ConnectionFactory factory = new ConnectionFactory();
+        factory.Uri = Helper.RabbitMqConnection;
+        this.theirConnection = factory.CreateConnection();
+            
+        await this.connection.QueueDeclareAsync(this.queueName);
+        await this.connection.QueueBindAsync(this.queueName, "amq.fanout");
+        await this.connection.QueuePurgeAsync(this.queueName);
+            
+        var publisher = this.connection.Publisher("amq.fanout");
+            
+        var payload = Helper.BuildDummyText(10240);
+            
+        for (int i = 0; i < this.messagesCount * 20; i++) // 15 runs for benchmark
         {
-            this.connection = await ConnectionBuilder.Default
-                .Endpoint(Helper.RabbitMqConnection)
-                .ConfigureSerialization(builder => builder.UsePlainTextSerializer())
-                .ConnectAsync();
-
-            ConnectionFactory factory = new ConnectionFactory();
-            factory.Uri = Helper.RabbitMqConnection;
-            this.theirConnection = factory.CreateConnection();
+            await publisher.PublishAsync(payload,
+                message => message
+                    .MessageId(Guid.NewGuid().ToString())
+                    .CorrelationId(Guid.NewGuid().ToString())
+                    .ApplicationId("testApp"));
+        }
             
-            await this.connection.QueueDeclareAsync(this.queueName);
-            await this.connection.QueueBindAsync(this.queueName, "amq.fanout");
-            await this.connection.QueuePurgeAsync(this.queueName);
-            
-            var publisher = this.connection.Publisher("amq.fanout");
-            
-            var payload = Helper.BuildDummyText(10240);
-            
-            for (int i = 0; i < this.messagesCount * 20; i++) // 15 runs for benchmark
+        await publisher.DisposeAsync();
+        Console.WriteLine("Publisher - done");
+    }
+        
+        
+    [Benchmark(Baseline = true)]
+    public void ConsumeBaseLibrary()
+    {
+        var model = this.theirConnection.CreateModel();
+        model.BasicQos(0, 10, false);
+        
+        var num = 0;
+        var consumer = new EventingBasicConsumer(model);
+        
+        var manualResetEvent = new ManualResetEvent(false);
+        
+        consumer.Received += (ch, ea) =>
+        {
+            var body = ea.Body.ToArray();
+            var message = Encoding.UTF8.GetString(body);
+            num++;
+        
+            var messageId = ea.BasicProperties.MessageId;
+        
+            model.BasicAck(ea.DeliveryTag, false);
+        
+            if (num >= this.messagesCount)
             {
-                await publisher.PublishAsync(payload,
-                    message => message
-                        .MessageId(Guid.NewGuid().ToString())
-                        .CorrelationId(Guid.NewGuid().ToString())
-                        .ApplicationId("testApp"));
+                manualResetEvent.Set();
             }
-            
-            await publisher.DisposeAsync();
-            Console.WriteLine("Publisher - done");
-        }
+        };
         
+        model.BasicQos(0, 10, true);
         
-        [Benchmark(Baseline = true)]
-        public void ConsumeBaseLibrary()
-        {
-            var model = this.theirConnection.CreateModel();
-            model.BasicQos(0, 10, false);
+        var tag = model.BasicConsume(
+            queue: this.queueName,
+            autoAck: false,
+            consumer: consumer,
+            consumerTag: string.Empty,
+            noLocal: false,
+            exclusive: false,
+            arguments: null);
         
-            var num = 0;
-            var consumer = new EventingBasicConsumer(model);
+        manualResetEvent.WaitOne();
+        model.BasicCancel(tag);
+        model.Close();
         
-            var manualResetEvent = new ManualResetEvent(false);
-        
-            consumer.Received += (ch, ea) =>
-            {
-                var body = ea.Body.ToArray();
-                var message = Encoding.UTF8.GetString(body);
-                num++;
-        
-                var messageId = ea.BasicProperties.MessageId;
-        
-                model.BasicAck(ea.DeliveryTag, false);
-        
-                if (num >= this.messagesCount)
+        Console.WriteLine($"Consumed: {num}");
+    }
+
+    [Benchmark]
+    public async Task ConsumeAsync()
+    {
+        var num = 0;
+        var cs = new CancellationTokenSource();
+        var consumer = this.connection.Consumer(
+            b => b
+                .BindToQueue(this.queueName)
+                .PrefetchCount(10)
+                .MessageHandler((message, content) =>
                 {
-                    manualResetEvent.Set();
-                }
-            };
-        
-            model.BasicQos(0, 10, true);
-        
-            var tag = model.BasicConsume(
-                queue: this.queueName,
-                autoAck: false,
-                consumer: consumer,
-                consumerTag: string.Empty,
-                noLocal: false,
-                exclusive: false,
-                arguments: null);
-        
-            manualResetEvent.WaitOne();
-            model.BasicCancel(tag);
-            model.Close();
-        
-            Console.WriteLine($"Consumed: {num}");
-        }
-
-        [Benchmark]
-        public async Task ConsumeAsync()
-        {
-            var num = 0;
-            var cs = new CancellationTokenSource();
-            var consumer = this.connection.Consumer(
-                b => b
-                    .BindToQueue(this.queueName)
-                    .PrefetchCount(10)
-                    .MessageHandler((message, content) =>
+                    var data = content.Content<string>();
+                    var messageId = content.MessageId;
+                    num++;
+                    if (num >= this.messagesCount)
                     {
-                        var data = content.Content<string>();
-                        var messageId = content.MessageId;
-                        num++;
-                        if (num >= this.messagesCount)
-                        {
-                            cs.Cancel();
-                        }
+                        cs.Cancel();
+                    }
 
-                        return new ValueTask<bool>(true);
-                    }));
+                    return new ValueTask<bool>(true);
+                }));
 
-            var consumeTask = consumer.ConsumeAsync(cs.Token);
-            await consumeTask;
+        var consumeTask = consumer.ConsumeAsync(cs.Token);
+        await consumeTask;
 
-            Console.WriteLine($"Consumed: {num}");
-        }
+        Console.WriteLine($"Consumed: {num}");
+    }
         
-        //[Benchmark]
-        public async Task ConsumeParallelAsync()
-        {
-            var num = 0;
-            var cs = new CancellationTokenSource();
-            var consumer = this.connection.Consumer(
-                b => b
-                    .BindToQueue(this.queueName)
-                    .PrefetchCount(10)
-                    .ConcurrencyLevel(5)
-                    .MessageHandler((message, content) =>
+    //[Benchmark]
+    public async Task ConsumeParallelAsync()
+    {
+        var num = 0;
+        var cs = new CancellationTokenSource();
+        var consumer = this.connection.Consumer(
+            b => b
+                .BindToQueue(this.queueName)
+                .PrefetchCount(10)
+                .ConcurrencyLevel(5)
+                .MessageHandler((message, content) =>
+                {
+                    var data = content.Content<string>();
+                    var messageId = content.MessageId;
+                    num++;
+                    if (num >= this.messagesCount)
                     {
-                        var data = content.Content<string>();
-                        var messageId = content.MessageId;
-                        num++;
-                        if (num >= this.messagesCount)
-                        {
-                            cs.Cancel();
-                        }
+                        cs.Cancel();
+                    }
 
-                        return new ValueTask<bool>(true);
-                    }));
+                    return new ValueTask<bool>(true);
+                }));
 
-            var consumeTask = consumer.ConsumeAsync(cs.Token);
-            await consumeTask;
+        var consumeTask = consumer.ConsumeAsync(cs.Token);
+        await consumeTask;
 
-            Console.WriteLine($"Consumed: {num}");
-        }
+        Console.WriteLine($"Consumed: {num}");
     }
 }

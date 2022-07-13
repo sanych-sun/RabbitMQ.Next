@@ -5,92 +5,91 @@ using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Messaging;
 using RabbitMQ.Next.Serialization;
 
-namespace RabbitMQ.Next.Transport.Messaging
+namespace RabbitMQ.Next.Transport.Messaging;
+
+internal class ContentAccessor: IContent
 {
-    internal class ContentAccessor: IContent
+    private readonly ObjectPool<LazyMessageProperties> propertiesPool;
+    private readonly ObjectPool<MemoryBlock> memoryPool;
+    private readonly ISerializerFactory serializerFactory;
+    private LazyMessageProperties properties;
+    private MemoryBlock header;
+    private MemoryBlock body;
+
+    public ContentAccessor(ObjectPool<LazyMessageProperties> propertiesPool, ObjectPool<MemoryBlock> memoryPool, ISerializerFactory serializerFactory, MemoryBlock header, MemoryBlock body)
     {
-        private readonly ObjectPool<LazyMessageProperties> propertiesPool;
-        private readonly ObjectPool<MemoryBlock> memoryPool;
-        private readonly ISerializerFactory serializerFactory;
-        private LazyMessageProperties properties;
-        private MemoryBlock header;
-        private MemoryBlock body;
-
-        public ContentAccessor(ObjectPool<LazyMessageProperties> propertiesPool, ObjectPool<MemoryBlock> memoryPool, ISerializerFactory serializerFactory, MemoryBlock header, MemoryBlock body)
-        {
-            this.propertiesPool = propertiesPool;
-            this.memoryPool = memoryPool;
-            this.serializerFactory = serializerFactory;
-            this.header = header;
-            this.body = body;
+        this.propertiesPool = propertiesPool;
+        this.memoryPool = memoryPool;
+        this.serializerFactory = serializerFactory;
+        this.header = header;
+        this.body = body;
             
-            this.properties = propertiesPool.Get();
-            this.properties.Set(header.Data[12..]); // 2 obsolete shorts + ulong
+        this.properties = propertiesPool.Get();
+        this.properties.Set(header.Data[12..]); // 2 obsolete shorts + ulong
+    }
+
+    public void Dispose()
+    {
+        if (this.properties != null)
+        {
+            this.propertiesPool.Return(this.properties);
+            this.properties = null;
         }
 
-        public void Dispose()
+        if (this.header != null)
         {
-            if (this.properties != null)
-            {
-                this.propertiesPool.Return(this.properties);
-                this.properties = null;
-            }
-
-            if (this.header != null)
-            {
-                this.memoryPool.Return(this.header);
-                this.header = null;
-            }
-
-            if (this.body != null)
-            {
-                this.memoryPool.Return(this.body);
-                this.body = null;
-            }
+            this.memoryPool.Return(this.header);
+            this.header = null;
         }
 
-        public T Content<T>()
+        if (this.body != null)
         {
-            if (this.body == null)
+            this.memoryPool.Return(this.body);
+            this.body = null;
+        }
+    }
+
+    public T Content<T>()
+    {
+        if (this.body == null)
+        {
+            throw new ObjectDisposedException(nameof(ContentAccessor));
+        }
+            
+        var serializer = this.serializerFactory.Get(this.properties.ContentType);
+        if (serializer == null)
+        {
+            throw new NotSupportedException();
+        }
+
+        return serializer.Deserialize<T>(this.body.ToSequence());
+    }
+
+    public MessageFlags Flags => this.Properties.Flags;
+    public string ContentType => this.Properties.ContentType;
+    public string ContentEncoding => this.Properties.ContentEncoding;
+    public IReadOnlyDictionary<string, object> Headers => this.Properties.Headers;
+    public DeliveryMode DeliveryMode => this.Properties.DeliveryMode;
+    public byte Priority => this.Properties.Priority;
+    public string CorrelationId => this.Properties.CorrelationId;
+    public string ReplyTo => this.Properties.ReplyTo;
+    public string Expiration => this.Properties.Expiration;
+    public string MessageId => this.Properties.MessageId;
+    public DateTimeOffset Timestamp => this.Properties.Timestamp;
+    public string Type => this.Properties.Type;
+    public string UserId => this.Properties.UserId;
+    public string ApplicationId => this.Properties.ApplicationId;
+
+    private LazyMessageProperties Properties
+    {
+        get
+        {
+            if (this.properties == null)
             {
                 throw new ObjectDisposedException(nameof(ContentAccessor));
             }
-            
-            var serializer = this.serializerFactory.Get(this.properties.ContentType);
-            if (serializer == null)
-            {
-                throw new NotSupportedException();
-            }
 
-            return serializer.Deserialize<T>(this.body.ToSequence());
-        }
-
-        public MessageFlags Flags => this.Properties.Flags;
-        public string ContentType => this.Properties.ContentType;
-        public string ContentEncoding => this.Properties.ContentEncoding;
-        public IReadOnlyDictionary<string, object> Headers => this.Properties.Headers;
-        public DeliveryMode DeliveryMode => this.Properties.DeliveryMode;
-        public byte Priority => this.Properties.Priority;
-        public string CorrelationId => this.Properties.CorrelationId;
-        public string ReplyTo => this.Properties.ReplyTo;
-        public string Expiration => this.Properties.Expiration;
-        public string MessageId => this.Properties.MessageId;
-        public DateTimeOffset Timestamp => this.Properties.Timestamp;
-        public string Type => this.Properties.Type;
-        public string UserId => this.Properties.UserId;
-        public string ApplicationId => this.Properties.ApplicationId;
-
-        private LazyMessageProperties Properties
-        {
-            get
-            {
-                if (this.properties == null)
-                {
-                    throw new ObjectDisposedException(nameof(ContentAccessor));
-                }
-
-                return this.properties;
-            }
+            return this.properties;
         }
     }
 }

@@ -1,11 +1,10 @@
 using System;
 
-namespace RabbitMQ.Next.Exceptions
+namespace RabbitMQ.Next.Exceptions;
+
+public abstract class ProtocolException : Exception
 {
-    public abstract class ProtocolException : Exception
-    {
-        protected ProtocolException(string message)
-            : base(message)
-        {}
-    }
+    protected ProtocolException(string message)
+        : base(message)
+    {}
 }

@@ -1,11 +1,10 @@
-namespace RabbitMQ.Next.TopologyBuilder
+namespace RabbitMQ.Next.TopologyBuilder;
+
+public interface IQueueDeleteBuilder
 {
-    public interface IQueueDeleteBuilder
-    {
-        string Name { get; }
+    string Name { get; }
 
-        IQueueDeleteBuilder CancelConsumers();
+    IQueueDeleteBuilder CancelConsumers();
 
-        IQueueDeleteBuilder DiscardMessages();
-    }
+    IQueueDeleteBuilder DiscardMessages();
 }

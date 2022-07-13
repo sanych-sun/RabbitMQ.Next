@@ -4,24 +4,23 @@ using BenchmarkDotNet.Engines;
 using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Running;
 
-namespace RabbitMQ.Next.Benchmarks
+namespace RabbitMQ.Next.Benchmarks;
+
+class Program
 {
-    class Program
+    static void Main(string[] args)
     {
-        static void Main(string[] args)
-        {
-            BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args,
-                DefaultConfig.Instance
-                    .AddDiagnoser(MemoryDiagnoser.Default)
-                    .AddJob(new Job
+        BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args,
+            DefaultConfig.Instance
+                .AddDiagnoser(MemoryDiagnoser.Default)
+                .AddJob(new Job
+                {
+                    Run =
                     {
-                        Run =
-                        {
-                            RunStrategy = RunStrategy.Monitoring, IterationCount = 10, WarmupCount = 5,
-                        }
-                    })
-                    .AddLogicalGroupRules(BenchmarkLogicalGroupRule.ByCategory)
-            );
-        }
+                        RunStrategy = RunStrategy.Monitoring, IterationCount = 10, WarmupCount = 5,
+                    }
+                })
+                .AddLogicalGroupRules(BenchmarkLogicalGroupRule.ByCategory)
+        );
     }
 }

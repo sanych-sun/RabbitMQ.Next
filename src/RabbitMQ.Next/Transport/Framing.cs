@@ -1,37 +1,36 @@
 using System;
 using System.Runtime.CompilerServices;
 
-namespace RabbitMQ.Next.Transport
+namespace RabbitMQ.Next.Transport;
+
+internal static class Framing
 {
-    internal static class Framing
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void ReadFrameHeader(this ReadOnlySpan<byte> data, out FrameType type, out ushort channel, out uint payloadSize)
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ReadFrameHeader(this ReadOnlySpan<byte> data, out FrameType type, out ushort channel, out uint payloadSize)
+        data = data.Read(out byte typeRaw);
+
+        if (typeRaw != (byte)FrameType.Method
+            && typeRaw != (byte)FrameType.ContentHeader
+            && typeRaw != (byte)FrameType.ContentBody
+            && typeRaw != (byte)FrameType.Heartbeat)
         {
-            data = data.Read(out byte typeRaw);
+            type = FrameType.Malformed;
+            channel = 0;
+            payloadSize = 0;
 
-            if (typeRaw != (byte)FrameType.Method
-                && typeRaw != (byte)FrameType.ContentHeader
-                && typeRaw != (byte)FrameType.ContentBody
-                && typeRaw != (byte)FrameType.Heartbeat)
-            {
-                type = FrameType.Malformed;
-                channel = 0;
-                payloadSize = 0;
-
-                return;
-            }
-
-            type = (FrameType)typeRaw;
-
-            data.Read(out channel)
-                .Read(out payloadSize);
+            return;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void WriteFrameHeader(this Span<byte> target, FrameType type, ushort channel, uint payloadSize)
-            => target.Write((byte)type)
-                .Write(channel)
-                .Write(payloadSize);
+        type = (FrameType)typeRaw;
+
+        data.Read(out channel)
+            .Read(out payloadSize);
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void WriteFrameHeader(this Span<byte> target, FrameType type, ushort channel, uint payloadSize)
+        => target.Write((byte)type)
+            .Write(channel)
+            .Write(payloadSize);
 }

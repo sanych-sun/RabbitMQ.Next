@@ -1,7 +1,6 @@
-namespace RabbitMQ.Next.Publisher
+namespace RabbitMQ.Next.Publisher;
+
+public interface IMessageInitializer
 {
-    public interface IMessageInitializer
-    {
-        void Apply<TPayload>(TPayload payload, IMessageBuilder message);
-    }
+    void Apply<TPayload>(TPayload payload, IMessageBuilder message);
 }

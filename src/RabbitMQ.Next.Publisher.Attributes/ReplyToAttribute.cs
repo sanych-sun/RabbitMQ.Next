@@ -1,23 +1,22 @@
 using System;
 
-namespace RabbitMQ.Next.Publisher.Attributes
-{
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Assembly)]
-    public class ReplyToAttribute : MessageAttributeBase
-    {
-        public ReplyToAttribute(string replyTo)
-        {
-            if (string.IsNullOrWhiteSpace(replyTo))
-            {
-                throw new ArgumentNullException(nameof(replyTo));
-            }
+namespace RabbitMQ.Next.Publisher.Attributes;
 
-            this.ReplyTo = replyTo;
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Assembly)]
+public class ReplyToAttribute : MessageAttributeBase
+{
+    public ReplyToAttribute(string replyTo)
+    {
+        if (string.IsNullOrWhiteSpace(replyTo))
+        {
+            throw new ArgumentNullException(nameof(replyTo));
         }
 
-        public string ReplyTo { get; }
-
-        public override void Apply(IMessageBuilder message)
-            => message.ReplyTo(this.ReplyTo);
+        this.ReplyTo = replyTo;
     }
+
+    public string ReplyTo { get; }
+
+    public override void Apply(IMessageBuilder message)
+        => message.ReplyTo(this.ReplyTo);
 }

@@ -4,29 +4,28 @@ using RabbitMQ.Next.Publisher;
 using RabbitMQ.Next.Publisher.Initializers;
 using Xunit;
 
-namespace RabbitMQ.Next.Tests.Publisher.Initializers
+namespace RabbitMQ.Next.Tests.Publisher.Initializers;
+
+public class ApplicationIdInitializerTests
 {
-    public class ApplicationIdInitializerTests
+    [Theory]
+    [InlineData("")]
+    [InlineData(" ")]
+    [InlineData(null)]
+    public void ThrowsOnInvalidValue(string value)
     {
-        [Theory]
-        [InlineData("")]
-        [InlineData(" ")]
-        [InlineData(null)]
-        public void ThrowsOnInvalidValue(string value)
-        {
-            Assert.Throws<ArgumentNullException>(() => new ApplicationIdInitializer(value));
-        }
+        Assert.Throws<ArgumentNullException>(() => new ApplicationIdInitializer(value));
+    }
 
-        [Theory]
-        [InlineData("appId")]
-        public void CanTransform(string value)
-        {
-            var transformer = new ApplicationIdInitializer(value);
-            var message = Substitute.For<IMessageBuilder>();
+    [Theory]
+    [InlineData("appId")]
+    public void CanTransform(string value)
+    {
+        var transformer = new ApplicationIdInitializer(value);
+        var message = Substitute.For<IMessageBuilder>();
 
-            transformer.Apply(string.Empty, message);
+        transformer.Apply(string.Empty, message);
 
-            message.Received().ApplicationId(value);
-        }
+        message.Received().ApplicationId(value);
     }
 }

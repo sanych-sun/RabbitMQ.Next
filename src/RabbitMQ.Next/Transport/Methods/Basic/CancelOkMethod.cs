@@ -1,16 +1,15 @@
 using RabbitMQ.Next.Methods;
 
-namespace RabbitMQ.Next.Transport.Methods.Basic
+namespace RabbitMQ.Next.Transport.Methods.Basic;
+
+public readonly struct CancelOkMethod : IIncomingMethod
 {
-    public readonly struct CancelOkMethod : IIncomingMethod
+    public CancelOkMethod(string consumerTag)
     {
-        public CancelOkMethod(string consumerTag)
-        {
-            this.ConsumerTag = consumerTag;
-        }
-
-        public MethodId MethodId => MethodId.BasicCancelOk;
-
-        public string ConsumerTag { get; }
+        this.ConsumerTag = consumerTag;
     }
+
+    public MethodId MethodId => MethodId.BasicCancelOk;
+
+    public string ConsumerTag { get; }
 }

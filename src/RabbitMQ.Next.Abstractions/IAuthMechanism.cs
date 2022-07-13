@@ -1,9 +1,8 @@
-namespace RabbitMQ.Next
-{
-    public interface IAuthMechanism
-    {
-        string Type { get; }
+namespace RabbitMQ.Next;
 
-        string ToResponse();
-    }
+public interface IAuthMechanism
+{
+    string Type { get; }
+
+    string ToResponse();
 }

@@ -7,100 +7,99 @@ using RabbitMQ.Next.Channels;
 using RabbitMQ.Next.Messaging;
 using RabbitMQ.Next.Transport.Methods.Basic;
 
-namespace RabbitMQ.Next.Publisher
+namespace RabbitMQ.Next.Publisher;
+
+internal class ConfirmMessageHandler : IMessageHandler<AckMethod>, IMessageHandler<NackMethod> 
 {
-    internal class ConfirmMessageHandler : IMessageHandler<AckMethod>, IMessageHandler<NackMethod> 
+    private static readonly TaskCompletionSource<bool> PositiveCompletedTcs;
+    private static readonly TaskCompletionSource<bool> NegativeCompletedTcs;
+
+    private readonly ConcurrentDictionary<ulong, TaskCompletionSource<bool>> pendingConfirms = new();
+
+    static ConfirmMessageHandler()
     {
-        private static readonly TaskCompletionSource<bool> PositiveCompletedTcs;
-        private static readonly TaskCompletionSource<bool> NegativeCompletedTcs;
+        PositiveCompletedTcs = new TaskCompletionSource<bool>();
+        PositiveCompletedTcs.SetResult(true);
 
-        private readonly ConcurrentDictionary<ulong, TaskCompletionSource<bool>> pendingConfirms = new();
+        NegativeCompletedTcs = new TaskCompletionSource<bool>();
+        NegativeCompletedTcs.SetResult(false);
+    }
 
-        static ConfirmMessageHandler()
+    public Task<bool> WaitForConfirmAsync(ulong deliveryTag)
+    {
+        var tcs = this.pendingConfirms.GetOrAdd(deliveryTag, _ => new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously));
+        if (tcs.Task.IsCompleted)
         {
-            PositiveCompletedTcs = new TaskCompletionSource<bool>();
-            PositiveCompletedTcs.SetResult(true);
-
-            NegativeCompletedTcs = new TaskCompletionSource<bool>();
-            NegativeCompletedTcs.SetResult(false);
+            this.pendingConfirms.TryRemove(deliveryTag, out _);
         }
 
-        public Task<bool> WaitForConfirmAsync(ulong deliveryTag)
-        {
-            var tcs = this.pendingConfirms.GetOrAdd(deliveryTag, _ => new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously));
-            if (tcs.Task.IsCompleted)
-            {
-                this.pendingConfirms.TryRemove(deliveryTag, out _);
-            }
+        return tcs.Task;
+    }
 
-            return tcs.Task;
+    public bool Handle(AckMethod method, IContent content)
+    {
+        if (method.Multiple)
+        {
+            this.AckMultiple(method.DeliveryTag, true);
+        }
+        else
+        {
+            this.AckSingle(method.DeliveryTag, true);
         }
 
-        public bool Handle(AckMethod method, IContent content)
+        return true;
+    }
+
+    public bool Handle(NackMethod method, IContent content)
+    {
+        if (method.Multiple)
         {
-            if (method.Multiple)
+            this.AckMultiple(method.DeliveryTag, false);
+        }
+        else
+        {
+            this.AckSingle(method.DeliveryTag, false);
+        }
+
+        return true;
+    }
+
+    public void Release(Exception ex)
+    {
+        foreach (var task in this.pendingConfirms)
+        {
+            if (ex == null)
             {
-                this.AckMultiple(method.DeliveryTag, true);
+                task.Value.TrySetCanceled();
             }
             else
             {
-                this.AckSingle(method.DeliveryTag, true);
+                task.Value.TrySetException(ex);
             }
+        }
+        this.pendingConfirms.Clear();
+    }
 
-            return true;
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void AckSingle(ulong deliveryTag, bool isPositive)
+    {
+        if (!this.pendingConfirms.TryRemove(deliveryTag, out var tcs))
+        {
+            tcs = this.pendingConfirms.GetOrAdd(deliveryTag, isPositive ? PositiveCompletedTcs : NegativeCompletedTcs);
         }
 
-        public bool Handle(NackMethod method, IContent content)
+        tcs.TrySetResult(isPositive);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void AckMultiple(ulong deliveryTag, bool isPositive)
+    {
+        var items = this.pendingConfirms.Where(t => t.Key <= deliveryTag).ToArray();
+
+        foreach (var (key, value) in items)
         {
-            if (method.Multiple)
-            {
-                this.AckMultiple(method.DeliveryTag, false);
-            }
-            else
-            {
-                this.AckSingle(method.DeliveryTag, false);
-            }
-
-            return true;
-        }
-
-        public void Release(Exception ex)
-        {
-            foreach (var task in this.pendingConfirms)
-            {
-                if (ex == null)
-                {
-                    task.Value.TrySetCanceled();
-                }
-                else
-                {
-                    task.Value.TrySetException(ex);
-                }
-            }
-            this.pendingConfirms.Clear();
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void AckSingle(ulong deliveryTag, bool isPositive)
-        {
-            if (!this.pendingConfirms.TryRemove(deliveryTag, out var tcs))
-            {
-                tcs = this.pendingConfirms.GetOrAdd(deliveryTag, isPositive ? PositiveCompletedTcs : NegativeCompletedTcs);
-            }
-
-            tcs.TrySetResult(isPositive);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void AckMultiple(ulong deliveryTag, bool isPositive)
-        {
-            var items = this.pendingConfirms.Where(t => t.Key <= deliveryTag).ToArray();
-
-            foreach (var (key, value) in items)
-            {
-                value.TrySetResult(isPositive);
-                this.pendingConfirms.TryRemove(key, out _);
-            }
+            value.TrySetResult(isPositive);
+            this.pendingConfirms.TryRemove(key, out _);
         }
     }
 }

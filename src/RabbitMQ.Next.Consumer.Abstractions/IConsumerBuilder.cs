@@ -1,24 +1,23 @@
 ﻿using System;
 using RabbitMQ.Next.Channels;
 
-namespace RabbitMQ.Next.Consumer
+namespace RabbitMQ.Next.Consumer;
+
+public interface IConsumerBuilder
 {
-    public interface IConsumerBuilder
-    {
-        IConsumerBuilder BindToQueue(string queue, Action<IQueueConsumerBuilder> builder = null);
+    IConsumerBuilder BindToQueue(string queue, Action<IQueueConsumerBuilder> builder = null);
 
-        IConsumerBuilder PrefetchSize(uint size);
+    IConsumerBuilder PrefetchSize(uint size);
 
-        IConsumerBuilder PrefetchCount(ushort messages);
+    IConsumerBuilder PrefetchCount(ushort messages);
 
-        IConsumerBuilder ConcurrencyLevel(byte concurrency);
+    IConsumerBuilder ConcurrencyLevel(byte concurrency);
 
-        IConsumerBuilder SetAcknowledgement(Func<IChannel, IAcknowledgement> acknowledgementFactory);
+    IConsumerBuilder SetAcknowledgement(Func<IChannel, IAcknowledgement> acknowledgementFactory);
 
-        IConsumerBuilder OnUnprocessedMessage(UnprocessedMessageMode mode);
+    IConsumerBuilder OnUnprocessedMessage(UnprocessedMessageMode mode);
 
-        IConsumerBuilder OnPoisonMessage(UnprocessedMessageMode mode);
+    IConsumerBuilder OnPoisonMessage(UnprocessedMessageMode mode);
 
-        IConsumerBuilder MessageHandler(IDeliveredMessageHandler handler);
-    }
+    IConsumerBuilder MessageHandler(IDeliveredMessageHandler handler);
 }

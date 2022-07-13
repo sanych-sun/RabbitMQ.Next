@@ -1,11 +1,10 @@
-namespace RabbitMQ.Next
+namespace RabbitMQ.Next;
+
+public enum FrameType : byte
 {
-    public enum FrameType : byte
-    {
-        Malformed = 0,
-        Method = 1,
-        ContentHeader = 2,
-        ContentBody = 3,
-        Heartbeat = 8,
-    }
+    Malformed = 0,
+    Method = 1,
+    ContentHeader = 2,
+    ContentBody = 3,
+    Heartbeat = 8,
 }

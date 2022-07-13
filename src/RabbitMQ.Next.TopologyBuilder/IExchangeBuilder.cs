@@ -1,17 +1,16 @@
-namespace RabbitMQ.Next.TopologyBuilder
+namespace RabbitMQ.Next.TopologyBuilder;
+
+public interface IExchangeBuilder
 {
-    public interface IExchangeBuilder
-    {
-        string Name { get; }
+    string Name { get; }
 
-        string Type { get; }
+    string Type { get; }
 
-        IExchangeBuilder Transient();
+    IExchangeBuilder Transient();
 
-        IExchangeBuilder Internal();
+    IExchangeBuilder Internal();
 
-        IExchangeBuilder AutoDelete();
+    IExchangeBuilder AutoDelete();
 
-        IExchangeBuilder Argument(string key, object value);
-    }
+    IExchangeBuilder Argument(string key, object value);
 }

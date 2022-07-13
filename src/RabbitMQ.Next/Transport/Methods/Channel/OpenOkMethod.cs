@@ -1,9 +1,8 @@
 using RabbitMQ.Next.Methods;
 
-namespace RabbitMQ.Next.Transport.Methods.Channel
+namespace RabbitMQ.Next.Transport.Methods.Channel;
+
+public readonly struct OpenOkMethod : IIncomingMethod
 {
-    public readonly struct OpenOkMethod : IIncomingMethod
-    {
-        public MethodId MethodId => MethodId.ChannelOpenOk;
-    }
+    public MethodId MethodId => MethodId.ChannelOpenOk;
 }

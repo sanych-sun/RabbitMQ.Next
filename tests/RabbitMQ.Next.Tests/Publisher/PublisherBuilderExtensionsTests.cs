@@ -3,18 +3,17 @@ using NSubstitute;
 using RabbitMQ.Next.Publisher;
 using Xunit;
 
-namespace RabbitMQ.Next.Tests.Publisher
+namespace RabbitMQ.Next.Tests.Publisher;
+
+public class PublisherBuilderExtensionsTests
 {
-    public class PublisherBuilderExtensionsTests
+    [Fact]
+    public void AddReturnedMessageHandlerTests()
     {
-        [Fact]
-        public void AddReturnedMessageHandlerTests()
-        {
-            var builder = Substitute.For<IPublisherBuilder>();
+        var builder = Substitute.For<IPublisherBuilder>();
 
-            builder.AddReturnedMessageHandler((message, content) => new ValueTask<bool>(false));
+        builder.AddReturnedMessageHandler((message, content) => new ValueTask<bool>(false));
 
-            builder.Received().AddReturnedMessageHandler(Arg.Any<IReturnedMessageHandler>());
-        }
+        builder.Received().AddReturnedMessageHandler(Arg.Any<IReturnedMessageHandler>());
     }
 }

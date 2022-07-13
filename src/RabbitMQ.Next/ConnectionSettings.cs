@@ -1,20 +1,19 @@
 using System.Collections.Generic;
 using RabbitMQ.Next.Transport;
 
-namespace RabbitMQ.Next
+namespace RabbitMQ.Next;
+
+internal class ConnectionSettings
 {
-    internal class ConnectionSettings
-    {
-        public IReadOnlyList<Endpoint> Endpoints { get; set; }
+    public IReadOnlyList<Endpoint> Endpoints { get; init; }
 
-        public string Vhost { get; set; }
+    public string Vhost { get; init; }
 
-        public string Locale { get; set; }
+    public string Locale { get; init; }
 
-        public IAuthMechanism Auth { get; set; }
+    public IAuthMechanism Auth { get; init; }
 
-        public int MaxFrameSize { get; set; }
+    public int MaxFrameSize { get; init; }
 
-        public IReadOnlyDictionary<string, object> ClientProperties { get; set; }
-    }
+    public IReadOnlyDictionary<string, object> ClientProperties { get; init; }
 }

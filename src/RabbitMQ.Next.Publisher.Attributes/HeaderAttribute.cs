@@ -1,26 +1,25 @@
 using System;
 
-namespace RabbitMQ.Next.Publisher.Attributes
-{
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Assembly, AllowMultiple = true)]
-    public class HeaderAttribute : MessageAttributeBase
-    {
-        public HeaderAttribute(string name, string value)
-        {
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+namespace RabbitMQ.Next.Publisher.Attributes;
 
-            this.Name = name;
-            this.Value = value;
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Assembly, AllowMultiple = true)]
+public class HeaderAttribute : MessageAttributeBase
+{
+    public HeaderAttribute(string name, string value)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            throw new ArgumentNullException(nameof(name));
         }
 
-        public string Name { get; }
-        
-        public string Value { get; }
-
-        public override void Apply(IMessageBuilder message)
-            => message.SetHeader(this.Name, this.Value);
+        this.Name = name;
+        this.Value = value;
     }
+
+    public string Name { get; }
+        
+    public string Value { get; }
+
+    public override void Apply(IMessageBuilder message)
+        => message.SetHeader(this.Name, this.Value);
 }

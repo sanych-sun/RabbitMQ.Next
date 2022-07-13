@@ -1,7 +1,6 @@
-namespace RabbitMQ.Next.Serialization
+namespace RabbitMQ.Next.Serialization;
+
+public interface ISerializerFactory
 {
-    public interface ISerializerFactory
-    {
-        ISerializer Get(string contentType);
-    }
+    ISerializer Get(string contentType);
 }

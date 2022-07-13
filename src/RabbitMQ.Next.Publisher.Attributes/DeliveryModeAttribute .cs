@@ -1,24 +1,23 @@
 using System;
 using RabbitMQ.Next.Messaging;
 
-namespace RabbitMQ.Next.Publisher.Attributes
-{
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Assembly)]
-    public class DeliveryModeAttribute : MessageAttributeBase
-    {
-        public DeliveryModeAttribute(DeliveryMode deliveryMode)
-        {
-            if (deliveryMode == DeliveryMode.Unset)
-            {
-                throw new ArgumentOutOfRangeException(nameof(deliveryMode));
-            }
+namespace RabbitMQ.Next.Publisher.Attributes;
 
-            this.DeliveryMode = deliveryMode;
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Assembly)]
+public class DeliveryModeAttribute : MessageAttributeBase
+{
+    public DeliveryModeAttribute(DeliveryMode deliveryMode)
+    {
+        if (deliveryMode == DeliveryMode.Unset)
+        {
+            throw new ArgumentOutOfRangeException(nameof(deliveryMode));
         }
 
-        public DeliveryMode DeliveryMode { get; }
-
-        public override void Apply(IMessageBuilder message)
-            => message.DeliveryMode(this.DeliveryMode);
+        this.DeliveryMode = deliveryMode;
     }
+
+    public DeliveryMode DeliveryMode { get; }
+
+    public override void Apply(IMessageBuilder message)
+        => message.DeliveryMode(this.DeliveryMode);
 }

@@ -4,29 +4,28 @@ using RabbitMQ.Next.Publisher;
 using RabbitMQ.Next.Publisher.Initializers;
 using Xunit;
 
-namespace RabbitMQ.Next.Tests.Publisher.Initializers
+namespace RabbitMQ.Next.Tests.Publisher.Initializers;
+
+public class ReplyToTransformerTests
 {
-    public class ReplyToTransformerTests
+    [Theory]
+    [InlineData("")]
+    [InlineData(" ")]
+    [InlineData(null)]
+    public void ThrowsOnInvalidValue(string value)
     {
-        [Theory]
-        [InlineData("")]
-        [InlineData(" ")]
-        [InlineData(null)]
-        public void ThrowsOnInvalidValue(string value)
-        {
-            Assert.Throws<ArgumentNullException>(() => new ReplyToInitializer(value));
-        }
+        Assert.Throws<ArgumentNullException>(() => new ReplyToInitializer(value));
+    }
 
-        [Theory]
-        [InlineData("queue")]
-        public void CanTransform(string value)
-        {
-            var transformer = new ReplyToInitializer(value);
-            var message = Substitute.For<IMessageBuilder>();
+    [Theory]
+    [InlineData("queue")]
+    public void CanTransform(string value)
+    {
+        var transformer = new ReplyToInitializer(value);
+        var message = Substitute.For<IMessageBuilder>();
 
-            transformer.Apply(string.Empty, message);
+        transformer.Apply(string.Empty, message);
 
-            message.Received().ReplyTo(value);
-        }
+        message.Received().ReplyTo(value);
     }
 }

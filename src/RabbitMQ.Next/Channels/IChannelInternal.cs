@@ -2,14 +2,13 @@ using System;
 using System.Threading.Channels;
 using RabbitMQ.Next.Buffers;
 
-namespace RabbitMQ.Next.Channels
+namespace RabbitMQ.Next.Channels;
+
+internal interface IChannelInternal : IChannel
 {
-    internal interface IChannelInternal : IChannel
-    {
-        public ChannelWriter<(FrameType Type, MemoryBlock Payload)> FrameWriter { get; }
+    public ChannelWriter<(FrameType Type, MemoryBlock Payload)> FrameWriter { get; }
 
-        public bool TryComplete(Exception ex = null);
+    public bool TryComplete(Exception ex = null);
 
-        public ushort ChannelNumber { get; }
-    }
+    public ushort ChannelNumber { get; }
 }

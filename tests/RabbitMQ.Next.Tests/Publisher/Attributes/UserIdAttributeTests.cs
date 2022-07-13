@@ -4,37 +4,36 @@ using RabbitMQ.Next.Publisher;
 using RabbitMQ.Next.Publisher.Attributes;
 using Xunit;
 
-namespace RabbitMQ.Next.Tests.Publisher.Attributes
+namespace RabbitMQ.Next.Tests.Publisher.Attributes;
+
+public class UserIdAttributeTests
 {
-    public class UserIdAttributeTests
+    [Theory]
+    [InlineData("myUser")]
+    public void UserIdAttribute(string value)
     {
-        [Theory]
-        [InlineData("myUser")]
-        public void UserIdAttribute(string value)
-        {
-            var attr = new UserIdAttribute(value);
-            Assert.Equal(value, attr.UserId);
-        }
+        var attr = new UserIdAttribute(value);
+        Assert.Equal(value, attr.UserId);
+    }
 
-        [Theory]
-        [InlineData("")]
-        [InlineData(" ")]
-        [InlineData(null)]
-        public void ThrowsOnInvalidValue(string value)
-        {
-            Assert.Throws<ArgumentNullException>(() => new UserIdAttribute(value));
-        }
+    [Theory]
+    [InlineData("")]
+    [InlineData(" ")]
+    [InlineData(null)]
+    public void ThrowsOnInvalidValue(string value)
+    {
+        Assert.Throws<ArgumentNullException>(() => new UserIdAttribute(value));
+    }
 
-        [Theory]
-        [InlineData("myUser")]
-        public void CanTransform(string value)
-        {
-            var attr = new UserIdAttribute(value);
-            var builder = Substitute.For<IMessageBuilder>();
+    [Theory]
+    [InlineData("myUser")]
+    public void CanTransform(string value)
+    {
+        var attr = new UserIdAttribute(value);
+        var builder = Substitute.For<IMessageBuilder>();
 
-            attr.Apply(builder);
+        attr.Apply(builder);
 
-            builder.Received().UserId(value);
-        }
+        builder.Received().UserId(value);
     }
 }

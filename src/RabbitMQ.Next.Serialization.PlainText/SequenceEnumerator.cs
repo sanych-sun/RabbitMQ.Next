@@ -4,73 +4,72 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
-namespace RabbitMQ.Next.Serialization.PlainText
+namespace RabbitMQ.Next.Serialization.PlainText;
+
+internal struct SequenceEnumerator<T> : IEnumerator<ReadOnlyMemory<T>>
 {
-    internal struct SequenceEnumerator<T> : IEnumerator<ReadOnlyMemory<T>>
+    private readonly ReadOnlySequence<T> source;
+    private ReadOnlySequence<T>? remaining;
+    private bool isDisposed;
+
+    public SequenceEnumerator(ReadOnlySequence<T> source)
     {
-        private readonly ReadOnlySequence<T> source;
-        private ReadOnlySequence<T>? remaining;
-        private bool isDisposed;
+        this.source = source;
+        this.remaining = null;
+        this.isDisposed = false;
+    }
 
-        public SequenceEnumerator(ReadOnlySequence<T> source)
-        {
-            this.source = source;
-            this.remaining = null;
-            this.isDisposed = false;
-        }
+    public bool MoveNext()
+    {
+        this.CheckDisposed();
 
-        public bool MoveNext()
+        this.remaining = this.remaining?.Slice(this.remaining.Value.First.Length) ?? this.source;
+
+        return !this.remaining.Value.IsEmpty;
+    }
+
+    public void Reset()
+    {
+        this.CheckDisposed();
+        this.remaining = null;
+    }
+
+    public ReadOnlyMemory<T> Current
+    {
+        get
         {
             this.CheckDisposed();
+            if (this.remaining?.IsEmpty ?? true)
+            {
+                throw new InvalidOperationException("Cannot access Current outside of enumeration operation");
+            }
 
-            this.remaining = this.remaining?.Slice(this.remaining.Value.First.Length) ?? this.source;
-
-            return !this.remaining.Value.IsEmpty;
+            return this.remaining.Value.First;
         }
+    }
 
-        public void Reset()
+    public bool IsLast
+    {
+        get
         {
             this.CheckDisposed();
-            this.remaining = null;
+            return this.remaining.Value.IsSingleSegment;
         }
+    }
 
-        public ReadOnlyMemory<T> Current
+    object IEnumerator.Current => this.Current;
+
+    public void Dispose()
+    {
+        this.isDisposed = true;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void CheckDisposed()
+    {
+        if (this.isDisposed)
         {
-            get
-            {
-                this.CheckDisposed();
-                if (this.remaining?.IsEmpty ?? true)
-                {
-                    throw new InvalidOperationException("Cannot access Current outside of enumeration operation");
-                }
-
-                return this.remaining.Value.First;
-            }
-        }
-
-        public bool IsLast
-        {
-            get
-            {
-                this.CheckDisposed();
-                return this.remaining.Value.IsSingleSegment;
-            }
-        }
-
-        object IEnumerator.Current => this.Current;
-
-        public void Dispose()
-        {
-            this.isDisposed = true;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void CheckDisposed()
-        {
-            if (this.isDisposed)
-            {
-                throw new ObjectDisposedException(nameof(SequenceEnumerator<T>));
-            }
+            throw new ObjectDisposedException(nameof(SequenceEnumerator<T>));
         }
     }
 }

@@ -1,9 +1,8 @@
 using RabbitMQ.Next.Methods;
 
-namespace RabbitMQ.Next.Transport.Methods.Exchange
+namespace RabbitMQ.Next.Transport.Methods.Exchange;
+
+public readonly struct DeleteOkMethod : IIncomingMethod
 {
-    public readonly struct DeleteOkMethod : IIncomingMethod
-    {
-        public MethodId MethodId => MethodId.ExchangeDeleteOk;
-    }
+    public MethodId MethodId => MethodId.ExchangeDeleteOk;
 }

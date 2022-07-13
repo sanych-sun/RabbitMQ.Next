@@ -1,7 +1,6 @@
-namespace RabbitMQ.Next.Methods
+namespace RabbitMQ.Next.Methods;
+
+public interface IMethod
 {
-    public interface IMethod
-    {
-        MethodId MethodId { get; }
-    }
+    MethodId MethodId { get; }
 }

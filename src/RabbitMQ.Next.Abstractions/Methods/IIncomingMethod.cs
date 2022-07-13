@@ -1,6 +1,5 @@
-namespace RabbitMQ.Next.Methods
+namespace RabbitMQ.Next.Methods;
+
+public interface IIncomingMethod : IMethod
 {
-    public interface IIncomingMethod : IMethod
-    {
-    }
 }

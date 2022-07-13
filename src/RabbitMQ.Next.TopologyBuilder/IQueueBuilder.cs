@@ -1,15 +1,14 @@
-namespace RabbitMQ.Next.TopologyBuilder
+namespace RabbitMQ.Next.TopologyBuilder;
+
+public interface IQueueBuilder
 {
-    public interface IQueueBuilder
-    {
-        string Name { get; }
+    string Name { get; }
 
-        IQueueBuilder Transient();
+    IQueueBuilder Transient();
 
-        IQueueBuilder Exclusive();
+    IQueueBuilder Exclusive();
 
-        IQueueBuilder AutoDelete();
+    IQueueBuilder AutoDelete();
 
-        IQueueBuilder Argument(string key, object value);
-    }
+    IQueueBuilder Argument(string key, object value);
 }

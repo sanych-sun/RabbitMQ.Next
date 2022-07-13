@@ -1,15 +1,14 @@
-namespace RabbitMQ.Next.Consumer
+namespace RabbitMQ.Next.Consumer;
+
+public interface IQueueConsumerBuilder
 {
-    public interface IQueueConsumerBuilder
-    {
-        string Queue { get; }
+    string Queue { get; }
 
-        IQueueConsumerBuilder NoLocal();
+    IQueueConsumerBuilder NoLocal();
 
-        IQueueConsumerBuilder Exclusive();
+    IQueueConsumerBuilder Exclusive();
 
-        IQueueConsumerBuilder Argument(string key, object value);
+    IQueueConsumerBuilder Argument(string key, object value);
 
-        IQueueConsumerBuilder ConsumerTag(string consumerTag);
-    }
+    IQueueConsumerBuilder ConsumerTag(string consumerTag);
 }

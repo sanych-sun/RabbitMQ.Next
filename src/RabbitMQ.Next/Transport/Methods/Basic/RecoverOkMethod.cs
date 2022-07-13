@@ -1,9 +1,8 @@
 using RabbitMQ.Next.Methods;
 
-namespace RabbitMQ.Next.Transport.Methods.Basic
+namespace RabbitMQ.Next.Transport.Methods.Basic;
+
+public readonly struct RecoverOkMethod : IIncomingMethod
 {
-    public readonly struct RecoverOkMethod : IIncomingMethod
-    {
-        public MethodId MethodId => MethodId.BasicRecoverOk;
-    }
+    public MethodId MethodId => MethodId.BasicRecoverOk;
 }

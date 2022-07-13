@@ -2,84 +2,83 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace RabbitMQ.Next.Tasks
+namespace RabbitMQ.Next.Tasks;
+
+public class AsyncManualResetEvent : IDisposable
 {
-    public class AsyncManualResetEvent : IDisposable
+    private volatile TaskCompletionSource<bool> completionSource;
+    private volatile bool disposed;
+
+    public AsyncManualResetEvent(bool initialState = false)
     {
-        private volatile TaskCompletionSource<bool> completionSource;
-        private volatile bool disposed;
-
-        public AsyncManualResetEvent(bool initialState = false)
+        if (!initialState)
         {
-            if (!initialState)
-            {
-                this.Reset();
-            }
+            this.Reset();
+        }
+    }
+
+    public void Set()
+    {
+        this.CheckDisposed();
+        this.completionSource?.TrySetResult(true);
+    }
+
+    public ValueTask<bool> WaitAsync(int milliseconds = 0, CancellationToken cancellation = default)
+    {
+        this.CheckDisposed();
+
+        if (this.completionSource == null)
+        {
+            return new ValueTask<bool>(true);
         }
 
-        public void Set()
+        if (this.completionSource.Task.IsCompleted)
         {
-            this.CheckDisposed();
-            this.completionSource?.TrySetResult(true);
+            return new ValueTask<bool>(true);
         }
 
-        public ValueTask<bool> WaitAsync(int milliseconds = 0, CancellationToken cancellation = default)
+        var innerTask = this.completionSource.Task;
+
+
+        if (milliseconds > 0)
         {
-            this.CheckDisposed();
-
-            if (this.completionSource == null)
-            {
-                return new ValueTask<bool>(true);
-            }
-
-            if (this.completionSource.Task.IsCompleted)
-            {
-                return new ValueTask<bool>(true);
-            }
-
-            var innerTask = this.completionSource.Task;
-
-
-            if (milliseconds > 0)
-            {
-                var delayTask = Task.Delay(milliseconds);
-                innerTask = Task.WhenAny(innerTask, delayTask)
-                    .ContinueWith(t => t.Result != delayTask);
-            }
-
-            innerTask = innerTask.WithCancellation(cancellation);
-
-            return new ValueTask<bool>(innerTask);
+            var delayTask = Task.Delay(milliseconds);
+            innerTask = Task.WhenAny(innerTask, delayTask)
+                .ContinueWith(t => t.Result != delayTask);
         }
 
-        public void Reset()
+        innerTask = innerTask.WithCancellation(cancellation);
+
+        return new ValueTask<bool>(innerTask);
+    }
+
+    public void Reset()
+    {
+        this.CheckDisposed();
+        var currentCompletionSource = this.completionSource;
+
+        if (currentCompletionSource != null && !currentCompletionSource.Task.IsCompleted)
         {
-            this.CheckDisposed();
-            var currentCompletionSource = this.completionSource;
-
-            if (currentCompletionSource != null && !currentCompletionSource.Task.IsCompleted)
-            {
-                return;
-            }
-
-            Interlocked.CompareExchange(ref this.completionSource, new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously), currentCompletionSource);
+            return;
         }
 
-        public void Dispose()
-        {
-            this.disposed = true;
-            var currentCompletionSource = this.completionSource;
-            this.completionSource = null;
+        Interlocked.CompareExchange(ref this.completionSource, new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously), currentCompletionSource);
+    }
 
-            currentCompletionSource?.SetCanceled();
-        }
+    public void Dispose()
+    {
+        this.disposed = true;
+        var currentCompletionSource = this.completionSource;
+        this.completionSource = null;
 
-        private void CheckDisposed()
+        currentCompletionSource?.SetCanceled();
+    }
+
+    private void CheckDisposed()
+    {
+        if (this.disposed)
         {
-            if (this.disposed)
-            {
-                throw new ObjectDisposedException(nameof(AsyncManualResetEvent));
-            }
+            throw new ObjectDisposedException(nameof(AsyncManualResetEvent));
         }
     }
 }

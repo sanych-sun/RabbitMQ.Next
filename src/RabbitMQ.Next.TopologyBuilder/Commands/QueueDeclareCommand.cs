@@ -6,67 +6,66 @@ using RabbitMQ.Next.Exceptions;
 using RabbitMQ.Next.TopologyBuilder.Exceptions;
 using RabbitMQ.Next.Transport.Methods.Queue;
 
-namespace RabbitMQ.Next.TopologyBuilder.Commands
+namespace RabbitMQ.Next.TopologyBuilder.Commands;
+
+internal class QueueDeclareCommand : IQueueBuilder, ICommand
 {
-    internal class QueueDeclareCommand : IQueueBuilder, ICommand
+    private bool isDurable = true;
+    private bool isExclusive;
+    private bool isAutoDelete;
+    private Dictionary<string, object> arguments;
+
+    public QueueDeclareCommand(string name)
     {
-        private bool isDurable = true;
-        private bool isExclusive;
-        private bool isAutoDelete;
-        private Dictionary<string, object> arguments;
+        this.Name = name;
+    }
 
-        public QueueDeclareCommand(string name)
+    public string Name { get; }
+
+    public IQueueBuilder Transient()
+    {
+        this.isDurable = false;
+        return this;
+    }
+
+    public IQueueBuilder Exclusive()
+    {
+        this.isExclusive = true;
+        return this;
+    }
+
+    public IQueueBuilder AutoDelete()
+    {
+        this.isAutoDelete = true;
+        return this;
+    }
+
+    public IQueueBuilder Argument(string key, object value)
+    {
+        this.arguments ??= new Dictionary<string, object>();
+        this.arguments[key] = value;
+
+        return this;
+    }
+
+    public async Task ExecuteAsync(IChannel channel)
+    {
+        try
         {
-            this.Name = name;
+            await channel.SendAsync<DeclareMethod, DeclareOkMethod>(
+                new DeclareMethod(this.Name, this.isDurable, this.isExclusive, this.isAutoDelete, this.arguments));
         }
-
-        public string Name { get; }
-
-        public IQueueBuilder Transient()
+        catch (ChannelException ex)
         {
-            this.isDurable = false;
-            return this;
-        }
-
-        public IQueueBuilder Exclusive()
-        {
-            this.isExclusive = true;
-            return this;
-        }
-
-        public IQueueBuilder AutoDelete()
-        {
-            this.isAutoDelete = true;
-            return this;
-        }
-
-        public IQueueBuilder Argument(string key, object value)
-        {
-            this.arguments ??= new Dictionary<string, object>();
-            this.arguments[key] = value;
-
-            return this;
-        }
-
-        public async Task ExecuteAsync(IChannel channel)
-        {
-            try
+            switch (ex.ErrorCode)
             {
-                await channel.SendAsync<DeclareMethod, DeclareOkMethod>(
-                    new DeclareMethod(this.Name, this.isDurable, this.isExclusive, this.isAutoDelete, this.arguments));
+                case (ushort)ReplyCode.AccessRefused:
+                case (ushort)ReplyCode.PreconditionFailed:
+                    throw new ArgumentOutOfRangeException("Illegal queue name.", ex);
+                case (ushort)ReplyCode.ResourceLocked:
+                    throw new ConflictException("Cannot redeclare existing queue as exclusive.", ex);
             }
-            catch (ChannelException ex)
-            {
-                switch (ex.ErrorCode)
-                {
-                    case (ushort)ReplyCode.AccessRefused:
-                    case (ushort)ReplyCode.PreconditionFailed:
-                        throw new ArgumentOutOfRangeException("Illegal queue name.", ex);
-                    case (ushort)ReplyCode.ResourceLocked:
-                        throw new ConflictException("Cannot redeclare existing queue as exclusive.", ex);
-                }
-                throw;
-            }
+            throw;
         }
     }
 }

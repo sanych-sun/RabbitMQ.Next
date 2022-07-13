@@ -1,23 +1,22 @@
 using System;
 
-namespace RabbitMQ.Next
+namespace RabbitMQ.Next;
+
+internal class NegotiationResults
 {
-    internal class NegotiationResults
+    public NegotiationResults(string authMechanism, int channelMax, int frameMaxSize, TimeSpan heartbeatInterval)
     {
-        public NegotiationResults(string authMechanism, int channelMax, int frameMaxSize, TimeSpan heartbeatInterval)
-        {
-            this.AuthMechanism = authMechanism;
-            this.ChannelMax = channelMax;
-            this.FrameMaxSize = frameMaxSize;
-            this.HeartbeatInterval = heartbeatInterval;
-        }
-
-        public int ChannelMax { get; }
-
-        public int FrameMaxSize { get; }
-
-        public TimeSpan HeartbeatInterval { get; }
-
-        public string AuthMechanism { get; }
+        this.AuthMechanism = authMechanism;
+        this.ChannelMax = channelMax;
+        this.FrameMaxSize = frameMaxSize;
+        this.HeartbeatInterval = heartbeatInterval;
     }
+
+    public int ChannelMax { get; }
+
+    public int FrameMaxSize { get; }
+
+    public TimeSpan HeartbeatInterval { get; }
+
+    public string AuthMechanism { get; }
 }

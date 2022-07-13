@@ -1,9 +1,8 @@
 using System;
 
-namespace RabbitMQ.Next.Messaging
+namespace RabbitMQ.Next.Messaging;
+
+public interface IContent: IMessageProperties, IDisposable
 {
-    public interface IContent: IMessageProperties, IDisposable
-    {
-        T Content<T>();        
-    }
+    T Content<T>();        
 }

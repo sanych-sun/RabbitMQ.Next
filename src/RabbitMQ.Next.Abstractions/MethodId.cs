@@ -1,8 +1,8 @@
-namespace RabbitMQ.Next
+namespace RabbitMQ.Next;
+
+public enum MethodId : uint
 {
-    public enum MethodId : uint
-    {
-        Unknown = 0,
+    Unknown = 0,
         // @formatter:off
         // Connection class methods:
         ConnectionStart          = (ClassId.Connection << 16) | 10,
@@ -72,6 +72,5 @@ namespace RabbitMQ.Next
         ConfirmSelect            = (ClassId.Confirm<<16) | 10,
         ConfirmSelectOk          = (ClassId.Confirm<<16) | 11,
 
-        // @formatter:on
-    }
+    // @formatter:on
 }

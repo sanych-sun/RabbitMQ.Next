@@ -1,23 +1,22 @@
 using System;
 using RabbitMQ.Next.Messaging;
 
-namespace RabbitMQ.Next.Publisher.Initializers
+namespace RabbitMQ.Next.Publisher.Initializers;
+
+public class DeliveryModeInitializer : IMessageInitializer
 {
-    public class DeliveryModeInitializer : IMessageInitializer
+    private readonly DeliveryMode deliveryMode;
+
+    public DeliveryModeInitializer(DeliveryMode deliveryMode)
     {
-        private readonly DeliveryMode deliveryMode;
-
-        public DeliveryModeInitializer(DeliveryMode deliveryMode)
+        if (deliveryMode == DeliveryMode.Unset)
         {
-            if (deliveryMode == DeliveryMode.Unset)
-            {
-                throw new ArgumentOutOfRangeException(nameof(deliveryMode));
-            }
-
-            this.deliveryMode = deliveryMode;
+            throw new ArgumentOutOfRangeException(nameof(deliveryMode));
         }
 
-        public void Apply<TPayload>(TPayload payload, IMessageBuilder message)
-            => message.DeliveryMode(this.deliveryMode);
+        this.deliveryMode = deliveryMode;
     }
+
+    public void Apply<TPayload>(TPayload payload, IMessageBuilder message)
+        => message.DeliveryMode(this.deliveryMode);
 }

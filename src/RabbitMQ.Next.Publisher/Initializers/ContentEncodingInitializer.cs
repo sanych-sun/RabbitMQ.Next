@@ -1,22 +1,21 @@
 using System;
 
-namespace RabbitMQ.Next.Publisher.Initializers
+namespace RabbitMQ.Next.Publisher.Initializers;
+
+public class ContentEncodingInitializer : IMessageInitializer
 {
-    public class ContentEncodingInitializer : IMessageInitializer
+    private readonly string contentEncoding;
+
+    public ContentEncodingInitializer(string contentEncoding)
     {
-        private readonly string contentEncoding;
-
-        public ContentEncodingInitializer(string contentEncoding)
+        if (string.IsNullOrWhiteSpace(contentEncoding))
         {
-            if (string.IsNullOrWhiteSpace(contentEncoding))
-            {
-                throw new ArgumentNullException(nameof(contentEncoding));
-            }
-
-            this.contentEncoding = contentEncoding;
+            throw new ArgumentNullException(nameof(contentEncoding));
         }
 
-        public void Apply<TPayload>(TPayload payload, IMessageBuilder message)
-            => message.ContentEncoding(this.contentEncoding);
+        this.contentEncoding = contentEncoding;
     }
+
+    public void Apply<TPayload>(TPayload payload, IMessageBuilder message)
+        => message.ContentEncoding(this.contentEncoding);
 }

@@ -1,9 +1,8 @@
-namespace RabbitMQ.Next.TopologyBuilder
-{
-    public interface IExchangeDeleteBuilder
-    {
-        string Name { get; }
+namespace RabbitMQ.Next.TopologyBuilder;
 
-        IExchangeDeleteBuilder CancelBindings();
-    }
+public interface IExchangeDeleteBuilder
+{
+    string Name { get; }
+
+    IExchangeDeleteBuilder CancelBindings();
 }

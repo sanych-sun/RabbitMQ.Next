@@ -1,9 +1,8 @@
-namespace RabbitMQ.Next.Serialization
+namespace RabbitMQ.Next.Serialization;
+
+public interface ISerializationBuilder
 {
-    public interface ISerializationBuilder
-    {
-        ISerializationBuilder DefaultSerializer(ISerializer serializer);
+    ISerializationBuilder DefaultSerializer(ISerializer serializer);
         
-        ISerializationBuilder UseSerializer(ISerializer serializer, string contentType);
-    }
+    ISerializationBuilder UseSerializer(ISerializer serializer, string contentType);
 }

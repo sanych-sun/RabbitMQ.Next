@@ -1,23 +1,22 @@
 using System;
 
-namespace RabbitMQ.Next.Publisher.Attributes
-{
-    [AttributeUsage(AttributeTargets.Class)]
-    public class TypeAttribute : MessageAttributeBase
-    {
-        public TypeAttribute(string type)
-        {
-            if (string.IsNullOrWhiteSpace(type))
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
+namespace RabbitMQ.Next.Publisher.Attributes;
 
-            this.Type = type;
+[AttributeUsage(AttributeTargets.Class)]
+public class TypeAttribute : MessageAttributeBase
+{
+    public TypeAttribute(string type)
+    {
+        if (string.IsNullOrWhiteSpace(type))
+        {
+            throw new ArgumentNullException(nameof(type));
         }
 
-        public string Type { get; }
-
-        public override void Apply(IMessageBuilder message)
-            => message.Type(this.Type);
+        this.Type = type;
     }
+
+    public string Type { get; }
+
+    public override void Apply(IMessageBuilder message)
+        => message.Type(this.Type);
 }

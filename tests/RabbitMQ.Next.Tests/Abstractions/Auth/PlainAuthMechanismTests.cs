@@ -2,45 +2,44 @@ using NSubstitute;
 using RabbitMQ.Next.Auth;
 using Xunit;
 
-namespace RabbitMQ.Next.Tests.Abstractions.Auth
+namespace RabbitMQ.Next.Tests.Abstractions.Auth;
+
+public class PlainAuthMechanismTests
 {
-    public class PlainAuthMechanismTests
+    [Fact]
+    public void CtorTests()
     {
-        [Fact]
-        public void CtorTests()
-        {
-            var user = "test";
-            var password = "pwd";
+        var user = "test";
+        var password = "pwd";
 
-            var auth = new PlainAuthMechanism(user, password);
+        var auth = new PlainAuthMechanism(user, password);
 
-            Assert.Equal("PLAIN", auth.Type);
-            Assert.Equal(user, auth.UserName);
-            Assert.Equal(password, auth.Password);
-        }
+        Assert.Equal("PLAIN", auth.Type);
+        Assert.Equal(user, auth.UserName);
+        Assert.Equal(password, auth.Password);
+    }
 
-        [Fact]
-        public void ToResponse()
-        {
-            var user = "test";
-            var password = "pwd";
+    [Fact]
+    public void ToResponse()
+    {
+        var user = "test";
+        var password = "pwd";
 
-            var auth = new PlainAuthMechanism(user, password);
+        var auth = new PlainAuthMechanism(user, password);
 
-            Assert.Equal($"\0{user}\0{password}", auth.ToResponse());
-        }
+        Assert.Equal($"\0{user}\0{password}", auth.ToResponse());
+    }
 
-        [Fact]
-        public void ExtensionTests()
-        {
-            var user = "test2";
-            var password = "pwd2";
+    [Fact]
+    public void ExtensionTests()
+    {
+        var user = "test2";
+        var password = "pwd2";
 
-            var builder = Substitute.For<IConnectionBuilder>();
-            builder.PlainAuth(user, password);
+        var builder = Substitute.For<IConnectionBuilder>();
+        builder.PlainAuth(user, password);
 
-            builder.Received().Auth(Arg.Is<IAuthMechanism>(a => ((PlainAuthMechanism)a).UserName == user && ((PlainAuthMechanism)a).Password == password)
-            );
-        }
+        builder.Received().Auth(Arg.Is<IAuthMechanism>(a => ((PlainAuthMechanism)a).UserName == user && ((PlainAuthMechanism)a).Password == password)
+        );
     }
 }

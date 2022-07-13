@@ -1,8 +1,7 @@
-namespace RabbitMQ.Next.Consumer
+namespace RabbitMQ.Next.Consumer;
+
+public enum UnprocessedMessageMode
 {
-    public enum UnprocessedMessageMode
-    {
-        Drop = 0,
-        Requeue = 1,
-    }
+    Drop = 0,
+    Requeue = 1,
 }

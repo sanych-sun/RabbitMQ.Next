@@ -1,22 +1,21 @@
 using System;
 
-namespace RabbitMQ.Next.Publisher.Initializers
+namespace RabbitMQ.Next.Publisher.Initializers;
+
+public class UserIdInitializer : IMessageInitializer
 {
-    public class UserIdInitializer : IMessageInitializer
+    private readonly string userId;
+
+    public UserIdInitializer(string userId)
     {
-        private readonly string userId;
-
-        public UserIdInitializer(string userId)
+        if (string.IsNullOrWhiteSpace(userId))
         {
-            if (string.IsNullOrWhiteSpace(userId))
-            {
-                throw new ArgumentNullException(nameof(userId));
-            }
-
-            this.userId = userId;
+            throw new ArgumentNullException(nameof(userId));
         }
 
-        public void Apply<TPayload>(TPayload payload, IMessageBuilder message)
-            => message.UserId(this.userId);
+        this.userId = userId;
     }
+
+    public void Apply<TPayload>(TPayload payload, IMessageBuilder message)
+        => message.UserId(this.userId);
 }

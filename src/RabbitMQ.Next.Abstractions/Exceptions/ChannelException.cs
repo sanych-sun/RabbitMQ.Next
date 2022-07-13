@@ -1,16 +1,15 @@
-namespace RabbitMQ.Next.Exceptions
+namespace RabbitMQ.Next.Exceptions;
+
+public class ChannelException : ProtocolException
 {
-    public class ChannelException : ProtocolException
+    public ChannelException(ushort errorCode, string message, MethodId failedMethodId)
+        : base(message)
     {
-        public ChannelException(ushort errorCode, string message, MethodId failedMethodId)
-            : base(message)
-        {
-            this.ErrorCode = errorCode;
-            this.FailedMethodId = failedMethodId;
-        }
-
-        public ushort ErrorCode { get; }
-
-        public MethodId FailedMethodId { get; }
+        this.ErrorCode = errorCode;
+        this.FailedMethodId = failedMethodId;
     }
+
+    public ushort ErrorCode { get; }
+
+    public MethodId FailedMethodId { get; }
 }

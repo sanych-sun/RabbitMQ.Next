@@ -2,21 +2,20 @@ using RabbitMQ.Next.Transport.Methods;
 using RabbitMQ.Next.Transport.Methods.Confirm;
 using Xunit;
 
-namespace RabbitMQ.Next.Tests.Transport.Methods.Confirm
+namespace RabbitMQ.Next.Tests.Transport.Methods.Confirm;
+
+public class SerializationTests: SerializationTestBase
 {
-    public class SerializationTests: SerializationTestBase
+    public SerializationTests()
+        : base(builder => builder.AddConfirmMethods())
     {
-        public SerializationTests()
-            : base(builder => builder.AddConfirmMethods())
-        {
-        }
-
-        [Fact]
-        public void SelectMethodFormatter()
-            => this.TestFormatter(new SelectMethod());
-
-        [Fact]
-        public void SelectOkMethodParser()
-            => this.TestParser(new SelectOkMethod());
     }
+
+    [Fact]
+    public void SelectMethodFormatter()
+        => this.TestFormatter(new SelectMethod());
+
+    [Fact]
+    public void SelectOkMethodParser()
+        => this.TestParser(new SelectOkMethod());
 }
