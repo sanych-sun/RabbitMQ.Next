@@ -104,4 +104,26 @@ public class QueueBuilderExtensionsTests
 
         builder.Received().Argument("x-queue-mode", "lazy");
     }
+
+    [Fact]
+    public void Quorum()
+    {
+        var builder = Substitute.For<IQueueBuilder>();
+
+        builder.Quorum();
+
+        builder.Received().Argument("x-queue-type", "quorum");
+    }
+    
+    [Theory]
+    [InlineData(10)]
+    [InlineData(100)]
+    public void WithDeliveryLimit(int limit)
+    {
+        var builder = Substitute.For<IQueueBuilder>();
+
+        builder.WithDeliveryLimit(limit);
+
+        builder.Received().Argument("x-delivery-limit", limit);
+    }
 }

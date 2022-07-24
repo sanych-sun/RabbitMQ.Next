@@ -60,7 +60,7 @@ public static class QueueBuilderExtensions
         return builder;
     }
     
-    public static IQueueBuilder DeliveryLimit(this IQueueBuilder builder, int deliveryLimit)
+    public static IQueueBuilder WithDeliveryLimit(this IQueueBuilder builder, int deliveryLimit)
     {
         builder.Argument("x-delivery-limit", deliveryLimit);
         return builder;
