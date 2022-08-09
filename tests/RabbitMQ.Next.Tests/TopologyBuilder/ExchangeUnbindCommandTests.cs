@@ -104,7 +104,7 @@ public class ExchangeUnbindCommandTests
     {
         var channel = Substitute.For<IChannel>();
         channel.SendAsync<UnbindMethod, UnbindOkMethod>(default)
-            .ReturnsForAnyArgs(new ValueTask<UnbindOkMethod>(Task.FromException<UnbindOkMethod>(new ChannelException((ushort)replyCode, "error message", MethodId.ExchangeUnbind))));
+            .ReturnsForAnyArgs(Task.FromException<UnbindOkMethod>(new ChannelException((ushort)replyCode, "error message", MethodId.ExchangeUnbind)));
         var builder = new ExchangeUnbindCommand("destination", "source");
 
         await Assert.ThrowsAsync(exceptionType,async ()=> await builder.ExecuteAsync(channel));

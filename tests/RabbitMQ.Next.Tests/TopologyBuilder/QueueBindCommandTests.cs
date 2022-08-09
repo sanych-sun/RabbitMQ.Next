@@ -104,7 +104,7 @@ public class QueueBindCommandTests
     {
         var channel = Substitute.For<IChannel>();
         channel.SendAsync<BindMethod, BindOkMethod>(default)
-            .ReturnsForAnyArgs(new ValueTask<BindOkMethod>(Task.FromException<BindOkMethod>(new ChannelException((ushort)replyCode, "error message", MethodId.QueueBind))));
+            .ReturnsForAnyArgs(Task.FromException<BindOkMethod>(new ChannelException((ushort)replyCode, "error message", MethodId.QueueBind)));
         var builder = new QueueBindCommand("queue", "exchange");
 
         await Assert.ThrowsAsync(exceptionType,async ()=> await builder.ExecuteAsync(channel));

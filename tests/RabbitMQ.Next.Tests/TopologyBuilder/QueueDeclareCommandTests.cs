@@ -144,7 +144,7 @@ public class QueueDeclareCommandTests
     {
         var channel = Substitute.For<IChannel>();
         channel.SendAsync<DeclareMethod, DeclareOkMethod>(default)
-            .ReturnsForAnyArgs(new ValueTask<DeclareOkMethod>(Task.FromException<DeclareOkMethod>(new ChannelException((ushort)replyCode, "error message", MethodId.QueueBind))));
+            .ReturnsForAnyArgs(Task.FromException<DeclareOkMethod>(new ChannelException((ushort)replyCode, "error message", MethodId.QueueBind)));
         var builder = new QueueDeclareCommand("queue");
 
         await Assert.ThrowsAsync(exceptionType,async ()=> await builder.ExecuteAsync(channel));

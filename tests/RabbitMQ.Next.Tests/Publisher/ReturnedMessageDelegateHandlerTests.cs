@@ -10,35 +10,44 @@ namespace RabbitMQ.Next.Tests.Publisher;
 public class ReturnedMessageDelegateHandlerTests
 {
     [Fact]
+    public void CanCallHandler()
+    {
+        var message = new ReturnedMessage();
+        var fn = Substitute.For<Func<ReturnedMessage, IContent, Task<bool>>>();
+        var handler = new ReturnedMessageDelegateHandler(fn);
+
+        handler.TryHandleAsync(message, Substitute.For<IContent>());
+
+        fn.Received()(Arg.Any<ReturnedMessage>(), Arg.Any<IContent>());
+    }
+
+    [Fact]
     public void ThrowsOnNullHandler()
     {
         Assert.Throws<ArgumentNullException>(() => new ReturnedMessageDelegateHandler(null));
     }
 
     [Fact]
-    public async Task CallDelegate()
+    public void CanDispose()
     {
-        var fn = Substitute.For<Func<ReturnedMessage, IContent, ValueTask<bool>>>();
+        var message = new ReturnedMessage();
+        var fn = Substitute.For<Func<ReturnedMessage, IContent, Task<bool>>>();
         var handler = new ReturnedMessageDelegateHandler(fn);
 
-        await handler.TryHandleAsync(
-            new ReturnedMessage("test", "key", 200, "OK"),
-            Substitute.For<IContent>());
+        handler.Dispose();
 
-        await fn.Received().Invoke(Arg.Any<ReturnedMessage>(), Arg.Any<IContent>());
+        Assert.ThrowsAsync<ObjectDisposedException>(() => handler.TryHandleAsync(message, Substitute.For<IContent>()));
     }
 
     [Fact]
-    public async Task DisposedDoesNotCallDelegate()
+    public void CanDisposeMultiple()
     {
-        var fn = Substitute.For<Func<ReturnedMessage, IContent, ValueTask<bool>>>();
+        var fn = Substitute.For<Func<ReturnedMessage, IContent, Task<bool>>>();
         var handler = new ReturnedMessageDelegateHandler(fn);
+
         handler.Dispose();
 
-        await handler.TryHandleAsync(
-            new ReturnedMessage("test", "key", 200, "OK"),
-            Substitute.For<IContent>());
-
-        await fn.DidNotReceive().Invoke(Arg.Any<ReturnedMessage>(), Arg.Any<IContent>());
+        var record = Record.Exception(() => handler.Dispose());
+        Assert.Null(record);
     }
 }

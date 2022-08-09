@@ -29,7 +29,7 @@ internal class MethodSender
         this.frameBuilderPool = connection.FrameBuilderPool;
     }
 
-    public ValueTask SendAsync<TRequest>(TRequest request, CancellationToken cancellation = default)
+    public Task SendAsync<TRequest>(TRequest request, CancellationToken cancellation = default)
         where TRequest : struct, IOutgoingMethod
     {
         var frameBuilder = this.frameBuilderPool.Get();
@@ -40,7 +40,7 @@ internal class MethodSender
         return this.connection.WriteToSocketAsync(frameBuilder.Complete(), cancellation);
     }
 
-    public ValueTask PublishAsync<TState>(
+    public Task PublishAsync<TState>(
         TState state, string exchange, string routingKey,
         IMessageProperties properties, Action<TState, IBufferWriter<byte>> contentBody,
         PublishFlags flags = PublishFlags.None, CancellationToken cancellation = default)

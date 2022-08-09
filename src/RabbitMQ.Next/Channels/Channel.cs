@@ -75,14 +75,14 @@ internal sealed class Channel : IChannelInternal
     }
 
     public Task Completion => this.channelCompletion.Task;
-    public ValueTask SendAsync<TRequest>(TRequest request, CancellationToken cancellation = default)
+    public Task SendAsync<TRequest>(TRequest request, CancellationToken cancellation = default)
         where TRequest : struct, IOutgoingMethod
     {
         this.ValidateState();
         return this.methodSender.SendAsync(request, cancellation);
     }
 
-    public async ValueTask<TResponse> SendAsync<TRequest, TResponse>(TRequest request, CancellationToken cancellation = default)
+    public async Task<TResponse> SendAsync<TRequest, TResponse>(TRequest request, CancellationToken cancellation = default)
         where TRequest : struct, IOutgoingMethod where TResponse : struct, IIncomingMethod
     {
         this.ValidateState();
@@ -93,7 +93,7 @@ internal sealed class Channel : IChannelInternal
         return await waitTask;
     }
 
-    public ValueTask PublishAsync<TState>(
+    public Task PublishAsync<TState>(
         TState state, string exchange, string routingKey,
         IMessageProperties properties, Action<TState, IBufferWriter<byte>> payload,
         PublishFlags flags = PublishFlags.None, CancellationToken cancellation = default)
@@ -132,7 +132,7 @@ internal sealed class Channel : IChannelInternal
         return true;
     }
 
-    public async ValueTask<TMethod> WaitAsync<TMethod>(CancellationToken cancellation = default)
+    public async Task<TMethod> WaitAsync<TMethod>(CancellationToken cancellation = default)
         where TMethod : struct, IIncomingMethod
     {
         this.ValidateState();
@@ -145,13 +145,13 @@ internal sealed class Channel : IChannelInternal
         return result;
     }
 
-    public async ValueTask CloseAsync(Exception ex = null)
+    public async Task CloseAsync(Exception ex = null)
     {
         await this.SendAsync<CloseMethod, CloseOkMethod>(new CloseMethod((ushort) ReplyCode.Success, string.Empty, MethodId.Unknown));
         this.TryComplete(ex);
     }
 
-    public async ValueTask CloseAsync(ushort statusCode, string description, MethodId failedMethodId)
+    public async Task CloseAsync(ushort statusCode, string description, MethodId failedMethodId)
     {
         await this.SendAsync<CloseMethod, CloseOkMethod>(new CloseMethod(statusCode, description, failedMethodId));
         this.TryComplete(new ChannelException(statusCode, description, failedMethodId));

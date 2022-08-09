@@ -118,7 +118,7 @@ public class ConsumerBenchmarks
                         cs.Cancel();
                     }
 
-                    return new ValueTask<bool>(true);
+                    return true;
                 }));
 
         var consumeTask = consumer.ConsumeAsync(cs.Token);
@@ -147,7 +147,7 @@ public class ConsumerBenchmarks
                         cs.Cancel();
                     }
 
-                    return new ValueTask<bool>(true);
+                    return true;
                 }));
 
         var consumeTask = consumer.ConsumeAsync(cs.Token);

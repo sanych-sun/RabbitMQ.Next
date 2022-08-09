@@ -13,7 +13,7 @@ public class DeliveredMessageDelegateHandlerTests
     public void CanCallHandler()
     {
         var message = new DeliveredMessage();
-        var fn = Substitute.For<Func<DeliveredMessage, IContent, ValueTask<bool>>>();
+        var fn = Substitute.For<Func<DeliveredMessage, IContent, Task<bool>>>();
         var handler = new DeliveredMessageDelegateHandler(fn);
 
         handler.TryHandleAsync(message, Substitute.For<IContent>());
@@ -31,18 +31,18 @@ public class DeliveredMessageDelegateHandlerTests
     public void CanDispose()
     {
         var message = new DeliveredMessage();
-        var fn = Substitute.For<Func<DeliveredMessage, IContent, ValueTask<bool>>>();
+        var fn = Substitute.For<Func<DeliveredMessage, IContent, Task<bool>>>();
         var handler = new DeliveredMessageDelegateHandler(fn);
 
         handler.Dispose();
 
-        Assert.Throws<ObjectDisposedException>(() => handler.TryHandleAsync(message, Substitute.For<IContent>()));
+        Assert.ThrowsAsync<ObjectDisposedException>(() => handler.TryHandleAsync(message, Substitute.For<IContent>()));
     }
 
     [Fact]
     public void CanDisposeMultiple()
     {
-        var fn = Substitute.For<Func<DeliveredMessage, IContent, ValueTask<bool>>>();
+        var fn = Substitute.For<Func<DeliveredMessage, IContent, Task<bool>>>();
         var handler = new DeliveredMessageDelegateHandler(fn);
 
         handler.Dispose();

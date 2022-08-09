@@ -6,9 +6,9 @@ namespace RabbitMQ.Next.Publisher;
 
 internal class ReturnedMessageDelegateHandler : IReturnedMessageHandler
 {
-    private Func<ReturnedMessage, IContent, ValueTask<bool>> wrapped;
+    private Func<ReturnedMessage, IContent, Task<bool>> wrapped;
 
-    public ReturnedMessageDelegateHandler(Func<ReturnedMessage, IContent, ValueTask<bool>> handler)
+    public ReturnedMessageDelegateHandler(Func<ReturnedMessage, IContent, Task<bool>> handler)
     {
         if (handler == null)
         {
@@ -23,11 +23,11 @@ internal class ReturnedMessageDelegateHandler : IReturnedMessageHandler
         this.wrapped = null;
     }
 
-    public ValueTask<bool> TryHandleAsync(ReturnedMessage message, IContent content)
+    public Task<bool> TryHandleAsync(ReturnedMessage message, IContent content)
     {
         if (this.wrapped == null)
         {
-            return new ValueTask<bool>(false);
+            throw new ObjectDisposedException(nameof(ReturnedMessageDelegateHandler));
         }
 
         return this.wrapped(message, content);

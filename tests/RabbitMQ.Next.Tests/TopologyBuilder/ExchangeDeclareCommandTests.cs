@@ -158,7 +158,7 @@ public class ExchangeDeclareCommandTests
     {
         var channel = Substitute.For<IChannel>();
         channel.SendAsync<DeclareMethod, DeclareOkMethod>(default)
-            .ReturnsForAnyArgs(new ValueTask<DeclareOkMethod>(Task.FromException<DeclareOkMethod>(new ChannelException((ushort)replyCode, "error message", MethodId.ExchangeDeclare))));
+            .ReturnsForAnyArgs(Task.FromException<DeclareOkMethod>(new ChannelException((ushort)replyCode, "error message", MethodId.ExchangeDeclare)));
         var builder = new ExchangeDeclareCommand("exchange", ExchangeType.Direct);
 
         await Assert.ThrowsAsync(exceptionType,async ()=> await builder.ExecuteAsync(channel));

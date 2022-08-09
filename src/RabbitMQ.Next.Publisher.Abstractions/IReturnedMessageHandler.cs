@@ -6,5 +6,5 @@ namespace RabbitMQ.Next.Publisher;
 
 public interface IReturnedMessageHandler : IDisposable
 {
-    ValueTask<bool> TryHandleAsync(ReturnedMessage message, IContent content);
+    Task<bool> TryHandleAsync(ReturnedMessage message, IContent content);
 }

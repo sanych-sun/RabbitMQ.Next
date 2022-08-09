@@ -9,7 +9,7 @@ namespace RabbitMQ.Next;
 
 internal interface IConnectionInternal : IConnection
 {
-    ValueTask WriteToSocketAsync(MemoryBlock memory, CancellationToken cancellation = default);
+    Task WriteToSocketAsync(MemoryBlock memory, CancellationToken cancellation = default);
 
     ObjectPool<MemoryBlock> MemoryPool { get; }
         

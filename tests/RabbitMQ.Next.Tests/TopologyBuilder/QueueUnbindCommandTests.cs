@@ -104,7 +104,7 @@ public class QueueUnbindCommandTests
     {
         var channel = Substitute.For<IChannel>();
         channel.SendAsync<UnbindMethod, UnbindOkMethod>(default)
-            .ReturnsForAnyArgs(new ValueTask<UnbindOkMethod>(Task.FromException<UnbindOkMethod>(new ChannelException((ushort)replyCode, "error message", MethodId.QueueUnbind))));
+            .ReturnsForAnyArgs(Task.FromException<UnbindOkMethod>(new ChannelException((ushort)replyCode, "error message", MethodId.QueueUnbind)));
         var builder = new QueueUnbindCommand("queue", "exchange");
 
         await Assert.ThrowsAsync(exceptionType,async ()=> await builder.ExecuteAsync(channel));

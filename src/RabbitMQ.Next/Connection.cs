@@ -60,14 +60,14 @@ internal class Connection : IConnectionInternal
         
     public ISerializerFactory SerializerFactory { get; }
 
-    public ValueTask WriteToSocketAsync(MemoryBlock memory, CancellationToken cancellation = default)
+    public Task WriteToSocketAsync(MemoryBlock memory, CancellationToken cancellation = default)
     {
         if (this.socketSender.Writer.TryWrite(memory))
         {
-            return default;
+            return Task.CompletedTask;
         }
 
-        return this.socketSender.Writer.WriteAsync(memory, cancellation);
+        return this.socketSender.Writer.WriteAsync(memory, cancellation).AsTask();
     }
 
     public async Task<IChannel> OpenChannelAsync(CancellationToken cancellationToken = default)
@@ -143,7 +143,7 @@ internal class Connection : IConnectionInternal
         }
     }
 
-    private ValueTask WriteToSocketAsync(ReadOnlyMemory<byte> bytes)
+    private Task WriteToSocketAsync(ReadOnlyMemory<byte> bytes)
     {
         var memoryBlock = this.MemoryPool.Get();
         memoryBlock.Write(bytes.Span);

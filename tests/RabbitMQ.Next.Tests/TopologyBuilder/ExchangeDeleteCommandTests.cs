@@ -69,7 +69,7 @@ public class ExchangeDeleteCommandTests
     {
         var channel = Substitute.For<IChannel>();
         channel.SendAsync<DeleteMethod, DeleteOkMethod>(default)
-            .ReturnsForAnyArgs(new ValueTask<DeleteOkMethod>(Task.FromException<DeleteOkMethod>(new ChannelException((ushort)replyCode, "error message", MethodId.ExchangeDelete))));
+            .ReturnsForAnyArgs(Task.FromException<DeleteOkMethod>(new ChannelException((ushort)replyCode, "error message", MethodId.ExchangeDelete)));
         var builder = new ExchangeDeleteCommand("exchange");
 
         await Assert.ThrowsAsync(exceptionType,async ()=> await builder.ExecuteAsync(channel));

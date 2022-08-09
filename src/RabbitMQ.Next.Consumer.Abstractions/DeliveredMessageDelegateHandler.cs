@@ -6,9 +6,9 @@ namespace RabbitMQ.Next.Consumer;
 
 internal class DeliveredMessageDelegateHandler : IDeliveredMessageHandler
 {
-    private Func<DeliveredMessage, IContent, ValueTask<bool>> wrapped;
+    private Func<DeliveredMessage, IContent, Task<bool>> wrapped;
 
-    public DeliveredMessageDelegateHandler(Func<DeliveredMessage, IContent, ValueTask<bool>> handler)
+    public DeliveredMessageDelegateHandler(Func<DeliveredMessage, IContent, Task<bool>> handler)
     {
         if (handler == null)
         {
@@ -23,7 +23,7 @@ internal class DeliveredMessageDelegateHandler : IDeliveredMessageHandler
         this.wrapped = null;
     }
 
-    public ValueTask<bool> TryHandleAsync(DeliveredMessage message, IContent content)
+    public Task<bool> TryHandleAsync(DeliveredMessage message, IContent content)
     {
         if (this.wrapped == null)
         {

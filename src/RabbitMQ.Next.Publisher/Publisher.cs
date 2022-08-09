@@ -48,11 +48,11 @@ internal sealed class Publisher : IPublisher
         this.returnedMessageHandlers = returnedMessageHandlers;
     }
 
-    public ValueTask DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         if (this.isDisposed)
         {
-            return default;
+            return;
         }
 
         if (this.returnedMessageHandlers != null)
@@ -69,13 +69,11 @@ internal sealed class Publisher : IPublisher
 
         if (ch != null)
         {
-            return ch.CloseAsync();
+            await ch.CloseAsync();
         }
-
-        return default;
     }
 
-    public ValueTask PublishAsync<TContent>(TContent content, Action<IMessageBuilder> propertiesBuilder = null, PublishFlags flags = PublishFlags.None, CancellationToken cancellation = default)
+    public Task PublishAsync<TContent>(TContent content, Action<IMessageBuilder> propertiesBuilder = null, PublishFlags flags = PublishFlags.None, CancellationToken cancellation = default)
     {
         var properties = this.messagePropsPool.Get();
         this.ApplyInitializers(content, properties);
@@ -84,7 +82,7 @@ internal sealed class Publisher : IPublisher
         return this.PublishAsyncInternal(content, properties, flags, cancellation);
     }
 
-    public ValueTask PublishAsync<TState, TContent>(TState state, TContent content, Action<TState, IMessageBuilder> propertiesBuilder = null, PublishFlags flags = PublishFlags.None, CancellationToken cancellation = default)
+    public Task PublishAsync<TState, TContent>(TState state, TContent content, Action<TState, IMessageBuilder> propertiesBuilder = null, PublishFlags flags = PublishFlags.None, CancellationToken cancellation = default)
     {
         var properties = this.messagePropsPool.Get();
         this.ApplyInitializers(content, properties);
@@ -94,7 +92,7 @@ internal sealed class Publisher : IPublisher
     }
 
 
-    private async ValueTask PublishAsyncInternal<TContent>(TContent content, MessageBuilder message, PublishFlags flags, CancellationToken cancellation)
+    private async Task PublishAsyncInternal<TContent>(TContent content, MessageBuilder message, PublishFlags flags, CancellationToken cancellation)
     {
         this.CheckDisposed();
         var serializer = this.serializerFactory.Get(message.ContentType);

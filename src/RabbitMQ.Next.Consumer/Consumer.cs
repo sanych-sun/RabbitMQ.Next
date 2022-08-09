@@ -45,8 +45,8 @@ internal class Consumer : IConsumer
         this.onPoisonMessage = onPoisonMessage;
     }
 
-    public ValueTask DisposeAsync()
-        => this.CancelConsumeAsync();
+    public async ValueTask DisposeAsync()
+        => await this.CancelConsumeAsync();
 
     public async Task ConsumeAsync(CancellationToken cancellation)
     {
@@ -60,7 +60,7 @@ internal class Consumer : IConsumer
         await this.CancelConsumeAsync();
     }
 
-    private async ValueTask CancelConsumeAsync()
+    private async Task CancelConsumeAsync()
     {
         if (this.channel == null || this.channel.Completion.IsCompleted)
         {
@@ -84,7 +84,7 @@ internal class Consumer : IConsumer
         this.channel = null;
     }
 
-    private async ValueTask InitConsumerAsync()
+    private async Task InitConsumerAsync()
     {
         this.channel = await this.connection.OpenChannelAsync();
         this.acknowledgement = this.acknowledgementFactory(this.channel);

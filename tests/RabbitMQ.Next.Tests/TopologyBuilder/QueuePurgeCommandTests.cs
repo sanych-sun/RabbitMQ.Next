@@ -42,7 +42,7 @@ public class QueuePurgeCommandTests
     {
         var channel = Substitute.For<IChannel>();
         channel.SendAsync<PurgeMethod, PurgeOkMethod>(default)
-            .ReturnsForAnyArgs(new ValueTask<PurgeOkMethod>(Task.FromException<PurgeOkMethod>(new ChannelException((ushort)replyCode, "error message", MethodId.ExchangeDelete))));
+            .ReturnsForAnyArgs(Task.FromException<PurgeOkMethod>(new ChannelException((ushort)replyCode, "error message", MethodId.ExchangeDelete)));
         var builder = new QueuePurgeCommand("queue");
 
         await Assert.ThrowsAsync(exceptionType,async ()=> await builder.ExecuteAsync(channel));

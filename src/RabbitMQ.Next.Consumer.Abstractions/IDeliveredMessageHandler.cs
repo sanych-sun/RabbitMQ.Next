@@ -6,5 +6,5 @@ namespace RabbitMQ.Next.Consumer;
 
 public interface IDeliveredMessageHandler : IDisposable
 {
-    ValueTask<bool> TryHandleAsync(DeliveredMessage message, IContent content);
+    Task<bool> TryHandleAsync(DeliveredMessage message, IContent content);
 }

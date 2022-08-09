@@ -104,7 +104,7 @@ public class ExchangeBindCommandTests
     {
         var channel = Substitute.For<IChannel>();
         channel.SendAsync<BindMethod, BindOkMethod>(default)
-            .ReturnsForAnyArgs(new ValueTask<BindOkMethod>(Task.FromException<BindOkMethod>(new ChannelException((ushort)replyCode, "error message", MethodId.ExchangeBind))));
+            .ReturnsForAnyArgs(Task.FromException<BindOkMethod>(new ChannelException((ushort)replyCode, "error message", MethodId.ExchangeBind)));
         var builder = new ExchangeBindCommand("destination", "source");
 
         await Assert.ThrowsAsync(exceptionType,async ()=> await builder.ExecuteAsync(channel));
