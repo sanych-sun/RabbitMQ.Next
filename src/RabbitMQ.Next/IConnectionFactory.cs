@@ -7,5 +7,5 @@ namespace RabbitMQ.Next;
 
 internal interface IConnectionFactory
 {
-    Task<IConnection> ConnectAsync(ConnectionSettings settings, IMethodRegistry registry, ISerializerFactory serializerFactory, CancellationToken cancellation);
+    Task<IConnection> ConnectAsync(ConnectionSettings settings, IMethodRegistry registry, CancellationToken cancellation);
 }

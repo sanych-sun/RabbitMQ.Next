@@ -15,7 +15,6 @@ public class ConnectionBuilder : IConnectionBuilder
     private const int DefaultMaxFrameSize = 131_072; // 128kB
 
     private readonly IConnectionFactory factory;
-    private readonly SerializerFactory serializerFactory = new();
     private readonly IMethodRegistryBuilder methodRegistry = new MethodRegistryBuilder();
     private readonly List<Endpoint> endpoints = new();
     private readonly Dictionary<string, object> clientProperties = new();
@@ -68,12 +67,6 @@ public class ConnectionBuilder : IConnectionBuilder
         return this;
     }
 
-    public IConnectionBuilder ConfigureSerialization(Action<ISerializationBuilder> builder)
-    {
-        builder?.Invoke(this.serializerFactory);
-        return this;
-    }
-
     public  IConnectionBuilder ClientProperty(string key, object value)
     {
         this.clientProperties[key] = value;
@@ -109,6 +102,6 @@ public class ConnectionBuilder : IConnectionBuilder
             MaxFrameSize = this.maxFrameSize
         };
 
-        return this.factory.ConnectAsync(settings, this.methodRegistry.Build(), this.serializerFactory, cancellation);
+        return this.factory.ConnectAsync(settings, this.methodRegistry.Build(), cancellation);
     }
 }

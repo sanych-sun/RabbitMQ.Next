@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using RabbitMQ.Next.Messaging;
 
 namespace RabbitMQ.Next.Consumer;
 
@@ -15,7 +14,7 @@ public static class ConsumerBuilderExtensions
         return builder;
     }
 
-    public static IConsumerBuilder MessageHandler(this IConsumerBuilder builder, Func<DeliveredMessage, IContent, Task<bool>> handler)
+    public static IConsumerBuilder MessageHandler(this IConsumerBuilder builder, Func<IDeliveredMessage, Task<bool>> handler)
     {
         var messageHandler = new DeliveredMessageDelegateHandler(handler);
         builder.MessageHandler(messageHandler);
@@ -23,10 +22,9 @@ public static class ConsumerBuilderExtensions
         return builder;
     }
     
-    public static IConsumerBuilder MessageHandler(this IConsumerBuilder builder, Func<DeliveredMessage, IContent, bool> handler)
+    public static IConsumerBuilder MessageHandler(this IConsumerBuilder builder, Func<IDeliveredMessage, bool> handler)
     {
-        var messageHandler = new DeliveredMessageDelegateHandler(
-            (message, content) => handler(message, content) ? PositiveTask : NegativeTask);
+        var messageHandler = new DeliveredMessageDelegateHandler(message => handler(message) ? PositiveTask : NegativeTask);
         builder.MessageHandler(messageHandler);
 
         return builder;

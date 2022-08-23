@@ -3,12 +3,15 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.ObjectPool;
 using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Channels;
+using RabbitMQ.Next.Methods;
 using RabbitMQ.Next.Transport.Messaging;
 
 namespace RabbitMQ.Next;
 
 internal interface IConnectionInternal : IConnection
 {
+    IMethodRegistry MethodRegistry { get; }
+    
     Task WriteToSocketAsync(MemoryBlock memory, CancellationToken cancellation = default);
 
     ObjectPool<MemoryBlock> MemoryPool { get; }

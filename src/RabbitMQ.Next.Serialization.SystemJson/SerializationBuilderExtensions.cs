@@ -1,18 +1,20 @@
 using System;
+using System.Linq;
 
 namespace RabbitMQ.Next.Serialization.SystemJson;
 
 public static class SerializationBuilderExtensions
 {
-    public static ISerializationBuilder UseSystemJsonSerializer(this ISerializationBuilder builder, Action<ISystemJsonSerializerBuilder> registration = null)
+    public static TBuilder UseSystemJsonSerializer<TBuilder>(this TBuilder builder, Action<ISystemJsonSerializerBuilder> registration = null)
+        where TBuilder : ISerializationBuilder<TBuilder>
     {
         var innerBuilder = new SystemJsonSerializerBuilder();
         registration?.Invoke(innerBuilder);
 
         var serializer = new SystemJsonSerializer(innerBuilder.Options);
-        for (var i = 0; i < innerBuilder.ContentTypes.Count; i++)
+        if (innerBuilder.ContentTypes.Count > 0)
         {
-            builder.UseSerializer(serializer, innerBuilder.ContentTypes[i]);
+            builder.UseSerializer(serializer, message => innerBuilder.ContentTypes.Contains(message.ContentType, StringComparer.OrdinalIgnoreCase));
         }
 
         if (innerBuilder.IsDefault)

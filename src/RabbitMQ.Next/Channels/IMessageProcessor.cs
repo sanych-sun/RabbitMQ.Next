@@ -11,5 +11,5 @@ internal interface IMessageProcessor
     IDisposable WithMessageHandler<TMethod>(IMessageHandler<TMethod> handler)
         where TMethod : struct, IIncomingMethod;
         
-    bool ProcessMessage(ReadOnlySpan<byte> methodArgs, ContentAccessor content);
+    bool ProcessMessage(ReadOnlySpan<byte> methodArgs, PayloadAccessor payload);
 }

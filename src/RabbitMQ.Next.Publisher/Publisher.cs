@@ -30,13 +30,14 @@ internal sealed class Publisher : IPublisher
     public Publisher(
         IConnection connection,
         ObjectPool<MessageBuilder> messagePropsPool,
+        ISerializerFactory serializerFactory,
         string exchange,
         bool publisherConfirms,
         IReadOnlyList<IMessageInitializer> transformers,
         IReadOnlyList<IReturnedMessageHandler> returnedMessageHandlers)
     {
         this.connection = connection;
-        this.serializerFactory = connection.SerializerFactory;
+        this.serializerFactory = serializerFactory;
         if (publisherConfirms)
         {
             this.confirms = new ConfirmMessageHandler();
@@ -95,7 +96,7 @@ internal sealed class Publisher : IPublisher
     private async Task PublishAsyncInternal<TContent>(TContent content, MessageBuilder message, PublishFlags flags, CancellationToken cancellation)
     {
         this.CheckDisposed();
-        var serializer = this.serializerFactory.Get(message.ContentType);
+        var serializer = this.serializerFactory.Get(message);
 
         try
         {
@@ -170,7 +171,7 @@ internal sealed class Publisher : IPublisher
             this.lastDeliveryTag = 0;
 
             this.channel = await this.connection.OpenChannelAsync(cancellationToken);
-            this.channel.WithMessageHandler(new ReturnMessageHandler(this.returnedMessageHandlers));
+            this.channel.WithMessageHandler(new ReturnMessageHandler(this.returnedMessageHandlers, this.serializerFactory));
             if (this.confirms != null)
             {
                 this.channel.WithMessageHandler<AckMethod>(this.confirms);

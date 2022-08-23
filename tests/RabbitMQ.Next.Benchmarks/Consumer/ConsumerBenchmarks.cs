@@ -25,7 +25,6 @@ public class ConsumerBenchmarks
     {
         this.connection = await ConnectionBuilder.Default
             .Endpoint(Helper.RabbitMqConnection)
-            .ConfigureSerialization(builder => builder.UsePlainTextSerializer())
             .ConnectAsync();
 
         ConnectionFactory factory = new ConnectionFactory();
@@ -36,7 +35,7 @@ public class ConsumerBenchmarks
         await this.connection.QueueBindAsync(this.queueName, "amq.fanout");
         await this.connection.QueuePurgeAsync(this.queueName);
             
-        var publisher = this.connection.Publisher("amq.fanout");
+        var publisher = this.connection.Publisher("amq.fanout", builder => builder.UsePlainTextSerializer());
             
         var payload = Helper.BuildDummyText(10240);
             
@@ -108,10 +107,10 @@ public class ConsumerBenchmarks
             b => b
                 .BindToQueue(this.queueName)
                 .PrefetchCount(10)
-                .MessageHandler((message, content) =>
+                .MessageHandler(message =>
                 {
-                    var data = content.Content<string>();
-                    var messageId = content.MessageId;
+                    var data = message.Content<string>();
+                    var messageId = message.Properties.MessageId;
                     num++;
                     if (num >= this.messagesCount)
                     {
@@ -137,10 +136,10 @@ public class ConsumerBenchmarks
                 .BindToQueue(this.queueName)
                 .PrefetchCount(10)
                 .ConcurrencyLevel(5)
-                .MessageHandler((message, content) =>
+                .MessageHandler(message =>
                 {
-                    var data = content.Content<string>();
-                    var messageId = content.MessageId;
+                    var data = message.Content<string>();
+                    var messageId = message.Properties.MessageId;
                     num++;
                     if (num >= this.messagesCount)
                     {

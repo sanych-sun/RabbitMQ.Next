@@ -1,26 +1,24 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using Microsoft.Extensions.ObjectPool;
 using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Messaging;
-using RabbitMQ.Next.Serialization;
 
 namespace RabbitMQ.Next.Transport.Messaging;
 
-internal class ContentAccessor: IContent
+internal class PayloadAccessor: IPayload
 {
     private readonly ObjectPool<LazyMessageProperties> propertiesPool;
     private readonly ObjectPool<MemoryBlock> memoryPool;
-    private readonly ISerializerFactory serializerFactory;
     private LazyMessageProperties properties;
     private MemoryBlock header;
     private MemoryBlock body;
 
-    public ContentAccessor(ObjectPool<LazyMessageProperties> propertiesPool, ObjectPool<MemoryBlock> memoryPool, ISerializerFactory serializerFactory, MemoryBlock header, MemoryBlock body)
+    public PayloadAccessor(ObjectPool<LazyMessageProperties> propertiesPool, ObjectPool<MemoryBlock> memoryPool, MemoryBlock header, MemoryBlock body)
     {
         this.propertiesPool = propertiesPool;
         this.memoryPool = memoryPool;
-        this.serializerFactory = serializerFactory;
         this.header = header;
         this.body = body;
             
@@ -49,20 +47,14 @@ internal class ContentAccessor: IContent
         }
     }
 
-    public T Content<T>()
+    public ReadOnlySequence<byte> GetBody()
     {
         if (this.body == null)
         {
-            throw new ObjectDisposedException(nameof(ContentAccessor));
-        }
-            
-        var serializer = this.serializerFactory.Get(this.properties.ContentType);
-        if (serializer == null)
-        {
-            throw new NotSupportedException();
+            throw new ObjectDisposedException(nameof(PayloadAccessor));
         }
 
-        return serializer.Deserialize<T>(this.body.ToSequence());
+        return this.body.ToSequence();
     }
 
     public MessageFlags Flags => this.Properties.Flags;
@@ -86,7 +78,7 @@ internal class ContentAccessor: IContent
         {
             if (this.properties == null)
             {
-                throw new ObjectDisposedException(nameof(ContentAccessor));
+                throw new ObjectDisposedException(nameof(PayloadAccessor));
             }
 
             return this.properties;

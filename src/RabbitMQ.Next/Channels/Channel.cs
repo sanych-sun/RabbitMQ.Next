@@ -10,7 +10,6 @@ using RabbitMQ.Next.Exceptions;
 using RabbitMQ.Next.Messaging;
 using RabbitMQ.Next.Methods;
 using RabbitMQ.Next.Buffers;
-using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Messaging;
 using RabbitMQ.Next.Transport.Methods.Channel;
@@ -24,7 +23,6 @@ internal sealed class Channel : IChannelInternal
     private readonly ObjectPool<LazyMessageProperties> messagePropertiesPool;
     private readonly MethodSender methodSender;
     private readonly TaskCompletionSource<bool> channelCompletion;
-    private readonly ISerializerFactory serializerFactory;
     private readonly Dictionary<uint, IMessageProcessor> methodProcessors = new();
 
     public Channel(IConnectionInternal connection, ushort channelNumber, int frameMaxSize)
@@ -33,7 +31,6 @@ internal sealed class Channel : IChannelInternal
         this.registry = connection.MethodRegistry;
         this.memoryPool = connection.MemoryPool;
         this.messagePropertiesPool = connection.MessagePropertiesPool;
-        this.serializerFactory = connection.SerializerFactory;
         this.methodSender = new MethodSender(this.ChannelNumber, connection, frameMaxSize);
 
         this.channelCompletion = new TaskCompletionSource<bool>();
@@ -173,7 +170,7 @@ internal sealed class Channel : IChannelInternal
                 var methodId = (MethodId) method;
                         
                 // 3. Get content if exists
-                ContentAccessor content = null;
+                PayloadAccessor payload = null;
                    
                 if (this.registry.HasContent(methodId))
                 {
@@ -210,19 +207,19 @@ internal sealed class Channel : IChannelInternal
                         receivedContent += frame.Payload.Data.Length;
                     }
 
-                    content = new ContentAccessor(this.messagePropertiesPool, this.memoryPool, this.serializerFactory, contentHeader.Payload, head);
+                    payload = new PayloadAccessor(this.messagePropertiesPool, this.memoryPool, contentHeader.Payload, head);
                 }
 
                 var handled = false;
                 if (this.methodProcessors.TryGetValue((uint)methodId, out var processor))
                 {
-                    handled = processor.ProcessMessage(methodFrame.Payload.Data.Span[sizeof(uint)..], content);
+                    handled = processor.ProcessMessage(methodFrame.Payload.Data.Span[sizeof(uint)..], payload);
                 }
 
                 // TODO: should throw on unhandled methods?
-                if (!handled && content != null)
+                if (!handled && payload != null)
                 {
-                    ((IDisposable)content).Dispose();
+                    ((IDisposable)payload).Dispose();
                 }
                     
                 this.memoryPool.Return(methodFrame.Payload);

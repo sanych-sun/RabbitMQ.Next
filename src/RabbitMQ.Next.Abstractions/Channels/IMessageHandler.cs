@@ -7,7 +7,7 @@ namespace RabbitMQ.Next.Channels;
 public interface IMessageHandler<in TMethod>
     where TMethod: struct, IIncomingMethod
 {
-    bool Handle(TMethod method, IContent content);
-        
+    bool Handle(TMethod method, IPayload payload);
+    
     void Release(Exception ex = null);
 }

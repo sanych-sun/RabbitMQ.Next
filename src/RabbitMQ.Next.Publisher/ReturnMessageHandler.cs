@@ -4,6 +4,7 @@ using System.Threading.Channels;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Channels;
 using RabbitMQ.Next.Messaging;
+using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Transport.Methods.Basic;
 
 namespace RabbitMQ.Next.Publisher;
@@ -11,12 +12,14 @@ namespace RabbitMQ.Next.Publisher;
 internal sealed class ReturnMessageHandler : IMessageHandler<ReturnMethod>
 {
     private readonly IReadOnlyList<IReturnedMessageHandler> messageHandlers;
-    private readonly Channel<(ReturnedMessage message, IContent content)> returnChannel;
+    private readonly ISerializerFactory serializerFactory;
+    private readonly Channel<ReturnedMessage> returnChannel;
 
-    public ReturnMessageHandler(IReadOnlyList<IReturnedMessageHandler> messageHandlers)
+    public ReturnMessageHandler(IReadOnlyList<IReturnedMessageHandler> messageHandlers, ISerializerFactory serializerFactory)
     {
         this.messageHandlers = messageHandlers;
-        this.returnChannel = Channel.CreateUnbounded<(ReturnedMessage message, IContent content)>(new UnboundedChannelOptions
+        this.serializerFactory = serializerFactory;
+        this.returnChannel = Channel.CreateUnbounded<ReturnedMessage>(new UnboundedChannelOptions
         {
             SingleReader = true,
             SingleWriter = true,
@@ -26,11 +29,9 @@ internal sealed class ReturnMessageHandler : IMessageHandler<ReturnMethod>
         Task.Factory.StartNew(this.ProcessReturnedMessagesAsync, TaskCreationOptions.LongRunning);
     }
 
-    public bool Handle(ReturnMethod method, IContent content)
+    public bool Handle(ReturnMethod method, IPayload payload)
     {
-        this.returnChannel.Writer.TryWrite((
-            new ReturnedMessage(method.Exchange, method.RoutingKey, method.ReplyCode, method.ReplyText),
-            content));
+        this.returnChannel.Writer.TryWrite(new ReturnedMessage(this.serializerFactory, method, payload));
         return true;
     }
 
@@ -44,21 +45,22 @@ internal sealed class ReturnMessageHandler : IMessageHandler<ReturnMethod>
         var reader = this.returnChannel.Reader;
         while (await reader.WaitToReadAsync())
         {
-            var returned = await reader.ReadAsync();
-
-            try
+            while (reader.TryRead(out var returned))
             {
-                for (var i = 0; i < this.messageHandlers.Count; i++)
+                try
                 {
-                    if (await this.messageHandlers[i].TryHandleAsync(returned.message, returned.content))
+                    for (var i = 0; i < this.messageHandlers.Count; i++)
                     {
-                        break;
+                        if (await this.messageHandlers[i].TryHandleAsync(returned))
+                        {
+                            break;
+                        }
                     }
                 }
-            }
-            finally
-            {
-                returned.content.Dispose();
+                finally
+                {
+                    returned.Dispose();
+                }
             }
         }
     }

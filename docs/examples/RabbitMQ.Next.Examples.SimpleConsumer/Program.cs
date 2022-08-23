@@ -14,7 +14,6 @@ class Program
 
         var connection = await ConnectionBuilder.Default
             .Endpoint("amqp://test:pass@localhost:5672/")
-            .ConfigureSerialization(builder => builder.UsePlainTextSerializer())
             .ConnectAsync();
 
         Console.WriteLine("Connection opened");
@@ -23,9 +22,10 @@ class Program
             builder => builder
                 .BindToQueue("test-queue")
                 .PrefetchCount(10)
-                .MessageHandler((message, content) =>
+                .UsePlainTextSerializer()
+                .MessageHandler(message =>
                 {
-                    Console.WriteLine($"[{DateTimeOffset.Now.TimeOfDay}] Message received via '{message.Exchange}' exchange: {content.Content<string>()}");
+                    Console.WriteLine($"[{DateTimeOffset.Now.TimeOfDay}] Message received via '{message.Exchange}' exchange: {message.Content<string>()}");
                     return true;
                 }));
 

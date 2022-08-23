@@ -1,37 +1,39 @@
 using System;
 using System.Collections.Generic;
+using RabbitMQ.Next.Messaging;
 
 namespace RabbitMQ.Next.Serialization;
 
-internal class SerializerFactory : ISerializerFactory, ISerializationBuilder
+public class SerializerFactory : ISerializerFactory
 {
-    private readonly Dictionary<string, ISerializer> serializers = new();
+    private readonly List<(ISerializer serializer, Func<IMessageProperties, bool> predicate)> serializers = new();
     private ISerializer defaultSerializer;
 
-    public ISerializer Get(string contentType)
+    public ISerializer Get(IMessageProperties message)
     {
-        if (string.IsNullOrEmpty(contentType))
+        if (message == null)
         {
-            return this.defaultSerializer;
+            throw new ArgumentNullException(nameof(message));
         }
-            
-        if (this.serializers.TryGetValue(contentType.ToLowerInvariant(), out var serializer))
+        
+        for(var i = 0; i < this.serializers.Count; i++)
         {
-            return serializer;
+            if (this.serializers[i].predicate(message))
+            {
+                return this.serializers[i].serializer;    
+            }
         }
 
-        return this.defaultSerializer ?? throw new NotSupportedException($"Cannot resolve serializer for '{contentType}' content type.");
+        return this.defaultSerializer ?? throw new NotSupportedException($"Cannot resolve serializer for the message.");
     }
 
-    public ISerializationBuilder DefaultSerializer(ISerializer serializer)
+    public void DefaultSerializer(ISerializer serializer)
     {
         this.defaultSerializer = serializer;
-        return this;
     }
 
-    public ISerializationBuilder UseSerializer(ISerializer serializer, string contentType)
+    public void UseSerializer(ISerializer serializer, Func<IMessageProperties, bool> predicate)
     {
-        this.serializers[contentType.ToLowerInvariant()] = serializer;
-        return this;
+        this.serializers.Add((serializer, predicate));
     }
 }

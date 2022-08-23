@@ -8,7 +8,6 @@ using RabbitMQ.Next.Exceptions;
 using RabbitMQ.Next.Methods;
 using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Channels;
-using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Sockets;
 using RabbitMQ.Next.Tasks;
 using RabbitMQ.Next.Transport;
@@ -28,11 +27,10 @@ internal class Connection : IConnectionInternal
     private CancellationTokenSource socketIoCancellation;
     private IChannelInternal connectionChannel;
 
-    public Connection(ConnectionSettings settings, IMethodRegistry methodRegistry, ObjectPool<MemoryBlock> memoryPool, ObjectPool<FrameBuilder> frameBuilderPool, ISerializerFactory serializerFactory)
+    public Connection(ConnectionSettings settings, IMethodRegistry methodRegistry, ObjectPool<MemoryBlock> memoryPool, ObjectPool<FrameBuilder> frameBuilderPool)
     {
         this.connectionDetails = new ConnectionDetails(settings);
         this.MethodRegistry = methodRegistry;
-        this.SerializerFactory = serializerFactory;
         this.MessagePropertiesPool = new DefaultObjectPool<LazyMessageProperties>(new LazyMessagePropertiesPolicy());
         this.socketSender = System.Threading.Channels.Channel.CreateBounded<MemoryBlock>(new BoundedChannelOptions(100)
         {
@@ -57,8 +55,6 @@ internal class Connection : IConnectionInternal
     public ObjectPool<LazyMessageProperties> MessagePropertiesPool { get; }
 
     public ObjectPool<FrameBuilder> FrameBuilderPool { get; }
-        
-    public ISerializerFactory SerializerFactory { get; }
 
     public Task WriteToSocketAsync(MemoryBlock memory, CancellationToken cancellation = default)
     {

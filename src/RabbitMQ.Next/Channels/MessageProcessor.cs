@@ -29,7 +29,7 @@ internal class MessageProcessor<TMethod> : IMessageProcessor
         return new HandlerDisposer(this.handlers, typed);
     }
 
-    public bool ProcessMessage(ReadOnlySpan<byte> methodArgs, ContentAccessor content)
+    public bool ProcessMessage(ReadOnlySpan<byte> methodArgs, PayloadAccessor payload)
     {
         if (this.handlers.Count == 0)
         {
@@ -40,7 +40,7 @@ internal class MessageProcessor<TMethod> : IMessageProcessor
 
         for (var i = 0; i < this.handlers.Count; i++)
         {
-            var handled = this.handlers[i].Handle(args, content);
+            var handled = this.handlers[i].Handle(args, payload);
             if (handled)
             {
                 return true;

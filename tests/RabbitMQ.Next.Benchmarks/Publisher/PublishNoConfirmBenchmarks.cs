@@ -20,7 +20,6 @@ public class PublishNoConfirmBenchmarks
     {
         this.connection = await ConnectionBuilder.Default
             .Endpoint(Helper.RabbitMqConnection)
-            .ConfigureSerialization(builder => builder.UsePlainTextSerializer())
             .ConnectAsync();
 
         ConnectionFactory factory = new ConnectionFactory();
@@ -52,6 +51,7 @@ public class PublishNoConfirmBenchmarks
     {
         var publisher = this.connection.Publisher("amq.topic",
             builder => builder
+                .UsePlainTextSerializer()
                 .NoConfirm()
         );
 
@@ -79,6 +79,7 @@ public class PublishNoConfirmBenchmarks
     {
         var publisher = this.connection.Publisher("amq.topic",
             builder => builder
+                .UsePlainTextSerializer()
                 .NoConfirm());
 
         for (int i = 0; i < parameters.Messages.Count; i++)

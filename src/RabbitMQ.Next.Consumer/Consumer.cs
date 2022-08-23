@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Channels;
+using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Tasks;
 using RabbitMQ.Next.Transport.Methods.Basic;
 
@@ -12,6 +13,7 @@ internal class Consumer : IConsumer
 {
     private readonly IConnection connection;
     private readonly Func<IChannel, IAcknowledgement> acknowledgementFactory;
+    private readonly ISerializerFactory serializerFactory;
     private readonly IReadOnlyList<IDeliveredMessageHandler> handlers;
     private readonly IReadOnlyList<QueueConsumerBuilder> queues;
     private readonly uint prefetchSize;
@@ -26,6 +28,7 @@ internal class Consumer : IConsumer
     public Consumer(
         IConnection connection,
         Func<IChannel, IAcknowledgement> acknowledgementFactory,
+        ISerializerFactory serializerFactory,
         IReadOnlyList<IDeliveredMessageHandler> handlers,
         IReadOnlyList<QueueConsumerBuilder> queues,
         uint prefetchSize,
@@ -36,6 +39,7 @@ internal class Consumer : IConsumer
     {
         this.connection = connection;
         this.acknowledgementFactory = acknowledgementFactory;
+        this.serializerFactory = serializerFactory;
         this.handlers = handlers;
         this.queues = queues;
         this.prefetchSize = prefetchSize;
@@ -89,7 +93,7 @@ internal class Consumer : IConsumer
         this.channel = await this.connection.OpenChannelAsync();
         this.acknowledgement = this.acknowledgementFactory(this.channel);
 
-        var deliverHandler = new DeliverMessageHandler(this.acknowledgement, this.handlers, this.onUnprocessedMessage, this.onPoisonMessage, this.concurrencyLevel);
+        var deliverHandler = new DeliverMessageHandler(this.acknowledgement, this.handlers, this.serializerFactory, this.onUnprocessedMessage, this.onPoisonMessage, this.concurrencyLevel);
         this.channel.WithMessageHandler(deliverHandler);
 
         await this.channel.SendAsync<QosMethod, QosOkMethod>(new QosMethod(this.prefetchSize, this.prefetchCount, false));

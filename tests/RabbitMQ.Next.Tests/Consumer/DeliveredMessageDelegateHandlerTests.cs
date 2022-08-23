@@ -2,7 +2,6 @@ using System;
 using System.Threading.Tasks;
 using NSubstitute;
 using RabbitMQ.Next.Consumer;
-using RabbitMQ.Next.Messaging;
 using Xunit;
 
 namespace RabbitMQ.Next.Tests.Consumer;
@@ -12,13 +11,13 @@ public class DeliveredMessageDelegateHandlerTests
     [Fact]
     public void CanCallHandler()
     {
-        var message = new DeliveredMessage();
-        var fn = Substitute.For<Func<DeliveredMessage, IContent, Task<bool>>>();
+        var message = Substitute.For<IDeliveredMessage>();
+        var fn = Substitute.For<Func<IDeliveredMessage, Task<bool>>>();
         var handler = new DeliveredMessageDelegateHandler(fn);
 
-        handler.TryHandleAsync(message, Substitute.For<IContent>());
+        handler.TryHandleAsync(message);
 
-        fn.Received()(Arg.Any<DeliveredMessage>(), Arg.Any<IContent>());
+        fn.Received()(Arg.Any<IDeliveredMessage>());
     }
 
     [Fact]
@@ -30,19 +29,19 @@ public class DeliveredMessageDelegateHandlerTests
     [Fact]
     public void CanDispose()
     {
-        var message = new DeliveredMessage();
-        var fn = Substitute.For<Func<DeliveredMessage, IContent, Task<bool>>>();
+        var message = Substitute.For<IDeliveredMessage>();
+        var fn = Substitute.For<Func<IDeliveredMessage, Task<bool>>>();
         var handler = new DeliveredMessageDelegateHandler(fn);
 
         handler.Dispose();
 
-        Assert.ThrowsAsync<ObjectDisposedException>(() => handler.TryHandleAsync(message, Substitute.For<IContent>()));
+        Assert.ThrowsAsync<ObjectDisposedException>(() => handler.TryHandleAsync(message));
     }
 
     [Fact]
     public void CanDisposeMultiple()
     {
-        var fn = Substitute.For<Func<DeliveredMessage, IContent, Task<bool>>>();
+        var fn = Substitute.For<Func<IDeliveredMessage, Task<bool>>>();
         var handler = new DeliveredMessageDelegateHandler(fn);
 
         handler.Dispose();

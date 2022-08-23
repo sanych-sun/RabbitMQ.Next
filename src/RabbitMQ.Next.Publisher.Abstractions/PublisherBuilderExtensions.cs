@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using RabbitMQ.Next.Messaging;
 
 namespace RabbitMQ.Next.Publisher;
 
@@ -9,7 +8,7 @@ public static class PublisherBuilderExtensions
     private static readonly Task<bool> PositiveTask = Task.FromResult(true);
     private static readonly Task<bool> NegativeTask = Task.FromResult(false);
     
-    public static IPublisherBuilder AddReturnedMessageHandler(this IPublisherBuilder builder, Func<ReturnedMessage, IContent, Task<bool>> handler)
+    public static IPublisherBuilder AddReturnedMessageHandler(this IPublisherBuilder builder, Func<IReturnedMessage, Task<bool>> handler)
     {
         var messageHandler = new ReturnedMessageDelegateHandler(handler);
         builder.AddReturnedMessageHandler(messageHandler);
@@ -17,10 +16,10 @@ public static class PublisherBuilderExtensions
         return builder;
     }
     
-    public static IPublisherBuilder AddReturnedMessageHandler(this IPublisherBuilder builder, Func<ReturnedMessage, IContent, bool> handler)
+    public static IPublisherBuilder AddReturnedMessageHandler(this IPublisherBuilder builder, Func<IReturnedMessage, bool> handler)
     {
         var messageHandler = new ReturnedMessageDelegateHandler(
-            (message, content) => handler(message, content) ? PositiveTask: NegativeTask);
+            message => handler(message) ? PositiveTask: NegativeTask);
         builder.AddReturnedMessageHandler(messageHandler);
 
         return builder;

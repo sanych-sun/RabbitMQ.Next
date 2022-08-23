@@ -12,7 +12,7 @@ public class PublisherBuilderExtensionsTests
     {
         var builder = Substitute.For<IPublisherBuilder>();
 
-        builder.AddReturnedMessageHandler((message, content) => Task.FromResult(false));
+        builder.AddReturnedMessageHandler(message => Task.FromResult(false));
 
         builder.Received().AddReturnedMessageHandler(Arg.Any<IReturnedMessageHandler>());
     }

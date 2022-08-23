@@ -19,9 +19,14 @@ public static class ConnectionExtensions
             new MessageBuilderPoolPolicy(),
             10);
 
-        var publisher = new Publisher(connection, messagePropsPool, exchange,
+        var publisher = new Publisher(
+            connection,
+            messagePropsPool,
+            publisherBuilder.SerializerFactory,
+            exchange,
             publisherBuilder.PublisherConfirms, 
-            publisherBuilder.Initializers, publisherBuilder.ReturnedMessageHandlers);
+            publisherBuilder.Initializers,
+            publisherBuilder.ReturnedMessageHandlers);
 
         return publisher;
     }

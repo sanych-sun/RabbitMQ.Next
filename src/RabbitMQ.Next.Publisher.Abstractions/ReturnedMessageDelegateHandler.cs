@@ -1,14 +1,13 @@
 using System;
 using System.Threading.Tasks;
-using RabbitMQ.Next.Messaging;
 
 namespace RabbitMQ.Next.Publisher;
 
 internal class ReturnedMessageDelegateHandler : IReturnedMessageHandler
 {
-    private Func<ReturnedMessage, IContent, Task<bool>> wrapped;
+    private Func<IReturnedMessage, Task<bool>> wrapped;
 
-    public ReturnedMessageDelegateHandler(Func<ReturnedMessage, IContent, Task<bool>> handler)
+    public ReturnedMessageDelegateHandler(Func<IReturnedMessage, Task<bool>> handler)
     {
         if (handler == null)
         {
@@ -23,13 +22,13 @@ internal class ReturnedMessageDelegateHandler : IReturnedMessageHandler
         this.wrapped = null;
     }
 
-    public Task<bool> TryHandleAsync(ReturnedMessage message, IContent content)
+    public Task<bool> TryHandleAsync(IReturnedMessage message)
     {
         if (this.wrapped == null)
         {
             throw new ObjectDisposedException(nameof(ReturnedMessageDelegateHandler));
         }
 
-        return this.wrapped(message, content);
+        return this.wrapped(message);
     }
 }
