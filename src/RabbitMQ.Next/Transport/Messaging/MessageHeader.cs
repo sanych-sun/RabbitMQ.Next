@@ -7,77 +7,75 @@ namespace RabbitMQ.Next.Transport.Messaging;
 internal static class MessageHeader
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int WriteMessageProperties(this Span<byte> target, IMessageProperties properties)
+    public static void WriteMessageProperties(this IBufferBuilder builder, IMessageProperties properties)
     {
         var flags = properties.Flags;
-        var buffer = target.Write((ushort)flags);
+        builder.Write((ushort)flags);
 
         if ((flags & MessageFlags.ContentType) != MessageFlags.None)
         {
-            buffer = buffer.Write(properties.ContentType);
+            builder.Write(properties.ContentType);
         }
 
         if ((flags & MessageFlags.ContentEncoding) != MessageFlags.None)
         {
-            buffer = buffer.Write(properties.ContentEncoding);
+            builder.Write(properties.ContentEncoding);
         }
 
         if ((flags & MessageFlags.Headers) != MessageFlags.None)
         {
-            buffer = buffer.Write(properties.Headers);
+            builder.Write(properties.Headers);
         }
 
         if ((flags & MessageFlags.DeliveryMode) != MessageFlags.None)
         {
-            buffer = buffer.Write((byte)properties.DeliveryMode);
+            builder.Write((byte)properties.DeliveryMode);
         }
 
         if ((flags & MessageFlags.Priority) != MessageFlags.None)
         {
-            buffer = buffer.Write(properties.Priority);
+            builder.Write(properties.Priority);
         }
 
         if ((flags & MessageFlags.CorrelationId) != MessageFlags.None)
         {
-            buffer = buffer.Write(properties.CorrelationId);
+            builder.Write(properties.CorrelationId);
         }
 
         if ((flags & MessageFlags.ReplyTo) != MessageFlags.None)
         {
-            buffer = buffer.Write(properties.ReplyTo);
+            builder.Write(properties.ReplyTo);
         }
 
         if ((flags & MessageFlags.Expiration) != MessageFlags.None)
         {
-            buffer = buffer.Write(properties.Expiration);
+            builder.Write(properties.Expiration);
         }
 
         if ((flags & MessageFlags.MessageId) != MessageFlags.None)
         {
-            buffer = buffer.Write(properties.MessageId);
+            builder.Write(properties.MessageId);
         }
 
         if ((flags & MessageFlags.Timestamp) != MessageFlags.None)
         {
-            buffer = buffer.Write(properties.Timestamp);
+            builder.Write(properties.Timestamp);
         }
 
         if ((flags & MessageFlags.Type) != MessageFlags.None)
         {
-            buffer = buffer.Write(properties.Type);
+            builder.Write(properties.Type);
         }
 
         if ((flags & MessageFlags.UserId) != MessageFlags.None)
         {
-            buffer = buffer.Write(properties.UserId);
+            builder.Write(properties.UserId);
         }
 
         if ((flags & MessageFlags.ApplicationId) != MessageFlags.None)
         {
-            buffer = buffer.Write(properties.ApplicationId);
+            builder.Write(properties.ApplicationId);
         }
-
-        return target.Length - buffer.Length;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

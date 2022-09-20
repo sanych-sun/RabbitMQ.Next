@@ -1,6 +1,8 @@
-namespace RabbitMQ.Next.Methods;
+using RabbitMQ.Next.Methods;
 
-public interface IMethodRegistrationBuilder<TMethod>
+namespace RabbitMQ.Next.Transport.Methods.Registry;
+
+internal interface IMethodRegistrationBuilder<TMethod>
     where TMethod : struct, IMethod
 {
     IMethodRegistrationBuilder<TMethod> HasContent();

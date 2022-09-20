@@ -2,26 +2,22 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using RabbitMQ.Next.Methods;
-using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Transport;
-using RabbitMQ.Next.Transport.Methods.Registry;
 
 namespace RabbitMQ.Next;
 
 public class ConnectionBuilder : IConnectionBuilder
 {
     private const string DefaultLocale = "en-US";
-    private const int DefaultMaxFrameSize = 131_072; // 128kB
+    private const int DefaultBufferSize = 131_072; // 128kB
 
     private readonly IConnectionFactory factory;
-    private readonly IMethodRegistryBuilder methodRegistry = new MethodRegistryBuilder();
     private readonly List<Endpoint> endpoints = new();
     private readonly Dictionary<string, object> clientProperties = new();
     private IAuthMechanism authMechanism;
     private string virtualhost = ProtocolConstants.DefaultVHost;
     private string clientLocale = DefaultLocale;
-    private int maxFrameSize = DefaultMaxFrameSize;
+    private int maxFrameSize = DefaultBufferSize;
 
     private ConnectionBuilder()
         : this(ConnectionFactory.Default)
@@ -61,12 +57,6 @@ public class ConnectionBuilder : IConnectionBuilder
         return this;
     }
 
-    public IConnectionBuilder ConfigureMethodRegistry(Action<IMethodRegistryBuilder> builder)
-    {
-        builder?.Invoke(this.methodRegistry);
-        return this;
-    }
-
     public  IConnectionBuilder ClientProperty(string key, object value)
     {
         this.clientProperties[key] = value;
@@ -79,7 +69,7 @@ public class ConnectionBuilder : IConnectionBuilder
         return this;
     }
 
-    public IConnectionBuilder MaxFrameSize(int sizeBytes)
+    public IConnectionBuilder BufferSize(int sizeBytes)
     {
         if (sizeBytes < ProtocolConstants.FrameMinSize)
         {
@@ -99,9 +89,9 @@ public class ConnectionBuilder : IConnectionBuilder
             Auth = this.authMechanism,
             Locale = this.clientLocale,
             ClientProperties = this.clientProperties,
-            MaxFrameSize = this.maxFrameSize
+            BufferSize = this.maxFrameSize
         };
 
-        return this.factory.ConnectAsync(settings, this.methodRegistry.Build(), cancellation);
+        return this.factory.ConnectAsync(settings, cancellation);
     }
 }

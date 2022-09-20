@@ -13,7 +13,7 @@ internal class ConnectionSettings
 
     public IAuthMechanism Auth { get; init; }
 
-    public int MaxFrameSize { get; init; }
+    public int BufferSize { get; init; }
 
     public IReadOnlyDictionary<string, object> ClientProperties { get; init; }
 }

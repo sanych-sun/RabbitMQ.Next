@@ -1,15 +1,7 @@
-using System;
-using RabbitMQ.Next.Methods;
-
 namespace RabbitMQ.Next.Transport.Methods.Confirm;
 
 internal class SelectMethodFormatter : IMethodFormatter<SelectMethod>
 {
-    public int Write(Span<byte> destination, SelectMethod method)
-    {
-        var result = destination
-            .Write(false); // noWait flag
-
-        return destination.Length - result.Length;
-    }
+    public void Write(IBufferBuilder destination, SelectMethod method)
+        => destination.Write(false); // noWait flag
 }

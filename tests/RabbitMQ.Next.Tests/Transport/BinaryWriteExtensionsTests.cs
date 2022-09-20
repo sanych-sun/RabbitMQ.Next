@@ -15,10 +15,10 @@ public class BinaryWriteExtensionsTests
     [InlineData(byte.MaxValue, new byte[] { 0b_11111111 })]
     public void WriteByte(byte data, byte[] expected)
     {
-        Span<byte> buffer = stackalloc byte[expected.Length];
-        buffer.Write(data);
+        var writer = new BufferBuilderMock(expected.Length);
+        writer.Write(data);
 
-        Assert.Equal(expected, buffer.ToArray());
+        Assert.Equal(expected, writer.Written.ToArray());
     }
 
     [Theory]
@@ -29,10 +29,10 @@ public class BinaryWriteExtensionsTests
     [InlineData(-42, new byte[] { 0b_11010110 })]
     public void WriteSByte(sbyte data, byte[] expected)
     {
-        Span<byte> buffer = stackalloc byte[expected.Length];
-        buffer.Write(data);
+        var writer = new BufferBuilderMock(expected.Length);
+        writer.Write(data);
 
-        Assert.Equal(expected, buffer.ToArray());
+        Assert.Equal(expected, writer.Written.ToArray());
     }
 
     [Theory]
@@ -40,10 +40,10 @@ public class BinaryWriteExtensionsTests
     [InlineData(true, new byte[] { 0b_00000001 })]
     public void WriteBool(bool data, byte[] expected)
     {
-        Span<byte> buffer = stackalloc byte[expected.Length];
-        buffer.Write(data);
+        var writer = new BufferBuilderMock(expected.Length);
+        writer.Write(data);
 
-        Assert.Equal(expected, buffer.ToArray());
+        Assert.Equal(expected, writer.Written.ToArray());
     }
 
     [Theory]
@@ -54,10 +54,10 @@ public class BinaryWriteExtensionsTests
     [InlineData(ushort.MaxValue, new byte[] { 0b_11111111, 0b_11111111 })]
     public void WriteUShort(ushort data, byte[] expected)
     {
-        Span<byte> buffer = stackalloc byte[expected.Length];
-        buffer.Write(data);
+        var writer = new BufferBuilderMock(expected.Length);
+        writer.Write(data);
 
-        Assert.Equal(expected, buffer.ToArray());
+        Assert.Equal(expected, writer.Written.ToArray());
     }
 
     [Theory]
@@ -68,10 +68,10 @@ public class BinaryWriteExtensionsTests
     [InlineData(-42, new byte[] { 0b_11111111, 0b_11010110 })]
     public void WriteShort(short data, byte[] expected)
     {
-        Span<byte> buffer = stackalloc byte[expected.Length];
-        buffer.Write(data);
+        var writer = new BufferBuilderMock(expected.Length);
+        writer.Write(data);
 
-        Assert.Equal(expected, buffer.ToArray());
+        Assert.Equal(expected, writer.Written.ToArray());
     }
 
     [Theory]
@@ -81,10 +81,10 @@ public class BinaryWriteExtensionsTests
     [InlineData(uint.MaxValue, new byte[] { 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111 })]
     public void WriteUInt(uint data, byte[] expected)
     {
-        Span<byte> buffer = stackalloc byte[expected.Length];
-        buffer.Write(data);
+        var writer = new BufferBuilderMock(expected.Length);
+        writer.Write(data);
 
-        Assert.Equal(expected, buffer.ToArray());
+        Assert.Equal(expected, writer.Written.ToArray());
     }
 
     [Theory]
@@ -95,10 +95,10 @@ public class BinaryWriteExtensionsTests
     [InlineData(-42, new byte[] { 0b_11111111, 0b_11111111, 0b_11111111, 0b_11010110 })]
     public void WriteInt(int data, byte[] expected)
     {
-        Span<byte> buffer = stackalloc byte[expected.Length];
-        buffer.Write(data);
+        var writer = new BufferBuilderMock(expected.Length);
+        writer.Write(data);
 
-        Assert.Equal(expected, buffer.ToArray());
+        Assert.Equal(expected, writer.Written.ToArray());
     }
 
     [Theory]
@@ -109,10 +109,10 @@ public class BinaryWriteExtensionsTests
 
     public void WriteULong(ulong data, byte[] expected)
     {
-        Span<byte> buffer = stackalloc byte[expected.Length];
-        buffer.Write(data);
+        var writer = new BufferBuilderMock(expected.Length);
+        writer.Write(data);
             
-        Assert.Equal(expected, buffer.ToArray());
+        Assert.Equal(expected, writer.Written.ToArray());
     }
 
     [Theory]
@@ -123,10 +123,10 @@ public class BinaryWriteExtensionsTests
     [InlineData(-42, new byte[] { 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11010110 })]
     public void WriteLong(long data, byte[] expected)
     {
-        Span<byte> buffer = stackalloc byte[expected.Length];
-        buffer.Write(data);
+        var writer = new BufferBuilderMock(expected.Length);
+        writer.Write(data);
 
-        Assert.Equal(expected, buffer.ToArray());
+        Assert.Equal(expected, writer.Written.ToArray());
     }
 
     [Theory]
@@ -134,10 +134,10 @@ public class BinaryWriteExtensionsTests
     [InlineData(1E-45, new byte[] { 1, 0, 0, 0 })]
     public void WriteFloat(float data, byte[] expected)
     {
-        Span<byte> buffer = stackalloc byte[expected.Length];
-        buffer.Write(data);
+        var writer = new BufferBuilderMock(expected.Length);
+        writer.Write(data);
 
-        Assert.Equal(expected, buffer.ToArray());
+        Assert.Equal(expected, writer.Written.ToArray());
     }
 
     [Theory]
@@ -145,10 +145,10 @@ public class BinaryWriteExtensionsTests
     [InlineData(5E-324, new byte[] { 1, 0, 0, 0, 0, 0, 0, 0 })]
     public void WriteDouble(double data, byte[] expected)
     {
-        Span<byte> buffer = stackalloc byte[expected.Length];
-        buffer.Write(data);
+        var writer = new BufferBuilderMock(expected.Length);
+        writer.Write(data);
 
-        Assert.Equal(expected, buffer.ToArray());
+        Assert.Equal(expected, writer.Written.ToArray());
     }
 
     [Theory]
@@ -156,10 +156,10 @@ public class BinaryWriteExtensionsTests
     [InlineData(0.32d, new byte[] { 0, 0, 2, 0, 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0 })]
     public void WriteDecimal(decimal data, byte[] expected)
     {
-        Span<byte> buffer = stackalloc byte[expected.Length];
-        buffer.Write(data);
+        var writer = new BufferBuilderMock(expected.Length);
+        writer.Write(data);
 
-        Assert.Equal(expected, buffer.ToArray());
+        Assert.Equal(expected, writer.Written.ToArray());
     }
 
     [Theory]
@@ -174,10 +174,10 @@ public class BinaryWriteExtensionsTests
     [InlineData("Hello", true, new byte[] { 0, 0, 0, 5, 72, 101, 108, 108, 111 })]
     public void WriteString(string data, bool isLong, byte[] expected)
     {
-        Span<byte> buffer = stackalloc byte[expected.Length];
-        buffer.Write(data, isLong);
+        var writer = new BufferBuilderMock(expected.Length * 10); // need to allocate bigger buffer, as Utf-8 encoder requesting buffers for the max possible size
+        writer.Write(data, isLong);
 
-        Assert.Equal(expected, buffer.ToArray());
+        Assert.Equal(expected, writer.Written.ToArray());
     }
 
     [Theory]
@@ -186,10 +186,10 @@ public class BinaryWriteExtensionsTests
     public void WriteDateTime(long data, byte[] expected)
     {
         var dt = DateTimeOffset.FromUnixTimeSeconds(data);
-        Span<byte> buffer = stackalloc byte[expected.Length];
-        buffer.Write(dt);
+        var writer = new BufferBuilderMock(expected.Length);
+        writer.Write(dt);
 
-        Assert.Equal(expected, buffer.ToArray());
+        Assert.Equal(expected, writer.Written.ToArray());
     }
 
     [Theory]
@@ -198,40 +198,40 @@ public class BinaryWriteExtensionsTests
     [InlineData(new byte[] { 1, 2, 3, 4, 5 }, new byte[] { 0, 0, 0, 5, 1, 2, 3, 4, 5 })]
     public void WriteBinary(byte[] data, byte[] expected)
     {
-        Span<byte> buffer = stackalloc byte[expected.Length];
-        buffer.Write(data);
+        var writer = new BufferBuilderMock(expected.Length);
+        writer.Write(data);
 
-        Assert.Equal(expected, buffer.ToArray());
+        Assert.Equal(expected, writer.Written.ToArray());
     }
 
     [Theory]
     [MemberData(nameof(WriteFieldTestCases))]
     public void WriteField(object value, byte[] expected)
     {
-        Span<byte> buffer = stackalloc byte[expected.Length];
-        buffer.WriteField(value);
+        var writer = new BufferBuilderMock(expected.Length);
+        writer.WriteField(value);
 
-        Assert.Equal(expected, buffer.ToArray());
+        Assert.Equal(expected, writer.Written.ToArray());
     }
 
     [Theory]
     [MemberData(nameof(WriteDictionaryTestCases))]
     public void WriteDictionary(IReadOnlyDictionary<string, object> value, byte[] expected)
     {
-        Span<byte> buffer = stackalloc byte[expected.Length];
-        buffer.Write(value);
+        var writer = new BufferBuilderMock(expected.Length);
+        writer.Write(value);
 
-        Assert.Equal(expected, buffer.ToArray());
+        Assert.Equal(expected, writer.Written.ToArray());
     }
 
     [Theory]
     [MemberData(nameof(WriteArrayTestCases))]
     public void WriteArray(object[] value, byte[] expected)
     {
-        Span<byte> buffer = stackalloc byte[expected.Length];
-        buffer.Write(value);
+        var writer = new BufferBuilderMock(expected.Length);
+        writer.Write(value);
 
-        Assert.Equal(expected, buffer.ToArray());
+        Assert.Equal(expected, writer.Written.ToArray());
     }
 
     [Theory]
@@ -240,8 +240,8 @@ public class BinaryWriteExtensionsTests
     {
         Assert.Throws<ArgumentException>(() =>
         {
-            Span<byte> buffer = stackalloc byte[1000];
-            buffer.Write(text, false);
+            var writer = new BufferBuilderMock(1000);
+            writer.Write(text, false);
         });
     }
 
@@ -252,8 +252,8 @@ public class BinaryWriteExtensionsTests
     {
         Assert.Throws<NotSupportedException>(() =>
         {
-            Span<byte> buffer = stackalloc byte[1000];
-            buffer.WriteField(value);
+            var writer = new BufferBuilderMock(1000);
+            writer.WriteField(value);
         });
     }
 

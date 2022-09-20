@@ -5,7 +5,10 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.ObjectPool;
 using RabbitMQ.Next.Messaging;
 using RabbitMQ.Next.Methods;
+using RabbitMQ.Next.Transport;
+using RabbitMQ.Next.Transport.Methods;
 using RabbitMQ.Next.Transport.Methods.Basic;
+using RabbitMQ.Next.Transport.Methods.Registry;
 
 namespace RabbitMQ.Next.Channels;
 
@@ -29,27 +32,28 @@ internal class MethodSender
         this.frameBuilderPool = connection.FrameBuilderPool;
     }
 
-    public Task SendAsync<TRequest>(TRequest request, CancellationToken cancellation = default)
+    public ValueTask SendAsync<TRequest>(TRequest request, CancellationToken cancellation = default)
         where TRequest : struct, IOutgoingMethod
     {
         var frameBuilder = this.frameBuilderPool.Get();
         frameBuilder.Initialize(this.channelNumber, this.frameMaxSize);
         var formatter = this.registry.GetFormatter<TRequest>();
+        
         frameBuilder.WriteMethodFrame(request, formatter);
 
         return this.connection.WriteToSocketAsync(frameBuilder.Complete(), cancellation);
     }
 
-    public Task PublishAsync<TState>(
+    public ValueTask PublishAsync<TState>(
         TState state, string exchange, string routingKey,
         IMessageProperties properties, Action<TState, IBufferWriter<byte>> contentBody,
         PublishFlags flags = PublishFlags.None, CancellationToken cancellation = default)
     {
         var frameBuilder = this.frameBuilderPool.Get();
         frameBuilder.Initialize(this.channelNumber, this.frameMaxSize);
-        var publishMethod = new PublishMethod(exchange, routingKey, (byte)flags);
+        var request = new PublishMethod(exchange, routingKey, (byte)flags);
 
-        frameBuilder.WriteMethodFrame(publishMethod, this.publishMethodFormatter);
+        frameBuilder.WriteMethodFrame(request, this.publishMethodFormatter);
         frameBuilder.WriteContentFrame(state, properties, contentBody);
 
         return this.connection.WriteToSocketAsync(frameBuilder.Complete(), cancellation);

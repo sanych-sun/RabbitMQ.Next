@@ -12,7 +12,7 @@ public class FramingTests
     internal void WriteFrameHeader(FrameType type, ushort channel, uint size, byte[] expected)
     {
         var buffer = new byte[expected.Length];
-        ((Span<byte>)buffer).WriteFrameHeader(type, channel, size);
+        Framing.WriteFrameHeader(buffer, type, channel, size);
 
         Assert.Equal(expected, buffer);
     }

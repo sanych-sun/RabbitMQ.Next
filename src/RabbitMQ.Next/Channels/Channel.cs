@@ -13,6 +13,7 @@ using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Messaging;
 using RabbitMQ.Next.Transport.Methods.Channel;
+using RabbitMQ.Next.Transport.Methods.Registry;
 
 namespace RabbitMQ.Next.Channels;
 
@@ -72,11 +73,11 @@ internal sealed class Channel : IChannelInternal
     }
 
     public Task Completion => this.channelCompletion.Task;
-    public Task SendAsync<TRequest>(TRequest request, CancellationToken cancellation = default)
+    public async Task SendAsync<TRequest>(TRequest request, CancellationToken cancellation = default)
         where TRequest : struct, IOutgoingMethod
     {
         this.ValidateState();
-        return this.methodSender.SendAsync(request, cancellation);
+        await this.methodSender.SendAsync(request, cancellation);
     }
 
     public async Task<TResponse> SendAsync<TRequest, TResponse>(TRequest request, CancellationToken cancellation = default)
@@ -90,13 +91,13 @@ internal sealed class Channel : IChannelInternal
         return await waitTask;
     }
 
-    public Task PublishAsync<TState>(
+    public async Task PublishAsync<TState>(
         TState state, string exchange, string routingKey,
         IMessageProperties properties, Action<TState, IBufferWriter<byte>> payload,
         PublishFlags flags = PublishFlags.None, CancellationToken cancellation = default)
     {
         this.ValidateState();
-        return this.methodSender.PublishAsync(state, exchange, routingKey, properties, payload, flags, cancellation);
+        await this.methodSender.PublishAsync(state, exchange, routingKey, properties, payload, flags, cancellation);
     }
 
     public ChannelWriter<(FrameType Type, MemoryBlock Payload)> FrameWriter { get; }
@@ -166,7 +167,7 @@ internal sealed class Channel : IChannelInternal
                 }
 
                 // 2. Get method Id
-                methodFrame.Payload.Data.Span.Read(out uint method);
+                ((ReadOnlySpan<byte>)methodFrame.Payload.Memory).Read(out uint method);
                 var methodId = (MethodId) method;
                         
                 // 3. Get content if exists
@@ -181,8 +182,8 @@ internal sealed class Channel : IChannelInternal
                     }
 
                     // 3.2 Extract content body size
-                    contentHeader.Payload.Data[4..] // skip 2 obsolete shorts
-                        .Span.Read(out ulong contentSize);
+                    ((ReadOnlySpan<byte>)contentHeader.Payload.Memory[4..] // skip 2 obsolete shorts
+                        ).Read(out ulong contentSize);
 
                     MemoryBlock head = null;
                     MemoryBlock current = null;
@@ -201,10 +202,11 @@ internal sealed class Channel : IChannelInternal
                         }
                         else
                         {
-                            current = current.Append(frame.Payload);    
+                            current.Next = frame.Payload;
+                            current = frame.Payload;    
                         }
 
-                        receivedContent += frame.Payload.Data.Length;
+                        receivedContent += frame.Payload.Memory.Count;
                     }
 
                     payload = new PayloadAccessor(this.messagePropertiesPool, this.memoryPool, contentHeader.Payload, head);
@@ -213,7 +215,7 @@ internal sealed class Channel : IChannelInternal
                 var handled = false;
                 if (this.methodProcessors.TryGetValue((uint)methodId, out var processor))
                 {
-                    handled = processor.ProcessMessage(methodFrame.Payload.Data.Span[sizeof(uint)..], payload);
+                    handled = processor.ProcessMessage(methodFrame.Payload.Memory[sizeof(uint)..], payload);
                 }
 
                 // TODO: should throw on unhandled methods?

@@ -1,7 +1,7 @@
 using System;
 using NSubstitute;
-using RabbitMQ.Next.Methods;
 using RabbitMQ.Next.Tests.Mocks;
+using RabbitMQ.Next.Transport.Methods;
 using RabbitMQ.Next.Transport.Methods.Registry;
 using Xunit;
 

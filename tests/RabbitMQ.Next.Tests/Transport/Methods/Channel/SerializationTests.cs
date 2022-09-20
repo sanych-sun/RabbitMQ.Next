@@ -1,4 +1,3 @@
-using RabbitMQ.Next.Transport.Methods;
 using RabbitMQ.Next.Transport.Methods.Channel;
 using Xunit;
 
@@ -6,10 +5,6 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Channel;
 
 public class SerializationTests : SerializationTestBase
 {
-    public SerializationTests()
-        : base(builder => builder.AddChannelMethods())
-    {}
-
     [Fact]
     public void OpenMethodFormatter()
         => this.TestFormatter(new OpenMethod());

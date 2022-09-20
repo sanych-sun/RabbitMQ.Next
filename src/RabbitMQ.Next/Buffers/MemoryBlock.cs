@@ -1,10 +1,12 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace RabbitMQ.Next.Buffers;
 
 internal sealed class MemoryBlock
 {
-    private readonly byte[] buffer;
+    private readonly byte[] memory;
+    private int size;
 
     public MemoryBlock(int size)
     {
@@ -13,45 +15,25 @@ internal sealed class MemoryBlock
             throw new ArgumentOutOfRangeException(nameof(size));
         }
 
-        this.buffer = new byte[size];
+        this.memory = new byte[size];
+        this.size = size;
     }
 
-    public int Offset { get; private set; }
-        
-    public MemoryBlock Next { get; private set; }
+    public MemoryBlock Next { get; set; }
+    
+    public ArraySegment<byte> Memory 
+        => new (this.memory, 0, this.size);
 
     public bool Reset()
     {
-        this.Offset = 0;
+        this.size = this.memory.Length;
         this.Next = null;
         return true;
     }
-
-    public ReadOnlyMemory<byte> Data
-        =>  new (this.buffer, 0, this.Offset);
-
-    public void Commit(int length)
+    
+    public void Slice(int len)
     {
-        this.Offset += length;
+        this.size = len;
     }
 
-    public void Rollback(int offset)
-    {
-        this.Offset = offset;
-    }
-
-    public MemoryBlock Append(MemoryBlock next)
-    {
-        this.Next = next;
-        return next;
-    }
-
-    public Memory<byte> Memory
-        => new Memory<byte>(this.buffer)[this.Offset..];
-
-    public Span<byte> Span
-        => new Span<byte>(this.buffer)[this.Offset..];
-
-    public Span<byte> Access(int start, int length)
-        => new (this.buffer, start, length);
 }

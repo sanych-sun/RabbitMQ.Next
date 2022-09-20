@@ -27,4 +27,8 @@
     <ProjectReference Include="..\..\src\RabbitMQ.Next\RabbitMQ.Next.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="Transport\Messaging\MessageHeaderTests.cs" />
+  </ItemGroup>
+
 </Project>

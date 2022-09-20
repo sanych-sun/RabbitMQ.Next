@@ -23,7 +23,7 @@ internal class PayloadAccessor: IPayload
         this.body = body;
             
         this.properties = propertiesPool.Get();
-        this.properties.Set(header.Data[12..]); // 2 obsolete shorts + ulong
+        this.properties.Set(header.Memory[12..]); // 2 obsolete shorts + ulong
     }
 
     public void Dispose()

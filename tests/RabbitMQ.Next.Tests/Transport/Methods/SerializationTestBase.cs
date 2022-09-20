@@ -1,7 +1,7 @@
-using System;
 using System.Collections.Generic;
 using RabbitMQ.Next.Methods;
 using RabbitMQ.Next.Tests.Mocks;
+using RabbitMQ.Next.Transport.Methods;
 using RabbitMQ.Next.Transport.Methods.Registry;
 using Xunit;
 
@@ -11,16 +11,21 @@ public abstract class SerializationTestBase
 {
     private readonly string currentNamespace;
 
-    protected SerializationTestBase(Action<IMethodRegistryBuilder> registryBuilder)
+    protected SerializationTestBase()
     {
-        var builder = new MethodRegistryBuilder();
-        registryBuilder(builder);
-        this.Registry = builder.Build();
+        this.Registry = new MethodRegistryBuilder()
+            .AddConnectionMethods()
+            .AddChannelMethods()
+            .AddExchangeMethods()
+            .AddQueueMethods()
+            .AddBasicMethods()
+            .AddConfirmMethods()
+            .Build();
 
         this.currentNamespace = this.GetType().Namespace;
     }
 
-    protected IMethodRegistry Registry { get; }
+    private IMethodRegistry Registry { get; }
 
     protected void TestFormatter<TMethod>(TMethod method)
         where TMethod : struct, IOutgoingMethod
@@ -29,11 +34,10 @@ public abstract class SerializationTestBase
         var formatter = this.Registry.GetFormatter<TMethod>();
         var expected = Helpers.GetFileContent(payloadResName);
 
-        Span<byte> payload = stackalloc byte[expected.Length];
-        var written = formatter.Write(payload, method);
+        var buffer =  new BufferBuilderMock(expected.Length);
+        formatter.Write(buffer, method);
 
-        Assert.Equal(expected, payload.ToArray());
-        Assert.Equal(expected.Length, written);
+        Assert.Equal(expected, buffer.Written.ToArray());
     }
 
     protected void TestParser<TMethod>(TMethod method, IEqualityComparer<TMethod> comparer = null)
