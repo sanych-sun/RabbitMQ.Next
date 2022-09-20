@@ -47,11 +47,11 @@ internal class MethodSender
     public ValueTask PublishAsync<TState>(
         TState state, string exchange, string routingKey,
         IMessageProperties properties, Action<TState, IBufferWriter<byte>> contentBody,
-        PublishFlags flags = PublishFlags.None, CancellationToken cancellation = default)
+        bool mandatory = false, bool immediate = false, CancellationToken cancellation = default)
     {
         var frameBuilder = this.frameBuilderPool.Get();
         frameBuilder.Initialize(this.channelNumber, this.frameMaxSize);
-        var request = new PublishMethod(exchange, routingKey, (byte)flags);
+        var request = new PublishMethod(exchange, routingKey, mandatory, immediate);
 
         frameBuilder.WriteMethodFrame(request, this.publishMethodFormatter);
         frameBuilder.WriteContentFrame(state, properties, contentBody);

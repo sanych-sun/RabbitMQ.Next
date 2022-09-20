@@ -34,29 +34,20 @@ public class ModelTests
     {
         var queue = "my-queue";
         var consumerTag = "tag";
-        var flags = (byte)0;
+        var noLocal = true;
+        var noAck = true;
+        var exclusive = true;
         var args = new Dictionary<string, object>();
 
-        var method = new ConsumeMethod(queue, consumerTag, flags, args);
+        var method = new ConsumeMethod(queue, consumerTag, noLocal, noAck, exclusive, args);
 
         Assert.Equal(MethodId.BasicConsume, method.MethodId);
         Assert.Equal(queue, method.Queue);
         Assert.Equal(consumerTag, method.ConsumerTag);
-        Assert.Equal(flags, method.Flags);
+        Assert.Equal(noLocal, method.NoLocal);
+        Assert.Equal(noAck, method.NoAck);
+        Assert.Equal(exclusive, method.Exclusive);
         Assert.Equal(args, method.Arguments);
-    }
-
-    [Theory]
-    [InlineData(0b_00000000, false, false, false)]
-    [InlineData(0b_00000001, true, false, false)]
-    [InlineData(0b_00000010, false, true, false)]
-    [InlineData(0b_00000100, false, false, true)]
-    [InlineData(0b_00000111, true, true, true)]
-    public void ConsumeMethodFlags(byte expected, bool noLocal, bool noAck, bool exclusive)
-    {
-        var method = new ConsumeMethod("queue", "tag", noLocal, noAck, exclusive, null);
-
-        Assert.Equal(expected, method.Flags);
     }
 
     [Fact]
@@ -98,25 +89,16 @@ public class ModelTests
         var exchange = "exchange";
         var routingKey = "routing";
         var flags = (byte)0b_00000001;
+        var mandatory = true;
+        var immediate = true;
 
-        var method = new PublishMethod(exchange, routingKey, flags);
+        var method = new PublishMethod(exchange, routingKey, mandatory, immediate);
 
         Assert.Equal(MethodId.BasicPublish, method.MethodId);
         Assert.Equal(exchange, method.Exchange);
         Assert.Equal(routingKey, method.RoutingKey);
-        Assert.Equal(flags, method.Flags);
-    }
-
-    [Theory]
-    [InlineData(0b_00000000, false, false)]
-    [InlineData(0b_00000001, true, false)]
-    [InlineData(0b_00000010, false, true)]
-    [InlineData(0b_00000011, true, true)]
-    public void PublishMethodFlags(byte expected, bool mandatory, bool immediate)
-    {
-        var method = new PublishMethod("exchange", "routing", mandatory, immediate);
-
-        Assert.Equal(expected, method.Flags);
+        Assert.Equal(mandatory, method.Mandatory);
+        Assert.Equal(immediate, method.Immediate);
     }
 
     [Fact]

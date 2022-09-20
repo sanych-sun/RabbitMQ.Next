@@ -5,15 +5,11 @@ namespace RabbitMQ.Next.Transport.Methods.Basic;
 public readonly struct PublishMethod : IOutgoingMethod
 {
     public PublishMethod(string exchange, string routingKey, bool mandatory, bool immediate)
-        : this(exchange, routingKey, BitConverter.ComposeFlags(mandatory, immediate))
-    {
-    }
-
-    public PublishMethod(string exchange, string routingKey, byte flags)
     {
         this.Exchange = exchange;
         this.RoutingKey = routingKey;
-        this.Flags = flags;
+        this.Mandatory = mandatory;
+        this.Immediate = immediate;
     }
 
     public MethodId MethodId => MethodId.BasicPublish;
@@ -22,5 +18,7 @@ public readonly struct PublishMethod : IOutgoingMethod
 
     public string RoutingKey { get; }
 
-    public byte Flags { get; }
+    public bool Mandatory { get; }
+    
+    public bool Immediate { get; }
 }

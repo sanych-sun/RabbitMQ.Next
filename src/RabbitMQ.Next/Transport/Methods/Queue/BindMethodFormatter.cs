@@ -2,7 +2,7 @@ namespace RabbitMQ.Next.Transport.Methods.Queue;
 
 internal class BindMethodFormatter : IMethodFormatter<BindMethod>
 {
-    public void Write(IBufferBuilder destination, BindMethod method)
+    public void Write(IBinaryWriter destination, BindMethod method)
         => destination
             .Write((short) ProtocolConstants.ObsoleteField)
             .Write(method.Queue)

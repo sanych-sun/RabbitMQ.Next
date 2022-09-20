@@ -3,11 +3,11 @@ using RabbitMQ.Next.Transport;
 
 namespace RabbitMQ.Next.Tests.Mocks;
 
-internal class BufferBuilderMock : IBufferBuilder
+internal class BinaryWriterMock : IBinaryWriter
 {
     private readonly byte[] buffer;
 
-    public BufferBuilderMock(int size)
+    public BinaryWriterMock(int size)
     {
         this.buffer = new byte[size];
     }

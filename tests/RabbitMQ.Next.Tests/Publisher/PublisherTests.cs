@@ -133,20 +133,21 @@ public class PublisherTests
     [MemberData(nameof(PublishTestCases))]
     public async Task PublishAsync(
         IReadOnlyList<IMessageInitializer> transformers,
-        string exchange, string routingKey, Action<IMessageBuilder> builder, PublishFlags flags,
+        string exchange, string routingKey, Action<IMessageBuilder> builder,
+        bool mandatory, bool immediate,
         IMessageProperties expectedProperties)
     {
         var mock = this.Mock();
 
         var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, this.MockSerializerFactory(), exchange, false, transformers, null);
 
-        await publisher.PublishAsync("a", "test", (state, message) => builder?.Invoke(message), flags);
+        await publisher.PublishAsync("a", "test", (state, message) => builder?.Invoke(message), mandatory, immediate);
 
         await mock.channel.Received().PublishAsync(
             Arg.Any<(string, ISerializer)>(), exchange, routingKey,
             Arg.Is<IMessageProperties>(p => new MessagePropertiesComparer().Equals(expectedProperties, p)),
             Arg.Any<Action<(string, ISerializer), IBufferWriter<byte>>>(),
-            flags, Arg.Any<CancellationToken>());
+            mandatory, immediate, Arg.Any<CancellationToken>());
     }
 
     public static IEnumerable<object[]> PublishTestCases()
@@ -156,7 +157,7 @@ public class PublisherTests
             null,
             "myExchange", "key",
             (Action<IMessageBuilder>)(m => m.RoutingKey("key")),
-            PublishFlags.None,
+            false, false,
             new MessageProperties { DeliveryMode = DeliveryMode.Persistent }
         };
 
@@ -165,7 +166,7 @@ public class PublisherTests
             null,
             "myExchange", "key",
             (Action<IMessageBuilder>)(m => m.RoutingKey("key")),
-            PublishFlags.Immediate,
+            false, true,
             new MessageProperties{ DeliveryMode = DeliveryMode.Persistent }
         };
 
@@ -174,7 +175,7 @@ public class PublisherTests
             new IMessageInitializer[] { new UserIdInitializer("testUser")},
             "myExchange", "key",
             (Action<IMessageBuilder>)(m => m.RoutingKey("key")),
-            PublishFlags.None,
+            false, false,
             new MessageProperties { UserId = "testUser", DeliveryMode = DeliveryMode.Persistent}
         };
 
@@ -183,7 +184,7 @@ public class PublisherTests
             null,
             "myExchange", "key",
             (Action<IMessageBuilder>)(m => m.RoutingKey("key").Priority(1).Type("test")),
-            PublishFlags.None,
+            false, false,
             new MessageProperties { Priority = 1, Type = "test", DeliveryMode = DeliveryMode.Persistent}
         };
 
@@ -192,7 +193,7 @@ public class PublisherTests
             new IMessageInitializer[] { new UserIdInitializer("testUser")},
             "exchange", "key",
             (Action<IMessageBuilder>)(m =>m.RoutingKey("key").Priority(1).Type("test")),
-            PublishFlags.None,
+            false, false,
             new MessageProperties { Priority = 1, Type = "test", UserId = "testUser", DeliveryMode = DeliveryMode.Persistent}
         };
     }

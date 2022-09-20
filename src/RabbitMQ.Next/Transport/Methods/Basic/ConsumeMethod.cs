@@ -5,18 +5,16 @@ namespace RabbitMQ.Next.Transport.Methods.Basic;
 
 public readonly struct ConsumeMethod : IOutgoingMethod
 {
-    public ConsumeMethod(string queue, string consumerTag,
+    public ConsumeMethod(
+        string queue, string consumerTag,
         bool noLocal, bool noAck, bool exclusive,
         IReadOnlyDictionary<string, object> arguments)
-        : this(queue, consumerTag, BitConverter.ComposeFlags(noLocal, noAck, exclusive), arguments)
-    {
-    }
-
-    public ConsumeMethod(string queue, string consumerTag, byte flags, IReadOnlyDictionary<string, object> arguments)
     {
         this.Queue = queue;
         this.ConsumerTag = consumerTag;
-        this.Flags = flags;
+        this.NoLocal = noLocal;
+        this.NoAck = noAck;
+        this.Exclusive = exclusive;
         this.Arguments = arguments;
     }
 
@@ -26,7 +24,11 @@ public readonly struct ConsumeMethod : IOutgoingMethod
 
     public string ConsumerTag { get; }
 
-    public byte Flags { get; }
+    public bool NoLocal { get; }
+    
+    public bool NoAck { get; }
+    
+    public bool Exclusive { get; }
 
     public IReadOnlyDictionary<string, object> Arguments { get; }
 }
