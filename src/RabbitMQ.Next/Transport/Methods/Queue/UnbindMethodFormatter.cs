@@ -2,11 +2,12 @@ namespace RabbitMQ.Next.Transport.Methods.Queue;
 
 internal class UnbindMethodFormatter : IMethodFormatter<UnbindMethod>
 {
-    public void Write(IBinaryWriter destination, UnbindMethod method)
-        => destination
-            .Write((short) ProtocolConstants.ObsoleteField)
-            .Write(method.Queue)
-            .Write(method.Exchange)
-            .Write(method.RoutingKey)
-            .Write(method.Arguments);
+    public void Write(IBinaryWriter writer, UnbindMethod method)
+    {
+        writer.Write((short)ProtocolConstants.ObsoleteField);
+        writer.Write(method.Queue);
+        writer.Write(method.Exchange);
+        writer.Write(method.RoutingKey);
+        writer.Write(method.Arguments);
+    }
 }

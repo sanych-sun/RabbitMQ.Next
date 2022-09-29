@@ -10,131 +10,132 @@ internal static class BinaryWriterExtensions
 {
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static IBinaryWriter Allocate(this IBinaryWriter writer, int bytes, out Memory<byte> buffer)
+    public static int Allocate(this IBinaryWriter writer, int bytes, out Memory<byte> buffer)
     {
         buffer = writer.GetMemory(bytes)[..bytes];
         buffer.Span.Fill(0);
         writer.Advance(bytes);
-        return writer;
+        return bytes;
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static IBinaryWriter Write(this IBinaryWriter writer, byte data)
+    public static int Write(this IBinaryWriter writer, byte data)
     {
         var buffer = writer.GetSpan(sizeof(byte));
         buffer[0] = data;
         writer.Advance(sizeof(byte));
-        return writer;
+        return sizeof(byte);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static IBinaryWriter Write(this IBinaryWriter writer, sbyte data)
+    public static int Write(this IBinaryWriter writer, sbyte data)
     {
         var buffer = writer.GetSpan(sizeof(sbyte));
         buffer[0] = (byte)data;
         writer.Advance(sizeof(sbyte));
-        return writer;
+        return sizeof(sbyte);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static IBinaryWriter Write(this IBinaryWriter writer, bool data)
+    public static int Write(this IBinaryWriter writer, bool data)
     {
         return writer.Write(data ? (byte) 1 : (byte) 0);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static IBinaryWriter Write(this IBinaryWriter writer, ushort data)
+    public static int Write(this IBinaryWriter writer, ushort data)
     {
         var buffer = writer.GetSpan(sizeof(ushort));
         BinaryPrimitives.WriteUInt16BigEndian(buffer, data);
         writer.Advance(sizeof(ushort));
-        return writer;
+        return sizeof(ushort);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static IBinaryWriter Write(this IBinaryWriter writer, short data)
+    public static int Write(this IBinaryWriter writer, short data)
     {
         var buffer = writer.GetSpan(sizeof(short));
         BinaryPrimitives.WriteInt16BigEndian(buffer, data);
         writer.Advance(sizeof(short));
-        return writer;
+        return sizeof(short);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static IBinaryWriter Write(this IBinaryWriter writer, uint data)
+    public static int Write(this IBinaryWriter writer, uint data)
     {
         var buffer = writer.GetSpan(sizeof(uint));
         BinaryPrimitives.WriteUInt32BigEndian(buffer, data);
         writer.Advance(sizeof(uint));
-        return writer;
+        return sizeof(uint);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static IBinaryWriter Write(this IBinaryWriter writer, int data)
+    public static int Write(this IBinaryWriter writer, int data)
     {
         var buffer = writer.GetSpan(sizeof(int));
         BinaryPrimitives.WriteInt32BigEndian(buffer, data);
         writer.Advance(sizeof(int));
-        return writer;
+        return sizeof(int);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static IBinaryWriter Write(this IBinaryWriter writer, ulong data)
+    public static int Write(this IBinaryWriter writer, ulong data)
     {
         var buffer = writer.GetSpan(sizeof(ulong));
         BinaryPrimitives.WriteUInt64BigEndian(buffer, data);
         writer.Advance(sizeof(ulong));
-        return writer;
+        return sizeof(ulong);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static IBinaryWriter Write(this IBinaryWriter writer, long data)
+    public static int Write(this IBinaryWriter writer, long data)
     {
         var buffer = writer.GetSpan(sizeof(long));
         BinaryPrimitives.WriteInt64BigEndian(buffer, data);
         writer.Advance(sizeof(long));
-        return writer;
+        return sizeof(long);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static IBinaryWriter Write(this IBinaryWriter writer, float data)
+    public static int Write(this IBinaryWriter writer, float data)
     {
         var buffer = writer.GetSpan(sizeof(float));
         MemoryMarshal.Write(buffer, ref data);
         writer.Advance(sizeof(float));
-        return writer;
+        return sizeof(float);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static IBinaryWriter Write(this IBinaryWriter writer, decimal data)
+    public static int Write(this IBinaryWriter writer, decimal data)
     {
         var buffer = writer.GetSpan(sizeof(decimal));
         MemoryMarshal.Write(buffer, ref data);
         writer.Advance(sizeof(decimal));
-        return writer;
+        return sizeof(decimal);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static IBinaryWriter Write(this IBinaryWriter writer, double data)
+    public static int Write(this IBinaryWriter writer, double data)
     {
         var buffer = writer.GetSpan(sizeof(double));
         MemoryMarshal.Write(buffer, ref data);
         writer.Advance(sizeof(double));
-        return writer;
+        return sizeof(double);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static IBinaryWriter Write(this IBinaryWriter writer, ReadOnlySpan<byte> data)
+    public static int Write(this IBinaryWriter writer, ReadOnlySpan<byte> data)
     {
-        writer.Write((uint)data.Length);
+        var written = writer.Write((uint)data.Length);
         var buffer = writer.GetSpan(data.Length);
         data.CopyTo(buffer);
         writer.Advance(data.Length);
-        return writer;
+        written += data.Length;
+        return written;
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static IBinaryWriter WriteFlags(
+    public static int WriteFlags(
         this IBinaryWriter writer,
         bool bit1, bool bit2 = false, bool bit3 = false, bool bit4 = false,
         bool bit5 = false, bool bit6 = false, bool bit7 = false, bool bit8 = false)
@@ -152,14 +153,14 @@ internal static class BinaryWriterExtensions
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static IBinaryWriter Write(this IBinaryWriter writer, string data, bool isLongString = false)
+    public static int Write(this IBinaryWriter writer, string data, bool isLongString = false)
     {
         var sizeBufferLen = isLongString ? sizeof(uint) : sizeof(byte);
         writer.Allocate(sizeBufferLen, out var sizeBuffer);
 
         if (string.IsNullOrEmpty(data))
         {
-            return writer;
+            return sizeBufferLen;
         }
         
         var buffer = writer.GetSpan(TextEncoding.GetMaxBytes(data.Length));
@@ -180,134 +181,132 @@ internal static class BinaryWriterExtensions
         }
         
         writer.Advance(bytesWritten);
-        return writer;
+        return sizeBufferLen + bytesWritten;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static IBinaryWriter Write(this IBinaryWriter writer, DateTimeOffset data)
+    public static int Write(this IBinaryWriter writer, DateTimeOffset data)
     {
         var timestamp = data.ToUnixTimeSeconds();
         return writer.Write(timestamp);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static IBinaryWriter WriteField(this IBinaryWriter writer, object value)
+    internal static int WriteField(this IBinaryWriter writer, object value)
     {
+        var written = 0;
         switch (value)
         {
             case bool boolValue:
-                writer.Write(FieldTypePrefix.Boolean);
-                writer.Write(boolValue);
+                written = writer.Write(FieldTypePrefix.Boolean);
+                written += writer.Write(boolValue);
                 break;
             case byte byteValue:
-                writer.Write(FieldTypePrefix.Byte);
-                writer.Write(byteValue);
+                written = writer.Write(FieldTypePrefix.Byte);
+                written += writer.Write(byteValue);
                 break;
             case sbyte sbyteValue:
-                writer.Write(FieldTypePrefix.SByte);
-                writer.Write(sbyteValue);
+                written = writer.Write(FieldTypePrefix.SByte);
+                written +=  writer.Write(sbyteValue);
                 break;
             case short shortValue:
-                writer.Write(FieldTypePrefix.Short);
-                writer.Write(shortValue);
+                written = writer.Write(FieldTypePrefix.Short);
+                written +=  writer.Write(shortValue);
                 break;
             case uint uintValue:
-                writer.Write(FieldTypePrefix.UInt);
-                writer.Write(uintValue);
+                written = writer.Write(FieldTypePrefix.UInt);
+                written += writer.Write(uintValue);
                 break;
             case int intValue:
-                writer.Write(FieldTypePrefix.Int);
-                writer.Write(intValue);
+                written = writer.Write(FieldTypePrefix.Int);
+                written += writer.Write(intValue);
                 break;
             case long longValue:
-                writer.Write(FieldTypePrefix.Long);
-                writer.Write(longValue);
+                written = writer.Write(FieldTypePrefix.Long);
+                written += writer.Write(longValue);
                 break;
             case float floatValue:
-                writer.Write(FieldTypePrefix.Single);
-                writer.Write(floatValue);
+                written = writer.Write(FieldTypePrefix.Single);
+                written += writer.Write(floatValue);
                 break;
             case decimal decimalValue:
-                writer.Write(FieldTypePrefix.Decimal);
-                writer.Write(decimalValue);
+                written = writer.Write(FieldTypePrefix.Decimal);
+                written += writer.Write(decimalValue);
                 break;
             case double doubleValue:
-                writer.Write(FieldTypePrefix.Double);
-                writer.Write(doubleValue);
+                written = writer.Write(FieldTypePrefix.Double);
+                written += writer.Write(doubleValue);
                 break;
             case DateTimeOffset dateValue:
-                writer.Write(FieldTypePrefix.Timestamp);
-                writer.Write(dateValue);
+                written = writer.Write(FieldTypePrefix.Timestamp);
+                written += writer.Write(dateValue);
                 break;
             case string stringValue:
-                writer.Write(FieldTypePrefix.String);
-                writer.Write(stringValue, true);
+                written = writer.Write(FieldTypePrefix.String);
+                written += writer.Write(stringValue, true);
                 break;
             case object[] arrayValue:
-                writer.Write(FieldTypePrefix.Array);
-                writer.Write(arrayValue);
+                written = writer.Write(FieldTypePrefix.Array);
+                written += writer.Write(arrayValue);
                 break;
             case IReadOnlyDictionary<string, object> tableValue:
-                writer.Write(FieldTypePrefix.Table);
-                writer.Write(tableValue);
+                written = writer.Write(FieldTypePrefix.Table);
+                written += writer.Write(tableValue);
                 break;
             case byte[] binaryValue:
-                writer.Write(FieldTypePrefix.Binary);
-                writer.Write(binaryValue);
+                written = writer.Write(FieldTypePrefix.Binary);
+                written += writer.Write(binaryValue);
                 break;
             case null:
-                writer.Write(FieldTypePrefix.Null);
+                written = writer.Write(FieldTypePrefix.Null);
                 break;
             default:
                 throw new NotSupportedException($"Not supported type: {value.GetType().FullName}");
         }
 
-        return writer;
+        return written;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static IBinaryWriter Write(this IBinaryWriter writer, IEnumerable<KeyValuePair<string, object>> value)
+    public static int Write(this IBinaryWriter writer, IEnumerable<KeyValuePair<string, object>> value)
     {
         if (value == null)
         {
-            writer.Write((uint)0);
-            return writer;
+            return writer.Write((uint)0);
         }
 
-        writer.Allocate(sizeof(uint), out var sizeBuffer);
+        var written = writer.Allocate(sizeof(uint), out var sizeBuffer);
 
-        var initialSize = writer.BytesWritten;
+        var dataBytes = 0;
         foreach (var (key, o) in value)
         {
-            writer
-                .Write(key)
-                .WriteField(o);
+            dataBytes += writer.Write(key);
+            dataBytes += writer.WriteField(o);
         }
 
-        BinaryPrimitives.WriteUInt32BigEndian(sizeBuffer.Span, (uint) (writer.BytesWritten - initialSize));
-        return writer;
+        BinaryPrimitives.WriteUInt32BigEndian(sizeBuffer.Span, (uint) dataBytes);
+        written += dataBytes;
+        return written;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static IBinaryWriter Write(this IBinaryWriter writer, object[] value)
+    public static int Write(this IBinaryWriter writer, object[] value)
     {
         if (value == null)
         {
-            writer.Write((uint)0);
-            return writer;
+            return writer.Write((uint)0);
         }
 
-        var sizeBuffer = writer.GetSpan(sizeof(uint));
-        writer.Advance(sizeof(uint));
+        var written = writer.Allocate(sizeof(uint), out var sizeBuffer);
 
-        var initialSize = writer.BytesWritten;
-        
+        var dataBytes = 0;
         for (var i = 0; i < value.Length; i++)
         {
-            writer.WriteField(value[i]);
+            dataBytes += writer.WriteField(value[i]);
         }
 
-        BinaryPrimitives.WriteUInt32BigEndian(sizeBuffer, (uint) (writer.BytesWritten - initialSize));
-        return writer;
+        BinaryPrimitives.WriteUInt32BigEndian(sizeBuffer.Span, (uint) dataBytes);
+        written += dataBytes;
+        return written;
     }
 }

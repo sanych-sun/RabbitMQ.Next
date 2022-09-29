@@ -13,6 +13,4 @@ internal interface IBinaryWriter
     Memory<byte> GetMemory(int sizeHint);
 
     void Advance(int count);
-    
-    int BytesWritten { get; }
 }
