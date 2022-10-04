@@ -3,6 +3,7 @@ using System.Buffers;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.ObjectPool;
+using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Messaging;
 using RabbitMQ.Next.Methods;
 using RabbitMQ.Next.Transport;
@@ -35,13 +36,23 @@ internal class MethodSender
     public ValueTask SendAsync<TRequest>(TRequest request, CancellationToken cancellation = default)
         where TRequest : struct, IOutgoingMethod
     {
+        MemoryBlock memory;
         var frameBuilder = this.frameBuilderPool.Get();
-        frameBuilder.Initialize(this.channelNumber, this.frameMaxSize);
-        var formatter = this.registry.GetFormatter<TRequest>();
+        try
+        {
+            frameBuilder.Initialize(this.channelNumber, this.frameMaxSize);
+            var formatter = this.registry.GetFormatter<TRequest>();
         
-        frameBuilder.WriteMethodFrame(request, formatter);
+            frameBuilder.WriteMethodFrame(request, formatter);
 
-        return this.connection.WriteToSocketAsync(frameBuilder.Complete(), cancellation);
+            memory = frameBuilder.Complete();
+        }
+        finally
+        {
+            this.frameBuilderPool.Return(frameBuilder);    
+        }
+        
+        return this.connection.WriteToSocketAsync(memory, cancellation);
     }
 
     public ValueTask PublishAsync<TState>(
@@ -49,13 +60,24 @@ internal class MethodSender
         IMessageProperties properties, Action<TState, IBufferWriter<byte>> contentBody,
         bool mandatory = false, bool immediate = false, CancellationToken cancellation = default)
     {
+        MemoryBlock memory;
         var frameBuilder = this.frameBuilderPool.Get();
-        frameBuilder.Initialize(this.channelNumber, this.frameMaxSize);
-        var request = new PublishMethod(exchange, routingKey, mandatory, immediate);
+        try
+        {
+            frameBuilder.Initialize(this.channelNumber, this.frameMaxSize);
+            var request = new PublishMethod(exchange, routingKey, mandatory, immediate);
 
-        frameBuilder.WriteMethodFrame(request, this.publishMethodFormatter);
-        frameBuilder.WriteContentFrame(state, properties, contentBody);
+            frameBuilder.WriteMethodFrame(request, this.publishMethodFormatter);
+            frameBuilder.WriteContentFrame(state, properties, contentBody);
 
-        return this.connection.WriteToSocketAsync(frameBuilder.Complete(), cancellation);
+            memory = frameBuilder.Complete();
+        }
+        finally
+        {
+            this.frameBuilderPool.Return(frameBuilder);    
+        }
+        
+
+        return this.connection.WriteToSocketAsync(memory, cancellation);
     }
 }
