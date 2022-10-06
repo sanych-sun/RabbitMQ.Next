@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Channels;
 using RabbitMQ.Next.Buffers;
+using RabbitMQ.Next.Transport;
 
 namespace RabbitMQ.Next.Channels;
 

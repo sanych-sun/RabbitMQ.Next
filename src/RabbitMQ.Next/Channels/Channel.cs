@@ -12,13 +12,13 @@ using RabbitMQ.Next.Methods;
 using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Messaging;
+using RabbitMQ.Next.Transport.Methods;
 using RabbitMQ.Next.Transport.Methods.Channel;
 
 namespace RabbitMQ.Next.Channels;
 
 internal sealed class Channel : IChannelInternal
 {
-    private readonly IMethodRegistry registry;
     private readonly ObjectPool<MemoryBlock> memoryPool;
     private readonly ObjectPool<LazyMessageProperties> messagePropertiesPool;
     private readonly MethodSender methodSender;
@@ -28,7 +28,6 @@ internal sealed class Channel : IChannelInternal
     public Channel(IConnectionInternal connection, ushort channelNumber, int frameMaxSize)
     {
         this.ChannelNumber = channelNumber;
-        this.registry = connection.MethodRegistry;
         this.memoryPool = connection.MemoryPool;
         this.messagePropertiesPool = connection.MessagePropertiesPool;
         this.methodSender = new MethodSender(this.ChannelNumber, connection, frameMaxSize);
@@ -61,10 +60,10 @@ internal sealed class Channel : IChannelInternal
     public IDisposable WithMessageHandler<TMethod>(IMessageHandler<TMethod> handler)
         where TMethod : struct, IIncomingMethod
     {
-        var methodId = (uint)this.registry.GetMethodId<TMethod>();
+        var methodId = (uint)MethodRegistry.GetMethodId<TMethod>();
         if (!this.methodProcessors.TryGetValue(methodId, out var processor))
         {
-            processor = new MessageProcessor<TMethod>(this.registry.GetParser<TMethod>());
+            processor = new MessageProcessor<TMethod>(MethodRegistry.GetParser<TMethod>());
             this.methodProcessors[methodId] = processor;
         }
 
@@ -172,7 +171,7 @@ internal sealed class Channel : IChannelInternal
                 // 3. Get content if exists
                 PayloadAccessor payload = null;
                    
-                if (this.registry.HasContent(methodId))
+                if (MethodRegistry.HasContent(methodId))
                 {
                     // 3.1 Get content header frame
                     if (!reader.TryRead(out var contentHeader))

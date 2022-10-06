@@ -1,7 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.ObjectPool;
-using RabbitMQ.Next.Methods;
 using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Channels;
 using RabbitMQ.Next.Transport;
@@ -12,14 +11,14 @@ internal sealed class ConnectionFactory : IConnectionFactory
 {
     public static readonly IConnectionFactory Default = new ConnectionFactory();
 
-    public async Task<IConnection> ConnectAsync(ConnectionSettings settings, IMethodRegistry registry, CancellationToken cancellation)
+    public async Task<IConnection> ConnectAsync(ConnectionSettings settings, CancellationToken cancellation)
     {
         var bufferSize = ProtocolConstants.FrameHeaderSize + settings.MaxFrameSize + 1; // 2 * (frame header + frame + frame-end) - to be sure that method and content header fit
         var memoryPool = new MemoryBlockPool(bufferSize, 200);
 
         var frameBuilderPool = new DefaultObjectPool<FrameBuilder>(new FrameBuilderPolicy(memoryPool), 20);
 
-        var connection = new Connection(settings, registry, memoryPool, frameBuilderPool);
+        var connection = new Connection(settings, memoryPool, frameBuilderPool);
         await connection.OpenConnectionAsync(cancellation);
         return connection;
     }

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using RabbitMQ.Next.Methods;
 using RabbitMQ.Next.Transport.Messaging;
+using RabbitMQ.Next.Transport.Methods;
 
 namespace RabbitMQ.Next.Channels;
 

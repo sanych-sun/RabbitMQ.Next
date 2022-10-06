@@ -9,74 +9,89 @@ internal static class MessageHeader
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int WriteMessageProperties(this Span<byte> target, IMessageProperties properties)
     {
-        var flags = properties.Flags;
-        var buffer = target.Write((ushort)flags);
+        var flags = MessageFlags.None;
+        
+        var buffer = target[sizeof(ushort)..];
 
-        if ((flags & MessageFlags.ContentType) != MessageFlags.None)
+        if (!string.IsNullOrEmpty(properties.ContentType))
         {
+            flags |= MessageFlags.ContentType;
             buffer = buffer.Write(properties.ContentType);
         }
 
-        if ((flags & MessageFlags.ContentEncoding) != MessageFlags.None)
+        if (!string.IsNullOrEmpty(properties.ContentEncoding))
         {
+            flags |= MessageFlags.ContentEncoding;
             buffer = buffer.Write(properties.ContentEncoding);
         }
 
-        if ((flags & MessageFlags.Headers) != MessageFlags.None)
+        if (properties.Headers != null && properties.Headers.Count > 0)
         {
+            flags |= MessageFlags.Headers;
             buffer = buffer.Write(properties.Headers);
         }
 
-        if ((flags & MessageFlags.DeliveryMode) != MessageFlags.None)
+        if (properties.DeliveryMode != DeliveryMode.Unset)
         {
+            flags |= MessageFlags.DeliveryMode;
             buffer = buffer.Write((byte)properties.DeliveryMode);
         }
 
-        if ((flags & MessageFlags.Priority) != MessageFlags.None)
+        if (properties.Priority > 0)
         {
+            flags |= MessageFlags.Priority;
             buffer = buffer.Write(properties.Priority);
         }
 
-        if ((flags & MessageFlags.CorrelationId) != MessageFlags.None)
+        if (!string.IsNullOrEmpty(properties.CorrelationId))
         {
+            flags |= MessageFlags.CorrelationId;
             buffer = buffer.Write(properties.CorrelationId);
         }
 
-        if ((flags & MessageFlags.ReplyTo) != MessageFlags.None)
+        if (!string.IsNullOrEmpty(properties.ReplyTo))
         {
+            flags |= MessageFlags.ReplyTo;
             buffer = buffer.Write(properties.ReplyTo);
         }
 
-        if ((flags & MessageFlags.Expiration) != MessageFlags.None)
+        if (!string.IsNullOrEmpty(properties.Expiration))
         {
+            flags |= MessageFlags.Expiration;
             buffer = buffer.Write(properties.Expiration);
         }
 
-        if ((flags & MessageFlags.MessageId) != MessageFlags.None)
+        if (!string.IsNullOrEmpty(properties.MessageId))
         {
+            flags |= MessageFlags.MessageId;
             buffer = buffer.Write(properties.MessageId);
         }
 
-        if ((flags & MessageFlags.Timestamp) != MessageFlags.None)
+        if (properties.Timestamp != default)
         {
+            flags |= MessageFlags.Timestamp;
             buffer = buffer.Write(properties.Timestamp);
         }
 
-        if ((flags & MessageFlags.Type) != MessageFlags.None)
+        if (!string.IsNullOrEmpty(properties.Type))
         {
+            flags |= MessageFlags.Type;
             buffer = buffer.Write(properties.Type);
         }
 
-        if ((flags & MessageFlags.UserId) != MessageFlags.None)
+        if (!string.IsNullOrEmpty(properties.UserId))
         {
+            flags |= MessageFlags.UserId;
             buffer = buffer.Write(properties.UserId);
         }
 
-        if ((flags & MessageFlags.ApplicationId) != MessageFlags.None)
+        if (!string.IsNullOrEmpty(properties.ApplicationId))
         {
+            flags |= MessageFlags.ApplicationId;
             buffer = buffer.Write(properties.ApplicationId);
         }
 
+        target.Write((ushort)flags);
         return target.Length - buffer.Length;
     }
 
@@ -98,12 +113,6 @@ internal static class MessageHeader
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlyMemory<byte> SplitDynamicProperty(this ReadOnlyMemory<byte> source, out ReadOnlyMemory<byte> value, MessageFlags flags, MessageFlags flag)
     {
-        if (source.IsEmpty)
-        {
-            value = ReadOnlyMemory<byte>.Empty;
-            return source;
-        }
-
         if ((flags & flag) == MessageFlags.None)
         {
             value = ReadOnlyMemory<byte>.Empty;
@@ -119,12 +128,6 @@ internal static class MessageHeader
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlyMemory<byte> SplitFixedProperty(this ReadOnlyMemory<byte> source, out ReadOnlyMemory<byte> value, MessageFlags flags, MessageFlags flag, int size)
     {
-        if (source.IsEmpty)
-        {
-            value = ReadOnlyMemory<byte>.Empty;
-            return source;
-        }
-
         if ((flags & flag) == MessageFlags.None)
         {
             value = ReadOnlyMemory<byte>.Empty;

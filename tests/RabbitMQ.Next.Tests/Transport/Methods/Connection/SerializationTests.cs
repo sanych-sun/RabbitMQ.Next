@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using RabbitMQ.Next.Tests.Mocks;
-using RabbitMQ.Next.Transport.Methods;
 using RabbitMQ.Next.Transport.Methods.Connection;
 using Xunit;
 
@@ -9,11 +8,6 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Connection;
 
 public class SerializationTests : SerializationTestBase
 {
-    public SerializationTests()
-        : base(builder => builder.AddConnectionMethods())
-    {
-    }
-
     [Fact]
     public void StartMethodParser()
     {

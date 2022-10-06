@@ -1,4 +1,4 @@
-namespace RabbitMQ.Next;
+namespace RabbitMQ.Next.Transport;
 
 public enum FrameType : byte
 {

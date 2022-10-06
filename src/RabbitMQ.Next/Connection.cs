@@ -5,7 +5,6 @@ using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Extensions.ObjectPool;
 using RabbitMQ.Next.Exceptions;
-using RabbitMQ.Next.Methods;
 using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Channels;
 using RabbitMQ.Next.Sockets;
@@ -27,10 +26,9 @@ internal class Connection : IConnectionInternal
     private CancellationTokenSource socketIoCancellation;
     private IChannelInternal connectionChannel;
 
-    public Connection(ConnectionSettings settings, IMethodRegistry methodRegistry, ObjectPool<MemoryBlock> memoryPool, ObjectPool<FrameBuilder> frameBuilderPool)
+    public Connection(ConnectionSettings settings, ObjectPool<MemoryBlock> memoryPool, ObjectPool<FrameBuilder> frameBuilderPool)
     {
         this.connectionDetails = new ConnectionDetails(settings);
-        this.MethodRegistry = methodRegistry;
         this.MessagePropertiesPool = new DefaultObjectPool<LazyMessageProperties>(new LazyMessagePropertiesPolicy());
         this.socketSender = System.Threading.Channels.Channel.CreateBounded<MemoryBlock>(new BoundedChannelOptions(100)
         {
@@ -47,8 +45,6 @@ internal class Connection : IConnectionInternal
     }
 
     public ConnectionState State { get; private set; }
-
-    public IMethodRegistry MethodRegistry { get; }
 
     public ObjectPool<MemoryBlock> MemoryPool { get; }
         

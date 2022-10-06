@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using RabbitMQ.Next.Methods;
 using RabbitMQ.Next.Tests.Mocks;
-using RabbitMQ.Next.Transport.Methods.Registry;
+using RabbitMQ.Next.Transport.Methods;
 using Xunit;
 
 namespace RabbitMQ.Next.Tests.Transport.Methods;
@@ -11,22 +11,16 @@ public abstract class SerializationTestBase
 {
     private readonly string currentNamespace;
 
-    protected SerializationTestBase(Action<IMethodRegistryBuilder> registryBuilder)
+    protected SerializationTestBase()
     {
-        var builder = new MethodRegistryBuilder();
-        registryBuilder(builder);
-        this.Registry = builder.Build();
-
         this.currentNamespace = this.GetType().Namespace;
     }
-
-    protected IMethodRegistry Registry { get; }
-
+    
     protected void TestFormatter<TMethod>(TMethod method)
         where TMethod : struct, IOutgoingMethod
     {
         var payloadResName = $"{this.currentNamespace}.{typeof(TMethod).Name}Payload.dat";
-        var formatter = this.Registry.GetFormatter<TMethod>();
+        var formatter = MethodRegistry.GetFormatter<TMethod>();
         var expected = Helpers.GetFileContent(payloadResName);
 
         Span<byte> payload = stackalloc byte[expected.Length];
@@ -42,7 +36,7 @@ public abstract class SerializationTestBase
         comparer ??= EqualityComparer<TMethod>.Default;
 
         var payloadResName = $"{this.currentNamespace}.{typeof(TMethod).Name}Payload.dat";
-        var parser = this.Registry.GetParser<TMethod>();
+        var parser = MethodRegistry.GetParser<TMethod>();
         var payload = Helpers.GetFileContent(payloadResName);
 
         var data = parser.Parse(payload);

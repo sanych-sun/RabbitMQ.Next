@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.ObjectPool;
 using RabbitMQ.Next.Messaging;
 using RabbitMQ.Next.Methods;
+using RabbitMQ.Next.Transport.Methods;
 using RabbitMQ.Next.Transport.Methods.Basic;
 
 namespace RabbitMQ.Next.Channels;
@@ -15,7 +16,6 @@ internal class MethodSender
 
     private readonly IConnectionInternal connection;
     private readonly IMethodFormatter<PublishMethod> publishMethodFormatter;
-    private readonly IMethodRegistry registry;
     private readonly ushort channelNumber;
     private readonly int frameMaxSize;
 
@@ -24,8 +24,7 @@ internal class MethodSender
         this.channelNumber = channelNumber;
         this.frameMaxSize = frameMaxSize;
         this.connection = connection;
-        this.registry = connection.MethodRegistry;
-        this.publishMethodFormatter = this.registry.GetFormatter<PublishMethod>();
+        this.publishMethodFormatter = MethodRegistry.GetFormatter<PublishMethod>();
         this.frameBuilderPool = connection.FrameBuilderPool;
     }
 
@@ -37,7 +36,7 @@ internal class MethodSender
         try
         {
             frameBuilder.Initialize(this.channelNumber, this.frameMaxSize);
-            var formatter = this.registry.GetFormatter<TRequest>();
+            var formatter = MethodRegistry.GetFormatter<TRequest>();
             frameBuilder.WriteMethodFrame(request, formatter);
 
             return this.connection.WriteToSocketAsync(frameBuilder.Complete(), cancellation);
