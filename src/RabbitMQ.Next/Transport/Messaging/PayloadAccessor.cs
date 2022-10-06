@@ -57,7 +57,6 @@ internal class PayloadAccessor: IPayload
         return this.body.ToSequence();
     }
 
-    public MessageFlags Flags => this.Properties.Flags;
     public string ContentType => this.Properties.ContentType;
     public string ContentEncoding => this.Properties.ContentEncoding;
     public IReadOnlyDictionary<string, object> Headers => this.Properties.Headers;

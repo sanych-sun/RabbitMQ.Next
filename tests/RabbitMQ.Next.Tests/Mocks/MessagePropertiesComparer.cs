@@ -13,8 +13,7 @@ public class MessagePropertiesComparer : IEqualityComparer<IMessageProperties>
         if (ReferenceEquals(y, null)) return false;
 
         var result =
-            x.Flags == y.Flags
-            && x.ContentType == y.ContentType
+            x.ContentType == y.ContentType
             && x.ContentEncoding == y.ContentEncoding
             && Helpers.DictionaryEquals(x.Headers, y.Headers)
             && x.DeliveryMode == y.DeliveryMode
@@ -34,7 +33,6 @@ public class MessagePropertiesComparer : IEqualityComparer<IMessageProperties>
     public int GetHashCode(IMessageProperties obj)
     {
         var hashCode = new HashCode();
-        hashCode.Add(obj.Flags);
         hashCode.Add(obj.ContentType);
         hashCode.Add(obj.ContentEncoding);
         hashCode.Add(obj.Headers);

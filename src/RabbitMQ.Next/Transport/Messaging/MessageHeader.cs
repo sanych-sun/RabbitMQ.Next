@@ -1,4 +1,5 @@
 using System;
+using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 using RabbitMQ.Next.Messaging;
 
@@ -9,73 +10,88 @@ internal static class MessageHeader
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void WriteMessageProperties(this IBinaryWriter builder, IMessageProperties properties)
     {
-        var flags = properties.Flags;
-        builder.Write((ushort)flags);
+        var flagsBuffer = builder.GetSpan(sizeof(ushort));
+        var flags = MessageFlags.None;
 
-        if ((flags & MessageFlags.ContentType) != MessageFlags.None)
+        if (!string.IsNullOrEmpty(properties.ContentType))
         {
+            flags |= MessageFlags.ContentType;
             builder.Write(properties.ContentType);
         }
 
-        if ((flags & MessageFlags.ContentEncoding) != MessageFlags.None)
+        if (!string.IsNullOrEmpty(properties.ContentEncoding))
         {
+            flags |= MessageFlags.ContentEncoding;
             builder.Write(properties.ContentEncoding);
         }
 
-        if ((flags & MessageFlags.Headers) != MessageFlags.None)
+        if (properties.Headers == null || properties.Headers.Count == 0)
         {
+            flags |= MessageFlags.Headers;
             builder.Write(properties.Headers);
         }
 
-        if ((flags & MessageFlags.DeliveryMode) != MessageFlags.None)
+        if (properties.DeliveryMode != DeliveryMode.Unset)
         {
+            flags |= MessageFlags.DeliveryMode;
             builder.Write((byte)properties.DeliveryMode);
         }
 
-        if ((flags & MessageFlags.Priority) != MessageFlags.None)
+        if (properties.Priority == 0)
         {
+            flags |= MessageFlags.Priority;
             builder.Write(properties.Priority);
         }
 
-        if ((flags & MessageFlags.CorrelationId) != MessageFlags.None)
+        if (!string.IsNullOrEmpty(properties.CorrelationId))
         {
+            flags |= MessageFlags.CorrelationId;
             builder.Write(properties.CorrelationId);
         }
 
-        if ((flags & MessageFlags.ReplyTo) != MessageFlags.None)
+        if (!string.IsNullOrEmpty(properties.ReplyTo))
         {
+            flags |= MessageFlags.ReplyTo;
             builder.Write(properties.ReplyTo);
         }
 
-        if ((flags & MessageFlags.Expiration) != MessageFlags.None)
+        if (!string.IsNullOrEmpty(properties.Expiration))
         {
+            flags |= MessageFlags.Expiration;
             builder.Write(properties.Expiration);
         }
 
-        if ((flags & MessageFlags.MessageId) != MessageFlags.None)
+        if (!string.IsNullOrEmpty(properties.MessageId))
         {
+            flags |= MessageFlags.MessageId;
             builder.Write(properties.MessageId);
         }
 
-        if ((flags & MessageFlags.Timestamp) != MessageFlags.None)
+        if (properties.Timestamp != default)
         {
+            flags |= MessageFlags.Timestamp;
             builder.Write(properties.Timestamp);
         }
 
-        if ((flags & MessageFlags.Type) != MessageFlags.None)
+        if (!string.IsNullOrEmpty(properties.Type))
         {
+            flags |= MessageFlags.Type;
             builder.Write(properties.Type);
         }
 
-        if ((flags & MessageFlags.UserId) != MessageFlags.None)
+        if (!string.IsNullOrEmpty(properties.UserId))
         {
+            flags |= MessageFlags.UserId;
             builder.Write(properties.UserId);
         }
 
-        if ((flags & MessageFlags.ApplicationId) != MessageFlags.None)
+        if (!string.IsNullOrEmpty(properties.ApplicationId))
         {
+            flags |= MessageFlags.ApplicationId;
             builder.Write(properties.ApplicationId);
         }
+        
+        BinaryPrimitives.WriteUInt16BigEndian(flagsBuffer, (ushort)flags);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

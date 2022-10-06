@@ -14,7 +14,6 @@ internal sealed class ConnectionFactory : IConnectionFactory
 
     public async Task<IConnection> ConnectAsync(ConnectionSettings settings, CancellationToken cancellation)
     {
-        // TODO: make it static, no needs to make it configurable as protocol is stable
         var registry = new MethodRegistryBuilder()
             .AddConnectionMethods()
             .AddChannelMethods()
