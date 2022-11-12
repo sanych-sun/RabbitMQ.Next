@@ -15,7 +15,7 @@ public class BinaryWriteExtensionsTests
     [InlineData(byte.MaxValue, new byte[] { 0b_11111111 })]
     public void WriteByte(byte data, byte[] expected)
     {
-        var writer = new BinaryWriterMock(expected.Length);
+        var writer = new BinaryWriterMock();
         var written = writer.Write(data);
 
         Assert.Equal(expected.Length, written);
@@ -30,7 +30,7 @@ public class BinaryWriteExtensionsTests
     [InlineData(-42, new byte[] { 0b_11010110 })]
     public void WriteSByte(sbyte data, byte[] expected)
     {
-        var writer = new BinaryWriterMock(expected.Length);
+        var writer = new BinaryWriterMock();
         var written = writer.Write(data);
 
         Assert.Equal(expected.Length, written);
@@ -42,7 +42,7 @@ public class BinaryWriteExtensionsTests
     [InlineData(true, new byte[] { 0b_00000001 })]
     public void WriteBool(bool data, byte[] expected)
     {
-        var writer = new BinaryWriterMock(expected.Length);
+        var writer = new BinaryWriterMock();
         var written = writer.Write(data);
 
         Assert.Equal(expected.Length, written);
@@ -57,7 +57,7 @@ public class BinaryWriteExtensionsTests
     [InlineData(ushort.MaxValue, new byte[] { 0b_11111111, 0b_11111111 })]
     public void WriteUShort(ushort data, byte[] expected)
     {
-        var writer = new BinaryWriterMock(expected.Length);
+        var writer = new BinaryWriterMock();
         var written = writer.Write(data);
 
         Assert.Equal(expected.Length, written);
@@ -72,7 +72,7 @@ public class BinaryWriteExtensionsTests
     [InlineData(-42, new byte[] { 0b_11111111, 0b_11010110 })]
     public void WriteShort(short data, byte[] expected)
     {
-        var writer = new BinaryWriterMock(expected.Length);
+        var writer = new BinaryWriterMock();
         var written = writer.Write(data);
 
         Assert.Equal(expected.Length, written);
@@ -86,7 +86,7 @@ public class BinaryWriteExtensionsTests
     [InlineData(uint.MaxValue, new byte[] { 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111 })]
     public void WriteUInt(uint data, byte[] expected)
     {
-        var writer = new BinaryWriterMock(expected.Length);
+        var writer = new BinaryWriterMock();
         var written = writer.Write(data);
         
         Assert.Equal(expected.Length, written);
@@ -101,7 +101,7 @@ public class BinaryWriteExtensionsTests
     [InlineData(-42, new byte[] { 0b_11111111, 0b_11111111, 0b_11111111, 0b_11010110 })]
     public void WriteInt(int data, byte[] expected)
     {
-        var writer = new BinaryWriterMock(expected.Length);
+        var writer = new BinaryWriterMock();
         var written = writer.Write(data);
 
         Assert.Equal(expected.Length, written);
@@ -116,7 +116,7 @@ public class BinaryWriteExtensionsTests
 
     public void WriteULong(ulong data, byte[] expected)
     {
-        var writer = new BinaryWriterMock(expected.Length);
+        var writer = new BinaryWriterMock();
         var written = writer.Write(data);
             
         Assert.Equal(expected.Length, written);
@@ -131,7 +131,7 @@ public class BinaryWriteExtensionsTests
     [InlineData(-42, new byte[] { 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11111111, 0b_11010110 })]
     public void WriteLong(long data, byte[] expected)
     {
-        var writer = new BinaryWriterMock(expected.Length);
+        var writer = new BinaryWriterMock();
         var written = writer.Write(data);
 
         Assert.Equal(expected.Length, written);
@@ -143,7 +143,7 @@ public class BinaryWriteExtensionsTests
     [InlineData(1E-45, new byte[] { 1, 0, 0, 0 })]
     public void WriteFloat(float data, byte[] expected)
     {
-        var writer = new BinaryWriterMock(expected.Length);
+        var writer = new BinaryWriterMock();
         var written = writer.Write(data);
 
         Assert.Equal(expected.Length, written);
@@ -155,7 +155,7 @@ public class BinaryWriteExtensionsTests
     [InlineData(5E-324, new byte[] { 1, 0, 0, 0, 0, 0, 0, 0 })]
     public void WriteDouble(double data, byte[] expected)
     {
-        var writer = new BinaryWriterMock(expected.Length);
+        var writer = new BinaryWriterMock();
         var written = writer.Write(data);
 
         Assert.Equal(expected.Length, written);
@@ -167,7 +167,7 @@ public class BinaryWriteExtensionsTests
     [InlineData(0.32d, new byte[] { 0, 0, 2, 0, 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0 })]
     public void WriteDecimal(decimal data, byte[] expected)
     {
-        var writer = new BinaryWriterMock(expected.Length);
+        var writer = new BinaryWriterMock();
         var written = writer.Write(data);
 
         Assert.Equal(expected.Length, written);
@@ -199,7 +199,7 @@ public class BinaryWriteExtensionsTests
     public void WriteDateTime(long data, byte[] expected)
     {
         var dt = DateTimeOffset.FromUnixTimeSeconds(data);
-        var writer = new BinaryWriterMock(expected.Length);
+        var writer = new BinaryWriterMock();
         var written = writer.Write(dt);
 
         Assert.Equal(expected.Length, written);
@@ -212,7 +212,7 @@ public class BinaryWriteExtensionsTests
     [InlineData(new byte[] { 1, 2, 3, 4, 5 }, new byte[] { 0, 0, 0, 5, 1, 2, 3, 4, 5 })]
     public void WriteBinary(byte[] data, byte[] expected)
     {
-        var writer = new BinaryWriterMock(expected.Length);
+        var writer = new BinaryWriterMock();
         var written = writer.Write(data);
 
         Assert.Equal(expected.Length, written);
@@ -223,7 +223,7 @@ public class BinaryWriteExtensionsTests
     [MemberData(nameof(WriteFieldTestCases))]
     public void WriteField(object value, byte[] expected)
     {
-        var writer = new BinaryWriterMock(expected.Length);
+        var writer = new BinaryWriterMock();
         var written = writer.WriteField(value);
 
         Assert.Equal(expected.Length, written);
@@ -234,7 +234,7 @@ public class BinaryWriteExtensionsTests
     [MemberData(nameof(WriteDictionaryTestCases))]
     public void WriteDictionary(IReadOnlyDictionary<string, object> value, byte[] expected)
     {
-        var writer = new BinaryWriterMock(expected.Length);
+        var writer = new BinaryWriterMock();
         var written = writer.Write(value);
 
         Assert.Equal(expected.Length, written);
@@ -245,7 +245,7 @@ public class BinaryWriteExtensionsTests
     [MemberData(nameof(WriteArrayTestCases))]
     public void WriteArray(object[] value, byte[] expected)
     {
-        var writer = new BinaryWriterMock(expected.Length);
+        var writer = new BinaryWriterMock();
         var written = writer.Write(value);
 
         Assert.Equal(expected.Length, written);
