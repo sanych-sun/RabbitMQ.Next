@@ -1,6 +1,7 @@
 using System;
 using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
+using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Messaging;
 
 namespace RabbitMQ.Next.Transport.Messaging;
