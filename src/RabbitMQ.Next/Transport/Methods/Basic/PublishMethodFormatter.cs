@@ -2,11 +2,10 @@ namespace RabbitMQ.Next.Transport.Methods.Basic;
 
 internal class PublishMethodFormatter : IMethodFormatter<PublishMethod>
 {
-    public void Write(IBinaryWriter writer, PublishMethod method)
-    {
-        writer.Write((short)ProtocolConstants.ObsoleteField);
-        writer.Write(method.Exchange);
-        writer.Write(method.RoutingKey);
-        writer.WriteFlags(method.Mandatory, method.Immediate);
-    }
+    public void Write(IBinaryWriter destination, PublishMethod method) 
+        => destination
+            .Write((short) ProtocolConstants.ObsoleteField)
+            .Write(method.Exchange)
+            .Write(method.RoutingKey)
+            .WriteFlags(method.Mandatory, method.Immediate);
 }

@@ -24,5 +24,8 @@ internal class BinaryWriterMock : IBinaryWriter
     {
         this.bytesWritten += count;
     }
+
+    public int BytesWritten => this.bytesWritten;
+
     public Span<byte> Written => new Span<byte>(this.buffer, 0, this.bytesWritten);
 }

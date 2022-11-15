@@ -68,9 +68,9 @@ internal class FrameBuilder : IBinaryWriter, IBufferWriter<byte>
     {
         this.BeginFrame(FrameType.ContentHeader);
     
-        this.Write(ContentHeaderPrefix);
-        this.Allocate(sizeof(ulong), out var contentSizeBuffer);
-        this.WriteMessageProperties(properties);
+        this.Write(ContentHeaderPrefix)
+            .Allocate(sizeof(ulong), out var contentSizeBuffer)
+            .WriteMessageProperties(properties);
 
         this.EndFrame();
 
@@ -152,6 +152,8 @@ internal class FrameBuilder : IBinaryWriter, IBufferWriter<byte>
 
     void IBinaryWriter.Advance(int count) => this.Advance(count);
     
+    int IBinaryWriter.BytesWritten => this.totalBytesWritten;
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void Advance(int count)
     {
