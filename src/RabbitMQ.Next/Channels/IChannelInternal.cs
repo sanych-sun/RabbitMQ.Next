@@ -6,7 +6,7 @@ namespace RabbitMQ.Next.Channels;
 
 internal interface IChannelInternal : IChannel
 {
-    public ChannelWriter<(FrameType Type, MemoryBlock Payload)> FrameWriter { get; }
+    public ChannelWriter<(FrameType Type, int Size, MemoryBlock Payload)> FrameWriter { get; }
 
     public bool TryComplete(Exception ex = null);
 

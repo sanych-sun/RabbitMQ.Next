@@ -26,6 +26,6 @@ internal class MemoryBlockPoolPolicy: PooledObjectPolicy<MemoryBlock>
             return false;
         }
         
-        return  obj.Reset();
+        return obj.Reset();
     }
 }

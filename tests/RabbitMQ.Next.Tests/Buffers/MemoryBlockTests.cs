@@ -37,13 +37,48 @@ public class MemoryBlockTests
     }
 
     [Fact]
+    public void AppendSetNext()
+    {
+        var memoryBlock = new MemoryBlock(10);
+        var nextBlock = new MemoryBlock(12);
+
+        memoryBlock.Append(nextBlock);
+        
+        Assert.Equal(nextBlock, memoryBlock.Next);
+    }
+    
+    [Fact]
+    public void AppendReturnsTailNode()
+    {
+        var memoryBlock = new MemoryBlock(10);
+        var nextBlock = new MemoryBlock(12);
+        var lastBlock = new MemoryBlock(14);
+        nextBlock.Append(lastBlock);
+
+        var result = memoryBlock.Append(nextBlock);
+        
+        Assert.Equal(lastBlock, result);
+    }
+    
+    [Fact]
+    public void AppendThrowsIsAlreadySet()
+    {
+        var memoryBlock = new MemoryBlock(10);
+        var nextBlock = new MemoryBlock(12);
+
+        memoryBlock.Append(nextBlock);
+        
+        Assert.Throws<InvalidOperationException>(() => memoryBlock.Append(new MemoryBlock(12)));
+    }
+    
+    [Fact]
     public void CanReset()
     {
         var memoryBlock = new MemoryBlock(10);
         memoryBlock.Slice(5);
 
         var nextBlock = new MemoryBlock(12);
-        memoryBlock.Next = nextBlock;
+        memoryBlock.Append(nextBlock);
         
         Assert.Equal(5, memoryBlock.Memory.Count);
         Assert.Equal(nextBlock, memoryBlock.Next);

@@ -92,9 +92,8 @@ public class MemoryBlockExtensionsTests
         {
             var next = new MemoryBlock(100);
             next.Write(chunks[i]);
-
-            current.Next = next;
-            current = next;
+            
+            current = current.Append(next);
         }
 
         return first;
