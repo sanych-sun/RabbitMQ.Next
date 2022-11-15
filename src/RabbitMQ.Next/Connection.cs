@@ -170,45 +170,47 @@ internal class Connection : IConnectionInternal
 
     private void ReceiveLoop(CancellationToken cancellationToken)
     {
-        var frameHeaderBuffer = new ArraySegment<byte>(new byte[ProtocolConstants.FrameHeaderSize]);
-        var frameEndBuffer = new ArraySegment<byte>(new byte[ProtocolConstants.FrameEndSize]);
-        var bufferBuilder = new BufferBuilder(this.MemoryPool);
+        var headerBuffer = new ArraySegment<byte>(new byte[ProtocolConstants.FrameHeaderSize]);
 
         try
         {
             while (!cancellationToken.IsCancellationRequested)
             {
                 // 1. Read frame header
-                this.socket.FillBuffer(frameHeaderBuffer);
+                this.socket.FillBuffer(headerBuffer);
                 if (cancellationToken.IsCancellationRequested)
                 {
                     break;
                 }
 
-                ((ReadOnlySpan<byte>)frameHeaderBuffer).ReadFrameHeader(out FrameType frameType, out ushort channel, out uint payloadSize);
+                ((ReadOnlySpan<byte>)headerBuffer).ReadFrameHeader(out FrameType frameType, out ushort channel, out uint payloadSize);
 
-                // 2. Read payload into buffer
-                this.socket.ReadIntoBuffer(bufferBuilder, (int)payloadSize);
-                var payload = bufferBuilder.Complete();
-                
-                // 3. Ensure there is FrameEnd
-                this.socket.FillBuffer(frameEndBuffer);
-                if (frameEndBuffer[0] != ProtocolConstants.FrameEndByte)
+                // 2. Get buffer
+                var buffer = this.MemoryPool.Get();
+
+                // 3. Read payload into the buffer, allocate extra byte for FrameEndByte
+                var payload = buffer.Memory[..((int)payloadSize + 1)];
+                this.socket.FillBuffer(payload);
+                // 4. Ensure there is FrameEnd
+                if (payload[(int)payloadSize] != ProtocolConstants.FrameEndByte)
                 {
                     // TODO: throw connection exception here
                     throw new InvalidOperationException();
                 }
 
-                // 4. Doing nothing on heartbeat frame
+                // 5. Doing nothing on heartbeat frame
                 if (frameType == FrameType.Heartbeat)
                 {
-                    this.MemoryPool.Return(payload);
+                    this.MemoryPool.Return(buffer);
                     continue;
                 }
 
-                // 5. Write frame to appropriate channel
+                // 6. Shrink the buffer to the payload size
+                buffer.Slice((int)payloadSize);
+
+                // 7. Write frame to appropriate channel
                 var targetChannel = (channel == ProtocolConstants.ConnectionChannel) ? this.connectionChannel.FrameWriter: this.channelPool.Get(channel).FrameWriter;
-                if (!targetChannel.TryWrite((frameType, (int)payloadSize, payload)))
+                if (!targetChannel.TryWrite((frameType, buffer)))
                 {
                     // should never get here, as channel suppose to be unbounded.
                     throw new InvalidOperationException("Cannot write frame into the target channel");

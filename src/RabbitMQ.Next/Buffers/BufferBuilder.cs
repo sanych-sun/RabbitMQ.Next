@@ -30,16 +30,6 @@ internal class BufferBuilder
         return result;
     }
 
-    public ArraySegment<byte> GetSegment(int size)
-        => this.GetSegment(size, size);
-
-    public ArraySegment<byte> GetSegment(int minSize, int maxSize)
-    {
-        this.EnsureBufferSize(minSize);
-        var size = Math.Min(maxSize, this.current.Size - this.currentOffset);
-        return this.current.Memory.Slice(this.currentOffset, size);
-    }
-    
     public Span<byte> GetSpan(int size)
         => this.GetSpan(size, size);
 
@@ -77,7 +67,10 @@ internal class BufferBuilder
         if (minSize > this.current.Size - this.currentOffset)
         {
             this.FinalizeCurrentBlock();
-            this.current = this.current.Append(this.memoryPool.Get());
+            var next = this.memoryPool.Get();
+            this.current.Next = next;
+            this.current = next;
+            this.currentOffset = 0;
         }
     }
     

@@ -31,7 +31,7 @@ internal class SocketWrapper : ISocket
         }
 
         this.readStream = stream;
-        this.writeStream = stream;
+        this.writeStream = stream; new BufferedStream(stream , 302400);
     }
 
     public void Send(ArraySegment<byte> payload)

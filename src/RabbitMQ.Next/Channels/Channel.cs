@@ -35,7 +35,7 @@ internal sealed class Channel : IChannelInternal
         this.methodSender = new MethodSender(this.ChannelNumber, connection, frameMaxSize);
 
         this.channelCompletion = new TaskCompletionSource<bool>();
-        var receiveChannel = System.Threading.Channels.Channel.CreateUnbounded<(FrameType Type, int Size, MemoryBlock Payload)>(new UnboundedChannelOptions
+        var receiveChannel = System.Threading.Channels.Channel.CreateUnbounded<(FrameType Type, MemoryBlock Payload)>(new UnboundedChannelOptions
         {
             SingleReader = true,
             SingleWriter = true,
@@ -100,7 +100,7 @@ internal sealed class Channel : IChannelInternal
         await this.methodSender.PublishAsync(state, exchange, routingKey, properties, payload, mandatory, immediate, cancellation);
     }
 
-    public ChannelWriter<(FrameType Type, int Size, MemoryBlock Payload)> FrameWriter { get; }
+    public ChannelWriter<(FrameType Type, MemoryBlock Payload)> FrameWriter { get; }
 
     public bool TryComplete(Exception ex = null)
     {
@@ -155,7 +155,7 @@ internal sealed class Channel : IChannelInternal
         this.TryComplete(new ChannelException(statusCode, description, failedMethodId));
     }
 
-    private async Task LoopAsync(ChannelReader<(FrameType Type, int Size, MemoryBlock Payload)> reader)
+    private async Task LoopAsync(ChannelReader<(FrameType Type, MemoryBlock Payload)> reader)
     {
         try
         {
@@ -165,13 +165,14 @@ internal sealed class Channel : IChannelInternal
                 {
                     methodFrame = await reader.ReadAsync();
                 }
-                
+
                 // 2. Get method Id
                 ((ReadOnlySpan<byte>)methodFrame.Payload.Memory).Read(out uint method);
                 var methodId = (MethodId) method;
                         
                 // 3. Get content if exists
                 PayloadAccessor payload = null;
+                   
                 if (this.registry.HasContent(methodId))
                 {
                     // 3.1 Get content header frame
@@ -181,10 +182,9 @@ internal sealed class Channel : IChannelInternal
                     }
 
                     // 3.2 Extract content body size
-                    ((ReadOnlySpan<byte>)contentHeader.Payload.Memory[4..] // skip ContentHeader Prefix
+                    ((ReadOnlySpan<byte>)contentHeader.Payload.Memory[4..] // skip 2 obsolete shorts
                         ).Read(out ulong contentSize);
 
-                    // 3.3. It could be split onto several frames, so bundle them together
                     MemoryBlock head = null;
                     MemoryBlock current = null;
                     long receivedContent = 0;
@@ -194,7 +194,7 @@ internal sealed class Channel : IChannelInternal
                         {
                             frame = await reader.ReadAsync();
                         }
-                        
+
                         if (head == null)
                         {
                             head = frame.Payload;
@@ -202,10 +202,11 @@ internal sealed class Channel : IChannelInternal
                         }
                         else
                         {
-                            current = current.Append(frame.Payload);
+                            current.Next = frame.Payload;
+                            current = frame.Payload;    
                         }
 
-                        receivedContent += frame.Size;
+                        receivedContent += frame.Payload.Memory.Count;
                     }
 
                     payload = new PayloadAccessor(this.messagePropertiesPool, this.memoryPool, contentHeader.Payload, head);

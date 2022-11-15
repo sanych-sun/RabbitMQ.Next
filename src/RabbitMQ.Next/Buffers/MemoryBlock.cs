@@ -19,35 +19,11 @@ internal sealed class MemoryBlock
 
     public int Size { get; private set; }
     
-    public MemoryBlock Next { get; private set; }
+    public MemoryBlock Next { get; set; }
     
     public ArraySegment<byte> Memory 
         => new (this.memory, 0, this.Size);
 
-    public MemoryBlock Append(MemoryBlock nextBlock)
-    {
-        if (this.Next != null)
-        {
-            throw new InvalidOperationException();
-        }
-
-        if (nextBlock == null)
-        {
-            return this;
-        }
-
-        this.Next = nextBlock;
-        
-        // scroll to the very last block in the chain and return it
-        var last = nextBlock;
-        while (last.Next != null)
-        {
-            last = last.Next;
-        }
-
-        return last;
-    }
-    
     public bool Reset()
     {
         this.Size = this.memory.Length;

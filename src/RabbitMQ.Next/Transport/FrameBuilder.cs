@@ -167,8 +167,6 @@ internal class FrameBuilder
 
         private int EnsureBufferSize(int size)
         {
-            // TODO: Implement magic to handle the case when body writer requested buffer bigger then buffer size and bigger then frame size  
-            
             // 1. Easiest case: current allocated buffer has enough free space
             if (this.buffer.Length - this.offset > size)
             {
