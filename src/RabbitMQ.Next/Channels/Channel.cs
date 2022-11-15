@@ -166,7 +166,7 @@ internal sealed class Channel : IChannelInternal
                 }
 
                 // 2. Get method Id
-                methodFrame.Payload.Data.Span.Read(out uint method);
+                ((ReadOnlySpan<byte>)methodFrame.Payload.Data).Read(out uint method);
                 var methodId = (MethodId) method;
                         
                 // 3. Get content if exists
@@ -181,8 +181,8 @@ internal sealed class Channel : IChannelInternal
                     }
 
                     // 3.2 Extract content body size
-                    contentHeader.Payload.Data[4..] // skip 2 obsolete shorts
-                        .Span.Read(out ulong contentSize);
+                    ((ReadOnlySpan<byte>)contentHeader.Payload.Data[4..]) // skip 2 obsolete shorts
+                        .Read(out ulong contentSize);
 
                     MemoryBlock head = null;
                     MemoryBlock current = null;
@@ -204,7 +204,7 @@ internal sealed class Channel : IChannelInternal
                             current = current.Append(frame.Payload);    
                         }
 
-                        receivedContent += frame.Payload.Data.Length;
+                        receivedContent += frame.Payload.Data.Count;
                     }
 
                     payload = new PayloadAccessor(this.messagePropertiesPool, this.memoryPool, contentHeader.Payload, head);
@@ -213,7 +213,7 @@ internal sealed class Channel : IChannelInternal
                 var handled = false;
                 if (this.methodProcessors.TryGetValue((uint)methodId, out var processor))
                 {
-                    handled = processor.ProcessMessage(methodFrame.Payload.Data.Span[sizeof(uint)..], payload);
+                    handled = processor.ProcessMessage(methodFrame.Payload.Data[sizeof(uint)..], payload);
                 }
 
                 // TODO: should throw on unhandled methods?

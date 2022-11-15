@@ -7,7 +7,7 @@ internal static class MemoryBlockExtensions
 {
     public static ReadOnlySequence<byte> ToSequence(this MemoryBlock source)
     {
-        if (source == null || source.Data.IsEmpty)
+        if (source == null || source.Data.Count == 0)
         {
             return ReadOnlySequence<byte>.Empty;
         }
