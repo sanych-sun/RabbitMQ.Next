@@ -5,6 +5,8 @@ namespace RabbitMQ.Next.Messaging;
 
 public interface IMessageProperties
 {
+    MessageFlags Flags { get; }
+
     string ContentType { get; }
 
     string ContentEncoding { get; }

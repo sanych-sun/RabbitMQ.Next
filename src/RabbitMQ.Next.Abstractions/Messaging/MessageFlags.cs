@@ -1,9 +1,9 @@
 using System;
 
-namespace RabbitMQ.Next.Transport.Messaging;
+namespace RabbitMQ.Next.Messaging;
 
 [Flags]
-internal enum MessageFlags : ushort
+public enum MessageFlags : ushort
 {
     None = 0,
     ApplicationId = 1 << 3,

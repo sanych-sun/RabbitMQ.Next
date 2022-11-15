@@ -24,26 +24,27 @@ internal sealed class LazyMessageProperties : IMessageProperties
     public void Set(ReadOnlyMemory<byte> buffer)
     {
         buffer.Span.Read(out ushort fl);
-        var flags = (MessageFlags)fl;
+        this.Flags = (MessageFlags)fl;
 
         buffer[sizeof(ushort)..]
-            .SplitStringProperty(out this.contentType, flags, MessageFlags.ContentType)
-            .SplitStringProperty(out this.contentEncoding, flags, MessageFlags.ContentEncoding)
-            .SplitDynamicProperty(out this.headers, flags, MessageFlags.Headers)
-            .SplitFixedProperty(out this.deliveryMode, flags, MessageFlags.DeliveryMode, sizeof(byte))
-            .SplitFixedProperty(out this.priority, flags, MessageFlags.Priority, sizeof(byte))
-            .SplitStringProperty(out this.correlationId, flags, MessageFlags.CorrelationId)
-            .SplitStringProperty(out this.replyTo, flags, MessageFlags.ReplyTo)
-            .SplitStringProperty(out this.expiration, flags, MessageFlags.Expiration)
-            .SplitStringProperty(out this.messageId, flags, MessageFlags.MessageId)
-            .SplitFixedProperty(out this.timestamp, flags, MessageFlags.Timestamp, sizeof(ulong))
-            .SplitStringProperty(out this.type, flags, MessageFlags.Type)
-            .SplitStringProperty(out this.userId, flags, MessageFlags.UserId)
-            .SplitStringProperty(out this.applicationId, flags, MessageFlags.ApplicationId);
+            .SplitStringProperty(out this.contentType, this.Flags, MessageFlags.ContentType)
+            .SplitStringProperty(out this.contentEncoding, this.Flags, MessageFlags.ContentEncoding)
+            .SplitDynamicProperty(out this.headers, this.Flags, MessageFlags.Headers)
+            .SplitFixedProperty(out this.deliveryMode, this.Flags, MessageFlags.DeliveryMode, sizeof(byte))
+            .SplitFixedProperty(out this.priority, this.Flags, MessageFlags.Priority, sizeof(byte))
+            .SplitStringProperty(out this.correlationId, this.Flags, MessageFlags.CorrelationId)
+            .SplitStringProperty(out this.replyTo, this.Flags, MessageFlags.ReplyTo)
+            .SplitStringProperty(out this.expiration, this.Flags, MessageFlags.Expiration)
+            .SplitStringProperty(out this.messageId, this.Flags, MessageFlags.MessageId)
+            .SplitFixedProperty(out this.timestamp, this.Flags, MessageFlags.Timestamp, sizeof(ulong))
+            .SplitStringProperty(out this.type, this.Flags, MessageFlags.Type)
+            .SplitStringProperty(out this.userId, this.Flags, MessageFlags.UserId)
+            .SplitStringProperty(out this.applicationId, this.Flags, MessageFlags.ApplicationId);
     }
 
     public void Reset()
     {
+        this.Flags = MessageFlags.None;
         this.contentType = ReadOnlyMemory<byte>.Empty;
         this.contentEncoding = ReadOnlyMemory<byte>.Empty;
         this.headers = ReadOnlyMemory<byte>.Empty;
@@ -58,6 +59,8 @@ internal sealed class LazyMessageProperties : IMessageProperties
         this.userId = ReadOnlyMemory<byte>.Empty;
         this.applicationId = ReadOnlyMemory<byte>.Empty;
     }
+
+    public MessageFlags Flags { get; private set; }
 
     public string ContentType => DecodeString(this.contentType);
 
