@@ -1,9 +1,8 @@
 using System;
-using RabbitMQ.Next.Methods;
 
-namespace RabbitMQ.Next.Transport.Methods.Registry;
+namespace RabbitMQ.Next.Methods;
 
-internal interface IMethodRegistryBuilder
+public interface IMethodRegistryBuilder
 {
     IMethodRegistryBuilder Register<TMethod>(MethodId methodId, Action<IMethodRegistrationBuilder<TMethod>> registration)
         where TMethod : struct, IMethod;

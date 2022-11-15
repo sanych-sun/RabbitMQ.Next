@@ -9,14 +9,13 @@ namespace RabbitMQ.Next.Sockets;
 internal class SocketWrapper : ISocket
 {
     private readonly Socket socket;
-    private readonly Stream readStream;
-    private readonly Stream writeStream;
+    private readonly Stream stream;
 
     public SocketWrapper(Socket socket, Endpoint endpoint)
     {
         this.socket = socket;
 
-        Stream stream = new NetworkStream(socket)
+        this.stream = new NetworkStream(socket)
         {
             ReadTimeout = 60000,
             WriteTimeout = 60000,
@@ -24,24 +23,21 @@ internal class SocketWrapper : ISocket
 
         if (endpoint.UseSsl)
         {
-            var sslStream = new SslStream(stream, false);
+            var sslStream = new SslStream(this.stream, false);
             sslStream.AuthenticateAsClient(endpoint.Host);
 
-            stream = sslStream;
+            this.stream = sslStream;
         }
-
-        this.readStream = stream;
-        this.writeStream = stream; new BufferedStream(stream , 302400);
     }
 
-    public void Send(ArraySegment<byte> payload)
-        => this.writeStream.Write(payload.Array, payload.Offset, payload.Count);
+    public void Send(ReadOnlyMemory<byte> payload)
+        => this.stream.Write(payload.Span);
 
-    public void Flush() => this.writeStream.Flush();
+    public void Flush() => this.stream.Flush();
 
-    public int Receive(ArraySegment<byte> buffer)
+    public int Receive(Span<byte> buffer)
     {
-        var result = this.readStream.Read(buffer.Array, 0 , buffer.Count);
+        var result = this.stream.Read(buffer);
 
         if (result == 0 && this.IsConnectionClosedByServer())
         {
@@ -56,8 +52,7 @@ internal class SocketWrapper : ISocket
 
     public void Dispose()
     {
-        this.readStream?.Dispose();
-        this.writeStream?.Dispose();
+        this.stream?.Dispose();
         this.socket?.Dispose();
     }
 }

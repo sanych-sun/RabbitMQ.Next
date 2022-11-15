@@ -1,5 +1,4 @@
 using System;
-using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 
 namespace RabbitMQ.Next.Transport;
@@ -30,16 +29,8 @@ internal static class Framing
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void WriteFrameHeader(Span<byte> buffer, FrameType frameType, ushort channel, uint payloadSize)
-    {
-        buffer[0] = (byte)frameType;
-        BinaryPrimitives.WriteUInt16BigEndian(buffer[1..], channel);
-        BinaryPrimitives.WriteUInt32BigEndian(buffer[3..], payloadSize);
-    }
-    
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void WriteFrameEnd(Span<byte> buffer)
-    {
-        buffer[0] = ProtocolConstants.FrameEndByte;
-    }
+    public static void WriteFrameHeader(this Span<byte> target, FrameType type, ushort channel, uint payloadSize)
+        => target.Write((byte)type)
+            .Write(channel)
+            .Write(payloadSize);
 }

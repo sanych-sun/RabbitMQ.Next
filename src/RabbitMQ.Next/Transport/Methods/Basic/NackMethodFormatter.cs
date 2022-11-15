@@ -1,9 +1,16 @@
+using System;
+using RabbitMQ.Next.Methods;
+
 namespace RabbitMQ.Next.Transport.Methods.Basic;
 
 internal class NackMethodFormatter : IMethodFormatter<NackMethod>
 {
-    public void Write(IBufferBuilder destination, NackMethod method)
-        => destination
+    public int Write(Span<byte> destination, NackMethod method)
+    {
+        var result = destination
             .Write(method.DeliveryTag)
             .Write(BitConverter.ComposeFlags(method.Multiple, method.Requeue));
+
+        return destination.Length - result.Length;
+    }
 }

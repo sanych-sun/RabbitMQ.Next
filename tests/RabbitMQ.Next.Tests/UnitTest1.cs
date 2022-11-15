@@ -1,4 +1,3 @@
-// using System;
 // using System.Diagnostics;
 // using System.Text;
 // using System.Threading.Tasks;
@@ -27,19 +26,17 @@
 //                 .Endpoint("amqp://test2:test2@localhost:5672/")
 //                 .ConnectAsync();
 //
-//             var publisher = connection.Publisher("amq.topic",
+//             var publisher = connection.Publisher("amq.fanout",
 //                 builder => builder
 //                     .UsePlainTextSerializer()
 //             );
 //
 //             var sw = Stopwatch.StartNew();
 //
-//             // for (var i = 0; i < 10000; i++)
-//             // {
-//             //     await publisher.PublishAsync(BuildDummyText(204800), prop => prop.CorrelationId(Guid.NewGuid().ToString()));
-//             // }
-//             
-//             await publisher.PublishAsync(BuildDummyText(204800), prop => prop.CorrelationId(Guid.NewGuid().ToString()));
+//             for (var i = 0; i < 10_000; i++)
+//             {
+//                 await publisher.PublishAsync($"test{i}");
+//             }
 //
 //             await publisher.DisposeAsync();
 //
@@ -48,43 +45,43 @@
 //             this.output.WriteLine(sw.ElapsedMilliseconds.ToString());
 //         }
 //
-//         // [Fact]
-//         // public async Task TestConsumer()
-//         // {
-//         //     //var connection = new Connection(ConnectionString.Create("amqp://rpeesesf:naQF5gZbGA9GzNHkSKE4QxwBt__Lsmu-@beaver.rmq.cloudamqp.com/rpeesesf"));
-//         //     await using var connection = await ConnectionBuilder.Default
-//         //         .Endpoint("amqp://test1:test1@localhost:5672/")
-//         //         .UseDefaults()
-//         //         .ConnectAsync();
-//         //
-//         //     var num = 0;
-//         //     var tcs = new TaskCompletionSource();
-//         //     var consumer = connection.Consumer(
-//         //         builder => builder
-//         //             .BindToQueue("test-queue")
-//         //             .PrefetchCount(10)
-//         //             .UsePlainTextSerializer()
-//         //             .MessageHandler((message, content) =>
-//         //             {
-//         //                 num++;
-//         //
-//         //                 if (num == 10000)
-//         //                 {
-//         //                     tcs.SetResult();
-//         //                 }
-//         //
-//         //                 var body = content.GetContent<string>();
-//         //
-//         //                 return new ValueTask<bool>(true);
-//         //             })
-//         //     );
-//         //
-//         //     var comsumeTask = consumer.ConsumeAsync();
-//         //
-//         //     await tcs.Task;
-//         //     await consumer.DisposeAsync();
-//         //     await comsumeTask;
-//         // }
+//         [Fact]
+//         public async Task TestConsumer()
+//         {
+//             //var connection = new Connection(ConnectionString.Create("amqp://rpeesesf:naQF5gZbGA9GzNHkSKE4QxwBt__Lsmu-@beaver.rmq.cloudamqp.com/rpeesesf"));
+//             await using var connection = await ConnectionBuilder.Default
+//                 .Endpoint("amqp://test1:test1@localhost:5672/")
+//                 .UseDefaults()
+//                 .ConnectAsync();
+//
+//             var num = 0;
+//             var tcs = new TaskCompletionSource();
+//             var consumer = connection.Consumer(
+//                 builder => builder
+//                     .BindToQueue("test-queue")
+//                     .PrefetchCount(10)
+//                     .UsePlainTextSerializer()
+//                     .MessageHandler((message, content) =>
+//                     {
+//                         num++;
+//
+//                         if (num == 10000)
+//                         {
+//                             tcs.SetResult();
+//                         }
+//
+//                         var body = content.GetContent<string>();
+//
+//                         return new ValueTask<bool>(true);
+//                     })
+//             );
+//
+//             var comsumeTask = consumer.ConsumeAsync();
+//
+//             await tcs.Task;
+//             await consumer.DisposeAsync();
+//             await comsumeTask;
+//         }
 //
 //         [Header("test", "wokrs")]
 //         public class DummyClass

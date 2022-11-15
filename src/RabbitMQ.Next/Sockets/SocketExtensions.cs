@@ -4,13 +4,12 @@ namespace RabbitMQ.Next.Sockets;
 
 internal static class SocketExtensions
 {
-    public static void FillBuffer(this ISocket socket, ArraySegment<byte> buffer)
+    public static void FillBuffer(this ISocket socket, Span<byte> buffer)
     {
-        var received = 0;
-        while (buffer.Count > 0)
+        while (buffer.Length > 0)
         {
-            received += socket.Receive(buffer);
-            buffer = buffer.Slice(received);
+            var received = socket.Receive(buffer);
+            buffer = buffer[received..];
         }
     }
 }

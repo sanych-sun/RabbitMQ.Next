@@ -7,23 +7,23 @@ internal static class MemoryBlockExtensions
 {
     public static ReadOnlySequence<byte> ToSequence(this MemoryBlock source)
     {
-        if (source == null || source.Memory.Count == 0)
+        if (source == null || source.Data.IsEmpty)
         {
             return ReadOnlySequence<byte>.Empty;
         }
 
         if (source.Next == null)
         {
-            return new ReadOnlySequence<byte>(source.Memory);
+            return new ReadOnlySequence<byte>(source.Data);
         }
 
-        var first = new MemorySegment<byte>(source.Memory);
+        var first = new MemorySegment<byte>(source.Data);
         var last = first;
         var current = source.Next;
 
         while (current != null)
         {
-            last = last.Append(current.Memory);
+            last = last.Append(current.Data);
             current = current.Next;
         }
             
@@ -34,16 +34,15 @@ internal static class MemoryBlockExtensions
     {
         if (data.IsEmpty)
         {
-            memory.Slice(0);
             return;
         }
 
-        if (data.Length > memory.Memory.Count)
+        if (data.Length > memory.Memory.Length)
         {
             throw new OutOfMemoryException();
         }
             
-        data.CopyTo(memory.Memory);
-        memory.Slice(data.Length);
+        data.CopyTo(memory.Memory.Span);
+        memory.Commit(data.Length);
     }
 }

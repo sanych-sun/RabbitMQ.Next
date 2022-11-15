@@ -5,6 +5,7 @@ using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Extensions.ObjectPool;
 using RabbitMQ.Next.Exceptions;
+using RabbitMQ.Next.Methods;
 using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Channels;
 using RabbitMQ.Next.Sockets;
@@ -12,7 +13,6 @@ using RabbitMQ.Next.Tasks;
 using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Messaging;
 using RabbitMQ.Next.Transport.Methods.Connection;
-using RabbitMQ.Next.Transport.Methods.Registry;
 using Channel = RabbitMQ.Next.Channels.Channel;
 
 namespace RabbitMQ.Next;
@@ -56,14 +56,14 @@ internal class Connection : IConnectionInternal
 
     public ObjectPool<FrameBuilder> FrameBuilderPool { get; }
 
-    public ValueTask WriteToSocketAsync(MemoryBlock memory, CancellationToken cancellation = default)
+    public Task WriteToSocketAsync(MemoryBlock memory, CancellationToken cancellation = default)
     {
         if (this.socketSender.Writer.TryWrite(memory))
         {
-            return default;
+            return Task.CompletedTask;
         }
 
-        return this.socketSender.Writer.WriteAsync(memory, cancellation);
+        return this.socketSender.Writer.WriteAsync(memory, cancellation).AsTask();
     }
 
     public async Task<IChannel> OpenChannelAsync(CancellationToken cancellationToken = default)
@@ -139,13 +139,13 @@ internal class Connection : IConnectionInternal
         }
     }
 
-    private async Task WriteToSocketAsync(ReadOnlyMemory<byte> bytes)
+    private Task WriteToSocketAsync(ReadOnlyMemory<byte> bytes)
     {
         var memoryBlock = this.MemoryPool.Get();
         memoryBlock.Write(bytes.Span);
 
         // Should not return memory block here, it will be done in SendLoop
-        await this.WriteToSocketAsync(memoryBlock);
+        return this.WriteToSocketAsync(memoryBlock);
     }
 
     private async Task SendLoop()
@@ -158,10 +158,10 @@ internal class Connection : IConnectionInternal
                 var current = memoryBlock;
                 while (current != null)
                 {
-                    this.socket.Send(current.Memory);
+                    this.socket.Send(current.Data);
                     current = current.Next;
                 }
-                
+
                 this.socket.Flush();
                 this.MemoryPool.Return(memoryBlock);
             }
@@ -170,7 +170,7 @@ internal class Connection : IConnectionInternal
 
     private void ReceiveLoop(CancellationToken cancellationToken)
     {
-        var headerBuffer = new ArraySegment<byte>(new byte[ProtocolConstants.FrameHeaderSize]);
+        Span<byte> headerBuffer = new byte[ProtocolConstants.FrameHeaderSize];
 
         try
         {
@@ -189,7 +189,7 @@ internal class Connection : IConnectionInternal
                 var buffer = this.MemoryPool.Get();
 
                 // 3. Read payload into the buffer, allocate extra byte for FrameEndByte
-                var payload = buffer.Memory[..((int)payloadSize + 1)];
+                var payload = buffer.Span[..((int)payloadSize + 1)];
                 this.socket.FillBuffer(payload);
                 // 4. Ensure there is FrameEnd
                 if (payload[(int)payloadSize] != ProtocolConstants.FrameEndByte)
@@ -206,7 +206,7 @@ internal class Connection : IConnectionInternal
                 }
 
                 // 6. Shrink the buffer to the payload size
-                buffer.Slice((int)payloadSize);
+                buffer.Commit((int)payloadSize);
 
                 // 7. Write frame to appropriate channel
                 var targetChannel = (channel == ProtocolConstants.ConnectionChannel) ? this.connectionChannel.FrameWriter: this.channelPool.Get(channel).FrameWriter;
@@ -261,7 +261,7 @@ internal class Connection : IConnectionInternal
         var negotiationResult = new NegotiationResults(
             settings.Auth.Type,
             tuneMethod.ChannelMax,
-            (int)tuneMethod.MaxFrameSize,
+            Math.Min(settings.MaxFrameSize, (int)tuneMethod.MaxFrameSize),
             TimeSpan.FromSeconds(tuneMethod.HeartbeatInterval));
 
         await channel.SendAsync(new TuneOkMethod(tuneMethod.ChannelMax, (uint)negotiationResult.FrameMaxSize, tuneMethod.HeartbeatInterval), cancellation);

@@ -1,5 +1,7 @@
+using System;
 using System.Threading;
 using System.Threading.Tasks;
+using RabbitMQ.Next.Methods;
 
 namespace RabbitMQ.Next;
 
@@ -11,11 +13,13 @@ public interface IConnectionBuilder
 
     IConnectionBuilder Endpoint(string host, int port, bool ssl = false);
 
+    IConnectionBuilder ConfigureMethodRegistry(Action<IMethodRegistryBuilder> builder);
+
     IConnectionBuilder ClientProperty(string key, object value);
 
     IConnectionBuilder Locale(string locale);
 
-    IConnectionBuilder BufferSize(int sizeBytes);
+    IConnectionBuilder MaxFrameSize(int sizeBytes);
 
     Task<IConnection> ConnectAsync(CancellationToken cancellation = default);
 }

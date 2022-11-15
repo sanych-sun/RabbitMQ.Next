@@ -1,9 +1,8 @@
 using System;
-using RabbitMQ.Next.Methods;
 
-namespace RabbitMQ.Next.Transport.Methods.Registry;
+namespace RabbitMQ.Next.Methods;
 
-internal interface IMethodRegistry
+public interface IMethodRegistry
 {
     bool HasContent(MethodId methodId);
 

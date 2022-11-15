@@ -1,9 +1,8 @@
 using RabbitMQ.Next.Methods;
-using RabbitMQ.Next.Transport.Methods.Registry;
 
 namespace RabbitMQ.Next.Transport.Methods;
 
-internal static class MethodRegistryBuilderExtensions
+public static class MethodRegistryBuilderExtensions
 {
     public static IMethodRegistryBuilder AddConnectionMethods(this IMethodRegistryBuilder builder)
     {

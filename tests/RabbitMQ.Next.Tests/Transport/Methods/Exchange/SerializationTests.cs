@@ -1,3 +1,4 @@
+using RabbitMQ.Next.Transport.Methods;
 using RabbitMQ.Next.Transport.Methods.Exchange;
 using Xunit;
 
@@ -5,6 +6,11 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Exchange;
 
 public class SerializationTests : SerializationTestBase
 {
+    public SerializationTests()
+        : base(builder => builder.AddExchangeMethods())
+    {
+    }
+
     [Fact]
     public void DeclareMethodFormatter()
         => this.TestFormatter(new DeclareMethod("myexchange", "direct", true, false, false, null));

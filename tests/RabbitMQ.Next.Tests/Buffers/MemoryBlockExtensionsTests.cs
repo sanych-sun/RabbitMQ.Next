@@ -15,8 +15,8 @@ public class MemoryBlockExtensionsTests
         var memory = new MemoryBlock(100);
         memory.Write(data);
 
-        Assert.Equal(data?.Length ?? 0, memory.Memory.Count);
-        Assert.Equal(data ?? Array.Empty<byte>(), memory.Memory.ToArray());
+        Assert.Equal(data?.Length ?? 0, memory.Offset);
+        Assert.Equal(data ?? Array.Empty<byte>(), memory.Data.ToArray());
     }
         
     [Fact]
@@ -54,7 +54,7 @@ public class MemoryBlockExtensionsTests
         yield return new object[]
         {
             Array.Empty<byte>(),
-            BuildMemory(new byte[] { })
+            new MemoryBlock(100)
         };
 
         yield return new object[]
@@ -78,13 +78,12 @@ public class MemoryBlockExtensionsTests
 
     private static MemoryBlock BuildMemory(params byte[][] chunks)
     {
-        var first = new MemoryBlock(100);
         if (chunks == null || chunks.Length == 0)
         {
-            first.Slice(0);
-            return first;
+            return new MemoryBlock(100);
         }
-
+            
+        var first = new MemoryBlock(100);
         first.Write(chunks[0]);
         var current = first;
 
@@ -93,8 +92,7 @@ public class MemoryBlockExtensionsTests
             var next = new MemoryBlock(100);
             next.Write(chunks[i]);
 
-            current.Next = next;
-            current = next;
+            current = current.Append(next);
         }
 
         return first;

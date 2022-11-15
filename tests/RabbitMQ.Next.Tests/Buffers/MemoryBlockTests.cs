@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using RabbitMQ.Next.Buffers;
 using Xunit;
 
@@ -13,7 +14,7 @@ public class MemoryBlockTests
     {
         var memoryBlock = new MemoryBlock(size);
 
-        Assert.Equal(size, memoryBlock.Memory.Count);
+        Assert.Equal(size, memoryBlock.Span.Length);
     }
 
     [Theory]
@@ -25,31 +26,44 @@ public class MemoryBlockTests
     }
 
     [Theory]
-    [InlineData(100, 0)]
-    [InlineData(100, 10)]
-    [InlineData(100, 100)]
-    public void CanSliceData(int bufferSize, int sliceSize)
+    [MemberData(nameof(DataWriterTestCases))]
+    public void CanCommitData(byte[] expected, byte[][] data)
     {
-        var memoryBlock = new MemoryBlock(bufferSize);
-        memoryBlock.Slice(sliceSize);
+        var memoryBlock = new MemoryBlock(100);
 
-        Assert.Equal(sliceSize, memoryBlock.Memory.Count);
+        foreach (var part in data)
+        {
+            part.CopyTo(memoryBlock.Span);
+            memoryBlock.Commit(part.Length);
+        }
+
+        Assert.Equal(expected, memoryBlock.Data.ToArray());
     }
 
     [Fact]
     public void CanReset()
     {
         var memoryBlock = new MemoryBlock(10);
-        memoryBlock.Slice(5);
 
-        var nextBlock = new MemoryBlock(12);
-        memoryBlock.Next = nextBlock;
-        
-        Assert.Equal(5, memoryBlock.Memory.Count);
+        Assert.Equal(0, memoryBlock.Data.Length);
+        Assert.Equal(10, memoryBlock.Span.Length);
+        Assert.Null(memoryBlock.Next);
+
+        var nextBlock = memoryBlock.Append(new MemoryBlock(12));
+        memoryBlock.Commit(3);
+        Assert.Equal(3, memoryBlock.Data.Length);
+        Assert.Equal(7, memoryBlock.Span.Length);
         Assert.Equal(nextBlock, memoryBlock.Next);
 
         memoryBlock.Reset();
-        Assert.Equal(10, memoryBlock.Memory.Count);
+        Assert.Equal(0, memoryBlock.Data.Length);
+        Assert.Equal(10, memoryBlock.Span.Length);
         Assert.Null(memoryBlock.Next);
+    }
+
+    public static IEnumerable<object[]> DataWriterTestCases()
+    {
+        yield return new object[] { new byte[] { 0x01, 0x02, 0x03 }, new[] { new byte[] { 0x01, 0x02, 0x03 } } };
+        yield return new object[] { new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05 }, new[] { new byte[] { 0x01, 0x02, 0x03 }, new byte[] { 0x04, 0x05 } } };
     }
 }

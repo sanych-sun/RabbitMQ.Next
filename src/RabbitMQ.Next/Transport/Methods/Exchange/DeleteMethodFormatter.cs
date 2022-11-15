@@ -1,9 +1,16 @@
+using System;
+using RabbitMQ.Next.Methods;
+
 namespace RabbitMQ.Next.Transport.Methods.Exchange;
 
-internal class DeleteMethodFormatter : IMethodFormatter<DeleteMethod>
+public class DeleteMethodFormatter : IMethodFormatter<DeleteMethod>
 {
-    public void Write(IBufferBuilder destination, DeleteMethod method)
-        => destination.Write((short) ProtocolConstants.ObsoleteField)
+    public int Write(Span<byte> destination, DeleteMethod method)
+    {
+        var result = destination.Write((short) ProtocolConstants.ObsoleteField)
             .Write(method.Exchange)
             .Write(method.UnusedOnly);
+
+        return destination.Length - result.Length;
+    }
 }

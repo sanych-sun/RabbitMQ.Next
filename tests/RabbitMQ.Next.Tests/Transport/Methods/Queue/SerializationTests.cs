@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using RabbitMQ.Next.Transport.Methods;
 using RabbitMQ.Next.Transport.Methods.Queue;
 using Xunit;
 
@@ -6,6 +7,10 @@ namespace RabbitMQ.Next.Tests.Transport.Methods.Queue;
 
 public class SerializationTests : SerializationTestBase
 {
+    public SerializationTests()
+        : base(builder => builder.AddQueueMethods())
+    {}
+
     [Fact]
     public void DeclareMethodFormatter()
         => this.TestFormatter(new DeclareMethod("my-queue", true, false, false, new Dictionary<string, object> {["a"] = "a"}));
