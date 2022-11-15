@@ -10,7 +10,7 @@ internal static class MessageHeader
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void WriteMessageProperties(this IBinaryWriter builder, IMessageProperties properties)
     {
-        builder.Allocate(sizeof(ushort), out var flagsBuffer);
+        var flagsBuffer = builder.GetSpan(sizeof(ushort));
         var flags = MessageFlags.None;
 
         if (!string.IsNullOrEmpty(properties.ContentType))
@@ -25,7 +25,7 @@ internal static class MessageHeader
             builder.Write(properties.ContentEncoding);
         }
 
-        if (properties.Headers != null && properties.Headers.Count > 0)
+        if (properties.Headers == null || properties.Headers.Count == 0)
         {
             flags |= MessageFlags.Headers;
             builder.Write(properties.Headers);
@@ -37,7 +37,7 @@ internal static class MessageHeader
             builder.Write((byte)properties.DeliveryMode);
         }
 
-        if (properties.Priority > 0)
+        if (properties.Priority == 0)
         {
             flags |= MessageFlags.Priority;
             builder.Write(properties.Priority);
@@ -91,7 +91,7 @@ internal static class MessageHeader
             builder.Write(properties.ApplicationId);
         }
         
-        BinaryPrimitives.WriteUInt16BigEndian(flagsBuffer.Span, (ushort)flags);
+        BinaryPrimitives.WriteUInt16BigEndian(flagsBuffer, (ushort)flags);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

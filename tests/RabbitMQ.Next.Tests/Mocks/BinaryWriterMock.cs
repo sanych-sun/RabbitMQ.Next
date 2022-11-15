@@ -7,7 +7,7 @@ internal class BinaryWriterMock : IBinaryWriter
 {
     private readonly byte[] buffer;
 
-    public BinaryWriterMock(int size = 1024)
+    public BinaryWriterMock(int size)
     {
         this.buffer = new byte[size];
     }

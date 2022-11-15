@@ -13,11 +13,12 @@ public class MessageHeaderTests
     [MemberData(nameof(MessagePropertiesTestCases))]
     internal void WriteMessageProperties(byte[] expected, MessageProperties props)
     {
-        var writer = new BinaryWriterMock();
-        
-        writer.WriteMessageProperties(props);
-        
-        Assert.Equal(expected, writer.Written.ToArray());
+        Span<byte> buffer = stackalloc byte[expected.Length];
+        var written = buffer.WriteMessageProperties(props);
+        var bytes = buffer.Slice(0, written);
+
+        Assert.Equal(expected.Length, written);
+        Assert.Equal(expected, bytes.ToArray());
     }
 
     public static IEnumerable<object[]> MessagePropertiesTestCases()
