@@ -33,11 +33,19 @@ internal class MethodSender
         where TRequest : struct, IOutgoingMethod
     {
         var frameBuilder = this.frameBuilderPool.Get();
-        frameBuilder.Initialize(this.channelNumber, this.frameMaxSize);
-        var formatter = this.registry.GetFormatter<TRequest>();
-        frameBuilder.WriteMethodFrame(request, formatter);
 
-        return this.connection.WriteToSocketAsync(frameBuilder.Complete(), cancellation);
+        try
+        {
+            frameBuilder.Initialize(this.channelNumber, this.frameMaxSize);
+            var formatter = this.registry.GetFormatter<TRequest>();
+            frameBuilder.WriteMethodFrame(request, formatter);
+
+            return this.connection.WriteToSocketAsync(frameBuilder.Complete(), cancellation);
+        }
+        finally
+        {
+            this.frameBuilderPool.Return(frameBuilder);   
+        }
     }
 
     public Task PublishAsync<TState>(
@@ -46,12 +54,21 @@ internal class MethodSender
         PublishFlags flags = PublishFlags.None, CancellationToken cancellation = default)
     {
         var frameBuilder = this.frameBuilderPool.Get();
-        frameBuilder.Initialize(this.channelNumber, this.frameMaxSize);
-        var publishMethod = new PublishMethod(exchange, routingKey, (byte)flags);
+        
+        try
+        {
+            frameBuilder.Initialize(this.channelNumber, this.frameMaxSize);
+            var publishMethod = new PublishMethod(exchange, routingKey, (byte)flags);
 
-        frameBuilder.WriteMethodFrame(publishMethod, this.publishMethodFormatter);
-        frameBuilder.WriteContentFrame(state, properties, contentBody);
+            frameBuilder.WriteMethodFrame(publishMethod, this.publishMethodFormatter);
+            frameBuilder.WriteContentFrame(state, properties, contentBody);
 
-        return this.connection.WriteToSocketAsync(frameBuilder.Complete(), cancellation);
+            return this.connection.WriteToSocketAsync(frameBuilder.Complete(), cancellation);
+        }
+        finally
+        {
+            this.frameBuilderPool.Return(frameBuilder);   
+        }
+        
     }
 }

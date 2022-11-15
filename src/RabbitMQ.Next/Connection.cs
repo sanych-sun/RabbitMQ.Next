@@ -170,7 +170,7 @@ internal class Connection : IConnectionInternal
 
     private void ReceiveLoop(CancellationToken cancellationToken)
     {
-        Span<byte> headerBuffer = new byte[ProtocolConstants.FrameHeaderSize];
+        var headerBuffer = new ArraySegment<byte>(new byte[ProtocolConstants.FrameHeaderSize]);
 
         try
         {
@@ -189,7 +189,7 @@ internal class Connection : IConnectionInternal
                 var buffer = this.MemoryPool.Get();
 
                 // 3. Read payload into the buffer, allocate extra byte for FrameEndByte
-                var payload = buffer.Span[..((int)payloadSize + 1)];
+                var payload = new ArraySegment<byte>(buffer.buffer, 0, ((int)payloadSize + 1));
                 this.socket.FillBuffer(payload);
                 // 4. Ensure there is FrameEnd
                 if (payload[(int)payloadSize] != ProtocolConstants.FrameEndByte)

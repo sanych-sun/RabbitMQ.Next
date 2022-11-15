@@ -45,18 +45,18 @@ public class MemoryBlockTests
     {
         var memoryBlock = new MemoryBlock(10);
 
-        Assert.Equal(0, memoryBlock.Data.Length);
+        Assert.Equal(0, memoryBlock.Data.Count);
         Assert.Equal(10, memoryBlock.Span.Length);
         Assert.Null(memoryBlock.Next);
 
         var nextBlock = memoryBlock.Append(new MemoryBlock(12));
         memoryBlock.Commit(3);
-        Assert.Equal(3, memoryBlock.Data.Length);
+        Assert.Equal(3, memoryBlock.Data.Count);
         Assert.Equal(7, memoryBlock.Span.Length);
         Assert.Equal(nextBlock, memoryBlock.Next);
 
         memoryBlock.Reset();
-        Assert.Equal(0, memoryBlock.Data.Length);
+        Assert.Equal(0, memoryBlock.Data.Count);
         Assert.Equal(10, memoryBlock.Span.Length);
         Assert.Null(memoryBlock.Next);
     }

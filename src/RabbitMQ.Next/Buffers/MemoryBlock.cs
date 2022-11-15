@@ -4,7 +4,7 @@ namespace RabbitMQ.Next.Buffers;
 
 internal sealed class MemoryBlock
 {
-    private readonly byte[] buffer;
+    public readonly byte[] buffer;
 
     public MemoryBlock(int size)
     {
@@ -27,7 +27,7 @@ internal sealed class MemoryBlock
         return true;
     }
 
-    public ReadOnlyMemory<byte> Data
+    public ArraySegment<byte> Data
         =>  new (this.buffer, 0, this.Offset);
 
     public void Commit(int length)

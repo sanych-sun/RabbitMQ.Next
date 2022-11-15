@@ -12,7 +12,7 @@ internal class WaitMethodMessageHandler<TMethod> : IMessageHandler<TMethod>
 
     public WaitMethodMessageHandler()
     {
-        this.tcs = new TaskCompletionSource<TMethod>();
+        this.tcs = new TaskCompletionSource<TMethod>(TaskCreationOptions.RunContinuationsAsynchronously);
     }
 
     public Task<TMethod> WaitTask => this.tcs.Task;
