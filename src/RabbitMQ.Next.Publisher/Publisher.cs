@@ -74,26 +74,26 @@ internal sealed class Publisher : IPublisher
         }
     }
 
-    public Task PublishAsync<TContent>(TContent content, Action<IMessageBuilder> propertiesBuilder = null, bool mandatory = false, bool immediate = false, CancellationToken cancellation = default)
+    public Task PublishAsync<TContent>(TContent content, Action<IMessageBuilder> propertiesBuilder = null, PublishFlags flags = PublishFlags.None, CancellationToken cancellation = default)
     {
         var properties = this.messagePropsPool.Get();
         this.ApplyInitializers(content, properties);
         propertiesBuilder?.Invoke(properties);
 
-        return this.PublishAsyncInternal(content, properties, mandatory, immediate, cancellation);
+        return this.PublishAsyncInternal(content, properties, flags, cancellation);
     }
 
-    public Task PublishAsync<TState, TContent>(TState state, TContent content, Action<TState, IMessageBuilder> propertiesBuilder = null, bool mandatory = false, bool immediate = false, CancellationToken cancellation = default)
+    public Task PublishAsync<TState, TContent>(TState state, TContent content, Action<TState, IMessageBuilder> propertiesBuilder = null, PublishFlags flags = PublishFlags.None, CancellationToken cancellation = default)
     {
         var properties = this.messagePropsPool.Get();
         this.ApplyInitializers(content, properties);
         propertiesBuilder?.Invoke(state, properties);
 
-        return this.PublishAsyncInternal(content, properties, mandatory, immediate, cancellation);
+        return this.PublishAsyncInternal(content, properties, flags, cancellation);
     }
 
 
-    private async Task PublishAsyncInternal<TContent>(TContent content, MessageBuilder message, bool mandatory, bool immediate, CancellationToken cancellation)
+    private async Task PublishAsyncInternal<TContent>(TContent content, MessageBuilder message, PublishFlags flags, CancellationToken cancellation)
     {
         this.CheckDisposed();
         var serializer = this.serializerFactory.Get(message);
@@ -110,7 +110,7 @@ internal sealed class Publisher : IPublisher
                 (content, serializer),
                 this.exchange, message.RoutingKey, message,
                 (st, buffer) => st.serializer.Serialize(st.content, buffer),
-                mandatory, immediate, cancellation);
+                flags, cancellation);
         }
         finally
         {

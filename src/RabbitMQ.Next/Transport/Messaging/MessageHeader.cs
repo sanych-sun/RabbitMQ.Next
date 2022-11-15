@@ -7,7 +7,7 @@ namespace RabbitMQ.Next.Transport.Messaging;
 internal static class MessageHeader
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void WriteMessageProperties(this IBinaryWriter builder, IMessageProperties properties)
+    public static void WriteMessageProperties(this IBufferBuilder builder, IMessageProperties properties)
     {
         var flags = properties.Flags;
         builder.Write((ushort)flags);

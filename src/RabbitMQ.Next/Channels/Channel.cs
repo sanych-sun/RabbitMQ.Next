@@ -94,10 +94,10 @@ internal sealed class Channel : IChannelInternal
     public async Task PublishAsync<TState>(
         TState state, string exchange, string routingKey,
         IMessageProperties properties, Action<TState, IBufferWriter<byte>> payload,
-        bool mandatory = false, bool immediate = false, CancellationToken cancellation = default)
+        PublishFlags flags = PublishFlags.None, CancellationToken cancellation = default)
     {
         this.ValidateState();
-        await this.methodSender.PublishAsync(state, exchange, routingKey, properties, payload, mandatory, immediate, cancellation);
+        await this.methodSender.PublishAsync(state, exchange, routingKey, properties, payload, flags, cancellation);
     }
 
     public ChannelWriter<(FrameType Type, MemoryBlock Payload)> FrameWriter { get; }

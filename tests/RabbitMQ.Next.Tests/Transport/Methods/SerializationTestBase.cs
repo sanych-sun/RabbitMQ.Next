@@ -34,7 +34,7 @@ public abstract class SerializationTestBase
         var formatter = this.Registry.GetFormatter<TMethod>();
         var expected = Helpers.GetFileContent(payloadResName);
 
-        var buffer =  new BinaryWriterMock(expected.Length);
+        var buffer =  new BufferBuilderMock(expected.Length);
         formatter.Write(buffer, method);
 
         Assert.Equal(expected, buffer.Written.ToArray());

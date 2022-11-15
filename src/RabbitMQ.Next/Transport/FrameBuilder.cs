@@ -11,7 +11,7 @@ using RabbitMQ.Next.Transport.Methods;
 
 namespace RabbitMQ.Next.Transport;
 
-internal class FrameBuilder : IBinaryWriter, IBufferWriter<byte>
+internal class FrameBuilder : IBufferBuilder, IBufferWriter<byte>
 {
     private readonly ObjectPool<MemoryBlock> memoryPool;
 
@@ -147,13 +147,13 @@ internal class FrameBuilder : IBinaryWriter, IBufferWriter<byte>
 
     void IBufferWriter<byte>.Advance(int count) => this.Advance(count);
 
-    Memory<byte> IBinaryWriter.GetMemory(int sizeHint) => this.GetMemory(sizeHint);
+    Memory<byte> IBufferBuilder.GetMemory(int sizeHint) => this.GetMemory(sizeHint);
     
-    Span<byte> IBinaryWriter.GetSpan(int sizeHint) => this.GetSpan(sizeHint);
+    Span<byte> IBufferBuilder.GetSpan(int sizeHint) => this.GetSpan(sizeHint);
 
-    void IBinaryWriter.Advance(int count) => this.Advance(count);
+    void IBufferBuilder.Advance(int count) => this.Advance(count);
     
-    int IBinaryWriter.BytesWritten => this.totalBytesWritten;
+    int IBufferBuilder.BytesWritten => this.totalBytesWritten;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void Advance(int count)

@@ -2,7 +2,7 @@ namespace RabbitMQ.Next.Transport.Methods.Exchange;
 
 internal class UnbindMethodFormatter : IMethodFormatter<UnbindMethod>
 {
-    public void Write(IBinaryWriter destination, UnbindMethod method)
+    public void Write(IBufferBuilder destination, UnbindMethod method)
         => destination.Write((short) ProtocolConstants.ObsoleteField)
             .Write(method.Destination)
             .Write(method.Source)
