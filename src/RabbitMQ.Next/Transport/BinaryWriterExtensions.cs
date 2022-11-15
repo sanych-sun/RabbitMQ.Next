@@ -1,15 +1,12 @@
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace RabbitMQ.Next.Transport;
 
 internal static class BinaryWriterExtensions
 {
-    
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static IBinaryWriter Allocate(this IBinaryWriter writer, int bytes, out Memory<byte> buffer)
     {
         buffer = writer.GetMemory(bytes)[..bytes];
@@ -18,7 +15,6 @@ internal static class BinaryWriterExtensions
         return writer;
     }
     
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static IBinaryWriter Write(this IBinaryWriter writer, byte data)
     {
         var buffer = writer.GetSpan(sizeof(byte));
@@ -27,7 +23,7 @@ internal static class BinaryWriterExtensions
         return writer;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    
     public static IBinaryWriter Write(this IBinaryWriter writer, sbyte data)
     {
         var buffer = writer.GetSpan(sizeof(sbyte));
@@ -36,13 +32,13 @@ internal static class BinaryWriterExtensions
         return writer;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    
     public static IBinaryWriter Write(this IBinaryWriter writer, bool data)
     {
         return writer.Write(data ? (byte) 1 : (byte) 0);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    
     public static IBinaryWriter Write(this IBinaryWriter writer, ushort data)
     {
         var buffer = writer.GetSpan(sizeof(ushort));
@@ -51,7 +47,7 @@ internal static class BinaryWriterExtensions
         return writer;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    
     public static IBinaryWriter Write(this IBinaryWriter writer, short data)
     {
         var buffer = writer.GetSpan(sizeof(short));
@@ -60,7 +56,7 @@ internal static class BinaryWriterExtensions
         return writer;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    
     public static IBinaryWriter Write(this IBinaryWriter writer, uint data)
     {
         var buffer = writer.GetSpan(sizeof(uint));
@@ -69,7 +65,7 @@ internal static class BinaryWriterExtensions
         return writer;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    
     public static IBinaryWriter Write(this IBinaryWriter writer, int data)
     {
         var buffer = writer.GetSpan(sizeof(int));
@@ -78,7 +74,7 @@ internal static class BinaryWriterExtensions
         return writer;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    
     public static IBinaryWriter Write(this IBinaryWriter writer, ulong data)
     {
         var buffer = writer.GetSpan(sizeof(ulong));
@@ -87,7 +83,7 @@ internal static class BinaryWriterExtensions
         return writer;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    
     public static IBinaryWriter Write(this IBinaryWriter writer, long data)
     {
         var buffer = writer.GetSpan(sizeof(long));
@@ -96,7 +92,7 @@ internal static class BinaryWriterExtensions
         return writer;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    
     public static IBinaryWriter Write(this IBinaryWriter writer, float data)
     {
         var buffer = writer.GetSpan(sizeof(float));
@@ -105,7 +101,7 @@ internal static class BinaryWriterExtensions
         return writer;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    
     public static IBinaryWriter Write(this IBinaryWriter writer, decimal data)
     {
         var buffer = writer.GetSpan(sizeof(decimal));
@@ -114,7 +110,7 @@ internal static class BinaryWriterExtensions
         return writer;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    
     public static IBinaryWriter Write(this IBinaryWriter writer, double data)
     {
         var buffer = writer.GetSpan(sizeof(double));
@@ -123,7 +119,7 @@ internal static class BinaryWriterExtensions
         return writer;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    
     public static IBinaryWriter Write(this IBinaryWriter writer, ReadOnlySpan<byte> data)
     {
         writer.Write((uint)data.Length);
@@ -133,7 +129,6 @@ internal static class BinaryWriterExtensions
         return writer;
     }
     
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static IBinaryWriter WriteFlags(
         this IBinaryWriter writer,
         bool bit1, bool bit2 = false, bool bit3 = false, bool bit4 = false,
@@ -151,7 +146,7 @@ internal static class BinaryWriterExtensions
         return writer.Write(bits);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    
     public static IBinaryWriter Write(this IBinaryWriter writer, string data, bool isLongString = false)
     {
         var sizeBufferLen = isLongString ? sizeof(uint) : sizeof(byte);
@@ -183,15 +178,15 @@ internal static class BinaryWriterExtensions
         return writer;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    
     public static IBinaryWriter Write(this IBinaryWriter writer, DateTimeOffset data)
     {
         var timestamp = data.ToUnixTimeSeconds();
         return writer.Write(timestamp);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static IBinaryWriter WriteField(this IBinaryWriter writer, object value)
+    
+    internal static void WriteField(this IBinaryWriter writer, object value)
     {
         switch (value)
         {
@@ -261,11 +256,9 @@ internal static class BinaryWriterExtensions
             default:
                 throw new NotSupportedException($"Not supported type: {value.GetType().FullName}");
         }
-
-        return writer;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    
     public static IBinaryWriter Write(this IBinaryWriter writer, IEnumerable<KeyValuePair<string, object>> value)
     {
         if (value == null)
@@ -288,7 +281,7 @@ internal static class BinaryWriterExtensions
         return writer;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    
     public static IBinaryWriter Write(this IBinaryWriter writer, object[] value)
     {
         if (value == null)

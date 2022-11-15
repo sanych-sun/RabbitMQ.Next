@@ -27,7 +27,7 @@
 //                 .Endpoint("amqp://test2:test2@localhost:5672/")
 //                 .ConnectAsync();
 //
-//             var publisher = connection.Publisher("amq.fanout",
+//             var publisher = connection.Publisher("amq.topic",
 //                 builder => builder
 //                     .UsePlainTextSerializer()
 //             );

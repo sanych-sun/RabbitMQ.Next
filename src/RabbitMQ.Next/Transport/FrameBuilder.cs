@@ -116,6 +116,7 @@ internal class FrameBuilder : IBinaryWriter, IBufferWriter<byte>
         {
             Framing.WriteFrameHeader(this.currentFrameHeader.Span, this.currentFrameType, this.chNumber, (uint)this.currentFrameBytesWritten);
 
+            //this.EnsureBufferSize(ProtocolConstants.FrameEndSize, false);
             Framing.WriteFrameEnd(this.buffer.Memory[this.bufferOffset..]);
             this.bufferOffset += ProtocolConstants.FrameEndSize;
         }
@@ -180,7 +181,7 @@ internal class FrameBuilder : IBinaryWriter, IBufferWriter<byte>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int EnsureBufferSize(int requestedSize, bool validateFrame = true)
     {
-        if (validateFrame && this.currentFrameBytesWritten + requestedSize > this.frameMaxSize)
+        if (validateFrame && this.currentFrameBytesWritten + requestedSize + 1 > this.frameMaxSize)
         {
             if (this.currentFrameType != FrameType.ContentBody)
             {
@@ -191,23 +192,26 @@ internal class FrameBuilder : IBinaryWriter, IBufferWriter<byte>
             this.BeginFrame(FrameType.ContentBody);
         }
 
-        if (this.bufferOffset + requestedSize + ProtocolConstants.FrameEndSize > this.buffer.Memory.Count)
+        if (this.bufferOffset + requestedSize + 1 > this.buffer.Memory.Count)
         {
-            if (this.currentFrameType != FrameType.Malformed && this.currentFrameBytesWritten == 0)
+            var frameType = this.currentFrameType;
+            if (this.currentFrameType != FrameType.Malformed)
             {
-                this.Rollback(ProtocolConstants.FrameHeaderSize);
+                this.EndFrame();
             }
             
             this.CompleteCurrentBuffer();
             
-            // todo: refactor to allow allocation of chunks bigger then configured buffer size 
+            // todo: refactor to allow allocation of chunks bigger then buffer size 
             var nextBuffer = this.memoryPool.Get();
             this.buffer.Next = nextBuffer;
             this.buffer = nextBuffer;
             this.bufferOffset = 0;
+            
+            this.BeginFrame(frameType);
         }
 
-        return Math.Min(this.frameMaxSize - this.currentFrameBytesWritten, this.buffer.Memory.Count - this.bufferOffset - ProtocolConstants.FrameEndSize);
+        return Math.Min(this.frameMaxSize - this.currentFrameBytesWritten - 1, this.buffer.Memory.Count - this.bufferOffset - 1);
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
