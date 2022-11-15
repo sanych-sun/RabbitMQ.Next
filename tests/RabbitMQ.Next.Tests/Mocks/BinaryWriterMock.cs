@@ -1,5 +1,4 @@
 using System;
-using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Transport;
 
 namespace RabbitMQ.Next.Tests.Mocks;
