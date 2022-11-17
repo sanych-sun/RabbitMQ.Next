@@ -100,7 +100,7 @@ internal static class MethodRegistry
     }
     
     public static bool HasContent(MethodId methodId) => MethodsWithContent.Contains((uint)methodId);
-    
+
     public static IMethodParser<TMethod> GetParser<TMethod>()
         where TMethod : struct, IIncomingMethod
     {

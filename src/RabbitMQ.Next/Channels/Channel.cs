@@ -13,24 +13,27 @@ using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Messaging;
 using RabbitMQ.Next.Transport.Methods;
+using RabbitMQ.Next.Transport.Methods.Basic;
 using RabbitMQ.Next.Transport.Methods.Channel;
 
 namespace RabbitMQ.Next.Channels;
 
 internal sealed class Channel : IChannelInternal
 {
+    private readonly IConnectionInternal connection;
     private readonly ObjectPool<MemoryBlock> memoryPool;
     private readonly ObjectPool<LazyMessageProperties> messagePropertiesPool;
-    private readonly MethodSender methodSender;
+    private readonly ObjectPool<MessageBuilder> messageBuilderPool;
     private readonly TaskCompletionSource<bool> channelCompletion;
     private readonly Dictionary<uint, IMessageProcessor> methodProcessors = new();
 
     public Channel(IConnectionInternal connection, ushort channelNumber, int frameMaxSize)
     {
+        this.connection = connection;
         this.ChannelNumber = channelNumber;
         this.memoryPool = connection.MemoryPool;
+        this.messageBuilderPool = new DefaultObjectPool<MessageBuilder>(new MessageBuilderPoolPolicy(memoryPool, channelNumber, frameMaxSize), 10);
         this.messagePropertiesPool = connection.MessagePropertiesPool;
-        this.methodSender = new MethodSender(this.ChannelNumber, connection, frameMaxSize);
 
         this.channelCompletion = new TaskCompletionSource<bool>();
         var receiveChannel = System.Threading.Channels.Channel.CreateUnbounded<(FrameType Type, MemoryBlock Payload)>(new UnboundedChannelOptions
@@ -41,7 +44,7 @@ internal sealed class Channel : IChannelInternal
         });
         this.FrameWriter = receiveChannel.Writer;
 
-        var channelCloseWait = new WaitMethodMessageHandler<CloseMethod>();
+        var channelCloseWait = new WaitMethodMessageHandler<CloseMethod>(default);
         channelCloseWait.WaitTask.ContinueWith(t =>
         {
             if (t.IsCompletedSuccessfully)
@@ -75,27 +78,38 @@ internal sealed class Channel : IChannelInternal
         where TRequest : struct, IOutgoingMethod
     {
         this.ValidateState();
-        return this.methodSender.SendAsync(request, cancellation);
+        
+        var data = this.UseMessageBuilder(request, 
+            (builder, state) => builder.WriteMethodFrame(state));
+        
+        return this.connection.WriteToSocketAsync(data, cancellation);
     }
 
     public async Task<TResponse> SendAsync<TRequest, TResponse>(TRequest request, CancellationToken cancellation = default)
         where TRequest : struct, IOutgoingMethod where TResponse : struct, IIncomingMethod
     {
-        this.ValidateState();
         var waitTask = this.WaitAsync<TResponse>(cancellation);
-
-        await this.methodSender.SendAsync(request, cancellation);
-
+        await this.SendAsync(request, cancellation);
         return await waitTask;
     }
 
     public Task PublishAsync<TState>(
-        TState state, string exchange, string routingKey,
-        IMessageProperties properties, Action<TState, IBufferWriter<byte>> payload,
+        TState contentBuilderState, string exchange, string routingKey,
+        IMessageProperties properties, Action<TState, IBufferWriter<byte>> contentBuilder,
         PublishFlags flags = PublishFlags.None, CancellationToken cancellation = default)
     {
         this.ValidateState();
-        return this.methodSender.PublishAsync(state, exchange, routingKey, properties, payload, flags, cancellation);
+        
+        var publishMethod = new PublishMethod(exchange, routingKey, (byte)flags);
+        
+        var data = this.UseMessageBuilder((contentBuilderState, publishMethod, properties, contentBuilder),
+            (builder, state) =>
+            {
+                builder.WriteMethodFrame(state.publishMethod);
+                builder.WriteContentFrame(state.contentBuilderState, state.properties, state.contentBuilder);
+            });
+        
+        return this.connection.WriteToSocketAsync(data, cancellation);
     }
 
     public ChannelWriter<(FrameType Type, MemoryBlock Payload)> FrameWriter { get; }
@@ -132,13 +146,17 @@ internal sealed class Channel : IChannelInternal
         where TMethod : struct, IIncomingMethod
     {
         this.ValidateState();
-        var waitHandler = new WaitMethodMessageHandler<TMethod>();
+        var waitHandler = new WaitMethodMessageHandler<TMethod>(cancellation);
         var disposer = this.WithMessageHandler(waitHandler);
 
-        var result = await waitHandler.WaitTask;
-            
-        disposer.Dispose();
-        return result;
+        try
+        {
+            return await waitHandler.WaitTask;
+        }
+        finally
+        {
+            disposer.Dispose();    
+        }
     }
 
     public async Task CloseAsync(Exception ex = null)
@@ -151,6 +169,22 @@ internal sealed class Channel : IChannelInternal
     {
         await this.SendAsync<CloseMethod, CloseOkMethod>(new CloseMethod(statusCode, description, failedMethodId));
         this.TryComplete(new ChannelException(statusCode, description, failedMethodId));
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private MemoryBlock UseMessageBuilder<TState>(TState state, Action<MessageBuilder, TState> fn)
+    {
+        var messageBuilder = this.messageBuilderPool.Get();
+
+        try
+        {
+            fn.Invoke(messageBuilder, state);
+            return messageBuilder.Complete();
+        }
+        finally
+        {
+            this.messageBuilderPool.Return(messageBuilder);   
+        }
     }
 
     private async Task LoopAsync(ChannelReader<(FrameType Type, MemoryBlock Payload)> reader)

@@ -26,7 +26,7 @@ internal class Connection : IConnectionInternal
     private CancellationTokenSource socketIoCancellation;
     private IChannelInternal connectionChannel;
 
-    public Connection(ConnectionSettings settings, ObjectPool<MemoryBlock> memoryPool, ObjectPool<FrameBuilder> frameBuilderPool)
+    public Connection(ConnectionSettings settings, ObjectPool<MemoryBlock> memoryPool)
     {
         this.connectionDetails = new ConnectionDetails(settings);
         this.MessagePropertiesPool = new DefaultObjectPool<LazyMessageProperties>(new LazyMessagePropertiesPolicy());
@@ -40,7 +40,6 @@ internal class Connection : IConnectionInternal
             
         this.State = ConnectionState.Pending;
         this.MemoryPool = memoryPool;
-        this.FrameBuilderPool = frameBuilderPool;
         this.channelPool = new ChannelPool(num => new Channel(this, num, this.connectionDetails.Negotiated.FrameMaxSize));
     }
 
@@ -49,9 +48,7 @@ internal class Connection : IConnectionInternal
     public ObjectPool<MemoryBlock> MemoryPool { get; }
         
     public ObjectPool<LazyMessageProperties> MessagePropertiesPool { get; }
-
-    public ObjectPool<FrameBuilder> FrameBuilderPool { get; }
-
+    
     public Task WriteToSocketAsync(MemoryBlock memory, CancellationToken cancellation = default)
     {
         if (this.socketSender.Writer.TryWrite(memory))
@@ -95,7 +92,7 @@ internal class Connection : IConnectionInternal
         Task.Factory.StartNew(this.SendLoop, TaskCreationOptions.LongRunning);
 
         this.connectionChannel = new Channel(this, ProtocolConstants.ConnectionChannel, ProtocolConstants.FrameMinSize);
-        var connectionCloseWait = new WaitMethodMessageHandler<CloseMethod>();
+        var connectionCloseWait = new WaitMethodMessageHandler<CloseMethod>(cancellation);
         connectionCloseWait.WaitTask.ContinueWith(t =>
         {
             if (t.IsCompleted)

@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Messaging;
 using RabbitMQ.Next.Methods;
@@ -10,9 +11,13 @@ internal class WaitMethodMessageHandler<TMethod> : IMessageHandler<TMethod>
 {
     private readonly TaskCompletionSource<TMethod> tcs;
 
-    public WaitMethodMessageHandler()
+    public WaitMethodMessageHandler(CancellationToken cancellation)
     {
         this.tcs = new TaskCompletionSource<TMethod>(TaskCreationOptions.RunContinuationsAsynchronously);
+        if (cancellation.CanBeCanceled)
+        {
+            cancellation.Register(state => ((TaskCompletionSource<TMethod>)state).TrySetCanceled(), this.tcs);
+        }
     }
 
     public Task<TMethod> WaitTask => this.tcs.Task;
