@@ -10,6 +10,7 @@
 // {
 //     public class ContentAccessorTests
 //     {
+// TODO: restore this tests!!!
 //         [Fact]
 //         public void ThrowsOnNullSerializerFactory()
 //         {

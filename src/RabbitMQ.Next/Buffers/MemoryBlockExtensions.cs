@@ -37,12 +37,12 @@ internal static class MemoryBlockExtensions
             return;
         }
 
-        if (data.Length > memory.Memory.Length)
+        if (data.Length > memory.Buffer.Length)
         {
             throw new OutOfMemoryException();
         }
             
-        data.CopyTo(memory.Memory.Span);
-        memory.Commit(data.Length);
+        data.CopyTo(memory.Buffer);
+        memory.Slice(0, data.Length);
     }
 }

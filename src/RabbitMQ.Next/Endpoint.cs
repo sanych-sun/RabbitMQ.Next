@@ -1,6 +1,6 @@
 using System;
 
-namespace RabbitMQ.Next.Transport;
+namespace RabbitMQ.Next;
 
 internal readonly struct Endpoint
 {

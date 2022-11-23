@@ -6,5 +6,5 @@ namespace RabbitMQ.Next.Transport.Methods;
 internal interface IMethodFormatter<in TMethod>
     where TMethod : struct, IMethod
 {
-    int Write(Span<byte> destination, TMethod method);
+    Span<byte> Write(Span<byte> destination, TMethod method);
 }

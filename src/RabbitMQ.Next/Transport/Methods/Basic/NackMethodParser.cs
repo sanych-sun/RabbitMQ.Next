@@ -1,6 +1,5 @@
 
 using System;
-using RabbitMQ.Next.Methods;
 
 namespace RabbitMQ.Next.Transport.Methods.Basic;
 

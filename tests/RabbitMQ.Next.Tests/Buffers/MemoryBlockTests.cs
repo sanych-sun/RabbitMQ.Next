@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using RabbitMQ.Next.Buffers;
 using Xunit;
 
@@ -14,7 +13,7 @@ public class MemoryBlockTests
     {
         var memoryBlock = new MemoryBlock(size);
 
-        Assert.Equal(size, memoryBlock.Span.Length);
+        Assert.Equal(size, memoryBlock.Buffer.Length);
     }
 
     [Theory]
@@ -25,45 +24,71 @@ public class MemoryBlockTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new MemoryBlock(size));
     }
 
-    [Theory]
-    [MemberData(nameof(DataWriterTestCases))]
-    public void CanCommitData(byte[] expected, byte[][] data)
-    {
-        var memoryBlock = new MemoryBlock(100);
-
-        foreach (var part in data)
-        {
-            part.CopyTo(memoryBlock.Span);
-            memoryBlock.Commit(part.Length);
-        }
-
-        Assert.Equal(expected, memoryBlock.Data.ToArray());
-    }
-
     [Fact]
     public void CanReset()
     {
-        var memoryBlock = new MemoryBlock(10);
-
-        Assert.Equal(0, memoryBlock.Data.Count);
-        Assert.Equal(10, memoryBlock.Span.Length);
-        Assert.Null(memoryBlock.Next);
-
-        var nextBlock = memoryBlock.Append(new MemoryBlock(12));
-        memoryBlock.Commit(3);
-        Assert.Equal(3, memoryBlock.Data.Count);
-        Assert.Equal(7, memoryBlock.Span.Length);
-        Assert.Equal(nextBlock, memoryBlock.Next);
-
-        memoryBlock.Reset();
-        Assert.Equal(0, memoryBlock.Data.Count);
-        Assert.Equal(10, memoryBlock.Span.Length);
-        Assert.Null(memoryBlock.Next);
+        var memory = new MemoryBlock(10);
+        memory.Slice(5, 2);
+        memory.Append(new MemoryBlock(5));
+        
+        
+        memory.Reset();
+        
+        Assert.True(memory.Data.Count == memory.Buffer.Length);
+        Assert.Null(memory.Next);
+    }
+    
+    [Theory]
+    [InlineData(0, 5, new byte[] {0x01, 0x02, 0x03, 0x04, 0x05}, new byte[] {0x01, 0x02, 0x03, 0x04, 0x05})]
+    [InlineData(0, 3, new byte[] {0x01, 0x02, 0x03, 0x04, 0x05}, new byte[] {0x01, 0x02, 0x03})]
+    [InlineData(2, 2, new byte[] {0x01, 0x02, 0x03, 0x04, 0x05}, new byte[] {0x03, 0x04})]
+    [InlineData(2, 3, new byte[] {0x01, 0x02, 0x03, 0x04, 0x05}, new byte[] {0x03, 0x04, 0x05})]
+    public void CanSlice(int start, int length, byte[] buffer, byte[] expected)
+    {
+        var memory = new MemoryBlock(buffer.Length);
+        for (var i = 0; i < buffer.Length; i++)
+        {
+            memory.Buffer[i] = buffer[i];
+        }
+        
+        memory.Slice(start, length);
+        Assert.Equal(expected, memory.Data.ToArray());
     }
 
-    public static IEnumerable<object[]> DataWriterTestCases()
+    [Theory]
+    [InlineData(10, -5, 0)]
+    [InlineData(10, 0, -5)]
+    [InlineData(10, 0, 15)]
+    [InlineData(10, 5, 7)]
+    public void SliceThrowsOnInvalidParameters(int bufferSize, int start, int length)
     {
-        yield return new object[] { new byte[] { 0x01, 0x02, 0x03 }, new[] { new byte[] { 0x01, 0x02, 0x03 } } };
-        yield return new object[] { new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05 }, new[] { new byte[] { 0x01, 0x02, 0x03 }, new byte[] { 0x04, 0x05 } } };
+        var memory = new MemoryBlock(bufferSize);
+        Assert.Throws<ArgumentOutOfRangeException>(() => memory.Slice(start, length));
+    }
+
+    [Fact]
+    public void CanAppendSingleBlock()
+    {
+        var memory = new MemoryBlock(10);
+        var next = new MemoryBlock(12);
+
+        var res = memory.Append(next);
+        
+        Assert.Equal(next, memory.Next);
+        Assert.Equal(next, res);
+    }
+    
+    [Fact]
+    public void CanAppendMultipleBlock()
+    {
+        var memory = new MemoryBlock(10);
+        var next = new MemoryBlock(12);
+        var last = new MemoryBlock(14);
+        next.Append(last);
+
+        var res = memory.Append(next);
+        
+        Assert.Equal(next, memory.Next);
+        Assert.Equal(last, res);
     }
 }

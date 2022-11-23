@@ -1,6 +1,6 @@
 using Microsoft.Extensions.ObjectPool;
 
-namespace RabbitMQ.Next.Transport.Messaging;
+namespace RabbitMQ.Next.Transport;
 
 internal class LazyMessagePropertiesPolicy: PooledObjectPolicy<LazyMessageProperties>
 {

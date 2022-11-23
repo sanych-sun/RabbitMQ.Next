@@ -11,7 +11,6 @@ using RabbitMQ.Next.Messaging;
 using RabbitMQ.Next.Methods;
 using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Transport;
-using RabbitMQ.Next.Transport.Messaging;
 using RabbitMQ.Next.Transport.Methods;
 using RabbitMQ.Next.Transport.Methods.Basic;
 using RabbitMQ.Next.Transport.Methods.Channel;
@@ -32,8 +31,8 @@ internal sealed class Channel : IChannelInternal
         this.connection = connection;
         this.ChannelNumber = channelNumber;
         this.memoryPool = connection.MemoryPool;
-        this.messageBuilderPool = new DefaultObjectPool<MessageBuilder>(new MessageBuilderPoolPolicy(memoryPool, channelNumber, frameMaxSize), 10);
-        this.messagePropertiesPool = connection.MessagePropertiesPool;
+        this.messageBuilderPool = new DefaultObjectPool<MessageBuilder>(new MessageBuilderPoolPolicy(this.memoryPool, channelNumber, frameMaxSize), 10);
+        this.messagePropertiesPool = new DefaultObjectPool<LazyMessageProperties>(new LazyMessagePropertiesPolicy());
 
         this.channelCompletion = new TaskCompletionSource<bool>();
         var receiveChannel = System.Threading.Channels.Channel.CreateUnbounded<(FrameType Type, MemoryBlock Payload)>(new UnboundedChannelOptions
@@ -66,7 +65,7 @@ internal sealed class Channel : IChannelInternal
         var methodId = (uint)MethodRegistry.GetMethodId<TMethod>();
         if (!this.methodProcessors.TryGetValue(methodId, out var processor))
         {
-            processor = new MessageProcessor<TMethod>(MethodRegistry.GetParser<TMethod>());
+            processor = new MessageProcessor<TMethod>();
             this.methodProcessors[methodId] = processor;
         }
 
@@ -199,9 +198,8 @@ internal sealed class Channel : IChannelInternal
                 }
 
                 // 2. Get method Id
-                ((ReadOnlySpan<byte>)methodFrame.Payload.Data).Read(out uint method);
-                var methodId = (MethodId) method;
-                        
+                var methodArgsBytes = ((ReadOnlyMemory<byte>)methodFrame.Payload.Data).GetMethodId(out var methodId);
+
                 // 3. Get content if exists
                 PayloadAccessor payload = null;
                    
@@ -246,7 +244,7 @@ internal sealed class Channel : IChannelInternal
                 var handled = false;
                 if (this.methodProcessors.TryGetValue((uint)methodId, out var processor))
                 {
-                    handled = processor.ProcessMessage(methodFrame.Payload.Data[sizeof(uint)..], payload);
+                    handled = processor.ProcessMessage(methodArgsBytes, payload);
                 }
 
                 // TODO: should throw on unhandled methods?

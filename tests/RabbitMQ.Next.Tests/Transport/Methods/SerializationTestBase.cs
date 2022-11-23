@@ -24,10 +24,9 @@ public abstract class SerializationTestBase
         var expected = Helpers.GetFileContent(payloadResName);
 
         Span<byte> payload = stackalloc byte[expected.Length];
-        var written = formatter.Write(payload, method);
+        formatter.Write(payload, method);
 
         Assert.Equal(expected, payload.ToArray());
-        Assert.Equal(expected.Length, written);
     }
 
     protected void TestParser<TMethod>(TMethod method, IEqualityComparer<TMethod> comparer = null)

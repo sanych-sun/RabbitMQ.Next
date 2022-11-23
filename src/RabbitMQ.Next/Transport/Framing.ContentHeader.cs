@@ -2,16 +2,21 @@ using System;
 using System.Runtime.CompilerServices;
 using RabbitMQ.Next.Messaging;
 
-namespace RabbitMQ.Next.Transport.Messaging;
+namespace RabbitMQ.Next.Transport;
 
-internal static class MessageHeader
+internal static partial class Framing
 {
+    private const uint ContentHeaderPrefix = (ushort)ClassId.Basic << 16;
+    
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int WriteMessageProperties(this Span<byte> target, IMessageProperties properties)
+    public static Span<byte> WriteContentHeader(this Span<byte> buffer, IMessageProperties properties, out Span<byte> contentSizeBuffer)
     {
-        var flags = MessageFlags.None;
+        buffer = buffer
+            .Write(ContentHeaderPrefix)
+            .Slice(sizeof(ulong), out contentSizeBuffer)
+            .Slice(sizeof(ushort), out var flagsBuffer);
         
-        var buffer = target[sizeof(ushort)..];
+        var flags = MessageFlags.None;
 
         if (!string.IsNullOrEmpty(properties.ContentType))
         {
@@ -91,12 +96,50 @@ internal static class MessageHeader
             buffer = buffer.Write(properties.ApplicationId);
         }
 
-        target.Write((ushort)flags);
-        return target.Length - buffer.Length;
+        flagsBuffer.Write((ushort)flags);
+        return buffer;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlyMemory<byte> SplitStringProperty(this ReadOnlyMemory<byte> source, out ReadOnlyMemory<byte> value, MessageFlags flags, MessageFlags flag)
+    public static void SplitContentHeaderProperties(
+        this ReadOnlyMemory<byte> data,
+        out ReadOnlyMemory<byte> contentType,
+        out ReadOnlyMemory<byte> contentEncoding,
+        out ReadOnlyMemory<byte> headers,
+        out ReadOnlyMemory<byte> deliveryMode,
+        out ReadOnlyMemory<byte> priority,
+        out ReadOnlyMemory<byte> correlationId,
+        out ReadOnlyMemory<byte> replyTo,
+        out ReadOnlyMemory<byte> expiration,
+        out ReadOnlyMemory<byte> messageId,
+        out ReadOnlyMemory<byte> timestamp,
+        out ReadOnlyMemory<byte> type,
+        out ReadOnlyMemory<byte> userId,
+        out ReadOnlyMemory<byte> applicationId) 
+    {
+        data.Span.Read(out ushort fl);
+        var flags = (MessageFlags)fl;
+
+        data[sizeof(ushort)..]
+            .SplitStringProperty(out contentType, flags, MessageFlags.ContentType)
+            .SplitStringProperty(out contentEncoding, flags, MessageFlags.ContentEncoding)
+            .SplitDynamicProperty(out headers, flags, MessageFlags.Headers)
+            .SplitFixedProperty(out deliveryMode, flags, MessageFlags.DeliveryMode, sizeof(byte))
+            .SplitFixedProperty(out priority, flags, MessageFlags.Priority, sizeof(byte))
+            .SplitStringProperty(out correlationId, flags, MessageFlags.CorrelationId)
+            .SplitStringProperty(out replyTo, flags, MessageFlags.ReplyTo)
+            .SplitStringProperty(out expiration, flags, MessageFlags.Expiration)
+            .SplitStringProperty(out messageId, flags, MessageFlags.MessageId)
+            .SplitFixedProperty(out timestamp, flags, MessageFlags.Timestamp, sizeof(ulong))
+            .SplitStringProperty(out type, flags, MessageFlags.Type)
+            .SplitStringProperty(out userId, flags, MessageFlags.UserId)
+            .SplitStringProperty(out applicationId, flags, MessageFlags.ApplicationId);
+        
+    }
+    
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static ReadOnlyMemory<byte> SplitStringProperty(this ReadOnlyMemory<byte> source, out ReadOnlyMemory<byte> value, MessageFlags flags, MessageFlags flag)
     {
         if ((flags & flag) == MessageFlags.None)
         {
@@ -111,7 +154,7 @@ internal static class MessageHeader
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlyMemory<byte> SplitDynamicProperty(this ReadOnlyMemory<byte> source, out ReadOnlyMemory<byte> value, MessageFlags flags, MessageFlags flag)
+    private static ReadOnlyMemory<byte> SplitDynamicProperty(this ReadOnlyMemory<byte> source, out ReadOnlyMemory<byte> value, MessageFlags flags, MessageFlags flag)
     {
         if ((flags & flag) == MessageFlags.None)
         {
@@ -126,7 +169,7 @@ internal static class MessageHeader
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlyMemory<byte> SplitFixedProperty(this ReadOnlyMemory<byte> source, out ReadOnlyMemory<byte> value, MessageFlags flags, MessageFlags flag, int size)
+    private static ReadOnlyMemory<byte> SplitFixedProperty(this ReadOnlyMemory<byte> source, out ReadOnlyMemory<byte> value, MessageFlags flags, MessageFlags flag, int size)
     {
         if ((flags & flag) == MessageFlags.None)
         {

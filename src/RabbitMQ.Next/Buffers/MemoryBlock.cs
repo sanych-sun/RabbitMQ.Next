@@ -4,7 +4,9 @@ namespace RabbitMQ.Next.Buffers;
 
 internal sealed class MemoryBlock
 {
-    public readonly byte[] buffer;
+    public readonly byte[] Buffer;
+    private int offset;
+    private int count;
 
     public MemoryBlock(int size)
     {
@@ -13,45 +15,44 @@ internal sealed class MemoryBlock
             throw new ArgumentOutOfRangeException(nameof(size));
         }
 
-        this.buffer = new byte[size];
+        this.Buffer = new byte[size];
     }
-
-    public int Offset { get; private set; }
-        
     public MemoryBlock Next { get; private set; }
 
     public bool Reset()
     {
-        this.Offset = 0;
+        this.offset = 0;
+        this.count = this.Buffer.Length;
         this.Next = null;
         return true;
-    }
-
-    public ArraySegment<byte> Data
-        =>  new (this.buffer, 0, this.Offset);
-
-    public void Commit(int length)
-    {
-        this.Offset += length;
-    }
-
-    public void Rollback(int offset)
-    {
-        this.Offset = offset;
     }
 
     public MemoryBlock Append(MemoryBlock next)
     {
         this.Next = next;
+        while (next.Next != null)
+        {
+            next = next.Next;
+        }
+        
         return next;
     }
 
-    public Memory<byte> Memory
-        => new Memory<byte>(this.buffer)[this.Offset..];
+    public void Slice(int start, int length)
+    {
+        if (start < 0 || start > this.Buffer.Length)
+        {
+            throw new ArgumentOutOfRangeException(nameof(start));
+        }
 
-    public Span<byte> Span
-        => new Span<byte>(this.buffer)[this.Offset..];
+        if (length < 0 || start + length > this.Buffer.Length)
+        {
+            throw new ArgumentOutOfRangeException(nameof(length));
+        }
 
-    public Span<byte> Access(int start, int length)
-        => new (this.buffer, start, length);
+        this.offset = start;
+        this.count = length;
+    }
+
+    public ArraySegment<byte> Data => new (this.Buffer, this.offset, this.count);
 }

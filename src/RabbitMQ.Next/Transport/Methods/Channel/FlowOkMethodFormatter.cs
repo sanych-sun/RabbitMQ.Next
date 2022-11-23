@@ -1,14 +1,9 @@
 using System;
-using RabbitMQ.Next.Methods;
 
 namespace RabbitMQ.Next.Transport.Methods.Channel;
 
 internal class FlowOkMethodFormatter : IMethodFormatter<FlowOkMethod>
 {
-    public int Write(Span<byte> destination, FlowOkMethod method)
-    {
-        var result = destination.Write(method.Active);
-
-        return destination.Length - result.Length;
-    }
+    public Span<byte> Write(Span<byte> destination, FlowOkMethod method)
+        => destination.Write(method.Active);
 }

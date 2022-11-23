@@ -13,7 +13,7 @@ class Program
         Console.WriteLine("Hello World! This is consumer based on RabbitMQ.Next library.");
 
         var connection = await ConnectionBuilder.Default
-            .Endpoint("amqp://test:pass@localhost:5672/")
+            .Endpoint("amqp://test2:test2@localhost:5672/")
             .ConnectAsync();
 
         Console.WriteLine("Connection opened");

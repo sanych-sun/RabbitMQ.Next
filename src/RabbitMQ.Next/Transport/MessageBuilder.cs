@@ -5,163 +5,217 @@ using Microsoft.Extensions.ObjectPool;
 using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Messaging;
 using RabbitMQ.Next.Methods;
-using RabbitMQ.Next.Transport.Messaging;
-using RabbitMQ.Next.Transport.Methods;
 
 namespace RabbitMQ.Next.Transport;
 
-internal class MessageBuilder : IBufferWriter<byte>
+internal class MessageBuilder
 {
-    private readonly ObjectPool<MemoryBlock> memoryPool;
-    private MemoryBlock head;
-    private MemoryBlock buffer;
-    private int currentFrameHeaderOffset;
-    private int totalPayloadSize;
+    private readonly InnerBufferWriter writer;
 
     public MessageBuilder(ObjectPool<MemoryBlock> memoryPool, ushort channel, int frameMaxSize)
     {
-        this.memoryPool = memoryPool;
         this.Channel = channel;
         this.FrameMaxSize = frameMaxSize;
+        this.writer = new InnerBufferWriter(memoryPool, channel, frameMaxSize);
     }
-    
+
     public ushort Channel { get; }
-    
+
     public int FrameMaxSize { get; }
 
     public void WriteMethodFrame<TMethod>(TMethod method)
         where TMethod : struct, IOutgoingMethod
     {
-        this.BeginFrame();
-        var payloadBuffer = this.buffer.Span
-            .Write((uint)method.MethodId);
+        this.writer.BeginFrame(FrameType.Method);
+        var buffer = this.writer.GetSpan();
 
-        var formatter = MethodRegistry.GetFormatter<TMethod>();
-        var payloadSize = formatter.Write(payloadBuffer, method) + sizeof(uint);
-        this.buffer.Commit(payloadSize);
-        this.EndFrame(FrameType.Method);
+        var result = buffer.WriteMethodArgs(method);
+        this.writer.Advance(buffer.Length - result.Length);
+        
+        this.writer.EndFrame();
     }
-    
-    private const uint ContentHeaderPrefix = (ushort)ClassId.Basic << 16;
 
     public void WriteContentFrame<TState>(TState state, IMessageProperties properties, Action<TState, IBufferWriter<byte>> contentBuilder)
     {
-        this.BeginFrame();
+        this.writer.BeginFrame(FrameType.ContentHeader);
+        var headerStartBuffer = this.writer.GetSpan();
 
-        this.buffer.Span.Write(ContentHeaderPrefix);
-        this.buffer.Commit(sizeof(uint));
+        var headerBuffer = headerStartBuffer.WriteContentHeader(properties, out var contentSizeBuffer);
+        
+        this.writer.Advance(headerStartBuffer.Length - headerBuffer.Length);
+        this.writer.EndFrame();
 
-        var contentSizeBuffer = this.buffer.Span[..sizeof(ulong)];
-        this.buffer.Commit(sizeof(ulong));
-
-        var written = this.buffer.Span.WriteMessageProperties(properties);
-        this.buffer.Commit(written);
-
-        this.EndFrame(FrameType.ContentHeader);
-
-        var beforeContentOffset = this.buffer.Offset;
-        var beforeContent = this.totalPayloadSize;
-        this.BeginFrame();
-        contentBuilder.Invoke(state, this);
-        this.EndFrame(FrameType.ContentBody);
-        var contentSize = this.totalPayloadSize - beforeContent;
-
-        if (contentSize == 0)
-        {
-            this.buffer.Rollback(beforeContentOffset);
-        }
-
+        var beforeContentSize = this.writer.TotalPayloadBytes;
+        
+        this.writer.BeginFrame(FrameType.ContentBody);
+        contentBuilder.Invoke(state, this.writer);
+        this.writer.EndFrame();
+        var contentSize = this.writer.TotalPayloadBytes - beforeContentSize;
+        
         contentSizeBuffer.Write((ulong)contentSize);
     }
-
-
-    // allocates space for generic frame header and returns memory available for payload
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void BeginFrame()
-    {
-        this.ExpandIfRequired(ProtocolConstants.FrameHeaderSize);
-        
-        this.currentFrameHeaderOffset = this.buffer.Offset;
-        // skip frame header bytes for now, will write it in EndFrame.
-        this.buffer.Commit(ProtocolConstants.FrameHeaderSize);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void EndFrame(FrameType type, bool rotateBuffers = false)
-    {
-        var frameSize = this.buffer.Offset - this.currentFrameHeaderOffset - ProtocolConstants.FrameHeaderSize;
-        var frameHeader = this.buffer.Access(this.currentFrameHeaderOffset, ProtocolConstants.FrameHeaderSize);
-        frameHeader.WriteFrameHeader(type, this.Channel, (uint)frameSize);
-
-        this.buffer.Span[0] = ProtocolConstants.FrameEndByte;
-        this.buffer.Commit(1);
-        this.totalPayloadSize += frameSize;
-
-        if (!rotateBuffers)
-        {
-            return;
-        }
-
-        this.buffer = this.buffer.Append(this.memoryPool.Get());
-    }
-
+    
     public MemoryBlock Complete()
-        => this.head;
+        => this.writer.Complete();
 
     public void Reset()
     {
-        // Should not release memory blocks here! It will be done on the frame sending in Connection.SendLoop
-        this.head = default;
-        this.buffer = default;
-        this.currentFrameHeaderOffset = 0;
-        this.totalPayloadSize = 0;
+        this.writer.Reset();
     }
 
-
-    void IBufferWriter<byte>.Advance(int count)
+    private class InnerBufferWriter : IBufferWriter<byte>
     {
-        this.buffer.Commit(count);
-    }
+        private readonly ObjectPool<MemoryBlock> memoryPool;
+        private readonly ushort channel;
+        private readonly int frameMaxSize;
+        
+        private MemoryBlock head;
+        private MemoryBlock current;
+        private int currentOffset;
+        private FrameType currentFrameType;
+        private int currentFrameHeaderOffset;
+        private long totalPayloadSize;
 
-    public Memory<byte> GetMemory(int sizeHint)
-    {
-        var size = this.ExpandIfRequired(sizeHint);
-        return this.buffer.Memory[..size];
-    }
-
-    public Span<byte> GetSpan(int sizeHint)
-    {
-        var size = this.ExpandIfRequired(sizeHint);
-        return this.buffer.Span[..size];
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int ExpandIfRequired(int requestedSize)
-    {
-        // todo: implement workaround for too big chunks by allocating some extra array with merging the data back into buffer on Advance
-        if (requestedSize > this.FrameMaxSize)
+        public InnerBufferWriter(ObjectPool<MemoryBlock> memoryPool, ushort channel, int frameMaxSize)
         {
-            throw new OutOfMemoryException();
+            this.memoryPool = memoryPool;
+            this.channel = channel;
+            this.frameMaxSize = frameMaxSize;
         }
 
-        if (this.buffer == null)
+        public void BeginFrame(FrameType type)
         {
-            this.buffer = this.memoryPool.Get();
-            this.head = this.buffer;
+            if(this.currentFrameType != FrameType.Malformed)
+            {
+                throw new InvalidOperationException();
+            }
+
+            this.currentFrameHeaderOffset = this.currentOffset;
+            this.currentFrameType = type;
+            this.currentOffset += ProtocolConstants.FrameHeaderSize;
         }
 
-        // current buffer available space: capacity - frame end
-        var bufferAvailable = this.buffer.Span.Length - 1;
-        bufferAvailable = Math.Min(this.FrameMaxSize, bufferAvailable);
+        public long TotalPayloadBytes => this.totalPayloadSize;
 
-        if (requestedSize == 0 || bufferAvailable > requestedSize)
+        public MemoryBlock Complete()
         {
-            return bufferAvailable;
+            if (this.currentFrameType != FrameType.Malformed)
+            {
+                throw new InvalidOperationException();
+            }
+            
+            this.FinalizeBuffer();
+            var result = this.head;
+            this.Reset();
+            return result;
         }
 
-        this.EndFrame(FrameType.ContentBody, true);
+        public void Reset()
+        {
+            this.head = null;
+            this.current = null;
+            this.currentOffset = 0;
+            this.currentFrameHeaderOffset = 0;
+            this.totalPayloadSize = 0;
+        }
 
-        this.BeginFrame();
-        return requestedSize;
+        public void EndFrame()
+        {
+            if (this.currentFrameType == FrameType.Malformed)
+            {
+                throw new InvalidOperationException();
+            }
+            
+            var frameSize = this.currentOffset - this.currentFrameHeaderOffset - ProtocolConstants.FrameHeaderSize;
+            if (frameSize == 0)
+            {
+                if (this.currentFrameType != FrameType.ContentBody)
+                {
+                    throw new InvalidOperationException();
+                }
+                
+                // collapse empty content frames
+                this.currentOffset = this.currentFrameHeaderOffset;
+                this.currentFrameType = FrameType.Malformed;
+                return;
+            }
+            
+            var headerBuffer = new Span<byte>(this.current.Buffer, this.currentFrameHeaderOffset, ProtocolConstants.FrameHeaderSize);
+            
+            headerBuffer.WriteFrameHeader(this.currentFrameType, this.channel, (uint)frameSize);
+
+            var endBuffer = new Span<byte>(this.current.Buffer, this.currentOffset, ProtocolConstants.FrameEndSize);
+            endBuffer.WriteFrameEnd();
+            this.currentOffset += ProtocolConstants.FrameEndSize;
+
+            this.totalPayloadSize += frameSize;
+            this.currentFrameType = FrameType.Malformed;
+        }
+
+        public void Advance(int count)
+        {
+            this.currentOffset += count;
+        }
+
+        public Memory<byte> GetMemory(int sizeHint = 0)
+        {
+            var size = this.EnsureBufferSize(sizeHint);
+            return new Memory<byte>(this.current.Buffer, this.currentOffset, size);
+        }
+
+        public Span<byte> GetSpan(int sizeHint = 0)
+        {
+            var size = this.EnsureBufferSize(sizeHint);
+            return new Span<byte>(this.current.Buffer, this.currentOffset, size);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private int EnsureBufferSize(int requestedSize)
+        {
+            // current buffer available space: capacity - frame end
+            int BufferAvailable()
+                => this.current.Buffer.Length - this.currentOffset - ProtocolConstants.FrameEndSize;
+
+            // todo: implement workaround for too big chunks by allocating some extra array with merging the data back into buffer on Advance
+            if (requestedSize > this.frameMaxSize)
+            {
+                throw new OutOfMemoryException();
+            }
+
+            if (this.current == null)
+            {
+                this.current = this.memoryPool.Get();
+                this.head = this.current;
+            }
+
+            var size = Math.Min(this.frameMaxSize, BufferAvailable());
+            if (requestedSize == 0 || size > requestedSize)
+            {
+                return size;
+            }
+
+            if (this.currentFrameType != FrameType.ContentBody)
+            {
+                throw new OutOfMemoryException();
+            }
+            
+            this.EndFrame();
+            this.FinalizeBuffer(true);
+            this.BeginFrame(FrameType.ContentBody);
+            
+            return Math.Min(this.frameMaxSize, BufferAvailable());
+        }
+
+        private void FinalizeBuffer(bool startNew = false)
+        {
+            this.current.Slice(0, this.currentOffset);
+            this.currentOffset = 0;
+
+            if (startNew)
+            {
+                var next = this.memoryPool.Get();
+                this.current = this.current.Append(next);
+            }
+        }
     }
 }

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using RabbitMQ.Next.Messaging;
 using RabbitMQ.Next.Tests.Mocks;
-using RabbitMQ.Next.Transport.Messaging;
+using RabbitMQ.Next.Transport;
 using Xunit;
 
 namespace RabbitMQ.Next.Tests.Transport.Messaging;

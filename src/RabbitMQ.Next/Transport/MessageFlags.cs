@@ -1,6 +1,6 @@
 using System;
 
-namespace RabbitMQ.Next.Transport.Messaging;
+namespace RabbitMQ.Next.Transport;
 
 [Flags]
 internal enum MessageFlags : ushort

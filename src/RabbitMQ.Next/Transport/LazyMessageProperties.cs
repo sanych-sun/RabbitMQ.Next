@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using RabbitMQ.Next.Messaging;
 
-namespace RabbitMQ.Next.Transport.Messaging;
+namespace RabbitMQ.Next.Transport;
 
 internal sealed class LazyMessageProperties : IMessageProperties
 {
@@ -21,30 +21,26 @@ internal sealed class LazyMessageProperties : IMessageProperties
     private ReadOnlyMemory<byte> userId;
     private ReadOnlyMemory<byte> applicationId;
 
-    public void Set(ReadOnlyMemory<byte> buffer)
+    public void Set(ReadOnlyMemory<byte> data)
     {
-        buffer.Span.Read(out ushort fl);
-        this.Flags = (MessageFlags)fl;
-
-        buffer[sizeof(ushort)..]
-            .SplitStringProperty(out this.contentType, this.Flags, MessageFlags.ContentType)
-            .SplitStringProperty(out this.contentEncoding, this.Flags, MessageFlags.ContentEncoding)
-            .SplitDynamicProperty(out this.headers, this.Flags, MessageFlags.Headers)
-            .SplitFixedProperty(out this.deliveryMode, this.Flags, MessageFlags.DeliveryMode, sizeof(byte))
-            .SplitFixedProperty(out this.priority, this.Flags, MessageFlags.Priority, sizeof(byte))
-            .SplitStringProperty(out this.correlationId, this.Flags, MessageFlags.CorrelationId)
-            .SplitStringProperty(out this.replyTo, this.Flags, MessageFlags.ReplyTo)
-            .SplitStringProperty(out this.expiration, this.Flags, MessageFlags.Expiration)
-            .SplitStringProperty(out this.messageId, this.Flags, MessageFlags.MessageId)
-            .SplitFixedProperty(out this.timestamp, this.Flags, MessageFlags.Timestamp, sizeof(ulong))
-            .SplitStringProperty(out this.type, this.Flags, MessageFlags.Type)
-            .SplitStringProperty(out this.userId, this.Flags, MessageFlags.UserId)
-            .SplitStringProperty(out this.applicationId, this.Flags, MessageFlags.ApplicationId);
+        data.SplitContentHeaderProperties(
+            out this.contentType,
+            out this.contentEncoding,
+            out this.headers,
+            out this.deliveryMode,
+            out this.priority,
+            out this.correlationId,
+            out this.replyTo,
+            out this.expiration,
+            out this.messageId,
+            out this.timestamp,
+            out this.type,
+            out this.userId,
+            out this.applicationId);
     }
 
     public void Reset()
     {
-        this.Flags = MessageFlags.None;
         this.contentType = ReadOnlyMemory<byte>.Empty;
         this.contentEncoding = ReadOnlyMemory<byte>.Empty;
         this.headers = ReadOnlyMemory<byte>.Empty;
@@ -59,9 +55,7 @@ internal sealed class LazyMessageProperties : IMessageProperties
         this.userId = ReadOnlyMemory<byte>.Empty;
         this.applicationId = ReadOnlyMemory<byte>.Empty;
     }
-
-    public MessageFlags Flags { get; private set; }
-
+    
     public string ContentType => DecodeString(this.contentType);
 
     public string ContentEncoding => DecodeString(this.contentEncoding);

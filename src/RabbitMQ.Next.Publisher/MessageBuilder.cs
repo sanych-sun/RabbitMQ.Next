@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using RabbitMQ.Next.Messaging;
-using RabbitMQ.Next.Transport.Messaging;
 
 namespace RabbitMQ.Next.Publisher;
 

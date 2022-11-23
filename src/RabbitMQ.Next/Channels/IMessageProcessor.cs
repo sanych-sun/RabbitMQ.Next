@@ -1,6 +1,6 @@
 using System;
 using RabbitMQ.Next.Methods;
-using RabbitMQ.Next.Transport.Messaging;
+using RabbitMQ.Next.Transport;
 
 namespace RabbitMQ.Next.Channels;
 
@@ -11,5 +11,5 @@ internal interface IMessageProcessor
     IDisposable WithMessageHandler<TMethod>(IMessageHandler<TMethod> handler)
         where TMethod : struct, IIncomingMethod;
         
-    bool ProcessMessage(ReadOnlySpan<byte> methodArgs, PayloadAccessor payload);
+    bool ProcessMessage(ReadOnlyMemory<byte> methodArgs, PayloadAccessor payload);
 }

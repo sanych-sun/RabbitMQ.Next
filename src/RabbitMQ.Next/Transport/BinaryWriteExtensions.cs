@@ -8,6 +8,14 @@ namespace RabbitMQ.Next.Transport;
 
 public static class BinaryWriteExtensions
 {
+    // TODO: add tests!!!
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Span<byte> Slice(this Span<byte> target, int size, out Span<byte> buffer)
+    {
+        buffer = target[..size];
+        return target[size..];
+    }
+    
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<byte> Write(this Span<byte> target, byte data)
     {

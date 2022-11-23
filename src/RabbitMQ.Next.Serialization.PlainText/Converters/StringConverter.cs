@@ -85,7 +85,6 @@ public class StringConverter : IConverter
 
         try
         {
-            // TODO: might can use ReadOnlySequence.GetEnumerator() instead
             using var enumerator = new SequenceEnumerator<byte>(bytes);
             while (enumerator.MoveNext())
             {

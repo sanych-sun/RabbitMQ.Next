@@ -10,7 +10,6 @@ using RabbitMQ.Next.Channels;
 using RabbitMQ.Next.Sockets;
 using RabbitMQ.Next.Tasks;
 using RabbitMQ.Next.Transport;
-using RabbitMQ.Next.Transport.Messaging;
 using RabbitMQ.Next.Transport.Methods.Connection;
 using Channel = RabbitMQ.Next.Channels.Channel;
 
@@ -29,7 +28,6 @@ internal class Connection : IConnectionInternal
     public Connection(ConnectionSettings settings, ObjectPool<MemoryBlock> memoryPool)
     {
         this.connectionDetails = new ConnectionDetails(settings);
-        this.MessagePropertiesPool = new DefaultObjectPool<LazyMessageProperties>(new LazyMessagePropertiesPolicy());
         this.socketSender = System.Threading.Channels.Channel.CreateBounded<MemoryBlock>(new BoundedChannelOptions(100)
         {
             FullMode = BoundedChannelFullMode.Wait,
@@ -92,7 +90,7 @@ internal class Connection : IConnectionInternal
         Task.Factory.StartNew(this.SendLoop, TaskCreationOptions.LongRunning);
 
         this.connectionChannel = new Channel(this, ProtocolConstants.ConnectionChannel, ProtocolConstants.FrameMinSize);
-        var connectionCloseWait = new WaitMethodMessageHandler<CloseMethod>(cancellation);
+        var connectionCloseWait = new WaitMethodMessageHandler<CloseMethod>(default);
         connectionCloseWait.WaitTask.ContinueWith(t =>
         {
             if (t.IsCompleted)
@@ -182,7 +180,7 @@ internal class Connection : IConnectionInternal
                 var buffer = this.MemoryPool.Get();
 
                 // 3. Read payload into the buffer, allocate extra byte for FrameEndByte
-                var payload = new ArraySegment<byte>(buffer.buffer, 0, ((int)payloadSize + 1));
+                var payload = new ArraySegment<byte>(buffer.Buffer, 0, ((int)payloadSize + 1));
                 this.socket.FillBuffer(payload);
                 // 4. Ensure there is FrameEnd
                 if (payload[(int)payloadSize] != ProtocolConstants.FrameEndByte)
@@ -199,7 +197,7 @@ internal class Connection : IConnectionInternal
                 }
 
                 // 6. Shrink the buffer to the payload size
-                buffer.Commit((int)payloadSize);
+                buffer.Slice(0, (int)payloadSize);
 
                 // 7. Write frame to appropriate channel
                 var targetChannel = (channel == ProtocolConstants.ConnectionChannel) ? this.connectionChannel.FrameWriter: this.channelPool.Get(channel).FrameWriter;

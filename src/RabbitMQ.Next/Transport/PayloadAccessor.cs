@@ -5,7 +5,7 @@ using Microsoft.Extensions.ObjectPool;
 using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Messaging;
 
-namespace RabbitMQ.Next.Transport.Messaging;
+namespace RabbitMQ.Next.Transport;
 
 internal class PayloadAccessor: IPayload
 {
@@ -57,7 +57,6 @@ internal class PayloadAccessor: IPayload
         return this.body.ToSequence();
     }
 
-    public MessageFlags Flags => this.Properties.Flags;
     public string ContentType => this.Properties.ContentType;
     public string ContentEncoding => this.Properties.ContentEncoding;
     public IReadOnlyDictionary<string, object> Headers => this.Properties.Headers;

@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 
 namespace RabbitMQ.Next.Transport;
 
-internal static class Framing
+internal static partial class Framing
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void ReadFrameHeader(this ReadOnlySpan<byte> data, out FrameType type, out ushort channel, out uint payloadSize)
@@ -29,8 +29,12 @@ internal static class Framing
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void WriteFrameHeader(this Span<byte> target, FrameType type, ushort channel, uint payloadSize)
-        => target.Write((byte)type)
+    public static void WriteFrameHeader(this Span<byte> buffer, FrameType type, ushort channel, uint payloadSize)
+        => buffer.Write((byte)type)
             .Write(channel)
             .Write(payloadSize);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void WriteFrameEnd(this Span<byte> target)
+        => target.Write(ProtocolConstants.FrameEndByte);
 }

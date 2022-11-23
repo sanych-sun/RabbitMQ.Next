@@ -1,22 +1,15 @@
 using System;
 using System.Collections.Generic;
 using RabbitMQ.Next.Methods;
-using RabbitMQ.Next.Transport.Messaging;
-using RabbitMQ.Next.Transport.Methods;
+using RabbitMQ.Next.Transport;
 
 namespace RabbitMQ.Next.Channels;
 
 internal class MessageProcessor<TMethod> : IMessageProcessor
     where TMethod: struct, IIncomingMethod
 {
-    private readonly IMethodParser<TMethod> parser;
     private readonly List<IMessageHandler<TMethod>> handlers = new();
-
-    public MessageProcessor(IMethodParser<TMethod> parser)
-    {
-        this.parser = parser;
-    }
-
+    
     public IDisposable WithMessageHandler<T>(IMessageHandler<T> handler)
         where T : struct, IIncomingMethod
     {
@@ -30,14 +23,14 @@ internal class MessageProcessor<TMethod> : IMessageProcessor
         return new HandlerDisposer(this.handlers, typed);
     }
 
-    public bool ProcessMessage(ReadOnlySpan<byte> methodArgs, PayloadAccessor payload)
+    public bool ProcessMessage(ReadOnlyMemory<byte> methodArgs, PayloadAccessor payload)
     {
         if (this.handlers.Count == 0)
         {
             return false;
         }
             
-        var args = this.parser.Parse(methodArgs);
+        var args = methodArgs.ParseMethodArgs<TMethod>();
 
         for (var i = 0; i < this.handlers.Count; i++)
         {
