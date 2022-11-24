@@ -20,3 +20,10 @@ Serializers:
 - RabbitMQ.Next.Serialization.MessagePack – formatter for popular MessagePack serializer
 
 More API and integration libraries are coming.
+
+## Contribute
+
+Contributions to the package are always welcome!
+
+- Report any bugs or issues you find on the [issue tracker](https://github.com/sanych-sun/RabbitMQ.Next/issues).
+- You can grab the source code at the package's [git repository](https://github.com/sanych-sun/RabbitMQ.Next).
