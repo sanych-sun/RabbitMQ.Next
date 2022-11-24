@@ -11,13 +11,13 @@ namespace RabbitMQ.Next.Publisher;
 
 internal sealed class ReturnMessageHandler : IMessageHandler<ReturnMethod>
 {
-    private readonly IReadOnlyList<IReturnedMessageHandler> messageHandlers;
+    private readonly Func<IReturnedMessage,Task> messageHandler;
     private readonly ISerializerFactory serializerFactory;
     private readonly Channel<ReturnedMessage> returnChannel;
 
-    public ReturnMessageHandler(IReadOnlyList<IReturnedMessageHandler> messageHandlers, ISerializerFactory serializerFactory)
+    public ReturnMessageHandler(Func<IReturnedMessage,Task> messageHandler, ISerializerFactory serializerFactory)
     {
-        this.messageHandlers = messageHandlers;
+        this.messageHandler = messageHandler;
         this.serializerFactory = serializerFactory;
         this.returnChannel = Channel.CreateUnbounded<ReturnedMessage>(new UnboundedChannelOptions
         {
@@ -49,13 +49,7 @@ internal sealed class ReturnMessageHandler : IMessageHandler<ReturnMethod>
             {
                 try
                 {
-                    for (var i = 0; i < this.messageHandlers.Count; i++)
-                    {
-                        if (await this.messageHandlers[i].TryHandleAsync(returned))
-                        {
-                            break;
-                        }
-                    }
+                    await this.messageHandler(returned); 
                 }
                 finally
                 {

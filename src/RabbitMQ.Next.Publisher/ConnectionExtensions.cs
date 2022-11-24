@@ -26,7 +26,7 @@ public static class ConnectionExtensions
             exchange,
             publisherBuilder.PublisherConfirms, 
             publisherBuilder.Initializers,
-            publisherBuilder.ReturnedMessageHandlers);
+            publisherBuilder.ReturnedMessageHandler);
 
         return publisher;
     }

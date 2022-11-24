@@ -9,6 +9,42 @@ namespace RabbitMQ.Next.Tests.Transport;
 public class BinaryWriteExtensionsTests
 {
     [Theory]
+    [InlineData(new byte[] {0x01, 0x02}, 0, new byte[0], new byte[] {0x01, 0x02})]
+    [InlineData(new byte[] {0x01, 0x02}, 1, new byte[] {0x01}, new byte[] {0x02})]
+    [InlineData(new byte[] {0x01, 0x02, 0x03}, 3, new byte[] {0x01, 0x02, 0x03}, new byte[0])]
+    [InlineData(new byte[] {0x01, 0x02, 0x03, 0x04, 0x05}, 3, new byte[] {0x01, 0x02, 0x03}, new byte[] {0x04, 0x05})]
+    public void Slice(byte[] bytes, int size, byte[] slice, byte[] result)
+    {
+        var res = ((Span<byte>)bytes).Slice(size, out var resSlice);
+        
+        Assert.Equal(slice, resSlice.ToArray());
+        Assert.Equal(result, res.ToArray());
+    }
+
+    [Fact]
+    public void SliceThrowOnNegativeSize()
+    {
+        var buffer = new byte[10];
+
+        Assert.Throws<ArgumentException>(() =>
+        {
+            ((Span<byte>)buffer).Slice(-5, out var _);    
+        });
+    }
+    
+    
+    [Fact]
+    public void SliceThrowOnTooBigSize()
+    {
+        var buffer = new byte[10];
+
+        Assert.Throws<OutOfMemoryException>(() =>
+        {
+            ((Span<byte>)buffer).Slice(15, out var _);    
+        });
+    }
+    
+    [Theory]
     [InlineData(0, new byte[] { 0b_00000000 })]
     [InlineData(1, new byte[] { 0b_00000001 })]
     [InlineData(42, new byte[] { 0b_00101010 })]

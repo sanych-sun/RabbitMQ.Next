@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using NSubstitute;
 using RabbitMQ.Next.Publisher;
 using Xunit;
@@ -30,17 +31,14 @@ public class PublisherBuilderTests
     }
         
     [Fact]
-    public void CanRegisterReturnedMessageHandlers()
+    public void CanRegisterReturnedMessageHandler()
     {
-        var transformer1 = Substitute.For<IReturnedMessageHandler>();
-        var transformer2 = Substitute.For<IReturnedMessageHandler>();
+        var handler = Substitute.For<Func<IReturnedMessage,Task>>();
 
         var builder = new PublisherBuilder();
-        ((IPublisherBuilder) builder).AddReturnedMessageHandler(transformer1);
-        ((IPublisherBuilder) builder).AddReturnedMessageHandler(transformer2);
+        ((IPublisherBuilder) builder).OnReturnedMessage(handler);
 
-        Assert.Contains(transformer1, builder.ReturnedMessageHandlers);
-        Assert.Contains(transformer2, builder.ReturnedMessageHandlers);
+        Assert.Equal(handler, builder.ReturnedMessageHandler);
     }
 
     [Fact]
@@ -48,7 +46,7 @@ public class PublisherBuilderTests
     {
         var builder = new PublisherBuilder();
             
-        Assert.Throws<ArgumentNullException>(() => ((IPublisherBuilder)builder).AddReturnedMessageHandler(null));
+        Assert.Throws<ArgumentNullException>(() => ((IPublisherBuilder)builder).OnReturnedMessage(null));
     }
 
     [Fact]

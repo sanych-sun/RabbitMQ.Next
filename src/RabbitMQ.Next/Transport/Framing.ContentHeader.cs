@@ -115,8 +115,10 @@ internal static partial class Framing
         out ReadOnlyMemory<byte> timestamp,
         out ReadOnlyMemory<byte> type,
         out ReadOnlyMemory<byte> userId,
-        out ReadOnlyMemory<byte> applicationId) 
+        out ReadOnlyMemory<byte> applicationId)
     {
+        data = data[(sizeof(uint) + sizeof(ulong))..]; // have to skip content header prefix and contentSize
+        
         data.Span.Read(out ushort fl);
         var flags = (MessageFlags)fl;
 

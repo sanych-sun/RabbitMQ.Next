@@ -22,12 +22,7 @@ class Program
             builder => builder
                 .BindToQueue("test-queue")
                 .PrefetchCount(10)
-                .UsePlainTextSerializer()
-                .MessageHandler(message =>
-                {
-                    Console.WriteLine($"[{DateTimeOffset.Now.TimeOfDay}] Message received via '{message.Exchange}' exchange: {message.Content<string>()}");
-                    return true;
-                }));
+                .UsePlainTextSerializer());
 
         Console.WriteLine("Consumer created. Press Ctrl+C to exit.");
 
@@ -35,7 +30,10 @@ class Program
 
         MonitorKeypressAsync(cancellation);
 
-        await consumer.ConsumeAsync(cancellation.Token);
+        await consumer.ConsumeAsync(async message =>
+        {
+            Console.WriteLine($"[{DateTimeOffset.Now.TimeOfDay}] Message received via '{message.Exchange}' exchange: {message.Content<string>()}");
+        } ,cancellation.Token);
     }
     
     private static Task MonitorKeypressAsync(CancellationTokenSource cancellation)

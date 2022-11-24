@@ -17,7 +17,7 @@ internal sealed class Publisher : IPublisher
 {
     private readonly ObjectPool<MessageBuilder> messagePropsPool;
     private readonly SemaphoreSlim channelOpenSync = new(1,1);
-    private readonly IReadOnlyList<IReturnedMessageHandler> returnedMessageHandlers;
+    private readonly Func<IReturnedMessage,Task> returnedMessageHandler;
     private readonly IConnection connection;
     private readonly string exchange;
     private readonly ISerializerFactory serializerFactory;
@@ -35,7 +35,7 @@ internal sealed class Publisher : IPublisher
         string exchange,
         bool publisherConfirms,
         IReadOnlyList<IMessageInitializer> transformers,
-        IReadOnlyList<IReturnedMessageHandler> returnedMessageHandlers)
+        Func<IReturnedMessage,Task> returnedMessageHandler)
     {
         this.connection = connection;
         this.serializerFactory = serializerFactory;
@@ -47,7 +47,7 @@ internal sealed class Publisher : IPublisher
         this.messagePropsPool = messagePropsPool;
         this.exchange = exchange;
         this.transformers = transformers;
-        this.returnedMessageHandlers = returnedMessageHandlers;
+        this.returnedMessageHandler = returnedMessageHandler;
     }
 
     public async ValueTask DisposeAsync()
@@ -55,14 +55,6 @@ internal sealed class Publisher : IPublisher
         if (this.isDisposed)
         {
             return;
-        }
-
-        if (this.returnedMessageHandlers != null)
-        {
-            for (var i = 0; i < this.returnedMessageHandlers.Count; i++)
-            {
-                this.returnedMessageHandlers[i].Dispose();
-            }
         }
 
         this.isDisposed = true;
@@ -172,7 +164,7 @@ internal sealed class Publisher : IPublisher
             this.lastDeliveryTag = 0;
 
             this.channel = await this.connection.OpenChannelAsync(cancellationToken);
-            this.channel.WithMessageHandler(new ReturnMessageHandler(this.returnedMessageHandlers, this.serializerFactory));
+            this.channel.WithMessageHandler(new ReturnMessageHandler(this.returnedMessageHandler, this.serializerFactory));
             if (this.confirms != null)
             {
                 this.channel.WithMessageHandler<AckMethod>(this.confirms);

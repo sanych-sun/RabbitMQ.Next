@@ -16,9 +16,5 @@ public interface IConsumerBuilder : ISerializationBuilder<IConsumerBuilder>
 
     IConsumerBuilder SetAcknowledgement(Func<IChannel, IAcknowledgement> acknowledgementFactory);
 
-    IConsumerBuilder OnUnprocessedMessage(UnprocessedMessageMode mode);
-
-    IConsumerBuilder OnPoisonMessage(UnprocessedMessageMode mode);
-
-    IConsumerBuilder MessageHandler(IDeliveredMessageHandler handler);
+    IConsumerBuilder OnPoisonMessage(PoisonMessageMode mode);
 }

@@ -27,8 +27,11 @@ public class ConsumerBenchmarks
             .Endpoint(Helper.RabbitMqConnection)
             .ConnectAsync();
 
-        ConnectionFactory factory = new ConnectionFactory();
-        factory.Uri = Helper.RabbitMqConnection;
+        ConnectionFactory factory = new ConnectionFactory()
+        {
+            Uri = Helper.RabbitMqConnection,
+            DispatchConsumersAsync = true,
+        };
         this.theirConnection = factory.CreateConnection();
             
         await this.connection.QueueDeclareAsync(this.queueName);
@@ -37,7 +40,7 @@ public class ConsumerBenchmarks
             
         var publisher = this.connection.Publisher("amq.fanout", builder => builder.UsePlainTextSerializer());
             
-        var payload = Helper.BuildDummyText(10240);
+        var payload = Helper.BuildDummyText(100);
             
         for (int i = 0; i < this.messagesCount * 20; i++) // 15 runs for benchmark
         {
@@ -60,7 +63,8 @@ public class ConsumerBenchmarks
         model.BasicQos(0, 10, false);
         
         var num = 0;
-        var consumer = new EventingBasicConsumer(model);
+        var datalen = 0;
+        var consumer = new AsyncEventingBasicConsumer(model);
         
         var manualResetEvent = new ManualResetEvent(false);
         
@@ -68,9 +72,11 @@ public class ConsumerBenchmarks
         {
             var body = ea.Body.ToArray();
             var message = Encoding.UTF8.GetString(body);
+            datalen += message.Length;
             num++;
         
             var messageId = ea.BasicProperties.MessageId;
+            datalen += messageId.Length;
         
             model.BasicAck(ea.DeliveryTag, false);
         
@@ -78,9 +84,11 @@ public class ConsumerBenchmarks
             {
                 manualResetEvent.Set();
             }
+
+            return Task.CompletedTask;
         };
         
-        model.BasicQos(0, 10, true);
+        model.BasicQos(0, 10, false);
         
         var tag = model.BasicConsume(
             queue: this.queueName,
@@ -102,56 +110,58 @@ public class ConsumerBenchmarks
     public async Task ConsumeAsync()
     {
         var num = 0;
+        var datalen = 0;
         var cs = new CancellationTokenSource();
         var consumer = this.connection.Consumer(
             b => b
                 .BindToQueue(this.queueName)
                 .PrefetchCount(10)
-                .MessageHandler(message =>
-                {
-                    var data = message.Content<string>();
-                    var messageId = message.Properties.MessageId;
-                    num++;
-                    if (num >= this.messagesCount)
-                    {
-                        cs.Cancel();
-                    }
+                .UsePlainTextSerializer());
 
-                    return true;
-                }));
-
-        var consumeTask = consumer.ConsumeAsync(cs.Token);
+        var consumeTask = consumer.ConsumeAsync(async message =>
+        {
+            var data = message.Content<string>();
+            datalen += data.Length;
+            var messageId = message.Properties.MessageId;
+            datalen += messageId.Length;
+            num++;
+            if (num >= this.messagesCount)
+            {
+                cs.Cancel();
+            }
+        },cs.Token);
         await consumeTask;
 
         Console.WriteLine($"Consumed: {num}");
     }
-        
-    //[Benchmark]
-    public async Task ConsumeParallelAsync()
-    {
-        var num = 0;
-        var cs = new CancellationTokenSource();
-        var consumer = this.connection.Consumer(
-            b => b
-                .BindToQueue(this.queueName)
-                .PrefetchCount(10)
-                .ConcurrencyLevel(5)
-                .MessageHandler(message =>
-                {
-                    var data = message.Content<string>();
-                    var messageId = message.Properties.MessageId;
-                    num++;
-                    if (num >= this.messagesCount)
-                    {
-                        cs.Cancel();
-                    }
-
-                    return true;
-                }));
-
-        var consumeTask = consumer.ConsumeAsync(cs.Token);
-        await consumeTask;
-
-        Console.WriteLine($"Consumed: {num}");
-    }
+    //
+    // [Benchmark]
+    // public async Task ConsumeParallelAsync()
+    // {
+    //     var num = 0;
+    //     var cs = new CancellationTokenSource();
+    //     var consumer = this.connection.Consumer(
+    //         b => b
+    //             .BindToQueue(this.queueName)
+    //             .PrefetchCount(10)
+    //             .ConcurrencyLevel(5)
+    //             .UsePlainTextSerializer()
+    //             .MessageHandler(message =>
+    //             {
+    //                 var data = message.Content<string>();
+    //                 var messageId = message.Properties.MessageId;
+    //                 num++;
+    //                 if (num >= this.messagesCount)
+    //                 {
+    //                     cs.Cancel();
+    //                 }
+    //
+    //                 return true;
+    //             }));
+    //
+    //     var consumeTask = consumer.ConsumeAsync(cs.Token);
+    //     await consumeTask;
+    //
+    //     Console.WriteLine($"Consumed: {num}");
+    // }
 }

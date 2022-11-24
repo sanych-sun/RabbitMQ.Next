@@ -1,4 +1,3 @@
-using RabbitMQ.Next.Transport;
 using Xunit;
 
 namespace RabbitMQ.Next.Tests.Transport;

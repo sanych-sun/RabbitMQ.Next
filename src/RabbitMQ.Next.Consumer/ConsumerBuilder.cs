@@ -9,7 +9,6 @@ namespace RabbitMQ.Next.Consumer;
 internal class ConsumerBuilder : IConsumerBuilder
 {
     private readonly List<QueueConsumerBuilder> queues = new();
-    private readonly List<IDeliveredMessageHandler> handlers = new();
     private readonly SerializerFactory serializerFactory = new();
 
     public ConsumerBuilder()
@@ -21,8 +20,6 @@ internal class ConsumerBuilder : IConsumerBuilder
         
     public IReadOnlyList<QueueConsumerBuilder> Queues => this.queues;
 
-    public IReadOnlyList<IDeliveredMessageHandler> Handlers => this.handlers;
-    
     public ISerializerFactory SerializerFactory => this.serializerFactory;
 
     public uint PrefetchSize { get; private set; }
@@ -33,9 +30,7 @@ internal class ConsumerBuilder : IConsumerBuilder
 
     public Func<IChannel, IAcknowledgement> AcknowledgementFactory { get; private set; }
 
-    public UnprocessedMessageMode OnUnprocessedMessage { get; private set; } = UnprocessedMessageMode.Requeue;
-
-    public UnprocessedMessageMode OnPoisonMessage { get; private set; } = UnprocessedMessageMode.Requeue;
+    public PoisonMessageMode OnPoisonMessage { get; private set; } = PoisonMessageMode.Requeue;
 
     IConsumerBuilder IConsumerBuilder.BindToQueue(string queue, Action<IQueueConsumerBuilder> builder)
     {
@@ -79,26 +74,9 @@ internal class ConsumerBuilder : IConsumerBuilder
         return this;
     }
 
-    IConsumerBuilder IConsumerBuilder.OnUnprocessedMessage(UnprocessedMessageMode mode)
-    {
-        this.OnUnprocessedMessage = mode;
-        return this;
-    }
-
-    IConsumerBuilder IConsumerBuilder.OnPoisonMessage(UnprocessedMessageMode mode)
+    IConsumerBuilder IConsumerBuilder.OnPoisonMessage(PoisonMessageMode mode)
     {
         this.OnPoisonMessage = mode;
-        return this;
-    }
-
-    IConsumerBuilder IConsumerBuilder.MessageHandler(IDeliveredMessageHandler handler)
-    {
-        if (handler == null)
-        {
-            throw new ArgumentNullException(nameof(handler));
-        }
-
-        this.handlers.Add(handler);
         return this;
     }
 

@@ -25,4 +25,18 @@ public class BitConverterTests
 
         Assert.Equal(expected, result);
     }
+
+    [Theory]
+    [InlineData(false, 0b_00000000, 1)]
+    [InlineData(false, 0b_00000000, 7)]
+    [InlineData(false, 0b_00000010, 0)]
+    [InlineData(true, 0b_00000010, 1)]
+    [InlineData(false, 0b_00101010, 2)]
+    [InlineData(true, 0b_00101010, 3)]
+    public void IsFlagSet(bool expected, byte input, byte bitNumber)
+    {
+        var result = BitConverter.IsFlagSet(input, bitNumber);
+        
+        Assert.Equal(expected, result);
+    }
 }

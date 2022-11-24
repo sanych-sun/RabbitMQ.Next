@@ -1,6 +1,6 @@
 namespace RabbitMQ.Next.Consumer;
 
-public enum UnprocessedMessageMode
+public enum PoisonMessageMode
 {
     Drop = 0,
     Requeue = 1,

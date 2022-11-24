@@ -5,29 +5,35 @@ using RabbitMQ.Next.Tests.Mocks;
 using RabbitMQ.Next.Transport;
 using Xunit;
 
-namespace RabbitMQ.Next.Tests.Transport.Messaging;
+namespace RabbitMQ.Next.Tests.Transport;
 
-public class MessageHeaderTests
+public class LazyMessagePropertiesTests
 {
     [Theory]
     [MemberData(nameof(MessagePropertiesTestCases))]
-    internal void WriteMessageProperties(byte[] expected, MessageProperties props)
+    public void ReadMessageProperties(ReadOnlyMemory<byte> source, IMessageProperties expectedData)
     {
-        Span<byte> buffer = new byte[1024];
-        var res = buffer.WriteContentHeader(props, out var contentSizeBuffer);
-        var written = buffer.Length - res.Length;
-        var bytes = buffer.Slice(0, written);
-    
-        Assert.Equal(sizeof(ulong), contentSizeBuffer.Length);
-        Assert.Equal(expected.Length, written);
-        Assert.Equal(expected, bytes.ToArray());
+        var props = new LazyMessageProperties();
+        props.Set(source);
+        Assert.Equal(expectedData, props, new MessagePropertiesComparer());
+    }
+
+    [Theory]
+    [MemberData(nameof(MessagePropertiesTestCases))]
+    public void CanReset(ReadOnlyMemory<byte> source, IMessageProperties _)
+    {
+        var props = new LazyMessageProperties();
+        props.Set(source);
+        props.Reset();
+
+        Assert.Equal(new LazyMessageProperties(), props, new MessagePropertiesComparer());
     }
 
     public static IEnumerable<object[]> MessagePropertiesTestCases()
     {
         yield return new object[]
         {
-            new byte[] {  0x00, 0x3C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0b_00000000, 0b_00000000 },
+            new byte[] { 0x00, 0x3C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0b_00000000, 0b_00000000 },
             new MessageProperties()
         };
 
@@ -46,7 +52,7 @@ public class MessageHeaderTests
         yield return new object[]
         {
             new byte[] { 0x00, 0x3C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0b_00100000, 0b_00000000, 0x00, 0x00, 0x00, 0x0E, 0x03, 0x6B, 0x65, 0x79, 0x53, 0x00, 0x00, 0x00, 0x05, 0x76, 0x61, 0x6C, 0x75, 0x65 },
-            new MessageProperties { Headers = new Dictionary<string, object> { ["key"] = "value" } }
+            new MessageProperties { Headers = new Dictionary<string, object> { ["key"] = "value"}}
         };
 
         yield return new object[]
@@ -88,7 +94,7 @@ public class MessageHeaderTests
         yield return new object[]
         {
             new byte[] { 0x00, 0x3C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0b_00000000, 0b_01000000, 0x00, 0x00, 0x00, 0x00, 0x19, 0xD7, 0x87, 0x00 },
-            new MessageProperties { Timestamp = new DateTimeOffset(1983, 09, 28, 0, 0, 0, TimeSpan.Zero) }
+            new MessageProperties { Timestamp = new DateTimeOffset(1983, 09,28, 0, 0, 0, TimeSpan.Zero) }
         };
 
         yield return new object[]
@@ -111,9 +117,8 @@ public class MessageHeaderTests
 
         yield return new object[]
         {
-            new byte[]
-            {
-                0x00, 0x3C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            new byte[] { 
+                0x00, 0x3C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
                 0b_11111111, 0b_11111000,
                 0x04, 0x6A, 0x73, 0x6F, 0x6E,
                 0x04, 0x75, 0x74, 0x66, 0x38,
@@ -135,7 +140,7 @@ public class MessageHeaderTests
                 ContentEncoding = "utf8",
                 DeliveryMode = DeliveryMode.Persistent,
                 Priority = 5,
-                Headers = new Dictionary<string, object> { ["key"] = "value" },
+                Headers = new Dictionary<string, object> {["key"] = "value"},
                 CorrelationId = "correlationId",
                 ReplyTo = "replyTo",
                 Expiration = "expiration",

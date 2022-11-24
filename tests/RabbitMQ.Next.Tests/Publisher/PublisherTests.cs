@@ -105,19 +105,6 @@ public class PublisherTests
     }
 
     [Fact]
-    public async Task DisposeShouldDisposeHandlers()
-    {
-        var mock = this.Mock();
-
-        var returnedMessageHandler = Substitute.For<IReturnedMessageHandler>();
-
-        var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, this.MockSerializerFactory(), "exchange", false, null, new[] {returnedMessageHandler});
-        await publisher.DisposeAsync();
-
-        returnedMessageHandler.Received().Dispose();
-    }
-
-    [Fact]
     public async Task DisposeShouldCloseChannel()
     {
         var mock = this.Mock();

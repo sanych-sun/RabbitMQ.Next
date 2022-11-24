@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Channels;
@@ -11,25 +10,22 @@ namespace RabbitMQ.Next.Consumer;
 
 internal sealed class DeliverMessageHandler : IMessageHandler<DeliverMethod>
 {
-    private readonly IReadOnlyList<IDeliveredMessageHandler> messageHandlers;
+    private readonly Func<IDeliveredMessage, Task> messageHandler;
     private readonly ISerializerFactory serializerFactory;
     private readonly IAcknowledgement acknowledgement;
-    private readonly UnprocessedMessageMode onUnprocessedMessage;
-    private readonly UnprocessedMessageMode onPoisonMessage;
+    private readonly PoisonMessageMode onPoisonMessage;
     private readonly Channel<(DeliveredMessage message, ulong deliveryTag)> deliverChannel;
 
     public DeliverMessageHandler(
+        Func<IDeliveredMessage, Task> messageHandler,
         IAcknowledgement acknowledgement,
-        IReadOnlyList<IDeliveredMessageHandler> messageHandlers,
         ISerializerFactory serializerFactory,
-        UnprocessedMessageMode onUnprocessedMessage,
-        UnprocessedMessageMode onPoisonMessage,
+        PoisonMessageMode onPoisonMessage,
         byte concurrencyLevel)
     {
         this.acknowledgement = acknowledgement;
-        this.messageHandlers = messageHandlers;
+        this.messageHandler = messageHandler;
         this.serializerFactory = serializerFactory;
-        this.onUnprocessedMessage = onUnprocessedMessage;
         this.onPoisonMessage = onPoisonMessage;
             
         this.deliverChannel = Channel.CreateUnbounded<(DeliveredMessage message, ulong deliveryTag)>(new UnboundedChannelOptions
@@ -65,33 +61,20 @@ internal sealed class DeliverMessageHandler : IMessageHandler<DeliverMethod>
         {
             while (reader.TryRead(out var delivered))
             {
-                await HandleMessageAsync(delivered.message, delivered.deliveryTag);
-            }
-        }
-    }
-
-    private async ValueTask HandleMessageAsync(DeliveredMessage message, ulong deliveryTag)
-    {
-        try
-        {
-            for (var i = 0; i < this.messageHandlers.Count; i++)
-            {
-                if (await this.messageHandlers[i].TryHandleAsync(message))
+                try
                 {
-                    await this.acknowledgement.AckAsync(deliveryTag);
-                    return;
+                    await this.messageHandler(delivered.message);
+                    await this.acknowledgement.AckAsync(delivered.deliveryTag);
+                }
+                catch (Exception)
+                {
+                    await this.acknowledgement.NackAsync(delivered.deliveryTag, this.onPoisonMessage == PoisonMessageMode.Requeue);
+                }
+                finally
+                {
+                    delivered.message.Dispose();
                 }
             }
-                        
-            await this.acknowledgement.NackAsync(deliveryTag, this.onUnprocessedMessage == UnprocessedMessageMode.Requeue);
-        }
-        catch (Exception)
-        {
-            await this.acknowledgement.NackAsync(deliveryTag, this.onPoisonMessage == UnprocessedMessageMode.Requeue);
-        }
-        finally
-        {
-            message.Dispose();
         }
     }
 }

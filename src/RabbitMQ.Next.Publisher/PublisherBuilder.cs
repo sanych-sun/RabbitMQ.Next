@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using RabbitMQ.Next.Messaging;
 using RabbitMQ.Next.Serialization;
 
@@ -8,12 +9,12 @@ namespace RabbitMQ.Next.Publisher;
 internal sealed class PublisherBuilder : IPublisherBuilder
 {
     private readonly List<IMessageInitializer> initializers = new();
-    private readonly List<IReturnedMessageHandler> returnedMessageHandlers = new();
     private readonly SerializerFactory serializerFactory = new();
+    private Func<IReturnedMessage,Task> returnedMessageHandler;
 
     public IReadOnlyList<IMessageInitializer> Initializers => this.initializers;
         
-    public IReadOnlyList<IReturnedMessageHandler> ReturnedMessageHandlers => this.returnedMessageHandlers;
+    public Func<IReturnedMessage,Task> ReturnedMessageHandler => this.returnedMessageHandler;
 
     public ISerializerFactory SerializerFactory => this.serializerFactory;
 
@@ -30,14 +31,14 @@ internal sealed class PublisherBuilder : IPublisherBuilder
         return this;
     }
 
-    IPublisherBuilder IPublisherBuilder.AddReturnedMessageHandler(IReturnedMessageHandler returnedMessageHandler)
+    IPublisherBuilder IPublisherBuilder.OnReturnedMessage(Func<IReturnedMessage,Task> returnedMessageHandler)
     {
         if (returnedMessageHandler == null)
         {
             throw new ArgumentNullException(nameof(returnedMessageHandler));
         }
 
-        this.returnedMessageHandlers.Add(returnedMessageHandler);
+        this.returnedMessageHandler = returnedMessageHandler;
         return this;
     }
 

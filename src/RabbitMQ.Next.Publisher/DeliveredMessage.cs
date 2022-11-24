@@ -10,12 +10,11 @@ internal class ReturnedMessage : IReturnedMessage, IDisposable
 {
     private readonly ISerializerFactory serializerFactory;
     private readonly IPayload payload;
-
+    private readonly string exchange;
+    private readonly string routingKey;
+    private readonly ushort replyCode;
+    private readonly string replyText;
     private bool disposed;
-    private string exchange;
-    private string routingKey;
-    private ushort replyCode;
-    private string replyText;
 
     public ReturnedMessage(ISerializerFactory serializerFactory, ReturnMethod returnMethod, IPayload payload)
     {

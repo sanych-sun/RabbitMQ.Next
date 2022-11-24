@@ -5,7 +5,7 @@ using Xunit;
 
 namespace RabbitMQ.Next.Tests.Transport;
 
-public class FramingTests
+public partial class FramingTests
 {
     [Theory]
     [MemberData(nameof(WriteFrameHeaderTestCases))]

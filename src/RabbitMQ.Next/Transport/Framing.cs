@@ -29,12 +29,12 @@ internal static partial class Framing
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void WriteFrameHeader(this Span<byte> buffer, FrameType type, ushort channel, uint payloadSize)
+    public static Span<byte> WriteFrameHeader(this Span<byte> buffer, FrameType type, ushort channel, uint payloadSize)
         => buffer.Write((byte)type)
             .Write(channel)
             .Write(payloadSize);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void WriteFrameEnd(this Span<byte> target)
+    public static Span<byte> WriteFrameEnd(this Span<byte> target)
         => target.Write(ProtocolConstants.FrameEndByte);
 }

@@ -14,13 +14,11 @@ internal class Consumer : IConsumer
     private readonly IConnection connection;
     private readonly Func<IChannel, IAcknowledgement> acknowledgementFactory;
     private readonly ISerializerFactory serializerFactory;
-    private readonly IReadOnlyList<IDeliveredMessageHandler> handlers;
     private readonly IReadOnlyList<QueueConsumerBuilder> queues;
     private readonly uint prefetchSize;
     private readonly ushort prefetchCount;
     private readonly byte concurrencyLevel;
-    private readonly UnprocessedMessageMode onUnprocessedMessage;
-    private readonly UnprocessedMessageMode onPoisonMessage;
+    private readonly PoisonMessageMode onPoisonMessage;
 
     private IChannel channel;
     private IAcknowledgement acknowledgement;
@@ -29,39 +27,47 @@ internal class Consumer : IConsumer
         IConnection connection,
         Func<IChannel, IAcknowledgement> acknowledgementFactory,
         ISerializerFactory serializerFactory,
-        IReadOnlyList<IDeliveredMessageHandler> handlers,
         IReadOnlyList<QueueConsumerBuilder> queues,
         uint prefetchSize,
         ushort prefetchCount,
         byte concurrencyLevel,
-        UnprocessedMessageMode onUnprocessedMessage,
-        UnprocessedMessageMode onPoisonMessage)
+        PoisonMessageMode onPoisonMessage)
     {
         this.connection = connection;
         this.acknowledgementFactory = acknowledgementFactory;
         this.serializerFactory = serializerFactory;
-        this.handlers = handlers;
         this.queues = queues;
         this.prefetchSize = prefetchSize;
         this.prefetchCount = prefetchCount;
         this.concurrencyLevel = concurrencyLevel;
-        this.onUnprocessedMessage = onUnprocessedMessage;
         this.onPoisonMessage = onPoisonMessage;
     }
 
     public async ValueTask DisposeAsync()
         => await this.CancelConsumeAsync();
 
-    public async Task ConsumeAsync(CancellationToken cancellation)
+    public async Task ConsumeAsync(Func<IDeliveredMessage, Task> handler, CancellationToken cancellation)
     {
         if (this.channel != null)
         {
             throw new InvalidOperationException("The consumer is already started.");
         }
 
-        await this.InitConsumerAsync();
-        await Task.WhenAny(cancellation.AsTask(), this.channel.Completion);
-        await this.CancelConsumeAsync();
+        if (handler == null)
+        {
+            throw new ArgumentNullException(nameof(handler));
+        }
+
+        await this.InitConsumerAsync(handler);
+        
+        try
+        {
+            await Task.WhenAny(cancellation.AsTask(), this.channel.Completion);
+        }
+        finally
+        {
+            await this.CancelConsumeAsync();   
+        }
     }
 
     private async Task CancelConsumeAsync()
@@ -88,12 +94,12 @@ internal class Consumer : IConsumer
         this.channel = null;
     }
 
-    private async Task InitConsumerAsync()
+    private async Task InitConsumerAsync(Func<IDeliveredMessage, Task> handler)
     {
         this.channel = await this.connection.OpenChannelAsync();
         this.acknowledgement = this.acknowledgementFactory(this.channel);
 
-        var deliverHandler = new DeliverMessageHandler(this.acknowledgement, this.handlers, this.serializerFactory, this.onUnprocessedMessage, this.onPoisonMessage, this.concurrencyLevel);
+        var deliverHandler = new DeliverMessageHandler(handler, this.acknowledgement, this.serializerFactory, this.onPoisonMessage, this.concurrencyLevel);
         this.channel.WithMessageHandler(deliverHandler);
 
         await this.channel.SendAsync<QosMethod, QosOkMethod>(new QosMethod(this.prefetchSize, this.prefetchCount, false));

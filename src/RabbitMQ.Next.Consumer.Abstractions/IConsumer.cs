@@ -6,5 +6,5 @@ namespace RabbitMQ.Next.Consumer;
 
 public interface IConsumer : IAsyncDisposable
 {
-    Task ConsumeAsync(CancellationToken cancellation = default);
+    Task ConsumeAsync(Func<IDeliveredMessage, Task> handler, CancellationToken cancellation = default);
 }

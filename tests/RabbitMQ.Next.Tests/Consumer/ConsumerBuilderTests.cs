@@ -68,51 +68,18 @@ public class ConsumerBuilderTests
 
         Assert.Throws<ArgumentNullException>(() => ((IConsumerBuilder) consumerBuilder).SetAcknowledgement(null));
     }
-
-    [Fact]
-    public void OnUnprocessedMessage()
-    {
-        var consumerBuilder = new ConsumerBuilder();
-        var val = UnprocessedMessageMode.Drop;
-
-        ((IConsumerBuilder) consumerBuilder).OnUnprocessedMessage(val);
-
-        Assert.Equal(val, consumerBuilder.OnUnprocessedMessage);
-    }
-
+    
     [Fact]
     public void OnPoisonMessage()
     {
         var consumerBuilder = new ConsumerBuilder();
-        var val = UnprocessedMessageMode.Drop;
+        var val = PoisonMessageMode.Drop;
 
         ((IConsumerBuilder) consumerBuilder).OnPoisonMessage(val);
 
         Assert.Equal(val, consumerBuilder.OnPoisonMessage);
     }
-
-    [Fact]
-    public void MessageHandler()
-    {
-        var consumerBuilder = new ConsumerBuilder();
-        var handler1 = Substitute.For<IDeliveredMessageHandler>();
-        var handler2 = Substitute.For<IDeliveredMessageHandler>();
-
-        ((IConsumerBuilder) consumerBuilder).MessageHandler(handler1);
-        ((IConsumerBuilder) consumerBuilder).MessageHandler(handler2);
-
-        Assert.Contains(handler1, consumerBuilder.Handlers);
-        Assert.Contains(handler2, consumerBuilder.Handlers);
-    }
-
-    [Fact]
-    public void MessageHandlerThrowsOnNull()
-    {
-        var consumerBuilder = new ConsumerBuilder();
-
-        Assert.Throws<ArgumentNullException>(() => ((IConsumerBuilder)consumerBuilder).MessageHandler(null));
-    }
-
+    
     [Fact]
     public void DefaultBindToQueue()
     {
