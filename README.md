@@ -8,10 +8,8 @@ RabbitMQ.Next is an experimental low-level RabbitMQ client for .Net with number 
 Too much packages instead of a single... explained:
 - RabbitMQ.Next, RabbitMQ.Next.Abstractions – core library, contains most of the protocol-level implementations
 - RabbitMQ.Next.TopologyBuilder – library contains methods to manage exchanges, queues and bindings
-- RabbitMQ.Next.Consumer – library provides high-level event consumption API
-- RabbitMQ.Next.Consumer.Abstractions – contract library for the RabbitMQ.Next.Consumer
-- RabbitMQ.Next.Publisher – provides high-level event publishing API
-- RabbitMQ.Next.Publisher.Abstractions – contract library for the RabbitMQ.Next.Publisher
+- RabbitMQ.Next.Consumer, RabbitMQ.Next.Consumer.Abstractions – library provides high-level message consumption API
+- RabbitMQ.Next.Publisher, RabbitMQ.Next.Publisher.Abstractions – provides high-level message publishing API
 - RabbitMQ.Next.Publisher.Attributes – helper library that allow declarative attribute-based message initialization.
 
 Serializers:
