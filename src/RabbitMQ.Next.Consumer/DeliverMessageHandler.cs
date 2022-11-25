@@ -11,7 +11,7 @@ namespace RabbitMQ.Next.Consumer;
 internal sealed class DeliverMessageHandler : IMessageHandler<DeliverMethod>
 {
     private readonly Func<IDeliveredMessage, Task> messageHandler;
-    private readonly ISerializerFactory serializerFactory;
+    private readonly ISerializer serializer;
     private readonly IAcknowledgement acknowledgement;
     private readonly PoisonMessageMode onPoisonMessage;
     private readonly Channel<(DeliveredMessage message, ulong deliveryTag)> deliverChannel;
@@ -19,13 +19,13 @@ internal sealed class DeliverMessageHandler : IMessageHandler<DeliverMethod>
     public DeliverMessageHandler(
         Func<IDeliveredMessage, Task> messageHandler,
         IAcknowledgement acknowledgement,
-        ISerializerFactory serializerFactory,
+        ISerializer serializer,
         PoisonMessageMode onPoisonMessage,
         byte concurrencyLevel)
     {
         this.acknowledgement = acknowledgement;
         this.messageHandler = messageHandler;
-        this.serializerFactory = serializerFactory;
+        this.serializer = serializer;
         this.onPoisonMessage = onPoisonMessage;
             
         this.deliverChannel = Channel.CreateUnbounded<(DeliveredMessage message, ulong deliveryTag)>(new UnboundedChannelOptions
@@ -44,7 +44,7 @@ internal sealed class DeliverMessageHandler : IMessageHandler<DeliverMethod>
 
     public bool Handle(DeliverMethod method, IPayload payload)
     {
-        this.deliverChannel.Writer.TryWrite((new DeliveredMessage(this.serializerFactory, method, payload), method.DeliveryTag));
+        this.deliverChannel.Writer.TryWrite((new DeliveredMessage(this.serializer, method, payload), method.DeliveryTag));
         return true;
     }
         

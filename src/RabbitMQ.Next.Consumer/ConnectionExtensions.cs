@@ -9,7 +9,7 @@ public static class ConnectionExtensions
         var consumerBuilder = new ConsumerBuilder();
         builder?.Invoke(consumerBuilder);
 
-        var consumer = new Consumer(connection, consumerBuilder.AcknowledgementFactory, consumerBuilder.SerializerFactory,
+        var consumer = new Consumer(connection, consumerBuilder.AcknowledgementFactory, consumerBuilder.Serializer,
             consumerBuilder.Queues, consumerBuilder.PrefetchSize, consumerBuilder.PrefetchCount,
             consumerBuilder.ConcurrencyLevel, consumerBuilder.OnPoisonMessage);
 

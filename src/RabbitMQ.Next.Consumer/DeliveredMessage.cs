@@ -8,16 +8,16 @@ namespace RabbitMQ.Next.Consumer;
 
 internal class DeliveredMessage : IDeliveredMessage, IDisposable
 {
-    private readonly ISerializerFactory serializerFactory;
+    private readonly ISerializer serializer;
     private readonly IPayload payload;
     private readonly string exchange;
     private readonly string routingKey;
     private readonly bool redelivered;
     private bool disposed;
 
-    public DeliveredMessage(ISerializerFactory serializerFactory, DeliverMethod deliverMethod, IPayload payload)
+    public DeliveredMessage(ISerializer serializer, DeliverMethod deliverMethod, IPayload payload)
     {
-        this.serializerFactory = serializerFactory;
+        this.serializer = serializer;
         this.payload = payload;
         this.exchange = deliverMethod.Exchange;
         this.routingKey = deliverMethod.RoutingKey;
@@ -64,10 +64,8 @@ internal class DeliveredMessage : IDeliveredMessage, IDisposable
     {
         this.ValidateState();
         
-        var serializer = this.serializerFactory.Get(this.Properties);
         var bytes = this.payload.GetBody();
-
-        return serializer.Deserialize<T>(bytes);
+        return this.serializer.Deserialize<T>(this.Properties, bytes);
     }
 
     public void Dispose()

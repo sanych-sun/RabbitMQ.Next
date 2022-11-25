@@ -22,7 +22,7 @@ public static class ConnectionExtensions
         var publisher = new Publisher(
             connection,
             messagePropsPool,
-            publisherBuilder.SerializerFactory,
+            publisherBuilder.Serializer,
             exchange,
             publisherBuilder.PublisherConfirms, 
             publisherBuilder.Initializers,

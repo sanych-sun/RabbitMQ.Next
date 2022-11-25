@@ -3,6 +3,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using NSubstitute;
+using RabbitMQ.Next.Messaging;
 using RabbitMQ.Next.Serialization.PlainText;
 using Xunit;
 
@@ -20,20 +21,23 @@ public class PlainTextSerializerTests
     [Fact]
     public void SerializeThrowsOnNotSupportedTypes()
     {
+        var message = Substitute.For<IMessageProperties>();
         var serializer = new PlainTextSerializer(new [] { this.MockFormatter<string>()});
-        Assert.Throws<InvalidOperationException>(() => serializer.Serialize(42, new ArrayBufferWriter<byte>()));
+        Assert.Throws<InvalidOperationException>(() => serializer.Serialize(message, 42, new ArrayBufferWriter<byte>()));
     }
 
     [Fact]
     public void DeserializeThrowsOnNotSupportedTypes()
     {
+        var message = Substitute.For<IMessageProperties>();
         var serializer = new PlainTextSerializer(new [] { this.MockFormatter<string>()});
-        Assert.Throws<InvalidOperationException>(() => serializer.Deserialize<int>(ReadOnlySequence<byte>.Empty));
+        Assert.Throws<InvalidOperationException>(() => serializer.Deserialize<int>(message, ReadOnlySequence<byte>.Empty));
     }
 
     [Fact]
     public void SerializeTryFormattersUntilFound()
     {
+        var message = Substitute.For<IMessageProperties>();
         var intFormatter = this.MockFormatter<int>();
         var stringFormatter = this.MockFormatter<string>();
         var doubleFormatter = this.MockFormatter<double>();
@@ -41,7 +45,7 @@ public class PlainTextSerializerTests
         var data = "test string";
 
         var serializer = new PlainTextSerializer(new [] { intFormatter, stringFormatter, doubleFormatter });
-        serializer.Serialize(data, buffer);
+        serializer.Serialize(message, data, buffer);
 
         intFormatter.Received().TryFormat(data, Arg.Any<IBufferWriter<byte>>());
         stringFormatter.Received().TryFormat(data, Arg.Any<IBufferWriter<byte>>());
@@ -51,12 +55,13 @@ public class PlainTextSerializerTests
     [Fact]
     public void DeserializeTryFormattersUntilFound()
     {
+        var message = Substitute.For<IMessageProperties>();
         var intFormatter = this.MockFormatter<int>();
         var stringFormatter = this.MockFormatter<string>();
         var doubleFormatter = this.MockFormatter<double>();
 
         var serializer = new PlainTextSerializer(new [] { intFormatter, stringFormatter, doubleFormatter });
-        serializer.Deserialize<string>(ReadOnlySequence<byte>.Empty);
+        serializer.Deserialize<string>(message, ReadOnlySequence<byte>.Empty);
 
         intFormatter.Received().TryParse<string>(Arg.Any<ReadOnlySequence<byte>>(), out var _);
         stringFormatter.Received().TryParse<string>(Arg.Any<ReadOnlySequence<byte>>(), out var _);

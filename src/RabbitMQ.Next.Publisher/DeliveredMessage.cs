@@ -8,7 +8,7 @@ namespace RabbitMQ.Next.Publisher;
 
 internal class ReturnedMessage : IReturnedMessage, IDisposable
 {
-    private readonly ISerializerFactory serializerFactory;
+    private readonly ISerializer serializer;
     private readonly IPayload payload;
     private readonly string exchange;
     private readonly string routingKey;
@@ -16,11 +16,10 @@ internal class ReturnedMessage : IReturnedMessage, IDisposable
     private readonly string replyText;
     private bool disposed;
 
-    public ReturnedMessage(ISerializerFactory serializerFactory, ReturnMethod returnMethod, IPayload payload)
+    public ReturnedMessage(ISerializer serializer, ReturnMethod returnMethod, IPayload payload)
     {
-        this.serializerFactory = serializerFactory;
+        this.serializer = serializer;
         this.payload = payload;
-
         this.exchange = returnMethod.Exchange;
         this.routingKey = returnMethod.RoutingKey;
         this.replyCode = returnMethod.ReplyCode;
@@ -77,10 +76,8 @@ internal class ReturnedMessage : IReturnedMessage, IDisposable
     {
         this.ValidateState();
         
-        var serializer = this.serializerFactory.Get(this.Properties);
         var bytes = this.payload.GetBody();
-
-        return serializer.Deserialize<T>(bytes);
+        return this.serializer.Deserialize<T>(this.payload, bytes);
     }
 
     public void Dispose()

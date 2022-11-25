@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using RabbitMQ.Next.Channels;
-using RabbitMQ.Next.Messaging;
 using RabbitMQ.Next.Serialization;
 
 namespace RabbitMQ.Next.Consumer;
@@ -9,7 +8,7 @@ namespace RabbitMQ.Next.Consumer;
 internal class ConsumerBuilder : IConsumerBuilder
 {
     private readonly List<QueueConsumerBuilder> queues = new();
-    private readonly SerializerFactory serializerFactory = new();
+    private ISerializer serializer;
 
     public ConsumerBuilder()
     {
@@ -20,7 +19,7 @@ internal class ConsumerBuilder : IConsumerBuilder
         
     public IReadOnlyList<QueueConsumerBuilder> Queues => this.queues;
 
-    public ISerializerFactory SerializerFactory => this.serializerFactory;
+    public ISerializer Serializer => this.serializer;
 
     public uint PrefetchSize { get; private set; }
 
@@ -80,15 +79,14 @@ internal class ConsumerBuilder : IConsumerBuilder
         return this;
     }
 
-    IConsumerBuilder ISerializationBuilder<IConsumerBuilder>.DefaultSerializer(ISerializer serializer)
+    IConsumerBuilder ISerializationBuilder<IConsumerBuilder>.UseSerializer(ISerializer serializer)
     {
-        this.serializerFactory.DefaultSerializer(serializer);
-        return this;
-    }
-
-    IConsumerBuilder ISerializationBuilder<IConsumerBuilder>.UseSerializer(ISerializer serializer, Func<IMessageProperties, bool> predicate)
-    {
-        this.serializerFactory.UseSerializer(serializer, predicate);
+        if (serializer == null)
+        {
+            throw new ArgumentNullException(nameof(serializer));
+        }
+        
+        this.serializer = serializer;
         return this;
     }
 }

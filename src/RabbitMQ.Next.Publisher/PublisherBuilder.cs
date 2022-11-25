@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using RabbitMQ.Next.Messaging;
 using RabbitMQ.Next.Serialization;
 
 namespace RabbitMQ.Next.Publisher;
@@ -9,14 +8,14 @@ namespace RabbitMQ.Next.Publisher;
 internal sealed class PublisherBuilder : IPublisherBuilder
 {
     private readonly List<IMessageInitializer> initializers = new();
-    private readonly SerializerFactory serializerFactory = new();
+    private ISerializer serializer;
     private Func<IReturnedMessage,Task> returnedMessageHandler;
 
     public IReadOnlyList<IMessageInitializer> Initializers => this.initializers;
         
     public Func<IReturnedMessage,Task> ReturnedMessageHandler => this.returnedMessageHandler;
 
-    public ISerializerFactory SerializerFactory => this.serializerFactory;
+    public ISerializer Serializer => this.serializer;
 
     public bool PublisherConfirms { get; private set; } = true;
 
@@ -31,14 +30,14 @@ internal sealed class PublisherBuilder : IPublisherBuilder
         return this;
     }
 
-    IPublisherBuilder IPublisherBuilder.OnReturnedMessage(Func<IReturnedMessage,Task> returnedMessageHandler)
+    IPublisherBuilder IPublisherBuilder.OnReturnedMessage(Func<IReturnedMessage,Task> handler)
     {
-        if (returnedMessageHandler == null)
+        if (handler == null)
         {
-            throw new ArgumentNullException(nameof(returnedMessageHandler));
+            throw new ArgumentNullException(nameof(handler));
         }
 
-        this.returnedMessageHandler = returnedMessageHandler;
+        this.returnedMessageHandler = handler;
         return this;
     }
 
@@ -49,15 +48,14 @@ internal sealed class PublisherBuilder : IPublisherBuilder
         return this;
     }
 
-    IPublisherBuilder ISerializationBuilder<IPublisherBuilder>.DefaultSerializer(ISerializer serializer)
+    IPublisherBuilder ISerializationBuilder<IPublisherBuilder>.UseSerializer(ISerializer serializer)
     {
-        this.serializerFactory.DefaultSerializer(serializer);
-        return this;
-    }
-
-    IPublisherBuilder ISerializationBuilder<IPublisherBuilder>.UseSerializer(ISerializer serializer, Func<IMessageProperties, bool> predicate)
-    {
-        this.serializerFactory.UseSerializer(serializer, predicate);
+        if (serializer == null)
+        {
+            throw new ArgumentNullException(nameof(serializer));
+        }
+        
+        this.serializer = serializer;
         return this;
     }
 }

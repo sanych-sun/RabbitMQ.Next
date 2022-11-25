@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Channels;
@@ -12,13 +11,13 @@ namespace RabbitMQ.Next.Publisher;
 internal sealed class ReturnMessageHandler : IMessageHandler<ReturnMethod>
 {
     private readonly Func<IReturnedMessage,Task> messageHandler;
-    private readonly ISerializerFactory serializerFactory;
+    private readonly ISerializer serializer;
     private readonly Channel<ReturnedMessage> returnChannel;
 
-    public ReturnMessageHandler(Func<IReturnedMessage,Task> messageHandler, ISerializerFactory serializerFactory)
+    public ReturnMessageHandler(Func<IReturnedMessage,Task> messageHandler, ISerializer serializer)
     {
         this.messageHandler = messageHandler;
-        this.serializerFactory = serializerFactory;
+        this.serializer = serializer;
         this.returnChannel = Channel.CreateUnbounded<ReturnedMessage>(new UnboundedChannelOptions
         {
             SingleReader = true,
@@ -31,7 +30,7 @@ internal sealed class ReturnMessageHandler : IMessageHandler<ReturnMethod>
 
     public bool Handle(ReturnMethod method, IPayload payload)
     {
-        this.returnChannel.Writer.TryWrite(new ReturnedMessage(this.serializerFactory, method, payload));
+        this.returnChannel.Writer.TryWrite(new ReturnedMessage(this.serializer, method, payload));
         return true;
     }
 

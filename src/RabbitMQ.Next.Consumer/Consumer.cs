@@ -13,7 +13,7 @@ internal class Consumer : IConsumer
 {
     private readonly IConnection connection;
     private readonly Func<IChannel, IAcknowledgement> acknowledgementFactory;
-    private readonly ISerializerFactory serializerFactory;
+    private readonly ISerializer serializer;
     private readonly IReadOnlyList<QueueConsumerBuilder> queues;
     private readonly uint prefetchSize;
     private readonly ushort prefetchCount;
@@ -26,7 +26,7 @@ internal class Consumer : IConsumer
     public Consumer(
         IConnection connection,
         Func<IChannel, IAcknowledgement> acknowledgementFactory,
-        ISerializerFactory serializerFactory,
+        ISerializer serializer,
         IReadOnlyList<QueueConsumerBuilder> queues,
         uint prefetchSize,
         ushort prefetchCount,
@@ -35,7 +35,7 @@ internal class Consumer : IConsumer
     {
         this.connection = connection;
         this.acknowledgementFactory = acknowledgementFactory;
-        this.serializerFactory = serializerFactory;
+        this.serializer = serializer;
         this.queues = queues;
         this.prefetchSize = prefetchSize;
         this.prefetchCount = prefetchCount;
@@ -99,7 +99,7 @@ internal class Consumer : IConsumer
         this.channel = await this.connection.OpenChannelAsync();
         this.acknowledgement = this.acknowledgementFactory(this.channel);
 
-        var deliverHandler = new DeliverMessageHandler(handler, this.acknowledgement, this.serializerFactory, this.onPoisonMessage, this.concurrencyLevel);
+        var deliverHandler = new DeliverMessageHandler(handler, this.acknowledgement, this.serializer, this.onPoisonMessage, this.concurrencyLevel);
         this.channel.WithMessageHandler(deliverHandler);
 
         await this.channel.SendAsync<QosMethod, QosOkMethod>(new QosMethod(this.prefetchSize, this.prefetchCount, false));

@@ -26,7 +26,7 @@ public class PublisherTests
     {
         var mock = this.Mock();
 
-        var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, this.MockSerializerFactory(), "exchange", false, null, null);
+        var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, this.MockSerializer(), "exchange", false, null, null);
 
         await publisher.InitializeAsync();
 
@@ -40,7 +40,7 @@ public class PublisherTests
         mock.channel.SendAsync<DeclareMethod, DeclareOkMethod>(Arg.Any<DeclareMethod>())
             .Throws(new ChannelClosedException("Exchange does not exists"));
 
-        var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, this.MockSerializerFactory(), "exchange", false, null, null);
+        var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, this.MockSerializer(), "exchange", false, null, null);
 
         await Assert.ThrowsAsync<ChannelClosedException>(async () => await publisher.InitializeAsync());
     }
@@ -50,7 +50,7 @@ public class PublisherTests
     {
         var mock = this.Mock();
 
-        var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, this.MockSerializerFactory(), "exchange", true, null, null);
+        var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, this.MockSerializer(), "exchange", true, null, null);
 
         await publisher.InitializeAsync();
 
@@ -62,7 +62,7 @@ public class PublisherTests
     {
         var mock = this.Mock();
 
-        var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, this.MockSerializerFactory(), "exchange", false, null, null);
+        var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, this.MockSerializer(), "exchange", false, null, null);
 
         await publisher.InitializeAsync();
 
@@ -75,7 +75,7 @@ public class PublisherTests
         var mock = this.Mock();
         mock.connection.State.Returns(ConnectionState.Closed);
 
-        var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, this.MockSerializerFactory(), "exchange", false, null, null);
+        var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, this.MockSerializer(), "exchange", false, null, null);
 
         await Assert.ThrowsAsync<InvalidOperationException>(async () => await publisher.InitializeAsync());
     }
@@ -85,7 +85,7 @@ public class PublisherTests
     {
         var mock = this.Mock();
 
-        var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, this.MockSerializerFactory(), "exchange", false, null, null);
+        var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, this.MockSerializer(), "exchange", false, null, null);
         await publisher.DisposeAsync();
 
         await Assert.ThrowsAsync<ObjectDisposedException>(async () => await publisher.PublishAsync("test"));
@@ -96,7 +96,7 @@ public class PublisherTests
     {
         var mock = this.Mock();
 
-        var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, this.MockSerializerFactory(), "exchange", false,  null, null);
+        var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, this.MockSerializer(), "exchange", false,  null, null);
         await publisher.DisposeAsync();
 
         var ex = await Record.ExceptionAsync(async () => await publisher.DisposeAsync());
@@ -109,7 +109,7 @@ public class PublisherTests
     {
         var mock = this.Mock();
 
-        var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, this.MockSerializerFactory(), "exchange", false, null, null);
+        var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, this.MockSerializer(), "exchange", false, null, null);
         await publisher.InitializeAsync();
         await publisher.DisposeAsync();
 
@@ -125,14 +125,14 @@ public class PublisherTests
     {
         var mock = this.Mock();
 
-        var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, this.MockSerializerFactory(), exchange, false, transformers, null);
+        var publisher = new Next.Publisher.Publisher(mock.connection, this.PoolStub, this.MockSerializer(), exchange, false, transformers, null);
 
         await publisher.PublishAsync("a", "test", (state, message) => builder?.Invoke(message), flags);
 
         await mock.channel.Received().PublishAsync(
-            Arg.Any<(string, ISerializer)>(), exchange, routingKey,
+            Arg.Any<(string, ISerializer, MessageBuilder)>(), exchange, routingKey,
             Arg.Is<IMessageProperties>(p => new MessagePropertiesComparer().Equals(expectedProperties, p)),
-            Arg.Any<Action<(string, ISerializer), IBufferWriter<byte>>>(),
+            Arg.Any<Action<(string, ISerializer, MessageBuilder), IBufferWriter<byte>>>(),
             flags, Arg.Any<CancellationToken>());
     }
 
@@ -199,17 +199,14 @@ public class PublisherTests
         return (connection, channel);
     }
     
-    private ISerializerFactory MockSerializerFactory()
+    private ISerializer MockSerializer()
     {
         var serializer = Substitute.For<ISerializer>();
         serializer
-            .When(x => x.Serialize(Arg.Any<string>(), Arg.Any<IBufferWriter<byte>>()))
+            .When(x => x.Serialize( Arg.Any<IMessageProperties>(), Arg.Any<string>(), Arg.Any<IBufferWriter<byte>>()))
             .Do(x => x.ArgAt<IBufferWriter<byte>>(1).Write(new byte[] { 0x01, 0x02}));
-
-        var serializerFactory = Substitute.For<ISerializerFactory>();
-        serializerFactory.Get(Arg.Any<IMessageProperties>()).Returns(serializer);
-
-        return serializerFactory;
+        
+        return serializer;
     }
 
     private class NoResetMessagePropertiesPolicy : IPooledObjectPolicy<MessageBuilder>

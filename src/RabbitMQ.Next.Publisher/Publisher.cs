@@ -20,7 +20,7 @@ internal sealed class Publisher : IPublisher
     private readonly Func<IReturnedMessage,Task> returnedMessageHandler;
     private readonly IConnection connection;
     private readonly string exchange;
-    private readonly ISerializerFactory serializerFactory;
+    private readonly ISerializer serializer;
     private readonly IReadOnlyList<IMessageInitializer> transformers;
     private readonly ConfirmMessageHandler confirms;
     private ulong lastDeliveryTag;
@@ -31,14 +31,14 @@ internal sealed class Publisher : IPublisher
     public Publisher(
         IConnection connection,
         ObjectPool<MessageBuilder> messagePropsPool,
-        ISerializerFactory serializerFactory,
+        ISerializer serializer,
         string exchange,
         bool publisherConfirms,
         IReadOnlyList<IMessageInitializer> transformers,
         Func<IReturnedMessage,Task> returnedMessageHandler)
     {
         this.connection = connection;
-        this.serializerFactory = serializerFactory;
+        this.serializer = serializer;
         if (publisherConfirms)
         {
             this.confirms = new ConfirmMessageHandler();
@@ -89,7 +89,6 @@ internal sealed class Publisher : IPublisher
     private async Task PublishAsyncInternal<TContent>(TContent content, MessageBuilder message, PublishFlags flags, CancellationToken cancellation)
     {
         this.CheckDisposed();
-        var serializer = this.serializerFactory.Get(message);
 
         try
         {
@@ -100,9 +99,9 @@ internal sealed class Publisher : IPublisher
             }
 
             await ch.PublishAsync(
-                (content, serializer),
+                (content, this.serializer, message),
                 this.exchange, message.RoutingKey, message,
-                (st, buffer) => st.serializer.Serialize(st.content, buffer),
+                (st, buffer) => st.serializer.Serialize(st.message, st.content, buffer),
                 flags, cancellation);
         }
         finally
@@ -164,7 +163,7 @@ internal sealed class Publisher : IPublisher
             this.lastDeliveryTag = 0;
 
             this.channel = await this.connection.OpenChannelAsync(cancellationToken);
-            this.channel.WithMessageHandler(new ReturnMessageHandler(this.returnedMessageHandler, this.serializerFactory));
+            this.channel.WithMessageHandler(new ReturnMessageHandler(this.returnedMessageHandler, this.serializer));
             if (this.confirms != null)
             {
                 this.channel.WithMessageHandler<AckMethod>(this.confirms);
