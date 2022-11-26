@@ -15,6 +15,11 @@ public static class ConnectionExtensions
         var publisherBuilder = new PublisherBuilder();
         builder?.Invoke(publisherBuilder);
 
+        if (publisherBuilder.Serializer == null)
+        {
+            throw new InvalidOperationException("Cannot create message publisher without configured serializer. Consider to call UseSerializer.");
+        }
+        
         var messagePropsPool = new DefaultObjectPool<MessageBuilder>(
             new MessageBuilderPoolPolicy(),
             10);
