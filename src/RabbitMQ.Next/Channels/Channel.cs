@@ -24,7 +24,7 @@ internal sealed class Channel : IChannelInternal
     private readonly ObjectPool<LazyMessageProperties> messagePropertiesPool;
     private readonly ObjectPool<MessageBuilder> messageBuilderPool;
     private readonly TaskCompletionSource<bool> channelCompletion;
-    private readonly Dictionary<uint, IMessageProcessor> methodProcessors = new();
+    private readonly Dictionary<uint, IMessageHandlerInternal> methodHandlers = new();
 
     public Channel(IConnectionInternal connection, ushort channelNumber, int frameMaxSize)
     {
@@ -63,13 +63,10 @@ internal sealed class Channel : IChannelInternal
         where TMethod : struct, IIncomingMethod
     {
         var methodId = (uint)MethodRegistry.GetMethodId<TMethod>();
-        if (!this.methodProcessors.TryGetValue(methodId, out var processor))
-        {
-            processor = new MessageProcessor<TMethod>();
-            this.methodProcessors[methodId] = processor;
-        }
+        var wrapped = new MessageHandlerWrapper<TMethod>(handler);
+        this.methodHandlers.Add(methodId, wrapped);
 
-        return processor.WithMessageHandler(handler);
+        return new Disposer(() => this.methodHandlers.Remove(methodId));
     }
 
     public Task Completion => this.channelCompletion.Task;
@@ -131,12 +128,12 @@ internal sealed class Channel : IChannelInternal
 
         this.FrameWriter.TryComplete();
 
-        foreach (var processor in this.methodProcessors.Values)
+        foreach (var processor in this.methodHandlers.Values)
         {
             processor.Release(ex);
         }
             
-        this.methodProcessors.Clear();
+        this.methodHandlers.Clear();
             
         return true;
     }
@@ -241,18 +238,19 @@ internal sealed class Channel : IChannelInternal
                     payload = new PayloadAccessor(this.messagePropertiesPool, this.memoryPool, contentHeader.Payload, head);
                 }
 
-                var handled = false;
-                if (this.methodProcessors.TryGetValue((uint)methodId, out var processor))
+                if (this.methodHandlers.TryGetValue((uint)methodId, out var handler))
                 {
-                    handled = processor.ProcessMessage(methodArgsBytes, payload);
+                    handler.ProcessMessage(methodArgsBytes, payload);
+                }
+                else
+                {
+                    // TODO: should throw on unhandled methods?
+                    if (payload != null)
+                    {
+                        ((IDisposable)payload).Dispose();
+                    }    
                 }
 
-                // TODO: should throw on unhandled methods?
-                if (!handled && payload != null)
-                {
-                    ((IDisposable)payload).Dispose();
-                }
-                    
                 this.memoryPool.Return(methodFrame.Payload);
             }
         }

@@ -36,7 +36,7 @@ internal class ConfirmMessageHandler : IMessageHandler<AckMethod>, IMessageHandl
         return tcs.Task;
     }
 
-    public bool Handle(AckMethod method, IPayload payload)
+    public void Handle(AckMethod method, IPayload payload)
     {
         if (method.Multiple)
         {
@@ -46,11 +46,9 @@ internal class ConfirmMessageHandler : IMessageHandler<AckMethod>, IMessageHandl
         {
             this.AckSingle(method.DeliveryTag, true);
         }
-
-        return true;
     }
 
-    public bool Handle(NackMethod method, IPayload payload)
+    public void Handle(NackMethod method, IPayload payload)
     {
         if (method.Multiple)
         {
@@ -60,8 +58,6 @@ internal class ConfirmMessageHandler : IMessageHandler<AckMethod>, IMessageHandl
         {
             this.AckSingle(method.DeliveryTag, false);
         }
-
-        return true;
     }
 
     public void Release(Exception ex)

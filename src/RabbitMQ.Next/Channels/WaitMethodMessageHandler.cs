@@ -23,10 +23,9 @@ internal class WaitMethodMessageHandler<TMethod> : IMessageHandler<TMethod>
     public Task<TMethod> WaitTask => this.tcs.Task;
 
 
-    public bool Handle(TMethod method, IPayload payload)
+    public void Handle(TMethod method, IPayload payload)
     {
         this.tcs.TrySetResult(method);
-        return true;
     }
 
     public void Release(Exception ex = null)

@@ -28,11 +28,8 @@ internal sealed class ReturnMessageHandler : IMessageHandler<ReturnMethod>
         Task.Factory.StartNew(this.ProcessReturnedMessagesAsync, TaskCreationOptions.LongRunning);
     }
 
-    public bool Handle(ReturnMethod method, IPayload payload)
-    {
-        this.returnChannel.Writer.TryWrite(new ReturnedMessage(this.serializer, method, payload));
-        return true;
-    }
+    public void Handle(ReturnMethod method, IPayload payload) 
+        => this.returnChannel.Writer.TryWrite(new ReturnedMessage(this.serializer, method, payload));
 
     public void Release(Exception ex = null)
     {

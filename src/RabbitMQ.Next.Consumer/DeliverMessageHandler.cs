@@ -42,12 +42,9 @@ internal sealed class DeliverMessageHandler : IMessageHandler<DeliverMethod>
         }
     }
 
-    public bool Handle(DeliverMethod method, IPayload payload)
-    {
-        this.deliverChannel.Writer.TryWrite((new DeliveredMessage(this.serializer, method, payload), method.DeliveryTag));
-        return true;
-    }
-        
+    public void Handle(DeliverMethod method, IPayload payload) 
+        => this.deliverChannel.Writer.TryWrite((new DeliveredMessage(this.serializer, method, payload), method.DeliveryTag));
+
 
     public void Release(Exception ex = null)
     {
