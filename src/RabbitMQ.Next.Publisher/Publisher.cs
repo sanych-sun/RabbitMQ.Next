@@ -23,7 +23,6 @@ internal sealed class Publisher : IPublisher
     private readonly ISerializer serializer;
     private readonly IReadOnlyList<IMessageInitializer> transformers;
     private readonly ConfirmMessageHandler confirms;
-    private ulong lastDeliveryTag;
     private bool isDisposed;
 
     private IChannel channel;
@@ -90,6 +89,7 @@ internal sealed class Publisher : IPublisher
     {
         this.CheckDisposed();
 
+        ulong deliveryTag;
         try
         {
             var ch = this.channel;
@@ -98,7 +98,7 @@ internal sealed class Publisher : IPublisher
                 ch = await this.InitializeAsync(cancellation);
             }
 
-            await ch.PublishAsync(
+            deliveryTag = await ch.PublishAsync(
                 (content, this.serializer, message),
                 this.exchange, message.RoutingKey, message,
                 (st, buffer) => st.serializer.Serialize(st.message, st.content, buffer),
@@ -109,10 +109,9 @@ internal sealed class Publisher : IPublisher
             this.messagePropsPool.Return(message);
         }
 
-        var messageDeliveryTag = Interlocked.Increment(ref this.lastDeliveryTag);
         if (this.confirms != null)
         {
-            var confirmed = await this.confirms.WaitForConfirmAsync(messageDeliveryTag);
+            var confirmed = await this.confirms.WaitForConfirmAsync(deliveryTag);
             if (!confirmed)
             {
                 // todo: provide some useful info here
@@ -159,8 +158,6 @@ internal sealed class Publisher : IPublisher
             {
                 return this.channel;
             }
-
-            this.lastDeliveryTag = 0;
 
             this.channel = await this.connection.OpenChannelAsync(cancellationToken);
             this.channel.WithMessageHandler(new ReturnMessageHandler(this.returnedMessageHandler, this.serializer));

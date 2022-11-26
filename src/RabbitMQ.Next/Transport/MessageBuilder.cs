@@ -83,6 +83,8 @@ internal class MessageBuilder
             this.frameMaxSize = frameMaxSize;
         }
 
+        public long TotalPayloadBytes => this.totalPayloadSize;
+        
         public void BeginFrame(FrameType type)
         {
             if(this.currentFrameType != FrameType.Malformed)
@@ -94,8 +96,6 @@ internal class MessageBuilder
             this.currentFrameType = type;
             this.currentOffset += ProtocolConstants.FrameHeaderSize;
         }
-
-        public long TotalPayloadBytes => this.totalPayloadSize;
 
         public MemoryBlock Complete()
         {
@@ -141,7 +141,6 @@ internal class MessageBuilder
             }
             
             var headerBuffer = new Span<byte>(this.current.Buffer, this.currentFrameHeaderOffset, ProtocolConstants.FrameHeaderSize);
-            
             headerBuffer.WriteFrameHeader(this.currentFrameType, this.channel, (uint)frameSize);
 
             var endBuffer = new Span<byte>(this.current.Buffer, this.currentOffset, ProtocolConstants.FrameEndSize);
@@ -172,7 +171,7 @@ internal class MessageBuilder
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int EnsureBufferSize(int requestedSize)
         {
-            // current buffer available space: capacity - frame end
+            // current buffer available space: capacity - offset - frame end
             int BufferAvailable()
                 => this.current.Buffer.Length - this.currentOffset - ProtocolConstants.FrameEndSize;
 
@@ -209,12 +208,12 @@ internal class MessageBuilder
         private void FinalizeBuffer(bool startNew = false)
         {
             this.current.Slice(0, this.currentOffset);
-            this.currentOffset = 0;
 
             if (startNew)
             {
                 var next = this.memoryPool.Get();
                 this.current = this.current.Append(next);
+                this.currentOffset = 0;
             }
         }
     }

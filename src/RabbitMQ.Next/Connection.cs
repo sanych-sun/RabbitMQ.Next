@@ -45,8 +45,6 @@ internal class Connection : IConnectionInternal
 
     public ObjectPool<MemoryBlock> MemoryPool { get; }
         
-    public ObjectPool<LazyMessageProperties> MessagePropertiesPool { get; }
-    
     public Task WriteToSocketAsync(MemoryBlock memory, CancellationToken cancellation = default)
     {
         if (this.socketSender.Writer.TryWrite(memory))

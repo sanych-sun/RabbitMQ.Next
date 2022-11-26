@@ -25,6 +25,8 @@ internal sealed class Channel : IChannelInternal
     private readonly ObjectPool<MessageBuilder> messageBuilderPool;
     private readonly TaskCompletionSource<bool> channelCompletion;
     private readonly Dictionary<uint, IMessageHandlerInternal> methodHandlers = new();
+    
+    private ulong lastDeliveryTag = 0;
 
     public Channel(IConnectionInternal connection, ushort channelNumber, int frameMaxSize)
     {
@@ -75,10 +77,20 @@ internal sealed class Channel : IChannelInternal
     {
         this.ValidateState();
         
-        var data = this.UseMessageBuilder(request, 
-            (builder, state) => builder.WriteMethodFrame(state));
+        var messageBuilder = this.messageBuilderPool.Get();
+        MemoryBlock memory;
+            
+        try
+        {
+            messageBuilder.WriteMethodFrame(request);
+            memory = messageBuilder.Complete();
+        }
+        finally
+        {
+            this.messageBuilderPool.Return(messageBuilder);   
+        }
         
-        return this.connection.WriteToSocketAsync(data, cancellation);
+        return this.connection.WriteToSocketAsync(memory, cancellation);
     }
 
     public async Task<TResponse> SendAsync<TRequest, TResponse>(TRequest request, CancellationToken cancellation = default)
@@ -89,7 +101,7 @@ internal sealed class Channel : IChannelInternal
         return await waitTask;
     }
 
-    public Task PublishAsync<TState>(
+    public async Task<ulong> PublishAsync<TState>(
         TState contentBuilderState, string exchange, string routingKey,
         IMessageProperties properties, Action<TState, IBufferWriter<byte>> contentBuilder,
         PublishFlags flags = PublishFlags.None, CancellationToken cancellation = default)
@@ -98,14 +110,23 @@ internal sealed class Channel : IChannelInternal
         
         var publishMethod = new PublishMethod(exchange, routingKey, (byte)flags);
         
-        var data = this.UseMessageBuilder((contentBuilderState, publishMethod, properties, contentBuilder),
-            (builder, state) =>
-            {
-                builder.WriteMethodFrame(state.publishMethod);
-                builder.WriteContentFrame(state.contentBuilderState, state.properties, state.contentBuilder);
-            });
+        var messageBuilder = this.messageBuilderPool.Get();
+        MemoryBlock memory;
+            
+        try
+        {
+            messageBuilder.WriteMethodFrame(publishMethod);
+            messageBuilder.WriteContentFrame(contentBuilderState, properties, contentBuilder);
+            memory = messageBuilder.Complete();
+        }
+        finally
+        {
+            this.messageBuilderPool.Return(messageBuilder);   
+        }
         
-        return this.connection.WriteToSocketAsync(data, cancellation);
+        await this.connection.WriteToSocketAsync(memory, cancellation);
+        var messageDeliveryTag = Interlocked.Increment(ref this.lastDeliveryTag);
+        return messageDeliveryTag;
     }
 
     public ChannelWriter<(FrameType Type, MemoryBlock Payload)> FrameWriter { get; }
@@ -167,22 +188,6 @@ internal sealed class Channel : IChannelInternal
         this.TryComplete(new ChannelException(statusCode, description, failedMethodId));
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private MemoryBlock UseMessageBuilder<TState>(TState state, Action<MessageBuilder, TState> fn)
-    {
-        var messageBuilder = this.messageBuilderPool.Get();
-
-        try
-        {
-            fn.Invoke(messageBuilder, state);
-            return messageBuilder.Complete();
-        }
-        finally
-        {
-            this.messageBuilderPool.Return(messageBuilder);   
-        }
-    }
-
     private async Task LoopAsync(ChannelReader<(FrameType Type, MemoryBlock Payload)> reader)
     {
         try
@@ -209,8 +214,7 @@ internal sealed class Channel : IChannelInternal
                     }
 
                     // 3.2 Extract content body size
-                    ((ReadOnlyMemory<byte>)contentHeader.Payload)
-                        .Span[4..] // skip 2 obsolete shorts
+                    ((ReadOnlySpan<byte>)contentHeader.Payload)[4..] // skip 2 obsolete shorts
                         .Read(out ulong contentSize);
 
                     MemoryBlock head = null;
