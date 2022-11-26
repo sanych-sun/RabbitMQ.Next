@@ -34,7 +34,7 @@ public class MemoryBlockTests
         
         memory.Reset();
         
-        Assert.True(memory.Data.Count == memory.Buffer.Length);
+        Assert.True(memory.Length == memory.Buffer.Length);
         Assert.Null(memory.Next);
     }
     
@@ -52,7 +52,7 @@ public class MemoryBlockTests
         }
         
         memory.Slice(start, length);
-        Assert.Equal(expected, memory.Data.ToArray());
+        Assert.Equal(expected, ((ReadOnlyMemory<byte>)memory).ToArray());
     }
 
     [Theory]

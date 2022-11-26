@@ -146,14 +146,7 @@ internal class Connection : IConnectionInternal
         {
             while (socketChannel.TryRead(out var memoryBlock))
             {
-                var current = memoryBlock;
-                while (current != null)
-                {
-                    this.socket.Send(current.Data);
-                    current = current.Next;
-                }
-
-                this.socket.Flush();
+                this.socket.Send(memoryBlock);
                 this.MemoryPool.Return(memoryBlock);
             }
         }
@@ -161,14 +154,14 @@ internal class Connection : IConnectionInternal
 
     private void ReceiveLoop(CancellationToken cancellationToken)
     {
-        var headerBuffer = new ArraySegment<byte>(new byte[ProtocolConstants.FrameHeaderSize]);
+        var headerBuffer = new MemoryBlock(ProtocolConstants.FrameHeaderSize);
 
         try
         {
             while (!cancellationToken.IsCancellationRequested)
             {
                 // 1. Read frame header
-                this.socket.FillBuffer(headerBuffer);
+                this.socket.Receive(headerBuffer);
                 if (cancellationToken.IsCancellationRequested)
                 {
                     break;
@@ -180,10 +173,11 @@ internal class Connection : IConnectionInternal
                 var buffer = this.MemoryPool.Get();
 
                 // 3. Read payload into the buffer, allocate extra byte for FrameEndByte
-                var payload = new ArraySegment<byte>(buffer.Buffer, 0, ((int)payloadSize + 1));
-                this.socket.FillBuffer(payload);
+                buffer.Slice(0, ((int)payloadSize + 1));
+                this.socket.Receive(buffer);
+                
                 // 4. Ensure there is FrameEnd
-                if (payload[(int)payloadSize] != ProtocolConstants.FrameEndByte)
+                if (((ReadOnlySpan<byte>)buffer)[(int)payloadSize] != ProtocolConstants.FrameEndByte)
                 {
                     // TODO: throw connection exception here
                     throw new InvalidOperationException();

@@ -195,7 +195,7 @@ internal sealed class Channel : IChannelInternal
                 }
 
                 // 2. Get method Id
-                var methodArgsBytes = ((ReadOnlyMemory<byte>)methodFrame.Payload.Data).GetMethodId(out var methodId);
+                var methodArgsBytes = ((ReadOnlyMemory<byte>)methodFrame.Payload).GetMethodId(out var methodId);
 
                 // 3. Get content if exists
                 PayloadAccessor payload = null;
@@ -209,7 +209,8 @@ internal sealed class Channel : IChannelInternal
                     }
 
                     // 3.2 Extract content body size
-                    ((ReadOnlySpan<byte>)contentHeader.Payload.Data[4..]) // skip 2 obsolete shorts
+                    ((ReadOnlyMemory<byte>)contentHeader.Payload)
+                        .Span[4..] // skip 2 obsolete shorts
                         .Read(out ulong contentSize);
 
                     MemoryBlock head = null;
@@ -232,7 +233,7 @@ internal sealed class Channel : IChannelInternal
                             current = current.Append(frame.Payload);    
                         }
 
-                        receivedContent += frame.Payload.Data.Count;
+                        receivedContent += frame.Payload.Length;
                     }
 
                     payload = new PayloadAccessor(this.messagePropertiesPool, this.memoryPool, contentHeader.Payload, head);

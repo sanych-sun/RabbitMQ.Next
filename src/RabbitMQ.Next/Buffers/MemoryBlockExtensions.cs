@@ -7,23 +7,23 @@ internal static class MemoryBlockExtensions
 {
     public static ReadOnlySequence<byte> ToSequence(this MemoryBlock source)
     {
-        if (source == null || source.Data.Count == 0)
+        if (source == null || source.Length == 0)
         {
             return ReadOnlySequence<byte>.Empty;
         }
 
         if (source.Next == null)
         {
-            return new ReadOnlySequence<byte>(source.Data);
+            return new ReadOnlySequence<byte>(source);
         }
 
-        var first = new MemorySegment<byte>(source.Data);
+        var first = new MemorySegment<byte>(source);
         var last = first;
         var current = source.Next;
 
         while (current != null)
         {
-            last = last.Append(current.Data);
+            last = last.Append(current);
             current = current.Next;
         }
             

@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Net.Security;
 using System.Net.Sockets;
-using RabbitMQ.Next.Transport;
+using RabbitMQ.Next.Buffers;
 
 namespace RabbitMQ.Next.Sockets;
 
@@ -34,21 +34,31 @@ internal class SocketWrapper : ISocket
         this.writeStream = stream;
     }
 
-    public void Send(ArraySegment<byte> payload)
-        => this.writeStream.Write(payload.Array, payload.Offset, payload.Count);
-
-    public void Flush() => this.writeStream.Flush();
-
-    public int Receive(ArraySegment<byte> buffer)
+    public void Send(MemoryBlock payload)
     {
-        var result = this.readStream.Read(buffer.Array, 0 , buffer.Count);
-
-        if (result == 0 && this.IsConnectionClosedByServer())
+        var current = payload;
+        while (current != null)
         {
-            throw new SocketException();
+            this.writeStream.Write(current.Buffer, current.Start, current.Length);
+            current = current.Next;
         }
-
-        return result;
+        
+        this.writeStream.Flush();
+    }
+    
+    public void Receive(MemoryBlock buffer)
+    {
+        var received = 0;
+        while (received < buffer.Length)
+        {
+            var readBytes = this.readStream.Read(buffer.Buffer, received, buffer.Length - received);
+            if (readBytes == 0 && this.IsConnectionClosedByServer())
+            {
+                throw new SocketException();
+            }
+            
+            received += readBytes;
+        }
     }
 
     private bool IsConnectionClosedByServer()

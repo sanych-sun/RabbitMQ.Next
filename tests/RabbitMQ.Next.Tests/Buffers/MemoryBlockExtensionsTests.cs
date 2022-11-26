@@ -15,8 +15,8 @@ public class MemoryBlockExtensionsTests
         var memory = new MemoryBlock(100);
         memory.Write(data);
 
-        Assert.Equal(data?.Length ?? 0, memory.Data.Count);
-        Assert.Equal(data ?? Array.Empty<byte>(), memory.Data.ToArray());
+        Assert.Equal(data?.Length ?? 0, memory.Length);
+        Assert.Equal(data ?? Array.Empty<byte>(), ((ReadOnlyMemory<byte>)memory).ToArray());
     }
         
     [Fact]

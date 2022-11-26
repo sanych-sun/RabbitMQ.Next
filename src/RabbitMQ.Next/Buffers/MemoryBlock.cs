@@ -5,8 +5,6 @@ namespace RabbitMQ.Next.Buffers;
 internal sealed class MemoryBlock
 {
     public readonly byte[] Buffer;
-    private int offset;
-    private int count;
 
     public MemoryBlock(int size)
     {
@@ -16,13 +14,19 @@ internal sealed class MemoryBlock
         }
 
         this.Buffer = new byte[size];
+        this.Length = this.Buffer.Length;
     }
+    
+    public int Start { get; private set; }
+    
+    public int Length { get; private set; }
+
     public MemoryBlock Next { get; private set; }
 
     public bool Reset()
     {
-        this.offset = 0;
-        this.count = this.Buffer.Length;
+        this.Start = 0;
+        this.Length = this.Buffer.Length;
         this.Next = null;
         return true;
     }
@@ -50,9 +54,13 @@ internal sealed class MemoryBlock
             throw new ArgumentOutOfRangeException(nameof(length));
         }
 
-        this.offset = start;
-        this.count = length;
+        this.Start = start;
+        this.Length = length;
     }
 
-    public ArraySegment<byte> Data => new (this.Buffer, this.offset, this.count);
+    public static implicit operator ReadOnlyMemory<byte>(MemoryBlock memory)
+        => new (memory.Buffer, memory.Start, memory.Length);
+    
+    public static implicit operator ReadOnlySpan<byte>(MemoryBlock memory)
+        => new (memory.Buffer, memory.Start, memory.Length);
 }
