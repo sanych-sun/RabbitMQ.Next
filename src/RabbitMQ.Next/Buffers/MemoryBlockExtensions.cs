@@ -32,17 +32,16 @@ internal static class MemoryBlockExtensions
 
     public static void Write(this MemoryBlock memory, ReadOnlySpan<byte> data)
     {
-        if (data.IsEmpty)
-        {
-            return;
-        }
-
         if (data.Length > memory.Buffer.Length)
         {
             throw new OutOfMemoryException();
         }
-            
-        data.CopyTo(memory.Buffer);
+
+        if (!data.IsEmpty)
+        {
+            data.CopyTo(memory.Buffer);
+        }
+        
         memory.Slice(0, data.Length);
     }
 }

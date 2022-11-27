@@ -28,8 +28,9 @@ public class MemoryBlockExtensionsTests
         
     [Theory]
     [MemberData(nameof(ToSequenceTestCases))]
-    internal void ToSequenceTests(byte[] expected, MemoryBlock memory)
+    internal void ToSequenceTests(byte[] expected, byte[][] data)
     {
+        var memory = BuildMemory(data);
         var result = memory.ToSequence();
 
         Assert.Equal(expected, result.ToArray());
@@ -54,36 +55,38 @@ public class MemoryBlockExtensionsTests
         yield return new object[]
         {
             Array.Empty<byte>(),
-            new MemoryBlock(100)
+            new[] { Array.Empty<byte>()}
         };
 
         yield return new object[]
         {
             new byte[] { 0x01 },
-            BuildMemory(new byte[] { 0x01 })
+            new[] { new byte[] { 0x01 }}
         };
 
         yield return new object[]
         {
             new byte[] { 0x01, 0x02, 0x03 },
-            BuildMemory ( new byte[] { 0x01 }, new byte[] { 0x02, 0x03 } )
+            new[] { new byte[] { 0x01 }, new byte[] { 0x02, 0x03 } }
         };
 
         yield return new object[]
         {
             new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05 },
-            BuildMemory ( new byte[] { 0x01 }, new byte[] { 0x02, 0x03 }, new byte[] { 0x04, 0x05 } )
+            new[] { new byte[] { 0x01 }, new byte[] { 0x02, 0x03 }, new byte[] { 0x04, 0x05 } }
         };
     }
 
     private static MemoryBlock BuildMemory(params byte[][] chunks)
     {
+        var memory = new MemoryBlock(100);
         if (chunks == null || chunks.Length == 0)
         {
-            return new MemoryBlock(100);
+            memory.Slice(0,0);
+            return memory;
         }
             
-        var first = new MemoryBlock(100);
+        var first = memory;
         first.Write(chunks[0]);
         var current = first;
 
