@@ -22,7 +22,7 @@ More API and integration libraries are coming.
 ## Getting started
 
 First of all have to open the connection to RabbitMQ server:
-```
+```c#
 using RabbitMQ.Next;
 ...
 
@@ -34,7 +34,7 @@ var connection = await ConnectionBuilder.Default
 And basically that's it. Now all ready to make some useful stuff.
 ### Topology builder
 RabbitMQ.Next.TopologyBuilder library contains number of methods to manipulate exchanges, queues and bindings. Create an exchange and bind a queue - it's easy with the library. Complete code of Topology Builder example available [here](https://github.com/sanych-sun/RabbitMQ.Next/tree/master/docs/examples/RabbitMQ.Next.Examples.TopologyBuilder).
-```
+```c#
 using RabbitMQ.Next.TopologyBuilder;
 ...
 
@@ -66,7 +66,7 @@ However there is no rocket-science to implement other popular formats integratio
 ### Message publisher
 RabbitMQ.Next.Publisher library let client application to publish messages. Complete code is [here](https://github.com/sanych-sun/RabbitMQ.Next/tree/master/docs/examples/RabbitMQ.Next.Examples.SimplePublisher).
 
-```
+```c#
 using RabbitMQ.Next.Publisher;
 using RabbitMQ.Next.Serialization.PlainText;
 ...
@@ -83,7 +83,7 @@ await publisher.PublishAsync("Some cool message");
 
 ### Message consumer
 RabbitMQ.Next.Consumer library let client code to consume messages. Complete example is [here](https://github.com/sanych-sun/RabbitMQ.Next/tree/master/docs/examples/RabbitMQ.Next.Examples.SimpleConsumer)
-```
+```c#
 using RabbitMQ.Next.Consumer;
 using RabbitMQ.Next.Serialization.PlainText;
 ...
