@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <RootNamespace>RabbitMQ.Next</RootNamespace>
+    <PackageId>RabbitMQ.Next.Abstractions</PackageId>
   </PropertyGroup>
 
 </Project>

@@ -2,7 +2,17 @@
   <PropertyGroup>
     <Version>0.1.0</Version>
     <LangVersion>latest</LangVersion>
+    <Authors>Oleksandr Poliakov</Authors>
+    <PackageTags>RabbitMQ;Messaging</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <Description>An experimental low-level RabbitMQ client for .Net with number of high-level APIs</Description>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All"/>
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="InternalsVisibleTo.MSBuild" Version="1.0.3">
@@ -10,7 +20,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
   </ItemGroup>
-
+  
   <ItemGroup>
     <InternalsVisibleTo Include="RabbitMQ.Next.Tests" />
     <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
