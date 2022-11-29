@@ -38,21 +38,21 @@ RabbitMQ.Next.TopologyBuilder library contains number of methods to manipulate e
 using RabbitMQ.Next.TopologyBuilder;
 ...
 
-await connection.ExchangeDeclareAsync("my-exchange", ExchangeType.Topic); // Create topic named 'my-exchange' using default settings (durable)
-await connection.ExchangeDeclareAsync("my-advanced-exchange", ExchangeType.Topic, // It's possible to twick exchange parameters using exchange builder
-    builder => builder
-        .Transient());
+await connection.ExchangeDeclareAsync("my-exchange", ExchangeType.Topic); // Create topic named 'my-exchange'
+await connection.ExchangeDeclareAsync("my-advanced-exchange", ExchangeType.Topic, 
+  builder => builder  // It's possible to tweak exchange parameters using exchange builder
+    .Transient());
 
-await connection.QueueDeclareAsync("my-queue"); // Create queue named "my-queue" using default settings (durable)
-await connection.QueueDeclareAsync("my-advanced-queue", // To adjust queue properties use queue builder
-    builder => builder
-        .AutoDelete()
-        .WithMaxLength(1000));
+await connection.QueueDeclareAsync("my-queue"); // Create queue named "my-queue"
+await connection.QueueDeclareAsync("my-advanced-queue", 
+  builder => builder  // To adjust queue properties use queue builder
+    .AutoDelete()
+    .WithMaxLength(1000));
 
 await connection.QueueBindAsync("my-queue", "my-exchange", // And finaly bind queue to the exchange.
-    builder => builder
-        .RoutingKey("cat")
-        .RoutingKey("dog"));
+  builder => builder
+    .RoutingKey("cat")
+    .RoutingKey("dog"));
 ```
 
 ### Serializers
@@ -72,9 +72,11 @@ using RabbitMQ.Next.Serialization.PlainText;
 ...
 
 var publisher = connection.Publisher("amq.fanout",
-    builder => builder.UsePlainTextSerializer()); // It's required to specify the serializer, so library know how to format payload.
+  builder => builder
+    .UsePlainTextSerializer()); // It's required to specify the serializer, so library know how to format payload.
 
-// And that's it, publisher is ready. There also some more tweaks could be applied to the publisher via publisher builder (for example disable Publisher confirms)
+// And that's it, publisher is ready. There also some more tweaks could be applied to the publisher via publisher builder 
+// (for example disable Publisher confirms)
 await publisher.PublishAsync("Some cool message");
 
 ```
@@ -87,15 +89,15 @@ using RabbitMQ.Next.Serialization.PlainText;
 ...
 
 var consumer = connection.Consumer(
-    builder => builder
-        .BindToQueue("test-queue")  // It's possible to bind to multiple queues
-        .PrefetchCount(10)          // there are some more tweacks could be applied to consumer
-        .UsePlainTextSerializer()); // and again we need serializer
+  builder => builder
+    .BindToQueue("test-queue")  // It's possible to bind to multiple queues
+    .PrefetchCount(10)          // there are some more tweacks could be applied to consumer
+    .UsePlainTextSerializer()); // and again we need serializer
 
 // and start message consumption by providing handler and cancellation token
 await consumer.ConsumeAsync(async message =>
 {
-    Console.WriteLine($"[{DateTimeOffset.Now.TimeOfDay}] Message received via '{message.Exchange}' exchange: {message.Content<string>()}");
+    Console.WriteLine($"Message received via '{message.Exchange}' exchange: {message.Content<string>()}");
 } ,cancellation.Token);
 ```
 
