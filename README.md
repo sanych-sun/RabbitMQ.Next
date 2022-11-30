@@ -1,5 +1,5 @@
 [![CI](https://github.com/sanych-sun/RabbitMQ.Next/actions/workflows/master.yml/badge.svg)](https://github.com/sanych-sun/RabbitMQ.Next/actions/workflows/master.yml)
-[![License MIT](https://img.shields.io/badge/license-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![License MIT](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/sanych-sun/RabbitMQ.Next/blob/master/LICENSE)
 
 # RabbitMQ.Next
 
