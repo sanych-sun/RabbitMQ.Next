@@ -1,3 +1,4 @@
+[![NuGet](https://img.shields.io/nuget/v/RabbitMQ.Next.svg)](https://www.nuget.org/packages/RabbitMQ.Next)
 [![CI](https://github.com/sanych-sun/RabbitMQ.Next/actions/workflows/master.yml/badge.svg)](https://github.com/sanych-sun/RabbitMQ.Next/actions/workflows/master.yml)
 [![License MIT](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/sanych-sun/RabbitMQ.Next/blob/master/LICENSE)
 
