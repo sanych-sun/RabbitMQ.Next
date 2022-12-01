@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Transport;
@@ -34,7 +35,14 @@ public class ConnectionBuilder : IConnectionBuilder
         get
         {
             var builder = new ConnectionBuilder();
-            builder.UseDefaults();
+            builder
+                .ClientProperty("product", "RabbitMQ.Next")
+                .ClientProperty("version", Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "undefined")
+                .ClientProperty("platform", Environment.OSVersion.ToString())
+                .ClientProperty("capabilities", new Dictionary<string, object>
+                {
+                    ["authentication_failure_close"] = true,
+                });
             return builder;
         }
     }
