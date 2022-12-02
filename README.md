@@ -4,7 +4,7 @@
 
 # RabbitMQ.Next
 
-RabbitMQ.Next is an experimental low-level RabbitMQ client for .Net with number of high-level APIs (created from scratch, no dependencies to another libraries, so do conflicts!). The motivation to create the library was to separate protocol-level code into a package that could be used as a base block for high-level API libraries. The second goal was to reduce allocation as much as possible and maintain reasonable performance. And the last it was sound cool to create a library that can work with sockets on low-level :grin:.
+RabbitMQ.Next is an experimental low-level RabbitMQ client for .Net with number of high-level APIs (created from scratch, no dependencies to another libraries, so no conflicts!). The motivation to create the library was to separate protocol-level code into a package that could be used as a base block for high-level API libraries. The second goal was to reduce allocation as much as possible and maintain reasonable performance. And the last it was sound cool to create a library that can work with sockets on low-level :grin:.
 
 ## Packages
 Too much packages instead of a single... explained:
