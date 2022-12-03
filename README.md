@@ -65,24 +65,6 @@ Message publisher and consumer require to use serializer, so library know how to
 
 However there is no rocket-science to implement other popular formats integration. Please post an issue in the [issue tracker](https://github.com/sanych-sun/RabbitMQ.Next/issues) and I'll consider implementation of provide some code examples for you.
 
-### Message publisher
-RabbitMQ.Next.Publisher library let client application to publish messages. Complete code is [here](https://github.com/sanych-sun/RabbitMQ.Next/tree/master/docs/examples/RabbitMQ.Next.Examples.SimplePublisher).
-
-```c#
-using RabbitMQ.Next.Publisher;
-using RabbitMQ.Next.Serialization.PlainText;
-...
-
-var publisher = connection.Publisher("amq.fanout",
-  builder => builder
-    .UsePlainTextSerializer()); // It's required to specify the serializer, so library know how to format payload.
-
-// And that's it, publisher is ready. There also some more tweaks could be applied to the publisher via publisher builder 
-// (for example disable Publisher confirms)
-await publisher.PublishAsync("Some cool message");
-
-```
-
 ### Message consumer
 RabbitMQ.Next.Consumer library let client code to consume messages. Complete example is [here](https://github.com/sanych-sun/RabbitMQ.Next/tree/master/docs/examples/RabbitMQ.Next.Examples.SimpleConsumer)
 ```c#
@@ -102,6 +84,67 @@ await consumer.ConsumeAsync(async message =>
     Console.WriteLine($"Message received via '{message.Exchange}' exchange: {message.Content<string>()}");
 } ,cancellation.Token);
 ```
+
+### Message publisher
+RabbitMQ.Next.Publisher library let client application to publish messages. Complete code is [here](https://github.com/sanych-sun/RabbitMQ.Next/tree/master/docs/examples/RabbitMQ.Next.Examples.SimplePublisher).
+
+```c#
+using RabbitMQ.Next.Publisher;
+using RabbitMQ.Next.Serialization.PlainText;
+...
+
+var publisher = connection.Publisher("amq.fanout",
+  builder => builder
+    .UsePlainTextSerializer()); // It's required to specify the serializer, so library know how to format payload.
+
+// And that's it, publisher is ready. There also some more tweaks could be applied to the publisher via publisher builder 
+// (for example disable Publisher confirms)
+await publisher.PublishAsync("Some cool message");
+
+// Also there is optional message builder, that could be used to set message proeprties
+await publisher.PublishAsync("test message", message => message
+        .Priority(5)
+        .Type("MyDto"));
+```
+This is how the last message looks like on the server:
+
+![image](https://user-images.githubusercontent.com/31327136/205428054-7e627426-2821-4d5f-a9a9-6d7bdea66ce6.png)
+
+
+
+### Message publisher declarative message attributes
+RabbitMQ.Next.Publisher.Attributes let client code to initialize message properties from declarative attributes assigned to the DTO class or onto the assembly. This is not replaycement for the RabbitMQ.Next.Publisher library, but convinient extension:
+
+This example require to use some serializer that supports objects serialization, for example RabbitMQ.Next.Serialization.SystemJson
+```c#
+using RabbitMQ.Next.Publisher;
+using RabbitMQ.Next.Publisher.Attributes;
+using RabbitMQ.Next.Serialization.SystemJson; 
+...
+
+// have to define DTO, and assign attributes on it
+[PriorityAttribute(5)]
+[TypeAttribute("MyDto")]
+public class SampleDto
+{
+       public string Title { get;set; }
+} 
+
+...
+// Small ammendments needed to publisher builder:
+var publisher = connection.Publisher("amq.fanout",
+    builder => builder
+        .UseSystemJsonSerializer()
+        .UseAttributesInitializer());  
+
+// and now it's ready for use
+await publisher.PublishAsync(new SampleDto { Title = "test message" }); 
+
+```
+This is how the message is looks like:
+
+![image](https://user-images.githubusercontent.com/31327136/205427873-1dd7ded5-f636-4bd6-ba62-6f41a66be792.png)
+
 
 ## Contribute
 
