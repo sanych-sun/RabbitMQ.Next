@@ -76,7 +76,7 @@ var consumer = connection.Consumer(
   builder => builder
     .BindToQueue("test-queue")  // It's possible to bind to multiple queues
     .PrefetchCount(10)          // there are some more tweacks could be applied to consumer
-    .UsePlainTextSerializer()); // and again we need serializer
+    .UsePlainTextSerializer()); // and we need serializer
 
 // and start message consumption by providing handler and cancellation token
 await consumer.ConsumeAsync(async message =>
@@ -113,7 +113,7 @@ This is how the last message looks like on the server:
 
 
 ### Message publisher declarative message attributes
-RabbitMQ.Next.Publisher.Attributes let client code to initialize message properties from declarative attributes assigned to the DTO class or onto the assembly. This is not replaycement for the RabbitMQ.Next.Publisher library, but convinient extension:
+RabbitMQ.Next.Publisher.Attributes let client code to initialize message properties from declarative attributes assigned to the DTO class or onto the assembly. This is not replacement for the RabbitMQ.Next.Publisher library, but convinient extension:
 
 This example require to use some serializer that supports objects serialization, for example RabbitMQ.Next.Serialization.SystemJson
 ```c#
