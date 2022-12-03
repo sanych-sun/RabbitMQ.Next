@@ -101,7 +101,7 @@ var publisher = connection.Publisher("amq.fanout",
 // (for example disable Publisher confirms)
 await publisher.PublishAsync("Some cool message");
 
-// Also there is optional message builder, that could be used to set message proeprties
+// Also there is optional message builder, that could be used to set message properties
 await publisher.PublishAsync("test message", message => message
         .Priority(5)
         .Type("MyDto"));
