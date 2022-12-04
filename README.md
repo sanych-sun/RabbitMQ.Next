@@ -127,7 +127,7 @@ using RabbitMQ.Next.Serialization.SystemJson;
 [TypeAttribute("MyDto")]
 public class SampleDto
 {
-       public string Title { get;set; }
+    public string Title { get;set; }
 } 
 
 ...
