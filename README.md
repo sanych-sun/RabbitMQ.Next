@@ -103,8 +103,8 @@ await publisher.PublishAsync("Some cool message");
 
 // Also there is optional message builder, that could be used to set message properties
 await publisher.PublishAsync("test message", message => message
-        .Priority(5)
-        .Type("MyDto"));
+    .Priority(5)
+    .Type("MyDto"));
 ```
 This is how the last message looks like on the server:
 
