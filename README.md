@@ -15,9 +15,9 @@ Too much packages instead of a single... explained:
 - [RabbitMQ.Next.Publisher.Attributes](https://www.nuget.org/packages/RabbitMQ.Next.Publisher.Attributes) – helper library that allow declarative attribute-based message initialization.
 
 Serializers:
-- RabbitMQ.Next.Serialization.PlainText – provides set of formatters for most common types to produce text/plain encoded messages
-- RabbitMQ.Next.Serialization.SystemJson – json formatter that uses System.Text.Json under the hood
-- RabbitMQ.Next.Serialization.MessagePack – formatter for popular MessagePack serializer
+- [RabbitMQ.Next.Serialization.PlainText](https://www.nuget.org/packages/RabbitMQ.Next.Serialization.PlainText) – provides set of formatters for most common types to produce text/plain encoded messages
+- [RabbitMQ.Next.Serialization.SystemJson](https://www.nuget.org/packages/RabbitMQ.Next.Serialization.SystemJson) – json formatter that uses System.Text.Json under the hood
+- [RabbitMQ.Next.Serialization.MessagePack](https://www.nuget.org/packages/RabbitMQ.Next.Serialization.MessagePack) – formatter for popular MessagePack serializer
 
 More API and integration libraries are coming.
 
