@@ -82,7 +82,7 @@ var consumer = connection.Consumer(
 await consumer.ConsumeAsync(async message =>
 {
     Console.WriteLine($"Message received via '{message.Exchange}' exchange: {message.Content<string>()}");
-} ,cancellation.Token);
+}, cancellation.Token);
 ```
 
 ### Message publisher
@@ -102,7 +102,8 @@ var publisher = connection.Publisher("amq.fanout",
 await publisher.PublishAsync("Some cool message");
 
 // Also there is optional message builder, that could be used to set message properties
-await publisher.PublishAsync("test message", message => message
+await publisher.PublishAsync("test message", 
+  message => message
     .Priority(5)
     .Type("MyDto"));
 ```
@@ -127,15 +128,15 @@ using RabbitMQ.Next.Serialization.SystemJson;
 [TypeAttribute("MyDto")]
 public class SampleDto
 {
-    public string Title { get;set; }
+  public string Title { get;set; }
 } 
 
 ...
 // Small ammendments needed to publisher builder:
 var publisher = connection.Publisher("amq.fanout",
-    builder => builder
-        .UseSystemJsonSerializer()
-        .UseAttributesInitializer());  
+  message => message
+    .UseSystemJsonSerializer()
+    .UseAttributesInitializer());  
 
 // and now it's ready for use
 await publisher.PublishAsync(new SampleDto { Title = "test message" }); 
