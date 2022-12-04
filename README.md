@@ -8,11 +8,11 @@ RabbitMQ.Next is an experimental low-level RabbitMQ client for .Net with number 
 
 ## Packages
 Too much packages instead of a single... explained:
-- RabbitMQ.Next, RabbitMQ.Next.Abstractions – core library, contains most of the protocol-level implementations
-- RabbitMQ.Next.TopologyBuilder – library contains methods to manage exchanges, queues and bindings
-- RabbitMQ.Next.Consumer, RabbitMQ.Next.Consumer.Abstractions – library provides high-level message consumption API
-- RabbitMQ.Next.Publisher, RabbitMQ.Next.Publisher.Abstractions – provides high-level message publishing API
-- RabbitMQ.Next.Publisher.Attributes – helper library that allow declarative attribute-based message initialization.
+- [RabbitMQ.Next](https://www.nuget.org/packages/RabbitMQ.Next), [RabbitMQ.Next.Abstractions](https://www.nuget.org/packages/RabbitMQ.Next.Abstractions) – core library, contains most of the protocol-level implementations
+- [RabbitMQ.Next.TopologyBuilder](https://www.nuget.org/packages/RabbitMQ.Next.TopologyBuilder) – library contains methods to manage exchanges, queues and bindings
+- [RabbitMQ.Next.Consumer](https://www.nuget.org/packages/RabbitMQ.Next.Consumer), [RabbitMQ.Next.Consumer.Abstractions](https://www.nuget.org/packages/RabbitMQ.Next.Consumer.Abstractions) – library provides high-level message consumption API
+- [RabbitMQ.Next.Publisher](https://www.nuget.org/packages/RabbitMQ.Next.Publisher), [RabbitMQ.Next.Publisher.Abstractions](https://www.nuget.org/packages/RabbitMQ.Next.Publisher.Abstractions) – provides high-level message publishing API
+- [RabbitMQ.Next.Publisher.Attributes](https://www.nuget.org/packages/RabbitMQ.Next.Publisher.Attributes) – helper library that allow declarative attribute-based message initialization.
 
 Serializers:
 - RabbitMQ.Next.Serialization.PlainText – provides set of formatters for most common types to produce text/plain encoded messages
