@@ -1,8 +1,12 @@
+![image](https://user-images.githubusercontent.com/31327136/206628834-f9c52f6f-fc6e-45eb-bd64-c1e27bdcfb9a.png)
+
+Many thanks for [JetBrains](https://jb.gg/OpenSourceSupport) for providing Open Source Development license for best in class IDEs for this project.
+
+# RabbitMQ.Next
+
 [![NuGet](https://img.shields.io/nuget/v/RabbitMQ.Next.svg)](https://www.nuget.org/packages/RabbitMQ.Next)
 [![CI](https://github.com/sanych-sun/RabbitMQ.Next/actions/workflows/master.yml/badge.svg)](https://github.com/sanych-sun/RabbitMQ.Next/actions/workflows/master.yml)
 [![License MIT](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/sanych-sun/RabbitMQ.Next/blob/master/LICENSE)
-
-# RabbitMQ.Next
 
 RabbitMQ.Next is an experimental low-level RabbitMQ client for .Net with number of high-level APIs (created from scratch, no dependencies to another libraries, so no conflicts!). The motivation to create the library was to separate protocol-level code into a package that could be used as a base block for high-level API libraries. The second goal was to reduce allocation as much as possible and maintain reasonable performance. And the last it was sound cool to create a library that can work with sockets on low-level :grin:.
 
