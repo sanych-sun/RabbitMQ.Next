@@ -1,55 +1,40 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Channels;
-using RabbitMQ.Next.Exceptions;
-using RabbitMQ.Next.TopologyBuilder.Exceptions;
 using RabbitMQ.Next.Transport.Methods.Queue;
 
 namespace RabbitMQ.Next.TopologyBuilder.Commands;
 
-internal class QueueDeleteCommand : IQueueDeleteBuilder, ICommand
+internal class QueueDeleteCommand : IQueueDeletion, ICommand
 {
+    private readonly string queue;
     private bool cancelConsumers;
     private bool discardMessages;
 
-    public QueueDeleteCommand(string name)
+    public QueueDeleteCommand(string queue)
     {
-        this.Name = name;
+        if (string.IsNullOrEmpty(queue))
+        {
+            throw new ArgumentNullException(nameof(queue));
+        }
+
+        this.queue = queue;
     }
 
-    public string Name { get; }
-
-    public IQueueDeleteBuilder CancelConsumers()
+    public IQueueDeletion CancelConsumers()
     {
         this.cancelConsumers = true;
-
         return this;
     }
 
-    public IQueueDeleteBuilder DiscardMessages()
+    public IQueueDeletion DiscardMessages()
     {
         this.discardMessages = true;
-
         return this;
     }
 
-    public async Task ExecuteAsync(IChannel channel)
-    {
-        try
-        {
-            await channel.SendAsync<DeleteMethod, DeleteOkMethod>(
-                new DeleteMethod(this.Name, !this.cancelConsumers, !this.discardMessages));
-        }
-        catch (ChannelException ex)
-        {
-            switch (ex.ErrorCode)
-            {
-                case (ushort)ReplyCode.NotFound:
-                    throw new ArgumentOutOfRangeException("Specified queue does not exist.", ex);
-                case (ushort)ReplyCode.PreconditionFailed:
-                    throw new ConflictException("Specified queue is in use.", ex);
-            }
-            throw;
-        }
-    }
+    public Task ExecuteAsync(IChannel channel, CancellationToken cancellation = default)
+        => channel.SendAsync<DeleteMethod, DeleteOkMethod>(
+            new DeleteMethod(this.queue, !this.cancelConsumers, !this.discardMessages), cancellation);
 }

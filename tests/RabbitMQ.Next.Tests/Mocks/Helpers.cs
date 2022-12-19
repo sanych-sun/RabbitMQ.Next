@@ -112,4 +112,25 @@ internal static class Helpers
 
         return result;
     }
+
+    public static IReadOnlyDictionary<string, object> ToArgsDictionary(this string[] source)
+    {
+        if (source == null || source.Length == 0)
+        {
+            return null;
+        }
+        
+        var result = new Dictionary<string, object>();
+        if (source.Length % 2 != 0)
+        {
+            throw new ArgumentException(nameof(source));
+        }
+
+        for (var i = 0; i < source.Length; i += 2)
+        {
+            result.Add(source[i], source[i + 1]);
+        }
+
+        return result;
+    }
 }

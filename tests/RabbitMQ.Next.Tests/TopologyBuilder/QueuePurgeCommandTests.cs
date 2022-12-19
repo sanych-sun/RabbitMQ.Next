@@ -1,8 +1,8 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using NSubstitute;
 using RabbitMQ.Next.Channels;
-using RabbitMQ.Next.Exceptions;
 using RabbitMQ.Next.TopologyBuilder.Commands;
 using RabbitMQ.Next.Transport.Methods.Queue;
 using Xunit;
@@ -11,40 +11,27 @@ namespace RabbitMQ.Next.Tests.TopologyBuilder;
 
 public class QueuePurgeCommandTests
 {
-    [Fact]
-    public async Task ExecuteSendsMethod()
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public void ThrowsOnEmptyQueue(string queue)
     {
-        var channel = Substitute.For<IChannel>();
-        var builder = new QueuePurgeCommand("queue");
-
-        await builder.ExecuteAsync(channel);
-
-        await channel.Received().SendAsync<PurgeMethod, PurgeOkMethod>(Arg.Any<PurgeMethod>());
+        Assert.Throws<ArgumentNullException>(() => new QueuePurgeCommand(queue));
     }
 
-    [Fact]
-    public async Task CanPassExchangeName()
-    {
-        var queue = "test-queue";
-        var channel = Substitute.For<IChannel>();
-        var builder = new QueuePurgeCommand(queue);
-
-        await builder.ExecuteAsync(channel);
-
-        await channel.Received().SendAsync<PurgeMethod, PurgeOkMethod>(Arg.Is<PurgeMethod>(
-            m => m.Queue == queue));
-    }
 
     [Theory]
-    [InlineData(ReplyCode.NotFound, typeof(ArgumentOutOfRangeException))]
-    [InlineData(ReplyCode.ChannelError, typeof(ChannelException))]
-    public async Task ExecuteProcessExceptions(ReplyCode replyCode, Type exceptionType)
+    [InlineData("queue")]
+    public async Task ExecuteCommandAsync(string queue)
     {
         var channel = Substitute.For<IChannel>();
-        channel.SendAsync<PurgeMethod, PurgeOkMethod>(default)
-            .ReturnsForAnyArgs(Task.FromException<PurgeOkMethod>(new ChannelException((ushort)replyCode, "error message", MethodId.ExchangeDelete)));
-        var builder = new QueuePurgeCommand("queue");
+        var cmd = new QueuePurgeCommand(queue);
+        
+        await cmd.ExecuteAsync(channel);
 
-        await Assert.ThrowsAsync(exceptionType,async ()=> await builder.ExecuteAsync(channel));
+        await channel.Received().SendAsync<PurgeMethod, PurgeOkMethod>(
+            Arg.Is<PurgeMethod>(b => 
+                string.Equals(b.Queue, queue)),
+            Arg.Any<CancellationToken>());
     }
 }

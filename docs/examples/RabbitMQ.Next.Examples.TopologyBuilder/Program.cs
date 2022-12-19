@@ -19,32 +19,33 @@ class Program
 
             Console.WriteLine("Connection opened");
 
-            await connection.ExchangeDeclareAsync("my-exchange", ExchangeType.Topic);
-            Console.WriteLine("'my-exchange' was created with using library defaults (durable by default)");
+            await connection.ConfigureAsync(async topology =>
+            {
+                await topology.Exchange.DeclareAsync("my-exchange", ExchangeType.Topic);
+                Console.WriteLine("'my-exchange' was created with using library defaults (durable by default)");
 
-            await connection.ExchangeDeclareAsync("my-advanced-exchange", ExchangeType.Topic,
-                builder => builder
-                    .Transient());
-            Console.WriteLine("'my-advanced-exchange' was created by explicitly configuring to be transient (non-durable)");
+                await topology.Exchange.DeclareAsync("my-advanced-exchange", ExchangeType.Topic,
+                    builder => builder
+                        .AutoDelete());
+                Console.WriteLine("'my-advanced-exchange' was created by explicitly configuring to be auto-delete");
 
-            Console.WriteLine("--------------------------------------------------------------");
+                Console.WriteLine("--------------------------------------------------------------");
 
-            await connection.QueueDeclareAsync("my-queue");
-            Console.WriteLine("'my-queue' was created with using library defaults (durable by default)");
+                await topology.Queue.DeclareQuorumAsync("my-queue");
+                Console.WriteLine("Declare quorum queue named 'my-queue'");
 
-            await connection.QueueDeclareAsync("my-advanced-queue",
-                builder => builder
-                    .AutoDelete()
-                    .WithMaxLength(1000));
-            Console.WriteLine("'my-advanced-queue' was created by explicitly configuring to be auto-delete and max-length 1000");
+                await topology.Queue.DeclareClassicAsync("my-advanced-queue",
+                    builder => builder
+                        .AutoDelete()
+                        .MaxLength(1000));
+                Console.WriteLine("'my-advanced-queue' was created by explicitly configuring to be auto-delete and max-length 1000");
 
-            Console.WriteLine("--------------------------------------------------------------");
+                Console.WriteLine("--------------------------------------------------------------");
 
-            await connection.QueueBindAsync("my-queue", "my-exchange",
-                builder => builder
-                    .RoutingKey("cat")
-                    .RoutingKey("dog"));
-            Console.WriteLine("my-queue was bound to my-exchange by 2 bindings.");
+                await topology.Queue.BindAsync("my-queue", "my-exchange", "cat");
+                await topology.Queue.BindAsync("my-queue", "my-exchange", "dog");
+                Console.WriteLine("my-queue was bound to my-exchange by 2 bindings.");
+            });
 
             await connection.DisposeAsync();
         }

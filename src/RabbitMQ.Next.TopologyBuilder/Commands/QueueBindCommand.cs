@@ -1,36 +1,37 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Channels;
-using RabbitMQ.Next.Exceptions;
 using RabbitMQ.Next.Transport.Methods.Queue;
 
 namespace RabbitMQ.Next.TopologyBuilder.Commands;
 
-internal class QueueBindCommand : IQueueBindingBuilder, ICommand
+internal class QueueBindCommand : IBindingDeclaration, ICommand
 {
+    private readonly string queue;
+    private readonly string exchange;
+    private readonly string routingKey;
     private Dictionary<string, object> arguments;
-    private List<string> routingKeys;
 
-    public QueueBindCommand(string queue, string exchange)
+    public QueueBindCommand(string queue, string exchange, string routingKey)
     {
-        this.Exchange = exchange;
-        this.Queue = queue;
-    }
+        if (string.IsNullOrEmpty(queue))
+        {
+            throw new ArgumentNullException(nameof(queue));
+        }
         
-    public string Exchange { get; }
-
-    public string Queue { get; }
-
-    public IQueueBindingBuilder RoutingKey(string routingKey)
-    {
-        this.routingKeys ??= new List<string>();
-        this.routingKeys.Add(routingKey);
-
-        return this;
+        if (string.IsNullOrEmpty(exchange))
+        {
+            throw new ArgumentNullException(nameof(exchange));
+        }
+        
+        this.queue = queue;
+        this.exchange = exchange;
+        this.routingKey = routingKey;
     }
-
-    public IQueueBindingBuilder Argument(string key, object value)
+    
+    public IBindingDeclaration Argument(string key, object value)
     {
         this.arguments ??= new Dictionary<string, object>();
         this.arguments[key] = value;
@@ -38,32 +39,7 @@ internal class QueueBindCommand : IQueueBindingBuilder, ICommand
         return this;
     }
 
-    public async Task ExecuteAsync(IChannel channel)
-    {
-        try
-        {
-            if (this.routingKeys != null && this.routingKeys.Count > 0)
-            {
-                for (var i = 0; i < this.routingKeys.Count; i++)
-                {
-                    await channel.SendAsync<BindMethod, BindOkMethod>(
-                        new BindMethod(this.Queue, this.Exchange, this.routingKeys[i], this.arguments));
-                }
-            }
-            else
-            {
-                await channel.SendAsync<BindMethod, BindOkMethod>(
-                    new BindMethod(this.Queue, this.Exchange, null, this.arguments));
-            }
-        }
-        catch (ChannelException ex)
-        {
-            switch (ex.ErrorCode)
-            {
-                case (ushort)ReplyCode.NotFound:
-                    throw new ArgumentOutOfRangeException("Queue or exchange does not exists", ex);
-            }
-            throw;
-        }
-    }
+    public Task ExecuteAsync(IChannel channel, CancellationToken cancellation = default)
+        => channel.SendAsync<BindMethod, BindOkMethod>(
+        new BindMethod(this.queue, this.exchange, this.routingKey, this.arguments), cancellation);
 }

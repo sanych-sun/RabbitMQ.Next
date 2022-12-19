@@ -1,9 +1,8 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using NSubstitute;
 using RabbitMQ.Next.Channels;
-using RabbitMQ.Next.Exceptions;
-using RabbitMQ.Next.TopologyBuilder.Exceptions;
 using RabbitMQ.Next.TopologyBuilder.Commands;
 using RabbitMQ.Next.Transport.Methods.Queue;
 using Xunit;
@@ -12,91 +11,42 @@ namespace RabbitMQ.Next.Tests.TopologyBuilder;
 
 public class QueueDeleteCommandTests
 {
-    [Fact]
-    public async Task ExecuteSendsMethod()
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public void ThrowsOnEmptyQueue(string exchange)
     {
-        var channel = Substitute.For<IChannel>();
-        var builder = new QueueDeleteCommand("queue");
-
-        await builder.ExecuteAsync(channel);
-
-        await channel.Received().SendAsync<DeleteMethod, DeleteOkMethod>(Arg.Any<DeleteMethod>());
+        Assert.Throws<ArgumentNullException>(() => new QueueDeleteCommand(exchange));
     }
-
-    [Fact]
-    public async Task CanPassExchangeName()
-    {
-        var queue = "test-queue";
-        var channel = Substitute.For<IChannel>();
-        var builder = new QueueDeleteCommand(queue);
-
-        await builder.ExecuteAsync(channel);
-
-        await channel.Received().SendAsync<DeleteMethod, DeleteOkMethod>(Arg.Is<DeleteMethod>(
-            m => m.Queue == queue));
-    }
-
-    [Fact]
-    public async Task ShouldNotCancelConsumersByDefault()
-    {
-        var channel = Substitute.For<IChannel>();
-        var builder = new QueueDeleteCommand("queue");
-
-        await builder.ExecuteAsync(channel);
-
-        await channel.Received().SendAsync<DeleteMethod, DeleteOkMethod>(Arg.Is<DeleteMethod>(
-            m => m.UnusedOnly == true));
-    }
-
-    [Fact]
-    public async Task ShouldNotDiscardMessagesByDefault()
-    {
-        var channel = Substitute.For<IChannel>();
-        var builder = new QueueDeleteCommand("queue");
-
-        await builder.ExecuteAsync(channel);
-
-        await channel.Received().SendAsync<DeleteMethod, DeleteOkMethod>(Arg.Is<DeleteMethod>(
-            m => m.EmptyOnly == true));
-    }
-
-    [Fact]
-    public async Task CanCancelConsumers()
-    {
-        var channel = Substitute.For<IChannel>();
-        var builder = new QueueDeleteCommand("queue");
-        builder.CancelConsumers();
-
-        await builder.ExecuteAsync(channel);
-
-        await channel.Received().SendAsync<DeleteMethod, DeleteOkMethod>(Arg.Is<DeleteMethod>(
-            m => m.UnusedOnly == false));
-    }
-
-    [Fact]
-    public async Task CanDiscardMessages()
-    {
-        var channel = Substitute.For<IChannel>();
-        var builder = new QueueDeleteCommand("queue");
-        builder.DiscardMessages();
-
-        await builder.ExecuteAsync(channel);
-
-        await channel.Received().SendAsync<DeleteMethod, DeleteOkMethod>(Arg.Is<DeleteMethod>(
-            m => m.EmptyOnly == false));
-    }
+    
 
     [Theory]
-    [InlineData(ReplyCode.NotFound, typeof(ArgumentOutOfRangeException))]
-    [InlineData(ReplyCode.PreconditionFailed, typeof(ConflictException))]
-    [InlineData(ReplyCode.ChannelError, typeof(ChannelException))]
-    public async Task ExecuteProcessExceptions(ReplyCode replyCode, Type exceptionType)
+    [InlineData("queue", false, false)]
+    [InlineData("queue", true, false)]
+    [InlineData("queue", false, true)]
+    [InlineData("queue", true, true)]
+    public async Task ExecuteCommandAsync(string queue, bool cancelConsumers, bool discardMessages)
     {
         var channel = Substitute.For<IChannel>();
-        channel.SendAsync<DeleteMethod, DeleteOkMethod>(default)
-            .ReturnsForAnyArgs(Task.FromException<DeleteOkMethod>(new ChannelException((ushort)replyCode, "error message", MethodId.ExchangeDelete)));
-        var builder = new QueueDeleteCommand("queue");
+        var cmd = new QueueDeleteCommand(queue);
+        
+        if (cancelConsumers)
+        {
+            cmd.CancelConsumers();
+        }
 
-        await Assert.ThrowsAsync(exceptionType,async ()=> await builder.ExecuteAsync(channel));
+        if (discardMessages)
+        {
+            cmd.DiscardMessages();
+        }
+        
+        await cmd.ExecuteAsync(channel);
+
+        await channel.Received().SendAsync<DeleteMethod, DeleteOkMethod>(
+            Arg.Is<DeleteMethod>(b => 
+                string.Equals(b.Queue, queue) 
+                && b.UnusedOnly == !cancelConsumers
+                && b.EmptyOnly == !discardMessages),
+            Arg.Any<CancellationToken>());
     }
 }

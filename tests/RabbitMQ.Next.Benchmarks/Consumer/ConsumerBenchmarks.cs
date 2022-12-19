@@ -33,10 +33,15 @@ public class ConsumerBenchmarks
             DispatchConsumersAsync = true,
         };
         this.theirConnection = factory.CreateConnection();
-            
-        await this.connection.QueueDeclareAsync(this.queueName);
-        await this.connection.QueueBindAsync(this.queueName, "amq.fanout");
-        await this.connection.QueuePurgeAsync(this.queueName);
+
+        await this.connection.ConfigureAsync(async topology =>
+        {
+            await topology.Queue.DeclareClassicAsync(this.queueName);
+            await topology.Queue.BindAsync(this.queueName, "amq.fanout");
+            await topology.Queue.PurgeAsync(this.queueName);
+        });
+        
+        
             
         var publisher = this.connection.Publisher("amq.fanout", builder => builder.UsePlainTextSerializer());
             

@@ -1,50 +1,50 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Channels;
-using RabbitMQ.Next.Exceptions;
-using RabbitMQ.Next.TopologyBuilder.Exceptions;
 using RabbitMQ.Next.Transport.Methods.Exchange;
 
 namespace RabbitMQ.Next.TopologyBuilder.Commands;
 
-internal class ExchangeDeclareCommand : IExchangeBuilder, ICommand
+internal class ExchangeDeclareCommand : IExchangeDeclaration, ICommand
 {
-    private bool isDurable = true;
+    private readonly string exchange;
+    private readonly string type;
     private bool isInternal;
     private bool isAutoDelete;
     private Dictionary<string, object> arguments;
 
-    public ExchangeDeclareCommand(string name, string type)
+    public ExchangeDeclareCommand(string exchange, string type)
     {
-        this.Name = name;
-        this.Type = type;
+        if (string.IsNullOrEmpty(exchange))
+        {
+            throw new ArgumentNullException(nameof(this.exchange));
+        }
+
+        if (string.IsNullOrEmpty(type))
+        {
+            throw new ArgumentNullException(nameof(type));
+        }
+        
+        this.exchange = exchange;
+        this.type = type;
     }
 
-    public string Name { get; }
-
-    public string Type { get; }
-
-    public IExchangeBuilder Transient()
-    {
-        this.isDurable = false;
-        return this;
-    }
-
-    public IExchangeBuilder Internal()
+    public IExchangeDeclaration Internal()
     {
         this.isInternal = true;
         return this;
     }
 
-    public IExchangeBuilder AutoDelete()
+    public IExchangeDeclaration AutoDelete()
     {
         this.isAutoDelete = true;
         return this;
     }
 
 
-    public IExchangeBuilder Argument(string key, object value)
+    public IExchangeDeclaration Argument(string key, object value)
     {
         this.arguments ??= new Dictionary<string, object>();
         this.arguments[key] = value;
@@ -52,26 +52,7 @@ internal class ExchangeDeclareCommand : IExchangeBuilder, ICommand
         return this;
     }
 
-    public async Task ExecuteAsync(IChannel channel)
-    {
-        try
-        {
-            await channel.SendAsync<DeclareMethod, DeclareOkMethod>(
-                new DeclareMethod(this.Name, this.Type, this.isDurable, this.isAutoDelete, this.isInternal, this.arguments));
-        }
-        catch (ChannelException ex)
-        {
-            switch (ex.ErrorCode)
-            {
-                case (ushort)ReplyCode.AccessRefused:
-                case (ushort)ReplyCode.PreconditionFailed:
-                    throw new ArgumentOutOfRangeException("Illegal exchange name", ex);
-                case (ushort)ReplyCode.NotAllowed:
-                    throw new ConflictException("Exchange cannot be redeclared with different type", ex);
-                case (ushort)ReplyCode.CommandInvalid:
-                    throw new NotSupportedException("Specified exchange type does not supported", ex);
-            }
-            throw;
-        }
-    }
+    public Task ExecuteAsync(IChannel channel, CancellationToken cancellation = default)
+        => channel.SendAsync<DeclareMethod, DeclareOkMethod>(
+            new DeclareMethod(this.exchange, this.type, true, this.isAutoDelete, this.isInternal, this.arguments), cancellation);
 }

@@ -1,71 +1,79 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Channels;
-using RabbitMQ.Next.Exceptions;
-using RabbitMQ.Next.TopologyBuilder.Exceptions;
 using RabbitMQ.Next.Transport.Methods.Queue;
 
 namespace RabbitMQ.Next.TopologyBuilder.Commands;
 
-internal class QueueDeclareCommand : IQueueBuilder, ICommand
+internal class QueueDeclareCommand : IClassicQueueDeclaration, IQuorumQueueDeclaration, IStreamQueueDeclaration, ICommand
 {
-    private bool isDurable = true;
-    private bool isExclusive;
-    private bool isAutoDelete;
+    private readonly string queue;
+    private bool exclusive;
+    private bool autoDelete;
     private Dictionary<string, object> arguments;
-
-    public QueueDeclareCommand(string name)
+    
+    public QueueDeclareCommand(string queue)
     {
-        this.Name = name;
+        if (string.IsNullOrEmpty(queue))
+        {
+            throw new ArgumentNullException(nameof(queue));
+        }
+        
+        this.queue = queue;
     }
 
-    public string Name { get; }
 
-    public IQueueBuilder Transient()
-    {
-        this.isDurable = false;
-        return this;
-    }
-
-    public IQueueBuilder Exclusive()
-    {
-        this.isExclusive = true;
-        return this;
-    }
-
-    public IQueueBuilder AutoDelete()
-    {
-        this.isAutoDelete = true;
-        return this;
-    }
-
-    public IQueueBuilder Argument(string key, object value)
+    public QueueDeclareCommand Argument(string key, object value)
     {
         this.arguments ??= new Dictionary<string, object>();
         this.arguments[key] = value;
-
         return this;
     }
 
-    public async Task ExecuteAsync(IChannel channel)
+    public QueueDeclareCommand AutoDelete()
     {
-        try
-        {
-            await channel.SendAsync<DeclareMethod, DeclareOkMethod>(
-                new DeclareMethod(this.Name, this.isDurable, this.isExclusive, this.isAutoDelete, this.arguments));
-        }
-        catch (ChannelException ex)
-        {
-            switch (ex.ErrorCode)
-            {
-                case (ushort)ReplyCode.AccessRefused:
-                case (ushort)ReplyCode.PreconditionFailed:
-                    throw new ArgumentOutOfRangeException("Illegal queue name.", ex);
-                case (ushort)ReplyCode.ResourceLocked:
-                    throw new ConflictException("Cannot redeclare existing queue as exclusive.", ex);
-            }
-            throw;
-        }
+        this.autoDelete = true;
+        return this;
     }
+    
+    public QueueDeclareCommand Exclusive()
+    {
+        this.exclusive = true;
+        return this;
+    }
+
+    public Task ExecuteAsync(IChannel channel, CancellationToken cancellation = default)
+        => channel.SendAsync<DeclareMethod, DeclareOkMethod>(
+            new DeclareMethod(this.queue, true, this.exclusive, this.autoDelete, this.arguments), cancellation);
+
+    #region IClassicQueueDeclaration
+    
+    IClassicQueueDeclaration IClassicQueueDeclaration.Argument(string key, object value) 
+        => this.Argument(key, value);
+
+    IClassicQueueDeclaration IClassicQueueDeclaration.Exclusive()
+        => this.Exclusive();
+
+    IClassicQueueDeclaration IClassicQueueDeclaration.AutoDelete()
+        => this.AutoDelete();
+
+    #endregion
+
+    #region IQuorumQueueDeclaration
+
+    IQuorumQueueDeclaration IQuorumQueueDeclaration.Argument(string key, object value)
+        => this.Argument(key, value);
+
+    IQuorumQueueDeclaration IQuorumQueueDeclaration.AutoDelete()
+        => this.AutoDelete();
+
+    #endregion
+    
+    #region IStreamQueueDeclaration
+    IStreamQueueDeclaration IStreamQueueDeclaration.Argument(string key, object value)
+        => this.Argument(key, value);
+    
+    #endregion
 }

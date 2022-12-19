@@ -1,9 +1,8 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using NSubstitute;
 using RabbitMQ.Next.Channels;
-using RabbitMQ.Next.Exceptions;
-using RabbitMQ.Next.TopologyBuilder.Exceptions;
 using RabbitMQ.Next.TopologyBuilder.Commands;
 using RabbitMQ.Next.Transport.Methods.Exchange;
 using Xunit;
@@ -12,66 +11,34 @@ namespace RabbitMQ.Next.Tests.TopologyBuilder;
 
 public class ExchangeDeleteCommandTests
 {
-    [Fact]
-    public async Task ExecuteSendsMethod()
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public void ThrowsOnEmptyExchange(string exchange)
     {
-        var channel = Substitute.For<IChannel>();
-        var builder = new ExchangeDeleteCommand("exchange");
-
-        await builder.ExecuteAsync(channel);
-
-        await channel.Received().SendAsync<DeleteMethod, DeleteOkMethod>(Arg.Any<DeleteMethod>());
+        Assert.Throws<ArgumentNullException>(() => new ExchangeDeleteCommand(exchange));
     }
-
-    [Fact]
-    public async Task CanPassExchangeName()
-    {
-        var exchangeName = "test-exch";
-        var channel = Substitute.For<IChannel>();
-        var builder = new ExchangeDeleteCommand(exchangeName);
-
-        await builder.ExecuteAsync(channel);
-
-        await channel.Received().SendAsync<DeleteMethod, DeleteOkMethod>(Arg.Is<DeleteMethod>(
-            m => m.Exchange == exchangeName));
-    }
-
-    [Fact]
-    public async Task ShouldNotCancelBindingsByDefault()
-    {
-        var channel = Substitute.For<IChannel>();
-        var builder = new ExchangeDeleteCommand("exchange");
-
-        await builder.ExecuteAsync(channel);
-
-        await channel.Received().SendAsync<DeleteMethod, DeleteOkMethod>(Arg.Is<DeleteMethod>(
-            m => m.UnusedOnly == true));
-    }
-
-    [Fact]
-    public async Task CanCancelBindings()
-    {
-        var channel = Substitute.For<IChannel>();
-        var builder = new ExchangeDeleteCommand("exchange");
-        builder.CancelBindings();
-
-        await builder.ExecuteAsync(channel);
-
-        await channel.Received().SendAsync<DeleteMethod, DeleteOkMethod>(Arg.Is<DeleteMethod>(
-            m => m.UnusedOnly == false));
-    }
+    
 
     [Theory]
-    [InlineData(ReplyCode.NotFound, typeof(ArgumentOutOfRangeException))]
-    [InlineData(ReplyCode.PreconditionFailed, typeof(ConflictException))]
-    [InlineData(ReplyCode.ChannelError, typeof(ChannelException))]
-    public async Task ExecuteProcessExceptions(ReplyCode replyCode, Type exceptionType)
+    [InlineData("exchange", false)]
+    [InlineData("exchange", true)]
+    public async Task ExecuteCommandAsync(string exchange, bool cancelBindings)
     {
         var channel = Substitute.For<IChannel>();
-        channel.SendAsync<DeleteMethod, DeleteOkMethod>(default)
-            .ReturnsForAnyArgs(Task.FromException<DeleteOkMethod>(new ChannelException((ushort)replyCode, "error message", MethodId.ExchangeDelete)));
-        var builder = new ExchangeDeleteCommand("exchange");
+        var cmd = new ExchangeDeleteCommand(exchange);
+        
+        if (cancelBindings)
+        {
+            cmd.CancelBindings();
+        }
+        
+        await cmd.ExecuteAsync(channel);
 
-        await Assert.ThrowsAsync(exceptionType,async ()=> await builder.ExecuteAsync(channel));
+        await channel.Received().SendAsync<DeleteMethod, DeleteOkMethod>(
+            Arg.Is<DeleteMethod>(b => 
+                string.Equals(b.Exchange, exchange) 
+                && b.UnusedOnly == !cancelBindings),
+            Arg.Any<CancellationToken>());
     }
 }

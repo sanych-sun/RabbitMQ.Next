@@ -1,35 +1,25 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Channels;
-using RabbitMQ.Next.Exceptions;
 using RabbitMQ.Next.Transport.Methods.Queue;
 
 namespace RabbitMQ.Next.TopologyBuilder.Commands;
 
 internal class QueuePurgeCommand : ICommand
 {
-    private readonly string queueName;
+    private readonly string queue;
 
-    public QueuePurgeCommand(string queueName)
+    public QueuePurgeCommand(string queue)
     {
-        this.queueName = queueName;
+        if (string.IsNullOrEmpty(queue))
+        {
+            throw new ArgumentNullException(nameof(queue));
+        }
+        
+        this.queue = queue;
     }
 
-    public async Task ExecuteAsync(IChannel channel)
-    {
-        try
-        {
-            await channel.SendAsync<PurgeMethod, PurgeOkMethod>(
-                new PurgeMethod(this.queueName));
-        }
-        catch (ChannelException ex)
-        {
-            switch (ex.ErrorCode)
-            {
-                case (ushort)ReplyCode.NotFound:
-                    throw new ArgumentOutOfRangeException("Specified queue does not exist.", ex);
-            }
-            throw;
-        }
-    }
+    public Task ExecuteAsync(IChannel channel, CancellationToken cancellation = default)
+        => channel.SendAsync<PurgeMethod, PurgeOkMethod>(new PurgeMethod(this.queue), cancellation);
 }

@@ -26,4 +26,9 @@
     <ProjectReference Include="..\..\src\RabbitMQ.Next\RabbitMQ.Next.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="TopologyBuilder\ExchangeBuilderExtensionsTests.cs" />
+    <Compile Remove="TopologyBuilder\QueueBuilderExtensionsTests.cs" />
+  </ItemGroup>
+
 </Project>

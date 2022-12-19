@@ -1,36 +1,37 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Channels;
-using RabbitMQ.Next.Exceptions;
 using RabbitMQ.Next.Transport.Methods.Exchange;
 
 namespace RabbitMQ.Next.TopologyBuilder.Commands;
 
-internal class ExchangeBindCommand : IExchangeBindingBuilder, ICommand
+internal class ExchangeBindCommand : IBindingDeclaration, ICommand
 {
+    private readonly string destination;
+    private readonly string source;
+    private readonly string routingKey;
     private Dictionary<string, object> arguments;
-    private List<string> routingKeys;
 
-    public ExchangeBindCommand(string destination, string source)
+    public ExchangeBindCommand(string destination, string source, string routingKey)
     {
-        this.Source = source;
-        this.Destination = destination;
-    }
+        if (string.IsNullOrEmpty(destination))
+        {
+            throw new ArgumentNullException(nameof(destination));
+        }
+
+        if (string.IsNullOrEmpty(source))
+        {
+            throw new ArgumentNullException(nameof(source));
+        }
         
-    public string Source { get; }
-
-    public string Destination { get; }
-
-    public IExchangeBindingBuilder RoutingKey(string routingKey)
-    {
-        this.routingKeys ??= new List<string>();
-        this.routingKeys.Add(routingKey);
-
-        return this;
+        this.destination = destination;
+        this.source = source;
+        this.routingKey = routingKey;
     }
 
-    public IExchangeBindingBuilder Argument(string key, object value)
+    public IBindingDeclaration Argument(string key, object value)
     {
         this.arguments ??= new Dictionary<string, object>();
         this.arguments[key] = value;
@@ -38,32 +39,7 @@ internal class ExchangeBindCommand : IExchangeBindingBuilder, ICommand
         return this;
     }
 
-    public async Task ExecuteAsync(IChannel channel)
-    {
-        try
-        {
-            if (this.routingKeys != null && this.routingKeys.Count > 0)
-            {
-                for (var i = 0; i < this.routingKeys.Count; i++)
-                {
-                    await channel.SendAsync<BindMethod, BindOkMethod>(
-                        new BindMethod(this.Destination, this.Source, this.routingKeys[i], this.arguments));
-                }
-            }
-            else
-            {
-                await channel.SendAsync<BindMethod, BindOkMethod>(
-                    new BindMethod(this.Destination, this.Source, null, this.arguments));
-            }
-        }
-        catch (ChannelException ex)
-        {
-            switch (ex.ErrorCode)
-            {
-                case (ushort)ReplyCode.NotFound:
-                    throw new ArgumentOutOfRangeException("Source or destination exchange does not exists", ex);
-            }
-            throw;
-        }
-    }
+    public Task ExecuteAsync(IChannel channel, CancellationToken cancellation = default)
+        => channel.SendAsync<BindMethod, BindOkMethod>(
+            new BindMethod(this.destination, this.source, this.routingKey, this.arguments), cancellation);
 }

@@ -1,10 +1,9 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using NSubstitute;
 using RabbitMQ.Next.Channels;
-using RabbitMQ.Next.Exceptions;
+using RabbitMQ.Next.Tests.Mocks;
 using RabbitMQ.Next.TopologyBuilder.Commands;
 using RabbitMQ.Next.Transport.Methods.Exchange;
 using Xunit;
@@ -13,100 +12,49 @@ namespace RabbitMQ.Next.Tests.TopologyBuilder;
 
 public class ExchangeBindCommandTests
 {
-    [Fact]
-    public async Task ExecuteSendsMethod()
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public void ThrowsOnEmptyDestination(string destination)
     {
-        var channel = Substitute.For<IChannel>();
-        var builder = new ExchangeBindCommand("dest", "src");
-
-        await builder.ExecuteAsync(channel);
-
-        await channel.Received().SendAsync<BindMethod, BindOkMethod>(Arg.Any<BindMethod>());
+        Assert.Throws<ArgumentNullException>(() => new ExchangeBindCommand(destination, "source", null));
     }
-
-    [Fact]
-    public async Task CanPassNames()
+    
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public void ThrowsOnEmptySource(string source)
     {
-        var dest = "test-dest";
-        var src = "test-src";
-        var channel = Substitute.For<IChannel>();
-        var builder = new ExchangeBindCommand(dest, src);
-
-        await builder.ExecuteAsync(channel);
-
-        await channel.Received().SendAsync<BindMethod, BindOkMethod>(Arg.Is<BindMethod>(
-            m => m.Destination == dest && m.Source == src));
-    }
-
-    [Fact]
-    public async Task CanPassRoutingKey()
-    {
-        var routingKey = "route";
-        var channel = Substitute.For<IChannel>();
-        var builder = new ExchangeBindCommand("dest", "src");
-        builder.RoutingKey(routingKey);
-
-        await builder.ExecuteAsync(channel);
-
-        await channel.Received().SendAsync<BindMethod, BindOkMethod>(Arg.Is<BindMethod>(
-            m => m.RoutingKey == routingKey));
-    }
-
-    [Fact]
-    public async Task CanPassMultipleRoutingKeys()
-    {
-        var keys = new List<string>
-        {
-            "key",
-            "other-key"
-        };
-        var channel = Substitute.For<IChannel>();
-        var builder = new ExchangeBindCommand("dest", "src");
-        foreach (var key in keys)
-        {
-            builder.RoutingKey(key);
-        }
-
-        await builder.ExecuteAsync(channel);
-
-        foreach (var key in keys)
-        {
-            await channel.Received().SendAsync<BindMethod, BindOkMethod>(Arg.Is<BindMethod>(
-                m => m.RoutingKey == key));
-        }
-    }
-
-    [Fact]
-    public async Task CanPassArguments()
-    {
-        var arguments = new Dictionary<string, object>()
-        {
-            ["test"] = "value",
-            ["key2"] = 5,
-        };
-        var channel = Substitute.For<IChannel>();
-        var builder = new ExchangeBindCommand("dest", "src");
-        foreach (var argument in arguments)
-        {
-            builder.Argument(argument.Key, argument.Value);
-        }
-
-        await builder.ExecuteAsync(channel);
-
-        await channel.Received().SendAsync<BindMethod, BindOkMethod>(Arg.Is<BindMethod>(
-            m => arguments.All(a => m.Arguments[a.Key] == a.Value)));
+        Assert.Throws<ArgumentNullException>(() => new ExchangeBindCommand("destination", source, null));
     }
 
     [Theory]
-    [InlineData(ReplyCode.NotFound, typeof(ArgumentOutOfRangeException))]
-    [InlineData(ReplyCode.ChannelError, typeof(ChannelException))]
-    public async Task ExecuteProcessExceptions(ReplyCode replyCode, Type exceptionType)
+    [InlineData("destination", "source", null)]
+    [InlineData("dest", "src", "key")]
+    [InlineData("dest", "src", "key", "arg1", "vl1")]
+    [InlineData("dest", "src", "key", "arg1", "vl1", "arg2", "vl2")]
+    public async Task ExecuteCommandAsync(string destination, string source, string routingKey, params string[] arguments)
     {
         var channel = Substitute.For<IChannel>();
-        channel.SendAsync<BindMethod, BindOkMethod>(default)
-            .ReturnsForAnyArgs(Task.FromException<BindOkMethod>(new ChannelException((ushort)replyCode, "error message", MethodId.ExchangeBind)));
-        var builder = new ExchangeBindCommand("destination", "source");
+        var cmd = new ExchangeBindCommand(destination, source, routingKey);
+        var args = arguments.ToArgsDictionary();
 
-        await Assert.ThrowsAsync(exceptionType,async ()=> await builder.ExecuteAsync(channel));
+        if (args != null)
+        {
+            foreach (var arg in args)
+            {
+                cmd.Argument(arg.Key, arg.Value);
+            }
+        }
+
+        await cmd.ExecuteAsync(channel);
+
+        await channel.Received().SendAsync<BindMethod, BindOkMethod>(
+            Arg.Is<BindMethod>(b => 
+                string.Equals(b.Destination, destination) 
+                && string.Equals(b.Source, source)
+                && string.Equals(b.RoutingKey, routingKey)
+                && Helpers.DictionaryEquals(b.Arguments, args)),
+            Arg.Any<CancellationToken>());
     }
 }
