@@ -48,13 +48,6 @@ public static class StreamQueueDeclarationExtensions
         declaration.Argument("x-stream-max-segment-size-bytes", size);
         return declaration;
     }
-    
-    public static IQuorumQueueDeclaration SingleActiveConsumer(this IQuorumQueueDeclaration declaration)
-    {
-        // TODO: cannot find actual example of SAC for streams, validate if it works
-        declaration.Argument("x-single-active-consumer", true);
-        return declaration;
-    }
 }
 
 public enum AgeUnit
