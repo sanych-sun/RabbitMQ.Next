@@ -20,7 +20,8 @@ class Program
 
         var consumer = connection.Consumer(
             builder => builder
-                .BindToQueue("test-queue")
+                .BindToQueue("my-queue")
+                .BindToStream("first-stream", StreamOffset.First)
                 .PrefetchCount(10)
                 .UsePlainTextSerializer());
 
