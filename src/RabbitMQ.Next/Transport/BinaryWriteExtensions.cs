@@ -9,23 +9,6 @@ namespace RabbitMQ.Next.Transport;
 public static class BinaryWriteExtensions
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Span<byte> Slice(this Span<byte> target, int size, out Span<byte> buffer)
-    {
-        if (size < 0)
-        {
-            throw new ArgumentException(nameof(size));
-        }
-
-        if (size > target.Length)
-        {
-            throw new OutOfMemoryException();
-        }
-        
-        buffer = target[..size];
-        return target[size..];
-    }
-    
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<byte> Write(this Span<byte> target, byte data)
     {
         target[0] = data;

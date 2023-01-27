@@ -35,12 +35,18 @@ internal class MessageBuilder
         this.writer.EndFrame();
     }
 
+    private const uint ContentHeaderPrefix = (ushort)ClassId.Basic << 16;
+    
     public void WriteContentFrame<TState>(TState state, IMessageProperties properties, Action<TState, IBufferWriter<byte>> contentBuilder)
     {
         this.writer.BeginFrame(FrameType.ContentHeader);
         var headerStartBuffer = this.writer.GetSpan();
 
-        var headerBuffer = headerStartBuffer.WriteContentHeader(properties, out var contentSizeBuffer);
+        var headerBuffer = headerStartBuffer.Write(ContentHeaderPrefix);
+        var contentSizeBuffer = headerBuffer[..sizeof(ulong)];
+        headerBuffer = headerBuffer[sizeof(ulong)..];
+
+        headerBuffer = headerBuffer.WriteContentProperties(properties);
         
         this.writer.Advance(headerStartBuffer.Length - headerBuffer.Length);
         this.writer.EndFrame();

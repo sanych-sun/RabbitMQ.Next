@@ -6,18 +6,13 @@ namespace RabbitMQ.Next.Transport;
 
 internal static partial class Framing
 {
-    private const uint ContentHeaderPrefix = (ushort)ClassId.Basic << 16;
-    
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Span<byte> WriteContentHeader(this Span<byte> buffer, IMessageProperties properties, out Span<byte> contentSizeBuffer)
+    public static Span<byte> WriteContentProperties(this Span<byte> buffer, IMessageProperties properties)
     {
-        buffer = buffer
-            .Write(ContentHeaderPrefix)
-            .Slice(sizeof(ulong), out contentSizeBuffer)
-            .Slice(sizeof(ushort), out var flagsBuffer);
+        var flagsBuffer = buffer[..sizeof(ushort)];
+        buffer = buffer[sizeof(ushort)..];
         
         var flags = MessageFlags.None;
-
         if (!string.IsNullOrEmpty(properties.ContentType))
         {
             flags |= MessageFlags.ContentType;

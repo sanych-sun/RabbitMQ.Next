@@ -10,9 +10,4 @@
     <ProjectReference Include="..\RabbitMQ.Next\RabbitMQ.Next.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Compile Remove="ContentAccessor.cs" />
-    <Compile Remove="DetachedMessageProperties.cs" />
-  </ItemGroup>
-
 </Project>
