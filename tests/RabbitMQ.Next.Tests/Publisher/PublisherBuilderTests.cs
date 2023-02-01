@@ -61,7 +61,7 @@ public class PublisherBuilderTests
     public void NoConfirms()
     {
         var builder = new PublisherBuilder();
-        ((IPublisherBuilder)builder).NoConfirm();
+        ((IPublisherBuilder)builder).NoConfirms();
 
         Assert.False(builder.PublisherConfirms);
     }

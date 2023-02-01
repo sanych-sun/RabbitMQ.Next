@@ -10,5 +10,5 @@ public interface IPublisherBuilder: ISerializationBuilder<IPublisherBuilder>
 
     IPublisherBuilder OnReturnedMessage(Func<IReturnedMessage,Task> returnedMessageHandler);
 
-    IPublisherBuilder NoConfirm();
+    IPublisherBuilder NoConfirms();
 }

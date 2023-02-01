@@ -42,7 +42,7 @@ internal sealed class PublisherBuilder : IPublisherBuilder
     }
 
 
-    IPublisherBuilder IPublisherBuilder.NoConfirm()
+    IPublisherBuilder IPublisherBuilder.NoConfirms()
     {
         this.PublisherConfirms = false;
         return this;
