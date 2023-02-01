@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <PackageId>RabbitMQ.Next.Serialization.Dynamic</PackageId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RabbitMQ.Next.Serialization\RabbitMQ.Next.Serialization.csproj" />
+  </ItemGroup>
+
+</Project>

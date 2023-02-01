@@ -89,7 +89,7 @@ using RabbitMQ.Next.Consumer;
 using RabbitMQ.Next.Serialization.PlainText;
 ...
 
-var consumer = connection.Consumer(
+await using var consumer = connection.Consumer( // IConsumer implements IAsyncDisposable, do not forget to dispose it 
   builder => builder
     .BindToQueue("test-queue")  // It's possible to bind to multiple queues
     .PrefetchCount(10)          // there are some more tweacks could be applied to consumer
@@ -110,7 +110,7 @@ using RabbitMQ.Next.Publisher;
 using RabbitMQ.Next.Serialization.PlainText;
 ...
 
-var publisher = connection.Publisher("amq.fanout",
+await using var publisher = connection.Publisher("amq.fanout", // IPublisher implements IAsyncDisposable, do not forget to dispose it
   builder => builder
     .UsePlainTextSerializer()); // It's required to specify the serializer, so library know how to format payload.
 
@@ -150,7 +150,7 @@ public class SampleDto
 
 ...
 // Small ammendments needed to publisher builder:
-var publisher = connection.Publisher("amq.fanout",
+await using var publisher = connection.Publisher("amq.fanout",
   message => message
     .UseSystemJsonSerializer()
     .UseAttributesInitializer());  

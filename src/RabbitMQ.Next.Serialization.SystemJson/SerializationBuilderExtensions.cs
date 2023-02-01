@@ -1,16 +1,12 @@
-using System;
 using System.Text.Json;
 
 namespace RabbitMQ.Next.Serialization.SystemJson;
 
 public static class SerializationBuilderExtensions
 {
-    public static TBuilder UseSystemJsonSerializer<TBuilder>(this TBuilder builder, Func<JsonSerializerOptions> configure = null)
-        where TBuilder : ISerializationBuilder<TBuilder>
+    public static TBuilder UseSystemJsonSerializer<TBuilder>(this ISerializationBuilder<TBuilder> builder, JsonSerializerOptions options = null)
     {
-        var options = configure?.Invoke() ?? new JsonSerializerOptions(JsonSerializerDefaults.General);
-        builder.UseSerializer(new SystemJsonSerializer(options));
-
-        return builder;
+        options ??= new JsonSerializerOptions(JsonSerializerDefaults.General);
+        return builder.UseSerializer(new SystemJsonSerializer(options));
     }
 }

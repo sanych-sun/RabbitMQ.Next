@@ -18,9 +18,9 @@ class Program
 
         Console.WriteLine("Connection opened");
 
-        var consumer = connection.Consumer(
+        await using var consumer = connection.Consumer(
             builder => builder
-                .BindToQueue("my-queue")
+                .BindToQueue("test-queue")
                 .BindToStream("first-stream", StreamOffset.First)
                 .PrefetchCount(10)
                 .UsePlainTextSerializer());

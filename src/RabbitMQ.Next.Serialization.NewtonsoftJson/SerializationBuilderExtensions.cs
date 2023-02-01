@@ -1,4 +1,3 @@
-using System;
 using System.Text;
 using Newtonsoft.Json;
 
@@ -6,16 +5,12 @@ namespace RabbitMQ.Next.Serialization.NewtonsoftJson;
 
 public static class SerializationBuilderExtensions
 {
-    public static TBuilder UseNewtonsoftJsonSerializer<TBuilder>(this TBuilder builder, Func<JsonSerializerSettings> configure = null)
-        where TBuilder : ISerializationBuilder<TBuilder>
-        => builder.UseNewtonsoftJsonSerializer(Encoding.UTF8, configure);
+    public static TBuilder UseNewtonsoftJsonSerializer<TBuilder>(this ISerializationBuilder<TBuilder> builder, JsonSerializerSettings options = null)
+        => builder.UseNewtonsoftJsonSerializer(Encoding.UTF8, options);
     
-    public static TBuilder UseNewtonsoftJsonSerializer<TBuilder>(this TBuilder builder, Encoding encoding, Func<JsonSerializerSettings> configure = null)
-        where TBuilder : ISerializationBuilder<TBuilder>
+    public static TBuilder UseNewtonsoftJsonSerializer<TBuilder>(this ISerializationBuilder<TBuilder> builder, Encoding encoding, JsonSerializerSettings options = null)
     {
-        var options = configure?.Invoke() ?? new JsonSerializerSettings();
-        builder.UseSerializer(new NewtonsoftJsonSerializer(options, encoding));
-
-        return builder;
+        options ??= new JsonSerializerSettings();
+        return builder.UseSerializer(new NewtonsoftJsonSerializer(options, encoding));
     }
 }

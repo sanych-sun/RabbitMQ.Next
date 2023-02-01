@@ -18,7 +18,7 @@ class Program
 
         Console.WriteLine("Connection opened");
 
-        var publisher = connection.Publisher("amq.fanout", builder => builder.UsePlainTextSerializer());
+        await using var publisher = connection.Publisher("amq.fanout", builder => builder.UsePlainTextSerializer());
 
         Console.WriteLine("Publisher created. Type any text to send it to the 'amq.fanout' exchange. Enter empty string to exit");
 

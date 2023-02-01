@@ -42,6 +42,7 @@ class Program
 
                 Console.WriteLine("--------------------------------------------------------------");
 
+                await topology.Queue.BindAsync("my-queue", "amq.fanout");
                 await topology.Queue.BindAsync("my-queue", "my-exchange", "cat");
                 await topology.Queue.BindAsync("my-queue", "my-exchange", "dog");
                 Console.WriteLine("my-queue was bound to my-exchange by 2 bindings.");
