@@ -23,7 +23,7 @@ Serializers:
 - [RabbitMQ.Next.Serialization.SystemJson](https://www.nuget.org/packages/RabbitMQ.Next.Serialization.SystemJson) – json formatter that uses System.Text.Json under the hood
 - [RabbitMQ.Next.Serialization.MessagePack](https://www.nuget.org/packages/RabbitMQ.Next.Serialization.MessagePack) – formatter for popular MessagePack serializer
 - [RabbitMQ.Next.Serialization.NewtonsoftJson](https://www.nuget.org/packages/RabbitMQ.Next.Serialization.NewtonsoftJson) – formatter for popular NewtonsoftJson serializer
-- [RabbitMQ.Next.Serialization.Dynamic](https://www.nuget.org/packages/RabbitMQ.Next.Serialization.Dynamic) – formatter for advanced scenarios, when actual serializer should be selected based on the message properties
+- [RabbitMQ.Next.Serialization.Dynamic](https://www.nuget.org/packages/RabbitMQ.Next.Serialization.Dynamic) – formatter for advanced scenarios, when actual serializer should be selected based on the message properties ([example](https://github.com/sanych-sun/RabbitMQ.Next/blob/master/docs/examples/RabbitMQ.Next.Examples.DynamicSerializer/Program.cs))
 
 More API and integration libraries are coming.
 
