@@ -36,7 +36,7 @@ internal class Connection : IConnectionInternal
             AllowSynchronousContinuations = false,
         });
             
-        this.State = ConnectionState.Pending;
+        this.State = ConnectionState.Closed;
         this.MemoryPool = memoryPool;
         this.channelPool = new ChannelPool(num => new Channel(this, num, this.connectionDetails.Negotiated.FrameMaxSize));
     }

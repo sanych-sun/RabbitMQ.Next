@@ -9,7 +9,7 @@ internal sealed class ConnectionFactory : IConnectionFactory
 {
     public static readonly IConnectionFactory Default = new ConnectionFactory();
 
-    public async Task<IConnection> ConnectAsync(ConnectionSettings settings, CancellationToken cancellation)
+    public async Task<IConnection> ConnectAsync(ConnectionSettings settings, CancellationToken cancellation = default)
     {
         // for best performance and code simplification buffer should fit entire frame
         // (frame header + frame payload + frame-end)
