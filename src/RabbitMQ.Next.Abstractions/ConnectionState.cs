@@ -2,11 +2,10 @@ namespace RabbitMQ.Next;
 
 public enum ConnectionState
 {
-    Pending = 0,
+    Closed = 0,
     Connecting = 1,
-    Configuring = 2,
-    Open = 3,
-    Blocked = 4,
+    Negotiating = 2,
+    Configuring = 3,
+    Open = 4,
     Broken = 5,
-    Closed = 6,
 }
