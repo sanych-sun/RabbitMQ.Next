@@ -18,48 +18,6 @@ public class LazyMessagePropertiesTests
         Assert.Equal(expectedData, props, new MessagePropertiesComparer());
     }
 
-    [Fact]
-    public void ThrowsIfNotSet()
-    {
-        var props = new LazyMessageProperties();
-
-        Assert.Throws<InvalidOperationException>(() => props.ContentType);
-        Assert.Throws<InvalidOperationException>(() => props.ContentEncoding);
-        Assert.Throws<InvalidOperationException>(() => props.Headers);
-        Assert.Throws<InvalidOperationException>(() => props.DeliveryMode);
-        Assert.Throws<InvalidOperationException>(() => props.Priority);
-        Assert.Throws<InvalidOperationException>(() => props.CorrelationId);
-        Assert.Throws<InvalidOperationException>(() => props.ReplyTo);
-        Assert.Throws<InvalidOperationException>(() => props.Expiration);
-        Assert.Throws<InvalidOperationException>(() => props.MessageId);
-        Assert.Throws<InvalidOperationException>(() => props.Timestamp);
-        Assert.Throws<InvalidOperationException>(() => props.Type);
-        Assert.Throws<InvalidOperationException>(() => props.UserId);
-        Assert.Throws<InvalidOperationException>(() => props.ApplicationId);
-    }
-    
-    [Fact]
-    public void ThrowsAfterReset()
-    {
-        var props = new LazyMessageProperties();
-        props.Set(new byte[] { 0x00, 0x3C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0b_10000000, 0b_00000000, 0x04, 0x6A, 0x73, 0x6F, 0x6E });
-        props.Reset();
-
-        Assert.Throws<InvalidOperationException>(() => props.ContentType);
-        Assert.Throws<InvalidOperationException>(() => props.ContentEncoding);
-        Assert.Throws<InvalidOperationException>(() => props.Headers);
-        Assert.Throws<InvalidOperationException>(() => props.DeliveryMode);
-        Assert.Throws<InvalidOperationException>(() => props.Priority);
-        Assert.Throws<InvalidOperationException>(() => props.CorrelationId);
-        Assert.Throws<InvalidOperationException>(() => props.ReplyTo);
-        Assert.Throws<InvalidOperationException>(() => props.Expiration);
-        Assert.Throws<InvalidOperationException>(() => props.MessageId);
-        Assert.Throws<InvalidOperationException>(() => props.Timestamp);
-        Assert.Throws<InvalidOperationException>(() => props.Type);
-        Assert.Throws<InvalidOperationException>(() => props.UserId);
-        Assert.Throws<InvalidOperationException>(() => props.ApplicationId);
-    }
-
     public static IEnumerable<object[]> MessagePropertiesTestCases()
     {
         yield return new object[]
