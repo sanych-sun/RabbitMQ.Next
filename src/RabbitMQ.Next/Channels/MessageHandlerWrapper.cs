@@ -16,6 +16,8 @@ internal class MessageHandlerWrapper<TMethod> : IMessageHandlerInternal
 
     public void ProcessMessage(ReadOnlyMemory<byte> methodArgs, PayloadAccessor payload)
     {
+        methodArgs = methodArgs[sizeof(uint)..];
+        
         var args = methodArgs.ParseMethodArgs<TMethod>();
         this.wrapped.Handle(args, payload);
     }

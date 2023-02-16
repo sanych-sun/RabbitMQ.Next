@@ -3,7 +3,6 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Extensions.ObjectPool;
 using RabbitMQ.Next.Exceptions;
@@ -26,7 +25,7 @@ internal sealed class Channel : IChannelInternal
     private readonly TaskCompletionSource<bool> channelCompletion;
     private readonly Dictionary<uint, IMessageHandlerInternal> methodHandlers = new();
     
-    private ulong lastDeliveryTag = 0;
+    private ulong lastDeliveryTag;
 
     public Channel(IConnectionInternal connection, ushort channelNumber, int frameMaxSize)
     {
@@ -37,13 +36,6 @@ internal sealed class Channel : IChannelInternal
         this.messagePropertiesPool = new DefaultObjectPool<LazyMessageProperties>(new LazyMessagePropertiesPolicy());
 
         this.channelCompletion = new TaskCompletionSource<bool>();
-        var receiveChannel = System.Threading.Channels.Channel.CreateUnbounded<(FrameType Type, MemoryBlock Payload)>(new UnboundedChannelOptions
-        {
-            SingleReader = true,
-            SingleWriter = true,
-            AllowSynchronousContinuations = false,
-        });
-        this.FrameWriter = receiveChannel.Writer;
 
         var channelCloseWait = new WaitMethodMessageHandler<CloseMethod>(default);
         channelCloseWait.WaitTask.ContinueWith(t =>
@@ -55,8 +47,6 @@ internal sealed class Channel : IChannelInternal
         });
 
         this.WithMessageHandler(channelCloseWait);
-
-        Task.Factory.StartNew(() => this.LoopAsync(receiveChannel.Reader), TaskCreationOptions.LongRunning);
     }
 
     public ushort ChannelNumber { get; }
@@ -129,8 +119,6 @@ internal sealed class Channel : IChannelInternal
         return messageDeliveryTag;
     }
 
-    public ChannelWriter<(FrameType Type, MemoryBlock Payload)> FrameWriter { get; }
-
     public bool TryComplete(Exception ex = null)
     {
         if (this.channelCompletion.Task.IsCompleted)
@@ -147,7 +135,7 @@ internal sealed class Channel : IChannelInternal
             this.channelCompletion.TrySetResult(true);
         }
 
-        this.FrameWriter.TryComplete();
+        //this.FrameWriter.TryComplete();
 
         foreach (var processor in this.methodHandlers.Values)
         {
@@ -187,84 +175,7 @@ internal sealed class Channel : IChannelInternal
         await this.SendAsync<CloseMethod, CloseOkMethod>(new CloseMethod(statusCode, description, failedMethodId));
         this.TryComplete(new ChannelException(statusCode, description, failedMethodId));
     }
-
-    private async Task LoopAsync(ChannelReader<(FrameType Type, MemoryBlock Payload)> reader)
-    {
-        try
-        {
-            while (!reader.Completion.IsCompleted)
-            {
-                if (!reader.TryRead(out var methodFrame))
-                {
-                    methodFrame = await reader.ReadAsync();
-                }
-
-                // 2. Get method Id
-                var methodArgsBytes = ((ReadOnlyMemory<byte>)methodFrame.Payload).GetMethodId(out var methodId);
-
-                // 3. Get content if exists
-                PayloadAccessor payload = null;
-                   
-                if (MethodRegistry.HasContent(methodId))
-                {
-                    // 3.1 Get content header frame
-                    if (!reader.TryRead(out var contentHeader))
-                    {
-                        contentHeader = await reader.ReadAsync();
-                    }
-
-                    // 3.2 Extract content body size
-                    ((ReadOnlySpan<byte>)contentHeader.Payload)[4..] // skip 2 obsolete shorts
-                        .Read(out ulong contentSize);
-
-                    MemoryBlock head = null;
-                    MemoryBlock current = null;
-                    long receivedContent = 0;
-                    while (receivedContent < (long)contentSize)
-                    {
-                        if (!reader.TryRead(out var frame))
-                        {
-                            frame = await reader.ReadAsync();
-                        }
-
-                        if (head == null)
-                        {
-                            head = frame.Payload;
-                            current = head;
-                        }
-                        else
-                        {
-                            current = current.Append(frame.Payload);    
-                        }
-
-                        receivedContent += frame.Payload.Length;
-                    }
-
-                    payload = new PayloadAccessor(this.messagePropertiesPool, this.memoryPool, contentHeader.Payload, head);
-                }
-
-                if (this.methodHandlers.TryGetValue((uint)methodId, out var handler))
-                {
-                    handler.ProcessMessage(methodArgsBytes, payload);
-                }
-                else
-                {
-                    // TODO: should throw on unhandled methods?
-                    if (payload != null)
-                    {
-                        ((IDisposable)payload).Dispose();
-                    }    
-                }
-
-                this.memoryPool.Return(methodFrame.Payload);
-            }
-        }
-        catch (Exception e)
-        {
-            this.TryComplete(e);
-        }
-    }
-
+    
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void ValidateState()
     {
@@ -272,5 +183,97 @@ internal sealed class Channel : IChannelInternal
         {
             throw new InvalidOperationException("Cannot perform operation on closed channel");
         }
+    }
+    
+    
+    // Incoming frame processing state
+    // TODO: consider removing to specialized class
+    private FrameType expectedFrameType = FrameType.Method;
+    private MethodId currentMethodId = MethodId.Unknown;
+    private MemoryBlock methodFrame;
+    private MemoryBlock contentHeader;
+    private long pendingContentSize;
+    private MemoryBlock contentBodyHead;
+    private MemoryBlock contentBodyTail;
+    
+    public void PushFrame(FrameType type, MemoryBlock payload)
+    {
+        if (type != this.expectedFrameType)
+        {
+            throw new InvalidOperationException($"Expected frame type is {this.expectedFrameType} but got {type}");
+        }
+
+        this.expectedFrameType = type switch
+        {
+            FrameType.Method => this.ParseMethodFrame(payload),
+            FrameType.ContentHeader => this.ParseContentHeaderFrame(payload),
+            FrameType.ContentBody => this.ParseContentBodyFrame(payload),
+            _ => throw new ArgumentOutOfRangeException(nameof(type), type, $"Non supported frame type: {type}"),
+        };
+
+        if (this.expectedFrameType == FrameType.None)
+        {
+            // do not wait for frames anymore, can execute the method
+            if (this.methodHandlers.TryGetValue((uint)this.currentMethodId, out var handler))
+            {
+                PayloadAccessor payloadAccessor = null;
+
+                if (this.contentHeader != null)
+                {
+                    payloadAccessor = new PayloadAccessor(this.messagePropertiesPool, this.memoryPool, this.contentHeader, this.contentBodyHead);
+                }
+                
+                handler.ProcessMessage(this.methodFrame, payloadAccessor);
+            }
+            else
+            {
+                // TODO: should throw on unhandled methods?
+            }
+
+            this.memoryPool.Return(this.methodFrame);
+            
+            // reset state
+            this.expectedFrameType = FrameType.Method;
+            this.currentMethodId = MethodId.Unknown;
+            this.methodFrame = null;
+            this.contentHeader = null;
+            this.pendingContentSize = 0;
+            this.contentBodyHead = null;
+            this.contentBodyTail = null;
+        }
+    }
+
+    private FrameType ParseMethodFrame(MemoryBlock payload)
+    {
+        ((ReadOnlyMemory<byte>)payload).GetMethodId(out this.currentMethodId);
+        this.methodFrame = payload;
+        
+        return (MethodRegistry.HasContent(this.currentMethodId)) ? FrameType.ContentHeader : FrameType.None;
+    }
+
+    private FrameType ParseContentHeaderFrame(MemoryBlock payload)
+    {
+        ((ReadOnlySpan<byte>)payload)[4..] // skip 2 obsolete shorts
+            .Read(out ulong contentSize);
+
+        this.pendingContentSize = (long)contentSize;
+        this.contentHeader = payload;
+        return FrameType.ContentBody;
+    }
+
+    private FrameType ParseContentBodyFrame(MemoryBlock payload)
+    {
+        if (this.contentBodyHead == null)
+        {
+            this.contentBodyHead = payload;
+            this.contentBodyTail = payload;
+        }
+        else
+        {
+            this.contentBodyTail = this.contentBodyTail.Append(payload);
+        }
+
+        this.pendingContentSize -= payload.Length;
+        return (this.pendingContentSize > 0) ? FrameType.ContentBody : FrameType.None;
     }
 }

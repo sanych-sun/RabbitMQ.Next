@@ -10,14 +10,14 @@ namespace RabbitMQ.Next.Consumer;
 
 internal sealed class DeliverMessageHandler : IMessageHandler<DeliverMethod>
 {
-    private readonly Func<IDeliveredMessage, Task> messageHandler;
+    private readonly Func<IDeliveredMessage, ValueTask> messageHandler;
     private readonly ISerializer serializer;
     private readonly IAcknowledgement acknowledgement;
     private readonly PoisonMessageMode onPoisonMessage;
     private readonly Channel<(DeliveredMessage message, ulong deliveryTag)> deliverChannel;
 
     public DeliverMessageHandler(
-        Func<IDeliveredMessage, Task> messageHandler,
+        Func<IDeliveredMessage, ValueTask> messageHandler,
         IAcknowledgement acknowledgement,
         ISerializer serializer,
         PoisonMessageMode onPoisonMessage,

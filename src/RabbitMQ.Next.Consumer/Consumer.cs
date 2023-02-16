@@ -46,7 +46,7 @@ internal class Consumer : IConsumer
     public async ValueTask DisposeAsync()
         => await this.CancelConsumeAsync();
 
-    public async Task ConsumeAsync(Func<IDeliveredMessage, Task> handler, CancellationToken cancellation)
+    public async Task ConsumeAsync(Func<IDeliveredMessage, ValueTask> handler, CancellationToken cancellation)
     {
         if (this.channel != null)
         {
@@ -94,7 +94,7 @@ internal class Consumer : IConsumer
         this.channel = null;
     }
 
-    private async Task InitConsumerAsync(Func<IDeliveredMessage, Task> handler)
+    private async Task InitConsumerAsync(Func<IDeliveredMessage, ValueTask> handler)
     {
         this.channel = await this.connection.OpenChannelAsync();
         this.acknowledgement = this.acknowledgementFactory(this.channel);

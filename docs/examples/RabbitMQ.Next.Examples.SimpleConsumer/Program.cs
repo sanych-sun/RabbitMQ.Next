@@ -21,7 +21,6 @@ class Program
         await using var consumer = connection.Consumer(
             builder => builder
                 .BindToQueue("test-queue")
-                .BindToStream("first-stream", StreamOffset.First)
                 .PrefetchCount(10)
                 .UsePlainTextSerializer());
 

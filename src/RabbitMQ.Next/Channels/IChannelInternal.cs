@@ -1,5 +1,4 @@
 using System;
-using System.Threading.Channels;
 using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Transport;
 
@@ -7,7 +6,7 @@ namespace RabbitMQ.Next.Channels;
 
 internal interface IChannelInternal : IChannel
 {
-    public ChannelWriter<(FrameType Type, MemoryBlock Payload)> FrameWriter { get; }
+    public void PushFrame(FrameType type, MemoryBlock payload);
 
     public bool TryComplete(Exception ex = null);
 

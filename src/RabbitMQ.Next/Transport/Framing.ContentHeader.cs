@@ -94,49 +94,10 @@ internal static partial class Framing
         flagsBuffer.Write((ushort)flags);
         return buffer;
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void SplitContentHeaderProperties(
-        this ReadOnlyMemory<byte> data,
-        out ReadOnlyMemory<byte> contentType,
-        out ReadOnlyMemory<byte> contentEncoding,
-        out ReadOnlyMemory<byte> headers,
-        out ReadOnlyMemory<byte> deliveryMode,
-        out ReadOnlyMemory<byte> priority,
-        out ReadOnlyMemory<byte> correlationId,
-        out ReadOnlyMemory<byte> replyTo,
-        out ReadOnlyMemory<byte> expiration,
-        out ReadOnlyMemory<byte> messageId,
-        out ReadOnlyMemory<byte> timestamp,
-        out ReadOnlyMemory<byte> type,
-        out ReadOnlyMemory<byte> userId,
-        out ReadOnlyMemory<byte> applicationId)
-    {
-        data = data[(sizeof(uint) + sizeof(ulong))..]; // have to skip content header prefix and contentSize
-        
-        data.Span.Read(out ushort fl);
-        var flags = (MessageFlags)fl;
-
-        data[sizeof(ushort)..]
-            .SplitStringProperty(out contentType, flags, MessageFlags.ContentType)
-            .SplitStringProperty(out contentEncoding, flags, MessageFlags.ContentEncoding)
-            .SplitDynamicProperty(out headers, flags, MessageFlags.Headers)
-            .SplitFixedProperty(out deliveryMode, flags, MessageFlags.DeliveryMode, sizeof(byte))
-            .SplitFixedProperty(out priority, flags, MessageFlags.Priority, sizeof(byte))
-            .SplitStringProperty(out correlationId, flags, MessageFlags.CorrelationId)
-            .SplitStringProperty(out replyTo, flags, MessageFlags.ReplyTo)
-            .SplitStringProperty(out expiration, flags, MessageFlags.Expiration)
-            .SplitStringProperty(out messageId, flags, MessageFlags.MessageId)
-            .SplitFixedProperty(out timestamp, flags, MessageFlags.Timestamp, sizeof(ulong))
-            .SplitStringProperty(out type, flags, MessageFlags.Type)
-            .SplitStringProperty(out userId, flags, MessageFlags.UserId)
-            .SplitStringProperty(out applicationId, flags, MessageFlags.ApplicationId);
-        
-    }
     
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static ReadOnlyMemory<byte> SplitStringProperty(this ReadOnlyMemory<byte> source, out ReadOnlyMemory<byte> value, MessageFlags flags, MessageFlags flag)
+    internal static ReadOnlyMemory<byte> SplitStringProperty(this ReadOnlyMemory<byte> source, out ReadOnlyMemory<byte> value, MessageFlags flags, MessageFlags flag)
     {
         if ((flags & flag) == MessageFlags.None)
         {
@@ -151,7 +112,7 @@ internal static partial class Framing
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static ReadOnlyMemory<byte> SplitDynamicProperty(this ReadOnlyMemory<byte> source, out ReadOnlyMemory<byte> value, MessageFlags flags, MessageFlags flag)
+    internal static ReadOnlyMemory<byte> SplitDynamicProperty(this ReadOnlyMemory<byte> source, out ReadOnlyMemory<byte> value, MessageFlags flags, MessageFlags flag)
     {
         if ((flags & flag) == MessageFlags.None)
         {
@@ -166,7 +127,7 @@ internal static partial class Framing
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static ReadOnlyMemory<byte> SplitFixedProperty(this ReadOnlyMemory<byte> source, out ReadOnlyMemory<byte> value, MessageFlags flags, MessageFlags flag, int size)
+    internal static ReadOnlyMemory<byte> SplitFixedProperty(this ReadOnlyMemory<byte> source, out ReadOnlyMemory<byte> value, MessageFlags flags, MessageFlags flag, int size)
     {
         if ((flags & flag) == MessageFlags.None)
         {

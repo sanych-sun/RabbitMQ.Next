@@ -15,7 +15,7 @@ internal static partial class Framing
             && typeRaw != (byte)FrameType.ContentBody
             && typeRaw != (byte)FrameType.Heartbeat)
         {
-            type = FrameType.Malformed;
+            type = FrameType.None;
             channel = 0;
             payloadSize = 0;
 

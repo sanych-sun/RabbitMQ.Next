@@ -43,7 +43,7 @@ public partial class FramingTests
         yield return new object[] { new byte[] { 2, 0, 2, 0, 0, 1, 0 }, FrameType.ContentHeader, 2, 256 };
         yield return new object[] { new byte[] { 3, 0, 3, 0, 0, 0, 42 }, FrameType.ContentBody, 3, 42 };
 
-        yield return new object[] { new byte[] { 0, 0, 3, 0, 0, 0, 42 }, FrameType.Malformed, 0, 0 };
-        yield return new object[] { new byte[] { 11, 0, 3, 0, 0, 0, 42 }, FrameType.Malformed, 0, 0 };
+        yield return new object[] { new byte[] { 0, 0, 3, 0, 0, 0, 42 }, FrameType.None, 0, 0 };
+        yield return new object[] { new byte[] { 11, 0, 3, 0, 0, 0, 42 }, FrameType.None, 0, 0 };
     }
 }

@@ -10,6 +10,6 @@ public static class ConsumerExtensions
         => consumer.ConsumeAsync(m =>
         {
             handler(m);
-            return Task.CompletedTask;
+            return default;
         }, cancellation);
 }

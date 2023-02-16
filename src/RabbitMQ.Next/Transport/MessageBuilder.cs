@@ -93,7 +93,7 @@ internal class MessageBuilder
         
         public void BeginFrame(FrameType type)
         {
-            if(this.currentFrameType != FrameType.Malformed)
+            if(this.currentFrameType != FrameType.None)
             {
                 throw new InvalidOperationException();
             }
@@ -105,7 +105,7 @@ internal class MessageBuilder
 
         public MemoryBlock Complete()
         {
-            if (this.currentFrameType != FrameType.Malformed)
+            if (this.currentFrameType != FrameType.None)
             {
                 throw new InvalidOperationException();
             }
@@ -127,7 +127,7 @@ internal class MessageBuilder
 
         public void EndFrame()
         {
-            if (this.currentFrameType == FrameType.Malformed)
+            if (this.currentFrameType == FrameType.None)
             {
                 throw new InvalidOperationException();
             }
@@ -142,7 +142,7 @@ internal class MessageBuilder
                 
                 // collapse empty content frames
                 this.currentOffset = this.currentFrameHeaderOffset;
-                this.currentFrameType = FrameType.Malformed;
+                this.currentFrameType = FrameType.None;
                 return;
             }
             
@@ -154,7 +154,7 @@ internal class MessageBuilder
             this.currentOffset += ProtocolConstants.FrameEndSize;
 
             this.totalPayloadSize += frameSize;
-            this.currentFrameType = FrameType.Malformed;
+            this.currentFrameType = FrameType.None;
         }
 
         public void Advance(int count)

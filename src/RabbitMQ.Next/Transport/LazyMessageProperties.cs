@@ -7,9 +7,6 @@ namespace RabbitMQ.Next.Transport;
 
 internal sealed class LazyMessageProperties : IMessageProperties
 {
-    private ReadOnlyMemory<byte> headerBytes;
-    private bool isSplit;
-
     private ReadOnlyMemory<byte> contentType;
     private ReadOnlyMemory<byte> contentEncoding;
     private ReadOnlyMemory<byte> headers;
@@ -26,15 +23,29 @@ internal sealed class LazyMessageProperties : IMessageProperties
 
     public void Set(ReadOnlyMemory<byte> data)
     {
-        this.headerBytes = data;
-        this.isSplit = false;
+        data = data[(sizeof(uint) + sizeof(ulong))..]; // have to skip content header prefix and contentSize
+        
+        data.Span.Read(out ushort fl);
+        var flags = (MessageFlags)fl;
+
+        data[sizeof(ushort)..]
+            .SplitStringProperty(out this.contentType, flags, MessageFlags.ContentType)
+            .SplitStringProperty(out this.contentEncoding, flags, MessageFlags.ContentEncoding)
+            .SplitDynamicProperty(out this.headers, flags, MessageFlags.Headers)
+            .SplitFixedProperty(out this.deliveryMode, flags, MessageFlags.DeliveryMode, sizeof(byte))
+            .SplitFixedProperty(out this.priority, flags, MessageFlags.Priority, sizeof(byte))
+            .SplitStringProperty(out this.correlationId, flags, MessageFlags.CorrelationId)
+            .SplitStringProperty(out this.replyTo, flags, MessageFlags.ReplyTo)
+            .SplitStringProperty(out this.expiration, flags, MessageFlags.Expiration)
+            .SplitStringProperty(out this.messageId, flags, MessageFlags.MessageId)
+            .SplitFixedProperty(out this.timestamp, flags, MessageFlags.Timestamp, sizeof(ulong))
+            .SplitStringProperty(out this.type, flags, MessageFlags.Type)
+            .SplitStringProperty(out this.userId, flags, MessageFlags.UserId)
+            .SplitStringProperty(out this.applicationId, flags, MessageFlags.ApplicationId);
     }
 
     public void Reset()
     {
-        this.headerBytes = ReadOnlyMemory<byte>.Empty;
-        this.isSplit = false;
-        
         this.contentType = ReadOnlyMemory<byte>.Empty;
         this.contentEncoding = ReadOnlyMemory<byte>.Empty;
         this.headers = ReadOnlyMemory<byte>.Empty;
@@ -50,151 +61,32 @@ internal sealed class LazyMessageProperties : IMessageProperties
         this.applicationId = ReadOnlyMemory<byte>.Empty;
     }
     
-    public string ContentType
-    {
-        get
-        {
-            this.EnsureMemorySplit();
-            return DecodeString(this.contentType);
-        }
-    }
+    public string ContentType => DecodeString(this.contentType); 
 
-    public string ContentEncoding
-    {
-        get
-        {
-            this.EnsureMemorySplit();
-            return DecodeString(this.contentEncoding);
-        }
-    }
+    public string ContentEncoding => DecodeString(this.contentEncoding); 
 
-    public IReadOnlyDictionary<string, object> Headers
-    {
-        get
-        {
-            this.EnsureMemorySplit();
-            return DecodeTable(this.headers);
-        }
-    }
+    public IReadOnlyDictionary<string, object> Headers => DecodeTable(this.headers); 
 
-    public DeliveryMode DeliveryMode
-    {
-        get
-        {
-            this.EnsureMemorySplit();
-            return (DeliveryMode)DecodeByte(this.deliveryMode);
-        }
-    }
+    public DeliveryMode DeliveryMode => (DeliveryMode)DecodeByte(this.deliveryMode);
 
-    public byte Priority
-    {
-        get
-        {
-            this.EnsureMemorySplit();
-            return DecodeByte(this.priority);
-        }
-    }
+    public byte Priority => DecodeByte(this.priority); 
+    
+    public string CorrelationId => DecodeString(this.correlationId);
 
-    public string CorrelationId
-    {
-        get
-        {
-            this.EnsureMemorySplit();
-            return DecodeString(this.correlationId);
-        }
-    }
+    public string ReplyTo => DecodeString(this.replyTo); 
 
-    public string ReplyTo
-    {
-        get
-        {
-            this.EnsureMemorySplit();
-            return DecodeString(this.replyTo);
-        }
-    }
+    public string Expiration => DecodeString(this.expiration); 
 
-    public string Expiration
-    {
-        get
-        {
-            this.EnsureMemorySplit();
-            return DecodeString(this.expiration);
-        }
-    }
+    public string MessageId => DecodeString(this.messageId); 
+    
+    public DateTimeOffset Timestamp => DecodeTimestamp(this.timestamp);
 
-    public string MessageId
-    {
-        get
-        {
-            this.EnsureMemorySplit();
-            return DecodeString(this.messageId);
-        }
-    }
+    public string Type => DecodeString(this.type); 
 
-    public DateTimeOffset Timestamp
-    {
-        get
-        {
-            this.EnsureMemorySplit();
-            return DecodeTimestamp(this.timestamp);
-        }
-    }
+    public string UserId => DecodeString(this.userId); 
 
-    public string Type
-    {
-        get
-        {
-            this.EnsureMemorySplit();
-            return DecodeString(this.type);
-        }
-    }
-
-    public string UserId
-    {
-        get
-        {
-            this.EnsureMemorySplit();
-            return DecodeString(this.userId);
-        }
-    }
-
-    public string ApplicationId
-    {
-        get
-        {
-            this.EnsureMemorySplit();
-            return DecodeString(this.applicationId);
-        }
-    }
-
-    private void EnsureMemorySplit()
-    {
-        if (this.isSplit)
-        {
-            return;
-        }
-
-        if (this.headerBytes.IsEmpty)
-        {
-            throw new InvalidOperationException();
-        }
-
-        this.headerBytes.SplitContentHeaderProperties(
-            out this.contentType,
-            out this.contentEncoding,
-            out this.headers,
-            out this.deliveryMode,
-            out this.priority,
-            out this.correlationId,
-            out this.replyTo,
-            out this.expiration,
-            out this.messageId,
-            out this.timestamp,
-            out this.type,
-            out this.userId,
-            out this.applicationId);
-        this.isSplit = true;
-    }
+    public string ApplicationId => DecodeString(this.applicationId); 
+    
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static string DecodeString(ReadOnlyMemory<byte> data)

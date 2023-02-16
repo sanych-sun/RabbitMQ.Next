@@ -170,7 +170,7 @@ internal class Connection : IConnectionInternal
                 // 2. Get buffer
                 var buffer = this.MemoryPool.Get();
 
-                // 3. Read payload into the buffer, allocate extra byte for FrameEndByte
+                // 3. Read payload into the buffer, reserve extra byte for FrameEndByte
                 buffer.Slice(0, ((int)payloadSize + 1));
                 this.socket.Receive(buffer);
                 
@@ -192,12 +192,8 @@ internal class Connection : IConnectionInternal
                 buffer.Slice(0, (int)payloadSize);
 
                 // 7. Write frame to appropriate channel
-                var targetChannel = (channel == ProtocolConstants.ConnectionChannel) ? this.connectionChannel.FrameWriter: this.channelPool.Get(channel).FrameWriter;
-                if (!targetChannel.TryWrite((frameType, buffer)))
-                {
-                    // should never get here, as channel suppose to be unbounded.
-                    throw new InvalidOperationException("Cannot write frame into the target channel");
-                }
+                var targetChannel = (channel == ProtocolConstants.ConnectionChannel) ? this.connectionChannel: this.channelPool.Get(channel);
+                targetChannel.PushFrame(frameType, buffer);
             }
         }
         catch (SocketException ex)
