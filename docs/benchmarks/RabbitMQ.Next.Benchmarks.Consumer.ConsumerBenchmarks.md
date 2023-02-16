@@ -22,5 +22,6 @@ IterationCount=10  RunStrategy=Monitoring  WarmupCount=5
 
 Each test consume 1000 messages, with 1kB payload.
 
-ConsumeBaseLibrary - consume using the official RabbitMQ-client, baseline benchmark.
-ConsumeAsync - consume via RabbitMQ.Next library.
+**ConsumeBaseLibrary** - consume using the official RabbitMQ-client, baseline benchmark.
+
+**ConsumeAsync** - consume via RabbitMQ.Next library.

@@ -35,6 +35,8 @@ IterationCount=10  RunStrategy=Monitoring  WarmupCount=5
 
 Each test performing publishing of 1000 messages, with payload size as per Parameters.
 
-PublishBaseLibrary - publish via the official RabbitMQ-client, baseline benchmark.
-PublishParallelAsync - publish via RabbitMQ.Next library via single publisher called from 10 threads in parallel.
-PublishAsync - publish via RabbitMQ.Next library via single publisher called from single thread.
+**PublishBaseLibrary** - publish via the official RabbitMQ-client, baseline benchmark.
+
+**PublishParallelAsync** - publish via RabbitMQ.Next library via single publisher called from 10 threads in parallel.
+
+**PublishAsync** - publish via RabbitMQ.Next library via single publisher called from single thread.
