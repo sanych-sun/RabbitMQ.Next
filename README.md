@@ -10,6 +10,19 @@ Many thanks for [JetBrains](https://jb.gg/OpenSourceSupport) for providing Open 
 
 RabbitMQ.Next is an experimental low-level RabbitMQ client for .Net with number of high-level APIs (created from scratch, no dependencies to another libraries, so no conflicts!). The motivation to create the library was to separate protocol-level code into a package that could be used as a base block for high-level API libraries. The second goal was to reduce allocation as much as possible and maintain reasonable performance. And the last it was sound cool to create a library that can work with sockets on low-level :grin:.
 
+# Performance and Allocation
+
+The library was created with idea of the minimal possible allocation. Here is performance and allocations comparison with official dotnet driver:
+
+## Publisher benchmarks [Find more details](https://github.com/sanych-sun/RabbitMQ.Next/blob/master/docs/benchmarks/RabbitMQ.Next.Benchmarks.Publisher.PublisherBenchmarks.md)
+
+![image](https://user-images.githubusercontent.com/31327136/219306147-b6d71333-22a5-4bc1-9a9c-5846432a9a01.png)
+
+## Consumer benchmarks [Find more details](https://github.com/sanych-sun/RabbitMQ.Next/blob/master/docs/benchmarks/RabbitMQ.Next.Benchmarks.Consumer.ConsumerBenchmarks.md)
+![image](https://user-images.githubusercontent.com/31327136/219307235-45c94e50-d251-429f-af2e-18a686f120e6.png)
+
+(not that beautiful as publisher one, but I'm working on it)
+
 ## Packages
 Too much packages instead of a single... explained:
 - [RabbitMQ.Next](https://www.nuget.org/packages/RabbitMQ.Next), [RabbitMQ.Next.Abstractions](https://www.nuget.org/packages/RabbitMQ.Next.Abstractions) – core library, contains most of the protocol-level implementations
