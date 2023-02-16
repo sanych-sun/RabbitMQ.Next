@@ -13,10 +13,10 @@ Intel Core i7-8550U CPU 1.80GHz (Kaby Lake R), 1 CPU, 8 logical and 4 physical c
 IterationCount=10  RunStrategy=Monitoring  WarmupCount=5  
 
 ```
-|             Method |      Mean | Ratio |     Gen 0 | Gen 1 | Gen 2 | Allocated |
-|------------------- |----------:|------:|----------:|------:|------:|----------:|
-| ConsumeBaseLibrary |  76.05 ms |  1.00 | 1000.0000 |     - |     - |      4 MB |
-|       ConsumeAsync | 121.48 ms |  1.60 |         - |     - |     - |      2 MB |
+|             Method | Mean [ms] | Ratio |      Gen0 | Allocated [KB] |
+|------------------- |----------:|------:|----------:|---------------:|
+| ConsumeBaseLibrary |     78.00 |  1.00 | 1000.0000 |        3924.03 |
+|       ConsumeAsync |    120.49 |  1.60 |         - |        2441.11 |   
 
 ## Legend
 
