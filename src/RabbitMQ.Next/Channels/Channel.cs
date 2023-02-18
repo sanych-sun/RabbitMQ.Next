@@ -3,6 +3,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Extensions.ObjectPool;
 using RabbitMQ.Next.Exceptions;
@@ -18,7 +19,7 @@ namespace RabbitMQ.Next.Channels;
 
 internal sealed class Channel : IChannelInternal
 {
-    private readonly IConnectionInternal connection;
+    private readonly ChannelWriter<MemoryBlock> socketWriter;
     private readonly ObjectPool<MemoryBlock> memoryPool;
     private readonly ObjectPool<LazyMessageProperties> messagePropertiesPool;
     private readonly ObjectPool<MessageBuilder> messageBuilderPool;
@@ -27,11 +28,11 @@ internal sealed class Channel : IChannelInternal
     
     private ulong lastDeliveryTag;
 
-    public Channel(IConnectionInternal connection, ushort channelNumber, int frameMaxSize)
+    public Channel(ChannelWriter<MemoryBlock> socketWriter, ObjectPool<MemoryBlock> memoryPool, ushort channelNumber, int frameMaxSize)
     {
-        this.connection = connection;
+        this.socketWriter = socketWriter;
+        this.memoryPool = memoryPool;
         this.ChannelNumber = channelNumber;
-        this.memoryPool = connection.MemoryPool;
         this.messageBuilderPool = new DefaultObjectPool<MessageBuilder>(new MessageBuilderPoolPolicy(this.memoryPool, channelNumber, frameMaxSize), 10);
         this.messagePropertiesPool = new DefaultObjectPool<LazyMessageProperties>(new LazyMessagePropertiesPolicy());
 
@@ -51,6 +52,8 @@ internal sealed class Channel : IChannelInternal
 
     public ushort ChannelNumber { get; }
 
+    public Task Completion => this.channelCompletion.Task;
+    
     public IDisposable WithMessageHandler<TMethod>(IMessageHandler<TMethod> handler)
         where TMethod : struct, IIncomingMethod
     {
@@ -61,7 +64,6 @@ internal sealed class Channel : IChannelInternal
         return new Disposer(() => this.methodHandlers.Remove(methodId));
     }
 
-    public Task Completion => this.channelCompletion.Task;
     public Task SendAsync<TRequest>(TRequest request, CancellationToken cancellation = default)
         where TRequest : struct, IOutgoingMethod
     {
@@ -80,7 +82,7 @@ internal sealed class Channel : IChannelInternal
             this.messageBuilderPool.Return(messageBuilder);   
         }
         
-        return this.connection.WriteToSocketAsync(memory, cancellation);
+        return this.WriteToSocketAsync(memory, cancellation).AsTask();
     }
 
     public async Task<TResponse> SendAsync<TRequest, TResponse>(TRequest request, CancellationToken cancellation = default)
@@ -114,7 +116,7 @@ internal sealed class Channel : IChannelInternal
             this.messageBuilderPool.Return(messageBuilder);   
         }
         
-        await this.connection.WriteToSocketAsync(memory, cancellation);
+        await this.WriteToSocketAsync(memory, cancellation);
         var messageDeliveryTag = Interlocked.Increment(ref this.lastDeliveryTag);
         return messageDeliveryTag;
     }
@@ -134,8 +136,6 @@ internal sealed class Channel : IChannelInternal
         {
             this.channelCompletion.TrySetResult(true);
         }
-
-        //this.FrameWriter.TryComplete();
 
         foreach (var processor in this.methodHandlers.Values)
         {
@@ -174,6 +174,16 @@ internal sealed class Channel : IChannelInternal
     {
         await this.SendAsync<CloseMethod, CloseOkMethod>(new CloseMethod(statusCode, description, failedMethodId));
         this.TryComplete(new ChannelException(statusCode, description, failedMethodId));
+    }
+    
+    private ValueTask WriteToSocketAsync(MemoryBlock memory, CancellationToken cancellation = default)
+    {
+        if (this.socketWriter.TryWrite(memory))
+        {
+            return default;
+        }
+
+        return this.socketWriter.WriteAsync(memory, cancellation);
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

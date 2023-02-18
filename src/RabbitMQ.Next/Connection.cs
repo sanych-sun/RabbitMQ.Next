@@ -15,7 +15,7 @@ using Channel = RabbitMQ.Next.Channels.Channel;
 
 namespace RabbitMQ.Next;
 
-internal class Connection : IConnectionInternal
+internal class Connection : IConnection
 {
     private readonly ChannelPool channelPool;
     private readonly ConnectionDetails connectionDetails;
@@ -38,22 +38,12 @@ internal class Connection : IConnectionInternal
             
         this.State = ConnectionState.Closed;
         this.MemoryPool = memoryPool;
-        this.channelPool = new ChannelPool(num => new Channel(this, num, this.connectionDetails.Negotiated.FrameMaxSize));
+        this.channelPool = new ChannelPool(num => new Channel(this.socketSender.Writer, this.MemoryPool, num, this.connectionDetails.Negotiated.FrameMaxSize));
     }
 
     public ConnectionState State { get; private set; }
 
     public ObjectPool<MemoryBlock> MemoryPool { get; }
-        
-    public Task WriteToSocketAsync(MemoryBlock memory, CancellationToken cancellation = default)
-    {
-        if (this.socketSender.Writer.TryWrite(memory))
-        {
-            return Task.CompletedTask;
-        }
-
-        return this.socketSender.Writer.WriteAsync(memory, cancellation).AsTask();
-    }
 
     public async Task<IChannel> OpenChannelAsync(CancellationToken cancellationToken = default)
     {
@@ -87,7 +77,7 @@ internal class Connection : IConnectionInternal
         Task.Factory.StartNew(() => this.ReceiveLoop(this.socketIoCancellation.Token), TaskCreationOptions.LongRunning);
         Task.Factory.StartNew(this.SendLoop, TaskCreationOptions.LongRunning);
 
-        this.connectionChannel = new Channel(this, ProtocolConstants.ConnectionChannel, ProtocolConstants.FrameMinSize);
+        this.connectionChannel = new Channel(this.socketSender.Writer, this.MemoryPool, ProtocolConstants.ConnectionChannel, ProtocolConstants.FrameMinSize);
         var connectionCloseWait = new WaitMethodMessageHandler<CloseMethod>(default);
         connectionCloseWait.WaitTask.ContinueWith(t =>
         {
@@ -128,13 +118,18 @@ internal class Connection : IConnectionInternal
         }
     }
 
-    private Task WriteToSocketAsync(ReadOnlyMemory<byte> bytes)
+    private ValueTask WriteToSocketAsync(ReadOnlyMemory<byte> bytes)
     {
         var memoryBlock = this.MemoryPool.Get();
         memoryBlock.Write(bytes.Span);
 
+        if (this.socketSender.Writer.TryWrite(memoryBlock))
+        {
+            return default;
+        }
+        
         // Should not return memory block here, it will be done in SendLoop
-        return this.WriteToSocketAsync(memoryBlock);
+        return this.socketSender.Writer.WriteAsync(memoryBlock);
     }
 
     private async Task SendLoop()

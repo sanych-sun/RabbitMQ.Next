@@ -27,8 +27,8 @@ internal class ChannelPool
         var channel = this.factory(channelNumber);
         channel.Completion.ContinueWith(_ =>
         {
-            this.ExchangeChannel(channel.ChannelNumber, null);
-            this.releasedItems.Enqueue(channel.ChannelNumber);
+            this.ExchangeChannel(channelNumber, null);
+            this.releasedItems.Enqueue(channelNumber);
         });
 
         this.ExchangeChannel(channelNumber, channel);
