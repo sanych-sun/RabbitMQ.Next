@@ -7,7 +7,7 @@ namespace RabbitMQ.Next.Channels;
 
 internal class ChannelPool
 {
-    private readonly ReaderWriterLockSlim channelsLock;
+    private readonly object syncRoot = new();
     private readonly Func<ushort, IChannelInternal> factory;
     private readonly ConcurrentQueue<ushort> releasedItems;
     private IChannelInternal[] channels;
@@ -16,9 +16,8 @@ internal class ChannelPool
     public ChannelPool(Func<ushort, IChannelInternal> factory, int initialPoolSize = 10)
     {
         this.factory = factory;
-        this.channelsLock = new ReaderWriterLockSlim();
         this.releasedItems = new ConcurrentQueue<ushort>();
-        this.channels = new IChannelInternal[initialPoolSize];
+        this.channels = new IChannelInternal[initialPoolSize]; 
     }
 
     public IChannelInternal Create()
@@ -27,11 +26,11 @@ internal class ChannelPool
         var channel = this.factory(channelNumber);
         channel.Completion.ContinueWith(_ =>
         {
-            this.ExchangeChannel(channelNumber, null);
+            this.AssignChannel(channelNumber, null);
             this.releasedItems.Enqueue(channelNumber);
         });
 
-        this.ExchangeChannel(channelNumber, channel);
+        this.AssignChannel(channelNumber, channel);
         return channel;
     }
 
@@ -71,10 +70,9 @@ internal class ChannelPool
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void ExchangeChannel(int index, IChannelInternal channel)
+    private void AssignChannel(int index, IChannelInternal channel)
     {
-        this.channelsLock.EnterWriteLock();
-        try
+        lock(this.syncRoot)
         {
             if (index >= this.channels.Length)
             {
@@ -84,10 +82,6 @@ internal class ChannelPool
             }
 
             this.channels[index] = channel;
-        }
-        finally
-        {
-            this.channelsLock.ExitWriteLock();
         }
     }
 }
