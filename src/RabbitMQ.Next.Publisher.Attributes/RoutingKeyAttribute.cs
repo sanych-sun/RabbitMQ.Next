@@ -18,5 +18,5 @@ public class RoutingKeyAttribute : MessageAttributeBase
     public string RoutingKey { get; }
 
     public override void Apply(IMessageBuilder message)
-        => message.RoutingKey(this.RoutingKey);
+        => message.SetRoutingKey(this.RoutingKey);
 }

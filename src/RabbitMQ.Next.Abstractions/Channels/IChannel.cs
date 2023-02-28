@@ -21,7 +21,7 @@ public interface IChannel
         where TRequest : struct, IOutgoingMethod
         where TResponse : struct, IIncomingMethod;
 
-    Task<ulong> PublishAsync<TState>(TState contentBuilderState, string exchange, string routingKey, IMessageProperties properties, Action<TState, IBufferWriter<byte>> payload, PublishFlags flags = PublishFlags.None, CancellationToken cancellation = default);
+    Task PublishAsync<TState>(TState contentBuilderState, string exchange, string routingKey, IMessageProperties properties, Action<TState, IBufferWriter<byte>> payload, PublishFlags flags = PublishFlags.None, CancellationToken cancellation = default);
 
     Task<TMethod> WaitAsync<TMethod>(CancellationToken cancellation = default)
         where TMethod : struct, IIncomingMethod;

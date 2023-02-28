@@ -13,5 +13,5 @@ public class PriorityAttribute : MessageAttributeBase
     public byte Priority { get; }
 
     public override void Apply(IMessageBuilder message)
-        => message.Priority(this.Priority);
+        => message.SetPriority(this.Priority);
 }

@@ -34,6 +34,6 @@ public class ExpirationAttributeTests
 
         attr.Apply(builder);
 
-        builder.Received().Expiration(TimeSpan.FromSeconds(value).TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
+        builder.Received().SetExpiration(TimeSpan.FromSeconds(value).TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
     }
 }

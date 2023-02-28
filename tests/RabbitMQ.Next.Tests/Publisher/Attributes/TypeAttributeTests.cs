@@ -34,6 +34,6 @@ public class TypeAttributeTests
 
         attr.Apply(builder);
 
-        builder.Received().Type(value);
+        builder.Received().SetType(value);
     }
 }

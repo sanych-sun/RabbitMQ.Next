@@ -24,6 +24,6 @@ public class PriorityAttributeTests
 
         attr.Apply(builder);
 
-        builder.Received().Priority(value);
+        builder.Received().SetPriority(value);
     }
 }

@@ -18,5 +18,5 @@ public class ReplyToAttribute : MessageAttributeBase
     public string ReplyTo { get; }
 
     public override void Apply(IMessageBuilder message)
-        => message.ReplyTo(this.ReplyTo);
+        => message.SetReplyTo(this.ReplyTo);
 }

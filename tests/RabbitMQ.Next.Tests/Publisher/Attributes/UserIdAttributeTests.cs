@@ -34,6 +34,6 @@ public class UserIdAttributeTests
 
         attr.Apply(builder);
 
-        builder.Received().UserId(value);
+        builder.Received().SetUserId(value);
     }
 }

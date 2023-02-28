@@ -34,6 +34,6 @@ public class ContentTypeAttributeTests
 
         attr.Apply(builder);
 
-        builder.Received().ContentType(value);
+        builder.Received().SetContentType(value);
     }
 }

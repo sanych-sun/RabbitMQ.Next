@@ -51,9 +51,9 @@ public class ConsumerBenchmarks
         {
             await publisher.PublishAsync(payload,
                 message => message
-                    .MessageId(Guid.NewGuid().ToString())
-                    .CorrelationId(Guid.NewGuid().ToString())
-                    .ApplicationId("testApp"));
+                    .SetMessageId(Guid.NewGuid().ToString())
+                    .SetCorrelationId(Guid.NewGuid().ToString())
+                    .SetApplicationId("testApp"));
         }
             
         await publisher.DisposeAsync();

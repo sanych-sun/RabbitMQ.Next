@@ -18,5 +18,5 @@ public class ContentEncodingAttribute : MessageAttributeBase
     public string ContentEncoding { get; }
 
     public override void Apply(IMessageBuilder message)
-        => message.ContentEncoding(this.ContentEncoding);
+        => message.SetContentEncoding(this.ContentEncoding);
 }

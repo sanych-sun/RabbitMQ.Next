@@ -34,6 +34,6 @@ public class ApplicationIdAttributeTests
 
         attr.Apply(builder);
 
-        builder.Received().ApplicationId(value);
+        builder.Received().SetApplicationId(value);
     }
 }

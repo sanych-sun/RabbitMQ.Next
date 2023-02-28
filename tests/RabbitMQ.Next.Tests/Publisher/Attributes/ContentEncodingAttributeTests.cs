@@ -34,7 +34,7 @@ public class ContentEncodingAttributeTests
 
         attr.Apply(builder);
 
-        builder.Received().ContentEncoding(value);
+        builder.Received().SetContentEncoding(value);
     }
 
 }

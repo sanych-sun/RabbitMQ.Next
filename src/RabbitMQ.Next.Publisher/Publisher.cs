@@ -1,11 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.ObjectPool;
 using RabbitMQ.Next.Channels;
-using RabbitMQ.Next.Messaging;
 using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Transport.Methods.Basic;
 using RabbitMQ.Next.Transport.Methods.Confirm;
@@ -15,16 +13,16 @@ namespace RabbitMQ.Next.Publisher;
 
 internal sealed class Publisher : IPublisher
 {
-    private readonly ObjectPool<MessageBuilder> messagePropsPool;
     private readonly SemaphoreSlim channelOpenSync = new(1,1);
+    private readonly ObjectPool<MessageBuilder> messagePropsPool;
     private readonly Func<IReturnedMessage,Task> returnedMessageHandler;
     private readonly IConnection connection;
     private readonly string exchange;
     private readonly ISerializer serializer;
-    private readonly IReadOnlyList<IMessageInitializer> transformers;
     private readonly ConfirmMessageHandler confirms;
+    private readonly Func<IPublishMiddleware, IPublishMiddleware> publishPipelineFactory;
     private bool isDisposed;
-
+    private IPublishMiddleware publishPipeline;
     private IChannel channel;
 
     public Publisher(
@@ -33,7 +31,7 @@ internal sealed class Publisher : IPublisher
         ISerializer serializer,
         string exchange,
         bool publisherConfirms,
-        IReadOnlyList<IMessageInitializer> transformers,
+        Func<IPublishMiddleware, IPublishMiddleware> publishPipelineFactory,
         Func<IReturnedMessage,Task> returnedMessageHandler)
     {
         this.connection = connection;
@@ -45,8 +43,8 @@ internal sealed class Publisher : IPublisher
 
         this.messagePropsPool = messagePropsPool;
         this.exchange = exchange;
-        this.transformers = transformers;
         this.returnedMessageHandler = returnedMessageHandler;
+        this.publishPipelineFactory = publishPipelineFactory;
     }
 
     public async ValueTask DisposeAsync()
@@ -66,57 +64,35 @@ internal sealed class Publisher : IPublisher
         }
     }
 
-    public Task PublishAsync<TContent>(TContent content, Action<IMessageBuilder> propertiesBuilder = null, PublishFlags flags = PublishFlags.None, CancellationToken cancellation = default)
+    public Task PublishAsync<TContent>(TContent content, Action<IMessageBuilder> propertiesBuilder = null, CancellationToken cancellation = default)
     {
         var properties = this.messagePropsPool.Get();
-        this.ApplyInitializers(content, properties);
         propertiesBuilder?.Invoke(properties);
 
-        return this.PublishAsyncInternal(content, properties, flags, cancellation);
+        return this.InternalPublishAsync(content, properties, cancellation);
     }
 
-    public Task PublishAsync<TState, TContent>(TState state, TContent content, Action<TState, IMessageBuilder> propertiesBuilder = null, PublishFlags flags = PublishFlags.None, CancellationToken cancellation = default)
+    public Task PublishAsync<TState, TContent>(TState state, TContent content, Action<TState, IMessageBuilder> propertiesBuilder = null, CancellationToken cancellation = default)
     {
         var properties = this.messagePropsPool.Get();
-        this.ApplyInitializers(content, properties);
         propertiesBuilder?.Invoke(state, properties);
 
-        return this.PublishAsyncInternal(content, properties, flags, cancellation);
+        return this.InternalPublishAsync(content, properties, cancellation);
     }
 
 
-    private async Task PublishAsyncInternal<TContent>(TContent content, MessageBuilder message, PublishFlags flags, CancellationToken cancellation)
+    private async Task InternalPublishAsync<TContent>(TContent content, MessageBuilder message, CancellationToken cancellation)
     {
-        this.CheckDisposed();
-
-        ulong deliveryTag;
         try
         {
-            var ch = this.channel;
-            if (ch == null || ch.Completion.IsCompleted)
-            {
-                ch = await this.InitializeAsync(cancellation);
-            }
-
-            deliveryTag = await ch.PublishAsync(
-                (content, this.serializer, message),
-                this.exchange, message.RoutingKey, message,
-                (st, buffer) => st.serializer.Serialize(st.message, st.content, buffer),
-                flags, cancellation);
+            this.CheckDisposed();
+            
+            var pipeline = this.publishPipeline ?? await this.InitializeAsync(cancellation);
+            await pipeline.InvokeAsync(content, message, cancellation);
         }
         finally
         {
             this.messagePropsPool.Return(message);
-        }
-
-        if (this.confirms != null)
-        {
-            var confirmed = await this.confirms.WaitForConfirmAsync(deliveryTag);
-            if (!confirmed)
-            {
-                // todo: provide some useful info here
-                throw new DeliveryFailedException();
-            }
         }
     }
 
@@ -129,21 +105,7 @@ internal sealed class Publisher : IPublisher
         }
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void ApplyInitializers<TContent>(TContent content, IMessageBuilder properties)
-    {
-        if (this.transformers == null || this.transformers.Count == 0)
-        {
-            return;
-        }
-
-        for (var i = 0; i < this.transformers.Count; i++)
-        {
-            this.transformers[i].Apply(content, properties);
-        }
-    }
-
-    internal async ValueTask<IChannel> InitializeAsync(CancellationToken cancellationToken = default)
+    internal async ValueTask<IPublishMiddleware> InitializeAsync(CancellationToken cancellationToken = default)
     {
         if (this.connection.State != ConnectionState.Open)
         {
@@ -154,12 +116,15 @@ internal sealed class Publisher : IPublisher
 
         try
         {
-            if (this.channel != null)
+            if (this.publishPipeline != null)
             {
-                return this.channel;
+                return this.publishPipeline;
             }
 
             this.channel = await this.connection.OpenChannelAsync(cancellationToken);
+            // ensure target exchange exists
+            await this.channel.SendAsync<DeclareMethod, DeclareOkMethod>(new DeclareMethod(this.exchange), cancellationToken);
+            
             this.channel.WithMessageHandler(new ReturnMessageHandler(this.returnedMessageHandler, this.serializer));
             if (this.confirms != null)
             {
@@ -167,13 +132,15 @@ internal sealed class Publisher : IPublisher
                 this.channel.WithMessageHandler<NackMethod>(this.confirms);
             }
 
-            await this.channel.SendAsync<DeclareMethod, DeclareOkMethod>(new DeclareMethod(this.exchange), cancellationToken);
             if (this.confirms != null)
             {
                 await this.channel.SendAsync<SelectMethod, SelectOkMethod>(new SelectMethod(), cancellationToken);
             }
 
-            return this.channel;
+            var publisher = new InternalMessagePublisher(this.channel, this.exchange, this.serializer, this.confirms);
+
+            this.publishPipeline = this.publishPipelineFactory(publisher);
+            return this.publishPipeline;
         }
         catch (Exception)
         {

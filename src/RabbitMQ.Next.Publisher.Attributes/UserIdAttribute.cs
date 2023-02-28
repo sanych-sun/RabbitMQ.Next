@@ -18,5 +18,5 @@ public class UserIdAttribute : MessageAttributeBase
     public string UserId { get; }
 
     public override void Apply(IMessageBuilder message)
-        => message.UserId(this.UserId);
+        => message.SetUserId(this.UserId);
 }

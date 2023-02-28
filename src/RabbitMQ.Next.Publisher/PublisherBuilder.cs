@@ -7,26 +7,25 @@ namespace RabbitMQ.Next.Publisher;
 
 internal sealed class PublisherBuilder : IPublisherBuilder
 {
-    private readonly List<IMessageInitializer> initializers = new();
-    private ISerializer serializer;
+    private readonly List<Func<IPublishMiddleware, IPublishMiddleware>> publishMiddlewares = new();
     private Func<IReturnedMessage,Task> returnedMessageHandler;
 
-    public IReadOnlyList<IMessageInitializer> Initializers => this.initializers;
+    public IReadOnlyList<Func<IPublishMiddleware, IPublishMiddleware>> PublishMiddlewares => this.publishMiddlewares;
         
     public Func<IReturnedMessage,Task> ReturnedMessageHandler => this.returnedMessageHandler;
 
-    public ISerializer Serializer => this.serializer;
+    public ISerializer Serializer { get; private set; }
 
     public bool PublisherConfirms { get; private set; } = true;
 
-    IPublisherBuilder IPublisherBuilder.UseMessageInitializer(IMessageInitializer initializer)
+    IPublisherBuilder IPublisherBuilder.UsePublishMiddleware(Func<IPublishMiddleware, IPublishMiddleware> middlewareFactory)
     {
-        if (initializer == null)
+        if (middlewareFactory == null)
         {
-            throw new ArgumentNullException(nameof(initializer));
+            throw new ArgumentNullException(nameof(middlewareFactory));
         }
 
-        this.initializers.Add(initializer);
+        this.publishMiddlewares.Add(middlewareFactory);
         return this;
     }
 
@@ -55,7 +54,7 @@ internal sealed class PublisherBuilder : IPublisherBuilder
             throw new ArgumentNullException(nameof(serializer));
         }
         
-        this.serializer = serializer;
+        this.Serializer = serializer;
         return this;
     }
 }

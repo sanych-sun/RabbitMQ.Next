@@ -18,5 +18,5 @@ public class ApplicationIdAttribute : MessageAttributeBase
     public string ApplicationId { get; }
 
     public override void Apply(IMessageBuilder message)
-        => message.ApplicationId(this.ApplicationId);
+        => message.SetApplicationId(this.ApplicationId);
 }

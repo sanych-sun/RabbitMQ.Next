@@ -39,16 +39,16 @@ class Program
 
         // The message will be formatted using MessagePackSerializer, because there is corresponding registration
         await publisher.PublishAsync(new DummyDto { SomeProperty = "some message with msgpack content type"}, 
-            message => message.ContentType("application/msgpack"));
+            message => message.SetContentType("application/msgpack"));
         
         // The message will be formatted using SystemJsonSerializer, because there is corresponding registration
         await publisher.PublishAsync(new DummyDto { SomeProperty = "some message with json content type"}, 
-            message => message.ContentType("application/json"));
+            message => message.SetContentType("application/json"));
         
         // The last two messages will be formatted using SystemJsonSerializer, because the last registered serializer accept any messages 
         await publisher.PublishAsync(new DummyDto { SomeProperty = "some message without specified content type"});
         await publisher.PublishAsync(new DummyDto { SomeProperty = "some message with unknown content type"}, 
-            message => message.ContentType("application/x-unknown"));
+            message => message.SetContentType("application/x-unknown"));
     }
 
     private static async Task ConsumeMessagesAsync(IConnection connection)

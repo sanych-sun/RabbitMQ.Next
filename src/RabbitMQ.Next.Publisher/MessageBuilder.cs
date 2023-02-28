@@ -4,7 +4,7 @@ using RabbitMQ.Next.Messaging;
 
 namespace RabbitMQ.Next.Publisher;
 
-public class MessageBuilder : IMessageBuilder, IMessageProperties
+public class MessageBuilder : IMessageBuilder
 {
     private readonly Dictionary<string, object> headers = new();
 
@@ -24,7 +24,13 @@ public class MessageBuilder : IMessageBuilder, IMessageProperties
         this.Type = null;
         this.UserId = null;
         this.ApplicationId = null;
+        this.Mandatory = false;
+        this.Immediate = false;
     }
+    
+    public bool Mandatory { get; private set; }
+    
+    public bool Immediate { get; private set; }
 
     public string RoutingKey { get; private set; }
 
@@ -55,23 +61,37 @@ public class MessageBuilder : IMessageBuilder, IMessageProperties
 
     public string ApplicationId { get; private set; }
 
-    IMessageBuilder IMessageBuilder.RoutingKey(string value)
+    public IMessageBuilder SetMandatory()
+    {
+        this.Mandatory = true;
+        return this;
+    }
+
+    public IMessageBuilder SetImmediate()
+    {
+        this.Immediate = true;
+        return this;
+    }
+
+    public IMessageBuilder SetRoutingKey(string value)
     {
         this.RoutingKey = value;
         return this;
     }
 
-    IMessageBuilder IMessageBuilder.ContentType(string value)
+    public IMessageBuilder SetContentType(string value)
     {
         this.ContentType = value;
         return this;
     }
 
-    IMessageBuilder IMessageBuilder.ContentEncoding(string value)
+    public IMessageBuilder SetContentEncoding(string value)
     {
         this.ContentEncoding = value;
         return this;
     }
+
+    public IMessageBuilder SetSetHeader(string key, object value) => throw new NotImplementedException();
 
     public IMessageBuilder SetHeader(string key, object value)
     {
@@ -84,61 +104,61 @@ public class MessageBuilder : IMessageBuilder, IMessageProperties
         return this;
     }
 
-    IMessageBuilder IMessageBuilder.DeliveryMode(DeliveryMode value)
+    public IMessageBuilder SetDeliveryMode(DeliveryMode value)
     {
         this.DeliveryMode = value;
         return this;
     }
 
-    IMessageBuilder IMessageBuilder.Priority(byte value)
+    public IMessageBuilder SetPriority(byte value)
     {
         this.Priority = value;
         return this;
     }
 
-    IMessageBuilder IMessageBuilder.CorrelationId(string value)
+    public IMessageBuilder SetCorrelationId(string value)
     {
         this.CorrelationId = value;
         return this;
     }
 
-    IMessageBuilder IMessageBuilder.ReplyTo(string value)
+    public IMessageBuilder SetReplyTo(string value)
     {
         this.ReplyTo = value;
         return this;
     }
 
-    IMessageBuilder IMessageBuilder.Expiration(string value)
+    public IMessageBuilder SetExpiration(string value)
     {
         this.Expiration = value;
         return this;
     }
 
-    IMessageBuilder IMessageBuilder.MessageId(string value)
+    public IMessageBuilder SetMessageId(string value)
     {
         this.MessageId = value;
         return this;
     }
 
-    IMessageBuilder IMessageBuilder.Timestamp(DateTimeOffset value)
+    public IMessageBuilder SetTimestamp(DateTimeOffset value)
     {
         this.Timestamp = value;
         return this;
     }
 
-    IMessageBuilder IMessageBuilder.Type(string value)
+    public IMessageBuilder SetType(string value)
     {
         this.Type = value;
         return this;
     }
 
-    IMessageBuilder IMessageBuilder.UserId(string value)
+    public IMessageBuilder SetUserId(string value)
     {
         this.UserId = value;
         return this;
     }
 
-    IMessageBuilder IMessageBuilder.ApplicationId(string value)
+    public IMessageBuilder SetApplicationId(string value)
     {
         this.ApplicationId = value;
         return this;

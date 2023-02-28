@@ -18,5 +18,5 @@ public class TypeAttribute : MessageAttributeBase
     public string Type { get; }
 
     public override void Apply(IMessageBuilder message)
-        => message.Type(this.Type);
+        => message.SetType(this.Type);
 }

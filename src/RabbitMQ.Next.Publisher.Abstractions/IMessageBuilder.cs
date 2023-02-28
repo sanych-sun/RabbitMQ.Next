@@ -3,33 +3,43 @@ using RabbitMQ.Next.Messaging;
 
 namespace RabbitMQ.Next.Publisher;
 
-public interface IMessageBuilder
+public interface IMessageBuilder: IMessageProperties
 {
-    IMessageBuilder RoutingKey(string routingKey);
+    string RoutingKey { get; }
+    
+    bool Mandatory { get; }
+    
+    bool Immediate { get; }
+    
+    IMessageBuilder SetMandatory();
+    
+    IMessageBuilder SetImmediate();
+    
+    IMessageBuilder SetRoutingKey(string routingKey);
 
-    IMessageBuilder ContentType(string contentType);
+    IMessageBuilder SetContentType(string contentType);
 
-    IMessageBuilder ContentEncoding(string contentEncoding);
+    IMessageBuilder SetContentEncoding(string contentEncoding);
 
     IMessageBuilder SetHeader(string key, object value);
 
-    IMessageBuilder DeliveryMode(DeliveryMode deliveryMode);
+    IMessageBuilder SetDeliveryMode(DeliveryMode deliveryMode);
 
-    IMessageBuilder Priority(byte priority);
+    IMessageBuilder SetPriority(byte priority);
 
-    IMessageBuilder CorrelationId(string correlationId);
+    IMessageBuilder SetCorrelationId(string correlationId);
 
-    IMessageBuilder ReplyTo(string replyTo);
+    IMessageBuilder SetReplyTo(string replyTo);
 
-    IMessageBuilder Expiration(string expiration);
+    IMessageBuilder SetExpiration(string expiration);
 
-    IMessageBuilder MessageId(string messageId);
+    IMessageBuilder SetMessageId(string messageId);
 
-    IMessageBuilder Timestamp(DateTimeOffset timestamp);
+    IMessageBuilder SetTimestamp(DateTimeOffset timestamp);
 
-    IMessageBuilder Type(string type);
+    IMessageBuilder SetType(string type);
 
-    IMessageBuilder UserId(string userId);
+    IMessageBuilder SetUserId(string userId);
 
-    IMessageBuilder ApplicationId(string applicationId);
+    IMessageBuilder SetApplicationId(string applicationId);
 }

@@ -34,7 +34,7 @@ public class DeliveryModeAttributeTests
 
         attr.Apply(builder);
 
-        builder.Received().DeliveryMode(value);
+        builder.Received().SetDeliveryMode(value);
     }
 
 }

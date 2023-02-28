@@ -9,25 +9,24 @@ namespace RabbitMQ.Next.Tests.Publisher;
 public class PublisherBuilderTests
 {
     [Fact]
-    public void CanRegisterTransformers()
+    public void CanRegisterMiddleware()
     {
-        var transformer1 = Substitute.For<IMessageInitializer>();
-        var transformer2 = Substitute.For<IMessageInitializer>();
+        var middleware1 = Substitute.For<Func<IPublishMiddleware, IPublishMiddleware>>();
+        var middleware2 = Substitute.For<Func<IPublishMiddleware, IPublishMiddleware>>();
 
         var builder = new PublisherBuilder();
-        ((IPublisherBuilder) builder).UseMessageInitializer(transformer1);
-        ((IPublisherBuilder) builder).UseMessageInitializer(transformer2);
-
-        Assert.Contains(transformer1, builder.Initializers);
-        Assert.Contains(transformer2, builder.Initializers);
+        ((IPublisherBuilder) builder).UsePublishMiddleware(middleware1);
+        ((IPublisherBuilder) builder).UsePublishMiddleware(middleware2);
+        
+        Assert.Equal(new[] { middleware1, middleware2}, builder.PublishMiddlewares);
     }
 
     [Fact]
-    public void ThrowsOnInvalidTransformer()
+    public void ThrowsOnInvalidMiddleware()
     {
         var builder = new PublisherBuilder();
             
-        Assert.Throws<ArgumentNullException>(() => ((IPublisherBuilder)builder).UseMessageInitializer(null));
+        Assert.Throws<ArgumentNullException>(() => ((IPublisherBuilder)builder).UsePublishMiddleware(null));
     }
         
     [Fact]

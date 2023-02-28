@@ -49,7 +49,7 @@ public class PublisherBenchmarks
                 {
                     var data = parameters.Messages[i];
                     await publisher.PublishAsync(data, data.Payload,
-                        (state, message) => message.CorrelationId(state.CorrelationId));
+                        (state, message) => message.SetCorrelationId(state.CorrelationId));
                 }
             })
             .ToArray());
@@ -67,7 +67,7 @@ public class PublisherBenchmarks
         {
             var data = parameters.Messages[i];
             await publisher.PublishAsync(data, data.Payload,
-                (state, message) => message.CorrelationId(state.CorrelationId));
+                (state, message) => message.SetCorrelationId(state.CorrelationId));
         }
 
         await publisher.DisposeAsync();

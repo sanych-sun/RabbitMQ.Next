@@ -26,8 +26,6 @@ internal sealed class Channel : IChannelInternal
     private readonly TaskCompletionSource<bool> channelCompletion;
     private readonly Dictionary<uint, IMessageHandlerInternal> methodHandlers = new();
     
-    private ulong lastDeliveryTag;
-
     public Channel(ChannelWriter<MemoryBlock> socketWriter, ObjectPool<MemoryBlock> memoryPool, ushort channelNumber, int frameMaxSize)
     {
         this.socketWriter = socketWriter;
@@ -93,7 +91,7 @@ internal sealed class Channel : IChannelInternal
         return await waitTask;
     }
 
-    public async Task<ulong> PublishAsync<TState>(
+    public Task PublishAsync<TState>(
         TState contentBuilderState, string exchange, string routingKey,
         IMessageProperties properties, Action<TState, IBufferWriter<byte>> contentBuilder,
         PublishFlags flags = PublishFlags.None, CancellationToken cancellation = default)
@@ -116,9 +114,7 @@ internal sealed class Channel : IChannelInternal
             this.messageBuilderPool.Return(messageBuilder);   
         }
         
-        await this.WriteToSocketAsync(memory, cancellation);
-        var messageDeliveryTag = Interlocked.Increment(ref this.lastDeliveryTag);
-        return messageDeliveryTag;
+        return this.WriteToSocketAsync(memory, cancellation).AsTask();
     }
 
     public bool TryComplete(Exception ex = null)

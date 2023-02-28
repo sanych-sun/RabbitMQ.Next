@@ -8,13 +8,20 @@ namespace RabbitMQ.Next.Tests.Publisher;
 
 public class MessageBuilderTests
 {
+    [Fact]
+    public void RoutingKeyDefaultValue()
+    {
+        var messageBuilder = new MessageBuilder();
+        Assert.Null(messageBuilder.RoutingKey);
+    }
+    
     [Theory]
     [InlineData("routing")]
     public void CanSetRoutingKey(string val)
     {
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).RoutingKey(val);
+        ((IMessageBuilder)messageBuilder).SetRoutingKey(val);
 
         Assert.Equal(val, messageBuilder.RoutingKey);
     }
@@ -29,8 +36,8 @@ public class MessageBuilderTests
     {
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).RoutingKey(initialValue);
-        ((IMessageBuilder)messageBuilder).RoutingKey(value);
+        ((IMessageBuilder)messageBuilder).SetRoutingKey(initialValue);
+        ((IMessageBuilder)messageBuilder).SetRoutingKey(value);
 
         Assert.Equal(value, messageBuilder.RoutingKey);
     }
@@ -40,19 +47,26 @@ public class MessageBuilderTests
     {
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).RoutingKey("val");
+        ((IMessageBuilder)messageBuilder).SetRoutingKey("val");
         messageBuilder.Reset();
 
         Assert.Null(messageBuilder.RoutingKey);
     }
         
+    [Fact]
+    public void ContentTypeDefaultValue()
+    {
+        var messageBuilder = new MessageBuilder();
+        Assert.Null(messageBuilder.ContentType);
+    }
+    
     [Theory]
     [InlineData("content")]
     public void CanSetContentType(string val)
     {
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).ContentType(val);
+        ((IMessageBuilder)messageBuilder).SetContentType(val);
 
         Assert.Equal(val, messageBuilder.ContentType);
     }
@@ -67,8 +81,8 @@ public class MessageBuilderTests
     {
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).ContentType(initialValue);
-        ((IMessageBuilder)messageBuilder).ContentType(value);
+        ((IMessageBuilder)messageBuilder).SetContentType(initialValue);
+        ((IMessageBuilder)messageBuilder).SetContentType(value);
 
         Assert.Equal(value, messageBuilder.ContentType);
     }
@@ -78,19 +92,26 @@ public class MessageBuilderTests
     {
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).ContentType("val");
+        ((IMessageBuilder)messageBuilder).SetContentType("val");
         messageBuilder.Reset();
 
         Assert.Null(messageBuilder.ContentType);
     }
-        
+    
+    [Fact]
+    public void ContentEncodingDefaultValue()
+    {
+        var messageBuilder = new MessageBuilder();
+        Assert.Null(messageBuilder.ContentEncoding);
+    }
+    
     [Theory]
     [InlineData("encoding")]
     public void CanSetContentEncoding(string val)
     {
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).ContentEncoding(val);
+        ((IMessageBuilder)messageBuilder).SetContentEncoding(val);
 
         Assert.Equal(val, messageBuilder.ContentEncoding);
     }
@@ -105,8 +126,8 @@ public class MessageBuilderTests
     {
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).ContentEncoding(initialValue);
-        ((IMessageBuilder)messageBuilder).ContentEncoding(value);
+        ((IMessageBuilder)messageBuilder).SetContentEncoding(initialValue);
+        ((IMessageBuilder)messageBuilder).SetContentEncoding(value);
 
         Assert.Equal(value, messageBuilder.ContentEncoding);
     }
@@ -116,12 +137,19 @@ public class MessageBuilderTests
     {
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).ContentEncoding("val");
+        ((IMessageBuilder)messageBuilder).SetContentEncoding("val");
         messageBuilder.Reset();
 
         Assert.Null(messageBuilder.ContentEncoding);
     }
 
+    [Fact]
+    public void HeadersDefaultValue()
+    {
+        var messageBuilder = new MessageBuilder();
+        Assert.Null(messageBuilder.Headers);
+    }
+    
     [Theory]
     [InlineData("key", "value")]
     public void CanSetHeader(string key, string value)
@@ -185,13 +213,21 @@ public class MessageBuilderTests
         Assert.Null(messageBuilder.Headers);
     }
         
+    [Fact]
+    public void DeliveryModeDefaultValue()
+    {
+        var messageBuilder = new MessageBuilder();
+        Assert.Equal(DeliveryMode.Persistent, messageBuilder.DeliveryMode);
+    }
+    
     [Theory]
+    [InlineData(DeliveryMode.NonPersistent)]
     [InlineData(DeliveryMode.Persistent)]
     public void CanSetDeliveryMode(DeliveryMode val)
     {
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).DeliveryMode(val);
+        ((IMessageBuilder)messageBuilder).SetDeliveryMode(val);
 
         Assert.Equal(val, messageBuilder.DeliveryMode);
     }
@@ -205,8 +241,8 @@ public class MessageBuilderTests
     {
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).DeliveryMode(initialValue);
-        ((IMessageBuilder)messageBuilder).DeliveryMode(value);
+        ((IMessageBuilder)messageBuilder).SetDeliveryMode(initialValue);
+        ((IMessageBuilder)messageBuilder).SetDeliveryMode(value);
 
         Assert.Equal(value, messageBuilder.DeliveryMode);
     }
@@ -216,19 +252,26 @@ public class MessageBuilderTests
     {
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).DeliveryMode(DeliveryMode.NonPersistent);
+        ((IMessageBuilder)messageBuilder).SetDeliveryMode(DeliveryMode.NonPersistent);
         messageBuilder.Reset();
 
         Assert.Equal(DeliveryMode.Persistent, messageBuilder.DeliveryMode);
     }
         
+    [Fact]
+    public void PriorityDefaultValue()
+    {
+        var messageBuilder = new MessageBuilder();
+        Assert.Equal(0, messageBuilder.Priority);
+    }
+    
     [Theory]
     [InlineData(5)]
     public void CanSetPriority(byte val)
     {
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).Priority(val);
+        ((IMessageBuilder)messageBuilder).SetPriority(val);
 
         Assert.Equal(val, messageBuilder.Priority);
     }
@@ -241,8 +284,8 @@ public class MessageBuilderTests
     {
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).Priority(initialValue);
-        ((IMessageBuilder)messageBuilder).Priority(value);
+        ((IMessageBuilder)messageBuilder).SetPriority(initialValue);
+        ((IMessageBuilder)messageBuilder).SetPriority(value);
 
         Assert.Equal(value, messageBuilder.Priority);
     }
@@ -252,10 +295,17 @@ public class MessageBuilderTests
     {
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).Priority(42);
+        ((IMessageBuilder)messageBuilder).SetPriority(42);
         messageBuilder.Reset();
 
         Assert.Equal(0, messageBuilder.Priority);
+    }
+    
+    [Fact]
+    public void CorrelationIdDefaultValue()
+    {
+        var messageBuilder = new MessageBuilder();
+        Assert.Null(messageBuilder.CorrelationId);
     }
         
     [Theory]
@@ -264,7 +314,7 @@ public class MessageBuilderTests
     {
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).CorrelationId(val);
+        ((IMessageBuilder)messageBuilder).SetCorrelationId(val);
 
         Assert.Equal(val, messageBuilder.CorrelationId);
     }
@@ -279,8 +329,8 @@ public class MessageBuilderTests
     {
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).CorrelationId(initialValue);
-        ((IMessageBuilder)messageBuilder).CorrelationId(value);
+        ((IMessageBuilder)messageBuilder).SetCorrelationId(initialValue);
+        ((IMessageBuilder)messageBuilder).SetCorrelationId(value);
 
         Assert.Equal(value, messageBuilder.CorrelationId);
     }
@@ -290,10 +340,17 @@ public class MessageBuilderTests
     {
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).CorrelationId("val");
+        ((IMessageBuilder)messageBuilder).SetCorrelationId("val");
         messageBuilder.Reset();
 
         Assert.Null(messageBuilder.CorrelationId);
+    }
+    
+    [Fact]
+    public void ReplyToDefaultValue()
+    {
+        var messageBuilder = new MessageBuilder();
+        Assert.Null(messageBuilder.ReplyTo);
     }
         
     [Theory]
@@ -302,7 +359,7 @@ public class MessageBuilderTests
     {
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).ReplyTo(val);
+        ((IMessageBuilder)messageBuilder).SetReplyTo(val);
 
         Assert.Equal(val, messageBuilder.ReplyTo);
     }
@@ -317,8 +374,8 @@ public class MessageBuilderTests
     {
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).ReplyTo(initialValue);
-        ((IMessageBuilder)messageBuilder).ReplyTo(value);
+        ((IMessageBuilder)messageBuilder).SetReplyTo(initialValue);
+        ((IMessageBuilder)messageBuilder).SetReplyTo(value);
 
         Assert.Equal(value, messageBuilder.ReplyTo);
     }
@@ -328,10 +385,17 @@ public class MessageBuilderTests
     {
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).ReplyTo("val");
+        ((IMessageBuilder)messageBuilder).SetReplyTo("val");
         messageBuilder.Reset();
 
         Assert.Null(messageBuilder.ReplyTo);
+    }
+    
+    [Fact]
+    public void ExpirationDefaultValue()
+    {
+        var messageBuilder = new MessageBuilder();
+        Assert.Null(messageBuilder.Expiration);
     }
         
     [Theory]
@@ -340,7 +404,7 @@ public class MessageBuilderTests
     {
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).Expiration(val);
+        ((IMessageBuilder)messageBuilder).SetExpiration(val);
 
         Assert.Equal(val, messageBuilder.Expiration);
     }
@@ -355,8 +419,8 @@ public class MessageBuilderTests
     {
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).Expiration(initialValue);
-        ((IMessageBuilder)messageBuilder).Expiration(value);
+        ((IMessageBuilder)messageBuilder).SetExpiration(initialValue);
+        ((IMessageBuilder)messageBuilder).SetExpiration(value);
 
         Assert.Equal(value, messageBuilder.Expiration);
     }
@@ -366,10 +430,17 @@ public class MessageBuilderTests
     {
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).Expiration("val");
+        ((IMessageBuilder)messageBuilder).SetExpiration("val");
         messageBuilder.Reset();
 
         Assert.Null(messageBuilder.Expiration);
+    }
+    
+    [Fact]
+    public void MessageIdDefaultValue()
+    {
+        var messageBuilder = new MessageBuilder();
+        Assert.Null(messageBuilder.MessageId);
     }
         
     [Theory]
@@ -378,7 +449,7 @@ public class MessageBuilderTests
     {
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).MessageId(val);
+        ((IMessageBuilder)messageBuilder).SetMessageId(val);
 
         Assert.Equal(val, messageBuilder.MessageId);
     }
@@ -393,8 +464,8 @@ public class MessageBuilderTests
     {
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).MessageId(initialValue);
-        ((IMessageBuilder)messageBuilder).MessageId(value);
+        ((IMessageBuilder)messageBuilder).SetMessageId(initialValue);
+        ((IMessageBuilder)messageBuilder).SetMessageId(value);
 
         Assert.Equal(value, messageBuilder.MessageId);
     }
@@ -404,19 +475,26 @@ public class MessageBuilderTests
     {
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).MessageId("val");
+        ((IMessageBuilder)messageBuilder).SetMessageId("val");
         messageBuilder.Reset();
 
         Assert.Null(messageBuilder.MessageId);
     }
         
     [Fact]
+    public void TimestampDefaultValue()
+    {
+        var messageBuilder = new MessageBuilder();
+        Assert.Equal(DateTimeOffset.MinValue,  messageBuilder.Timestamp);
+    }
+    
+    [Fact]
     public void CanSetTimestamp()
     {
         var ts = DateTimeOffset.UtcNow;
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).Timestamp(ts);
+        ((IMessageBuilder)messageBuilder).SetTimestamp(ts);
 
         Assert.Equal(ts, messageBuilder.Timestamp);
     }
@@ -427,8 +505,8 @@ public class MessageBuilderTests
     {
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).Timestamp(initialValue);
-        ((IMessageBuilder)messageBuilder).Timestamp(value);
+        ((IMessageBuilder)messageBuilder).SetTimestamp(initialValue);
+        ((IMessageBuilder)messageBuilder).SetTimestamp(value);
 
         Assert.Equal(value, messageBuilder.Timestamp);
     }
@@ -445,19 +523,26 @@ public class MessageBuilderTests
     {
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).Timestamp(DateTimeOffset.UtcNow);
+        ((IMessageBuilder)messageBuilder).SetTimestamp(DateTimeOffset.UtcNow);
         messageBuilder.Reset();
 
         Assert.Equal(default, messageBuilder.Timestamp);
     }
         
+    [Fact]
+    public void TypeDefaultValue()
+    {
+        var messageBuilder = new MessageBuilder();
+        Assert.Null(messageBuilder.Type);
+    }
+    
     [Theory]
     [InlineData("type")]
     public void CanSetType(string val)
     {
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).Type(val);
+        ((IMessageBuilder)messageBuilder).SetType(val);
 
         Assert.Equal(val, messageBuilder.Type);
     }
@@ -472,8 +557,8 @@ public class MessageBuilderTests
     {
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).Type(initialValue);
-        ((IMessageBuilder)messageBuilder).Type(value);
+        ((IMessageBuilder)messageBuilder).SetType(initialValue);
+        ((IMessageBuilder)messageBuilder).SetType(value);
 
         Assert.Equal(value, messageBuilder.Type);
     }
@@ -483,19 +568,26 @@ public class MessageBuilderTests
     {
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).Type("val");
+        ((IMessageBuilder)messageBuilder).SetType("val");
         messageBuilder.Reset();
 
         Assert.Null(messageBuilder.Type);
     }
         
+    [Fact]
+    public void UserIdDefaultValue()
+    {
+        var messageBuilder = new MessageBuilder();
+        Assert.Null(messageBuilder.UserId);
+    }
+    
     [Theory]
     [InlineData("userId")]
     public void CanSetUserId(string val)
     {
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).UserId(val);
+        ((IMessageBuilder)messageBuilder).SetUserId(val);
 
         Assert.Equal(val, messageBuilder.UserId);
     }
@@ -510,8 +602,8 @@ public class MessageBuilderTests
     {
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).UserId(initialValue);
-        ((IMessageBuilder)messageBuilder).UserId(value);
+        ((IMessageBuilder)messageBuilder).SetUserId(initialValue);
+        ((IMessageBuilder)messageBuilder).SetUserId(value);
 
         Assert.Equal(value, messageBuilder.UserId);
     }
@@ -521,19 +613,26 @@ public class MessageBuilderTests
     {
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).UserId("val");
+        ((IMessageBuilder)messageBuilder).SetUserId("val");
         messageBuilder.Reset();
 
         Assert.Null(messageBuilder.UserId);
     }
         
+    [Fact]
+    public void ApplicationIdDefaultValue()
+    {
+        var messageBuilder = new MessageBuilder();
+        Assert.Null(messageBuilder.ApplicationId);
+    }
+    
     [Theory]
     [InlineData("appId")]
     public void CanSetApplicationId(string val)
     {
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).ApplicationId(val);
+        ((IMessageBuilder)messageBuilder).SetApplicationId(val);
 
         Assert.Equal(val, messageBuilder.ApplicationId);
     }
@@ -548,8 +647,8 @@ public class MessageBuilderTests
     {
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).ApplicationId(initialValue);
-        ((IMessageBuilder)messageBuilder).ApplicationId(value);
+        ((IMessageBuilder)messageBuilder).SetApplicationId(initialValue);
+        ((IMessageBuilder)messageBuilder).SetApplicationId(value);
 
         Assert.Equal(value, messageBuilder.ApplicationId);
     }
@@ -559,9 +658,65 @@ public class MessageBuilderTests
     {
         var messageBuilder = new MessageBuilder();
 
-        ((IMessageBuilder)messageBuilder).ApplicationId("val");
+        ((IMessageBuilder)messageBuilder).SetApplicationId("val");
         messageBuilder.Reset();
 
         Assert.Null(messageBuilder.ApplicationId);
+    }
+    
+    [Fact]
+    public void MandatoryDefaultValue()
+    {
+        var messageBuilder = new MessageBuilder();
+        Assert.False(messageBuilder.Mandatory);
+    }
+    
+    [Fact]
+    public void CanSetMandatory()
+    {
+        var messageBuilder = new MessageBuilder();
+
+        ((IMessageBuilder)messageBuilder).SetMandatory();
+
+        Assert.True(messageBuilder.Mandatory);
+    }
+
+    [Fact]
+    public void ResetMandatory()
+    {
+        var messageBuilder = new MessageBuilder();
+
+        ((IMessageBuilder)messageBuilder).SetMandatory();
+        messageBuilder.Reset();
+
+        Assert.False(messageBuilder.Mandatory);
+    }
+    
+    [Fact]
+    public void ImmediateDefaultValue()
+    {
+        var messageBuilder = new MessageBuilder();
+        Assert.False(messageBuilder.Immediate);
+    }
+    
+    [Fact]
+    public void CanSetImmediate()
+    {
+        var messageBuilder = new MessageBuilder();
+
+        ((IMessageBuilder)messageBuilder).SetImmediate();
+
+        Assert.True(messageBuilder.Immediate);
+    }
+
+    [Fact]
+    public void ResetImmediate()
+    {
+        var messageBuilder = new MessageBuilder();
+
+        ((IMessageBuilder)messageBuilder).SetImmediate();
+        messageBuilder.Reset();
+
+        Assert.False(messageBuilder.Immediate);
     }
 }

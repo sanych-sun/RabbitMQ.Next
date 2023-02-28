@@ -22,5 +22,5 @@ public class ExpirationAttribute : MessageAttributeBase
     public TimeSpan Expiration { get; }
 
     public override void Apply(IMessageBuilder message)
-        => message.Expiration(this.expirationText);
+        => message.SetExpiration(this.expirationText);
 }

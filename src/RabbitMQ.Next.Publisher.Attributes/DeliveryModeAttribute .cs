@@ -19,5 +19,5 @@ public class DeliveryModeAttribute : MessageAttributeBase
     public DeliveryMode DeliveryMode { get; }
 
     public override void Apply(IMessageBuilder message)
-        => message.DeliveryMode(this.DeliveryMode);
+        => message.SetDeliveryMode(this.DeliveryMode);
 }

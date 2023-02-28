@@ -18,5 +18,5 @@ public class ContentTypeAttribute : MessageAttributeBase
     public string ContentType { get; }
 
     public override void Apply(IMessageBuilder message)
-        => message.ContentType(this.ContentType);
+        => message.SetContentType(this.ContentType);
 }

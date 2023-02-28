@@ -34,6 +34,6 @@ public class RoutingKeyAttributeTests
 
         attr.Apply(builder);
 
-        builder.Received().RoutingKey(value);
+        builder.Received().SetRoutingKey(value);
     }
 }

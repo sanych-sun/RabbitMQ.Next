@@ -34,6 +34,6 @@ public class ReplyToAttributeTests
 
         attr.Apply(builder);
 
-        builder.Received().ReplyTo(value);
+        builder.Received().SetReplyTo(value);
     }
 }

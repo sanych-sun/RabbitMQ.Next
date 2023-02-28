@@ -6,7 +6,7 @@ namespace RabbitMQ.Next.Publisher;
 
 public interface IPublisherBuilder: ISerializationBuilder<IPublisherBuilder>
 {
-    IPublisherBuilder UseMessageInitializer(IMessageInitializer initializer);
+    IPublisherBuilder UsePublishMiddleware(Func<IPublishMiddleware, IPublishMiddleware> middlewareFactory);
 
     IPublisherBuilder OnReturnedMessage(Func<IReturnedMessage,Task> returnedMessageHandler);
 

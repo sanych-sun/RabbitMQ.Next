@@ -1,3 +1,5 @@
+using System.Threading;
+using System.Threading.Tasks;
 using NSubstitute;
 using RabbitMQ.Next.Publisher;
 using RabbitMQ.Next.Publisher.Attributes;
@@ -10,49 +12,68 @@ namespace RabbitMQ.Next.Tests.Publisher.Attributes;
 public class AttributeTransformerTests
 {
     [Fact]
-    public void TestAssemblyAttributes()
+    public async Task TestAssemblyAttributes()
     {
-        var attributeTransformer = new AttributeInitializer();
+        var next = Substitute.For<IPublishMiddleware>();
         var message = Substitute.For<IMessageBuilder>();
+        var content = new AssemblyAttributesData();
+        
+        var attributeTransformer = new AttributePublishMiddleware(next);
 
-        attributeTransformer.Apply(new AssemblyAttributesData(), message);
+        await attributeTransformer.InvokeAsync(content, message, default);
 
-        message.Received().ApplicationId("unitTest");
+        message.Received().SetApplicationId("unitTest");
+        await next.Received().InvokeAsync(content, message, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public void TestRoutingKeyAttribute()
+    public async Task TestRoutingKeyAttribute()
     {
-        var attributeTransformer = new AttributeInitializer();
+        var next = Substitute.For<IPublishMiddleware>();
         var message = Substitute.For<IMessageBuilder>();
+        var content = new RoutingKeyAttributeData();
+        
+        var attributeTransformer = new AttributePublishMiddleware(next);
 
-        attributeTransformer.Apply(new RoutingKeyAttributeData(), message);
+        await attributeTransformer.InvokeAsync(content, message, default);
 
-        message.Received().RoutingKey("route");
+        message.Received().SetApplicationId("unitTest");
+        message.Received().SetRoutingKey("route");
+        await next.Received().InvokeAsync(content, message, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public void TestHeaderAttribute()
+    public async Task TestHeaderAttribute()
     {
-        var attributeTransformer = new AttributeInitializer();
+        var next = Substitute.For<IPublishMiddleware>();
         var message = Substitute.For<IMessageBuilder>();
+        var content = new HeaderAttributeData();
+        
+        var attributeTransformer = new AttributePublishMiddleware(next);
 
-        attributeTransformer.Apply(new HeaderAttributeData(), message);
+        await attributeTransformer.InvokeAsync(content, message, default);
 
+        message.Received().SetApplicationId("unitTest");
         message.Received().SetHeader("headerA", "value1");
         message.Received().SetHeader("headerB", "value2");
+        await next.Received().InvokeAsync(content, message, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public void TestMultipleAttributes()
+    public async Task TestMultipleAttributes()
     {
-        var attributeTransformer = new AttributeInitializer();
+        var next = Substitute.For<IPublishMiddleware>();
         var message = Substitute.For<IMessageBuilder>();
+        var content = new MultipleAttributesData();
+        
+        var attributeTransformer = new AttributePublishMiddleware(next);
 
-        attributeTransformer.Apply(new MultipleAttributesData(), message);
+        await attributeTransformer.InvokeAsync(content, message, default);
 
-        message.Received().RoutingKey("route");
-        message.Received().Priority(7);
+        message.Received().SetApplicationId("unitTest");
+        message.Received().SetRoutingKey("route");
+        message.Received().SetPriority(7);
+        await next.Received().InvokeAsync(content, message, Arg.Any<CancellationToken>());
     }
 
     private class AssemblyAttributesData
