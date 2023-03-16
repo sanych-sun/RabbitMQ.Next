@@ -10,30 +10,41 @@ namespace RabbitMQ.Next.Publisher;
 
 internal sealed class ReturnMessageHandler : IMessageHandler<ReturnMethod>
 {
-    private readonly Func<IReturnedMessage,Task> messageHandler;
+    private readonly IReturnMiddleware returnPipeline;
     private readonly ISerializer serializer;
     private readonly Channel<ReturnedMessage> returnChannel;
 
-    public ReturnMessageHandler(Func<IReturnedMessage,Task> messageHandler, ISerializer serializer)
+    public ReturnMessageHandler(IReturnMiddleware returnPipeline, ISerializer serializer)
     {
-        this.messageHandler = messageHandler;
+        this.returnPipeline = returnPipeline;
         this.serializer = serializer;
-        this.returnChannel = Channel.CreateUnbounded<ReturnedMessage>(new UnboundedChannelOptions
+
+        if (this.returnPipeline != null)
         {
-            SingleReader = true,
-            SingleWriter = true,
-            AllowSynchronousContinuations = false,
-        });
+            this.returnChannel = Channel.CreateUnbounded<ReturnedMessage>(new UnboundedChannelOptions
+            {
+                SingleReader = true,
+                SingleWriter = true,
+                AllowSynchronousContinuations = false,
+            });
             
-        Task.Factory.StartNew(this.ProcessReturnedMessagesAsync, TaskCreationOptions.LongRunning);
+            Task.Factory.StartNew(this.ProcessReturnedMessagesAsync, TaskCreationOptions.LongRunning);
+        }
     }
 
-    public void Handle(ReturnMethod method, IPayload payload) 
-        => this.returnChannel.Writer.TryWrite(new ReturnedMessage(this.serializer, method, payload));
+    public void Handle(ReturnMethod method, IPayload payload)
+    {
+        if (this.returnPipeline == null)
+        {
+            return;
+        }
+        
+        this.returnChannel.Writer.TryWrite(new ReturnedMessage(this.serializer, method, payload));
+    }
 
     public void Release(Exception ex = null)
     {
-        this.returnChannel.Writer.TryComplete();
+        this.returnChannel?.Writer.TryComplete();
     }
 
     private async Task ProcessReturnedMessagesAsync()
@@ -45,7 +56,7 @@ internal sealed class ReturnMessageHandler : IMessageHandler<ReturnMethod>
             {
                 try
                 {
-                    await this.messageHandler(returned); 
+                    await this.returnPipeline.InvokeAsync(returned, default); 
                 }
                 finally
                 {

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using RabbitMQ.Next.Messaging;
 using RabbitMQ.Next.Serialization;
@@ -14,6 +15,7 @@ internal class ReturnedMessage : IReturnedMessage, IDisposable
     private readonly string routingKey;
     private readonly ushort replyCode;
     private readonly string replyText;
+
     private bool disposed;
 
     public ReturnedMessage(ISerializer serializer, ReturnMethod returnMethod, IPayload payload)
@@ -63,14 +65,31 @@ internal class ReturnedMessage : IReturnedMessage, IDisposable
         }
     }
 
-    public IMessageProperties Properties
-    {
-        get
-        {
-            this.ValidateState();
-            return this.payload;
-        }
-    }
+    public string ContentType => this.Properties.ContentType;
+
+    public string ContentEncoding => this.Properties.ContentEncoding;
+
+    public IReadOnlyDictionary<string, object> Headers => this.Properties.Headers;
+
+    public DeliveryMode DeliveryMode => this.Properties.DeliveryMode;
+
+    public byte Priority => this.Properties.Priority;
+
+    public string CorrelationId => this.Properties.CorrelationId;
+
+    public string ReplyTo => this.Properties.ReplyTo;
+
+    public string Expiration => this.Properties.Expiration;
+
+    public string MessageId => this.Properties.MessageId;
+
+    public DateTimeOffset Timestamp => this.Properties.Timestamp;
+
+    public string Type => this.Properties.Type;
+
+    public string UserId => this.Properties.UserId;
+
+    public string ApplicationId => this.Properties.ApplicationId;
 
     public T Content<T>()
     {
@@ -84,6 +103,15 @@ internal class ReturnedMessage : IReturnedMessage, IDisposable
     {
         this.disposed = true;
         this.payload?.Dispose();
+    }
+
+    private IMessageProperties Properties
+    {
+        get
+        {
+            this.ValidateState();
+            return this.payload;
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

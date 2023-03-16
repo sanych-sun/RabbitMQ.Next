@@ -32,12 +32,12 @@ public class PublisherBuilderTests
     [Fact]
     public void CanRegisterReturnedMessageHandler()
     {
-        var handler = Substitute.For<Func<IReturnedMessage,Task>>();
+        var middleware = Substitute.For<Func<IReturnMiddleware,IReturnMiddleware>>();
 
         var builder = new PublisherBuilder();
-        ((IPublisherBuilder) builder).OnReturnedMessage(handler);
+        ((IPublisherBuilder) builder).UseReturnMiddleware(middleware);
 
-        Assert.Equal(handler, builder.ReturnedMessageHandler);
+        Assert.Contains(middleware, builder.ReturnMiddlewares);
     }
 
     [Fact]
@@ -45,7 +45,7 @@ public class PublisherBuilderTests
     {
         var builder = new PublisherBuilder();
             
-        Assert.Throws<ArgumentNullException>(() => ((IPublisherBuilder)builder).OnReturnedMessage(null));
+        Assert.Throws<ArgumentNullException>(() => ((IPublisherBuilder)builder).UseReturnMiddleware(null));
     }
 
     [Fact]

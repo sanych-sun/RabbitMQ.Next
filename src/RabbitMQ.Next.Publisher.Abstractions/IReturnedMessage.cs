@@ -2,7 +2,7 @@ using RabbitMQ.Next.Messaging;
 
 namespace RabbitMQ.Next.Publisher;
 
-public interface IReturnedMessage
+public interface IReturnedMessage : IMessageProperties
 {
     public string Exchange { get; }
 
@@ -12,7 +12,5 @@ public interface IReturnedMessage
 
     public string ReplyText { get; }
     
-    IMessageProperties Properties { get; }
-
     T Content<T>();
 }

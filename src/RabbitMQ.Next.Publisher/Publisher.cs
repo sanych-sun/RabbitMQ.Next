@@ -15,12 +15,12 @@ internal sealed class Publisher : IPublisher
 {
     private readonly SemaphoreSlim channelOpenSync = new(1,1);
     private readonly ObjectPool<MessageBuilder> messagePropsPool;
-    private readonly Func<IReturnedMessage,Task> returnedMessageHandler;
     private readonly IConnection connection;
     private readonly string exchange;
     private readonly ISerializer serializer;
     private readonly ConfirmMessageHandler confirms;
     private readonly Func<IPublishMiddleware, IPublishMiddleware> publishPipelineFactory;
+    private readonly Func<IReturnMiddleware, IReturnMiddleware> returnPipelineFactory;
     private bool isDisposed;
     private IPublishMiddleware publishPipeline;
     private IChannel channel;
@@ -32,7 +32,7 @@ internal sealed class Publisher : IPublisher
         string exchange,
         bool publisherConfirms,
         Func<IPublishMiddleware, IPublishMiddleware> publishPipelineFactory,
-        Func<IReturnedMessage,Task> returnedMessageHandler)
+        Func<IReturnMiddleware, IReturnMiddleware> returnPipelineFactory)
     {
         this.connection = connection;
         this.serializer = serializer;
@@ -43,8 +43,8 @@ internal sealed class Publisher : IPublisher
 
         this.messagePropsPool = messagePropsPool;
         this.exchange = exchange;
-        this.returnedMessageHandler = returnedMessageHandler;
         this.publishPipelineFactory = publishPipelineFactory;
+        this.returnPipelineFactory = returnPipelineFactory;
     }
 
     public async ValueTask DisposeAsync()
@@ -124,8 +124,9 @@ internal sealed class Publisher : IPublisher
             this.channel = await this.connection.OpenChannelAsync(cancellationToken);
             // ensure target exchange exists
             await this.channel.SendAsync<DeclareMethod, DeclareOkMethod>(new DeclareMethod(this.exchange), cancellationToken);
-            
-            this.channel.WithMessageHandler(new ReturnMessageHandler(this.returnedMessageHandler, this.serializer));
+
+            var returnPipeline = this.returnPipelineFactory.Invoke(new VoidReturnedMiddleware());
+            this.channel.WithMessageHandler(new ReturnMessageHandler(returnPipeline, this.serializer));
             if (this.confirms != null)
             {
                 this.channel.WithMessageHandler<AckMethod>(this.confirms);

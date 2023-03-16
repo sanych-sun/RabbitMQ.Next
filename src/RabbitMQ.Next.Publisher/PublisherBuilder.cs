@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using RabbitMQ.Next.Serialization;
 
 namespace RabbitMQ.Next.Publisher;
@@ -8,11 +7,11 @@ namespace RabbitMQ.Next.Publisher;
 internal sealed class PublisherBuilder : IPublisherBuilder
 {
     private readonly List<Func<IPublishMiddleware, IPublishMiddleware>> publishMiddlewares = new();
-    private Func<IReturnedMessage,Task> returnedMessageHandler;
+    private readonly List<Func<IReturnMiddleware, IReturnMiddleware>> returnMiddlewares = new();
 
     public IReadOnlyList<Func<IPublishMiddleware, IPublishMiddleware>> PublishMiddlewares => this.publishMiddlewares;
-        
-    public Func<IReturnedMessage,Task> ReturnedMessageHandler => this.returnedMessageHandler;
+    
+    public IReadOnlyList<Func<IReturnMiddleware, IReturnMiddleware>> ReturnMiddlewares => this.returnMiddlewares;
 
     public ISerializer Serializer { get; private set; }
 
@@ -28,18 +27,17 @@ internal sealed class PublisherBuilder : IPublisherBuilder
         this.publishMiddlewares.Add(middlewareFactory);
         return this;
     }
-
-    IPublisherBuilder IPublisherBuilder.OnReturnedMessage(Func<IReturnedMessage,Task> handler)
+    
+    IPublisherBuilder IPublisherBuilder.UseReturnMiddleware(Func<IReturnMiddleware, IReturnMiddleware> middlewareFactory)
     {
-        if (handler == null)
+        if (middlewareFactory == null)
         {
-            throw new ArgumentNullException(nameof(handler));
+            throw new ArgumentNullException(nameof(middlewareFactory));
         }
 
-        this.returnedMessageHandler = handler;
+        this.returnMiddlewares.Add(middlewareFactory);
         return this;
     }
-
 
     IPublisherBuilder IPublisherBuilder.NoConfirms()
     {
