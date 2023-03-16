@@ -22,8 +22,9 @@ internal sealed class DelegatePublishMiddleware: IPublishMiddleware
 
     public ValueTask InvokeAsync<TContent>(TContent content, IMessageBuilder message, CancellationToken cancellation)
     {
+        cancellation.ThrowIfCancellationRequested();
+        
         this.middleware.Invoke(content, message);
-
         return this.next.InvokeAsync(content, message, cancellation);
     }
 }

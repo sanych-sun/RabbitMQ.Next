@@ -125,7 +125,7 @@ internal sealed class Publisher : IPublisher
             // ensure target exchange exists
             await this.channel.SendAsync<DeclareMethod, DeclareOkMethod>(new DeclareMethod(this.exchange), cancellationToken);
 
-            var returnPipeline = this.returnPipelineFactory.Invoke(new VoidReturnedMiddleware());
+            var returnPipeline = this.returnPipelineFactory.Invoke(new VoidReturnMiddleware());
             this.channel.WithMessageHandler(new ReturnMessageHandler(returnPipeline, this.serializer));
             if (this.confirms != null)
             {
