@@ -15,6 +15,11 @@ internal sealed class DelegateReturnMiddleware: IReturnMiddleware
         {
             throw new ArgumentNullException(nameof(middleware));
         }
+
+        if (next == null)
+        {
+            throw new ArgumentNullException(nameof(next));
+        }
         
         this.next = next;
         this.middleware = middleware;

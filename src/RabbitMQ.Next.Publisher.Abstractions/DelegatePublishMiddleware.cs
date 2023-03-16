@@ -16,6 +16,11 @@ internal sealed class DelegatePublishMiddleware: IPublishMiddleware
             throw new ArgumentNullException(nameof(middleware));
         }
         
+        if (next == null)
+        {
+            throw new ArgumentNullException(nameof(next));
+        }
+        
         this.next = next;
         this.middleware = middleware;
     }
