@@ -15,8 +15,6 @@ internal sealed class PublisherBuilder : IPublisherBuilder
 
     public ISerializer Serializer { get; private set; }
 
-    public bool PublisherConfirms { get; private set; } = true;
-
     IPublisherBuilder IPublisherBuilder.UsePublishMiddleware(Func<IPublishMiddleware, IPublishMiddleware> middlewareFactory)
     {
         if (middlewareFactory == null)
@@ -36,12 +34,6 @@ internal sealed class PublisherBuilder : IPublisherBuilder
         }
 
         this.returnMiddlewares.Add(middlewareFactory);
-        return this;
-    }
-
-    IPublisherBuilder IPublisherBuilder.NoConfirms()
-    {
-        this.PublisherConfirms = false;
         return this;
     }
 

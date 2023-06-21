@@ -2,9 +2,11 @@ using System;
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Channels;
 using RabbitMQ.Next.Messaging;
+using RabbitMQ.Next.Tasks;
 using RabbitMQ.Next.Transport.Methods.Basic;
 
 namespace RabbitMQ.Next.Publisher;
@@ -25,7 +27,7 @@ internal class ConfirmMessageHandler : IMessageHandler<AckMethod>, IMessageHandl
         NegativeCompletedTcs.SetResult(false);
     }
 
-    public Task<bool> WaitForConfirmAsync(ulong deliveryTag)
+    public Task<bool> WaitForConfirmAsync(ulong deliveryTag, CancellationToken cancellation)
     {
         var tcs = this.pendingConfirms.GetOrAdd(deliveryTag, _ => new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously));
         if (tcs.Task.IsCompleted)
@@ -33,7 +35,7 @@ internal class ConfirmMessageHandler : IMessageHandler<AckMethod>, IMessageHandl
             this.pendingConfirms.TryRemove(deliveryTag, out _);
         }
 
-        return tcs.Task;
+        return tcs.Task.WithCancellation(cancellation);
     }
 
     public void Handle(AckMethod method, IPayload payload)

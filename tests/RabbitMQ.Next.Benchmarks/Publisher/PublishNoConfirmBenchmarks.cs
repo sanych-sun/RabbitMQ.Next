@@ -52,7 +52,6 @@ public class PublishNoConfirmBenchmarks
         var publisher = this.connection.Publisher("amq.topic",
             builder => builder
                 .UsePlainTextSerializer()
-                .NoConfirms()
         );
 
         await Task.WhenAll(Enumerable.Range(0, 10)
@@ -79,8 +78,7 @@ public class PublishNoConfirmBenchmarks
     {
         var publisher = this.connection.Publisher("amq.topic",
             builder => builder
-                .UsePlainTextSerializer()
-                .NoConfirms());
+                .UsePlainTextSerializer());
 
         for (int i = 0; i < parameters.Messages.Count; i++)
         {

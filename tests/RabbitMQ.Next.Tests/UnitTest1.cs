@@ -29,11 +29,12 @@
 //             var publisher = connection.Publisher("amq.fanout",
 //                 builder => builder
 //                     .UsePlainTextSerializer()
+//                     .PublisherConfirms()
 //             );
 //
 //             var sw = Stopwatch.StartNew();
 //
-//             for (var i = 0; i < 10; i++)
+//             for (var i = 0; i < 1; i++)
 //             {
 //                 await publisher.PublishAsync($"test{i}");
 //             }

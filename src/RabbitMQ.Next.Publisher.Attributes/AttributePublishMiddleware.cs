@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using RabbitMQ.Next.Channels;
 
 namespace RabbitMQ.Next.Publisher.Attributes;
 
@@ -42,7 +43,9 @@ internal sealed class AttributePublishMiddleware : IPublishMiddleware
         return typed;
     }
 
-    public ValueTask InvokeAsync<TContent>(TContent content, IMessageBuilder message, CancellationToken cancellation)
+    public ValueTask InitAsync(IChannel channel, CancellationToken cancellation) => default;
+
+    public ValueTask<ulong> InvokeAsync<TContent>(TContent content, IMessageBuilder message, CancellationToken cancellation)
     {
         var type = typeof(TContent);
 

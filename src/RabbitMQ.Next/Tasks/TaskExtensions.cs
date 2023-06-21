@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,6 +17,14 @@ public static class TaskExtensions
         cancellation.Register(s => ((TaskCompletionSource)s).TrySetResult(), tcs);
         return tcs.Task;
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueTask AsValueTask(this Task task)
+        => new ValueTask(task);
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueTask<T> AsValueTask<T>(this Task<T> task)
+        => new ValueTask<T>(task);
 
     public static Task<TResult> WithCancellation<TResult>(this Task<TResult> task, CancellationToken cancellation)
     {

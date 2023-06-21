@@ -1,12 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.ObjectPool;
 using RabbitMQ.Next.Channels;
 using RabbitMQ.Next.Serialization;
-using RabbitMQ.Next.Transport.Methods.Basic;
-using RabbitMQ.Next.Transport.Methods.Confirm;
 using RabbitMQ.Next.Transport.Methods.Exchange;
 
 namespace RabbitMQ.Next.Publisher;
@@ -18,33 +17,26 @@ internal sealed class Publisher : IPublisher
     private readonly IConnection connection;
     private readonly string exchange;
     private readonly ISerializer serializer;
-    private readonly ConfirmMessageHandler confirms;
-    private readonly Func<IPublishMiddleware, IPublishMiddleware> publishPipelineFactory;
-    private readonly Func<IReturnMiddleware, IReturnMiddleware> returnPipelineFactory;
+    private readonly IReadOnlyList<Func<IPublishMiddleware, IPublishMiddleware>> publishMiddlewares;
+    private readonly IReadOnlyList<Func<IReturnMiddleware, IReturnMiddleware>> returnMiddlewares;
     private bool isDisposed;
-    private IPublishMiddleware publishPipeline;
     private IChannel channel;
+    private IPublishMiddleware publishPipeline;
 
     public Publisher(
         IConnection connection,
         ObjectPool<MessageBuilder> messagePropsPool,
         ISerializer serializer,
         string exchange,
-        bool publisherConfirms,
-        Func<IPublishMiddleware, IPublishMiddleware> publishPipelineFactory,
-        Func<IReturnMiddleware, IReturnMiddleware> returnPipelineFactory)
+        IReadOnlyList<Func<IPublishMiddleware, IPublishMiddleware>> publishMiddlewares,
+        IReadOnlyList<Func<IReturnMiddleware, IReturnMiddleware>> returnMiddlewares)
     {
         this.connection = connection;
         this.serializer = serializer;
-        if (publisherConfirms)
-        {
-            this.confirms = new ConfirmMessageHandler();
-        }
-
         this.messagePropsPool = messagePropsPool;
         this.exchange = exchange;
-        this.publishPipelineFactory = publishPipelineFactory;
-        this.returnPipelineFactory = returnPipelineFactory;
+        this.publishMiddlewares = publishMiddlewares;
+        this.returnMiddlewares = returnMiddlewares;
     }
 
     public async ValueTask DisposeAsync()
@@ -105,7 +97,7 @@ internal sealed class Publisher : IPublisher
         }
     }
 
-    internal async ValueTask<IPublishMiddleware> InitializeAsync(CancellationToken cancellationToken = default)
+    private async ValueTask<IPublishMiddleware> InitializeAsync(CancellationToken cancellationToken = default)
     {
         if (this.connection.State != ConnectionState.Open)
         {
@@ -125,22 +117,23 @@ internal sealed class Publisher : IPublisher
             // ensure target exchange exists
             await this.channel.SendAsync<DeclareMethod, DeclareOkMethod>(new DeclareMethod(this.exchange), cancellationToken);
 
-            var returnPipeline = this.returnPipelineFactory.Invoke(new VoidReturnMiddleware());
+            IReturnMiddleware returnPipeline = new VoidReturnMiddleware();
+            for (var i = 0; i < this.returnMiddlewares.Count; i++)
+            {
+                returnPipeline = this.returnMiddlewares[i].Invoke(returnPipeline);
+            }
+            
             this.channel.WithMessageHandler(new ReturnMessageHandler(returnPipeline, this.serializer));
-            if (this.confirms != null)
+            
+            this.publishPipeline = new InternalMessagePublisher(this.exchange, this.serializer);
+            await this.publishPipeline.InitAsync(this.channel, default);
+
+            for (var i = 0; i < this.publishMiddlewares.Count; i++)
             {
-                this.channel.WithMessageHandler<AckMethod>(this.confirms);
-                this.channel.WithMessageHandler<NackMethod>(this.confirms);
+                this.publishPipeline = this.publishMiddlewares[i].Invoke(this.publishPipeline);
+                await this.publishPipeline.InitAsync(this.channel, default);
             }
 
-            if (this.confirms != null)
-            {
-                await this.channel.SendAsync<SelectMethod, SelectOkMethod>(new SelectMethod(), cancellationToken);
-            }
-
-            var publisher = new InternalMessagePublisher(this.channel, this.exchange, this.serializer, this.confirms);
-
-            this.publishPipeline = this.publishPipelineFactory(publisher);
             return this.publishPipeline;
         }
         catch (Exception)

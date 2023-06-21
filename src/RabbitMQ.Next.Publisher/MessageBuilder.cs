@@ -91,8 +91,6 @@ public class MessageBuilder : IMessageBuilder
         return this;
     }
 
-    public IMessageBuilder SetSetHeader(string key, object value) => throw new NotImplementedException();
-
     public IMessageBuilder SetHeader(string key, object value)
     {
         if (string.IsNullOrWhiteSpace(key))

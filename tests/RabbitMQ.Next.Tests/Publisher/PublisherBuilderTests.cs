@@ -1,5 +1,4 @@
 using System;
-using System.Threading.Tasks;
 using NSubstitute;
 using RabbitMQ.Next.Publisher;
 using Xunit;
@@ -46,22 +45,5 @@ public class PublisherBuilderTests
         var builder = new PublisherBuilder();
             
         Assert.Throws<ArgumentNullException>(() => ((IPublisherBuilder)builder).UseReturnMiddleware(null));
-    }
-
-    [Fact]
-    public void ConfirmsDefault()
-    {
-        var builder = new PublisherBuilder();
-
-        Assert.True(builder.PublisherConfirms);
-    }
-
-    [Fact]
-    public void NoConfirms()
-    {
-        var builder = new PublisherBuilder();
-        ((IPublisherBuilder)builder).NoConfirms();
-
-        Assert.False(builder.PublisherConfirms);
     }
 }
