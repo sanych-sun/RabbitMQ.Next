@@ -1,43 +1,15 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace RabbitMQ.Next.Serialization.PlainText.Converters;
 
-public class StringConverter : IConverter
+public class StringConverter : IConverter<string>
 {
     private static readonly int MinBufferSize = Encoding.UTF8.GetMaxByteCount(1);
 
-    public bool TryFormat<TContent>(TContent content, IBufferWriter<byte> writer)
-    {
-        if (content is string str)
-        {
-            this.FormatInternal(str, writer);
-            return true;
-        }
-
-        return false;
-    }
-
-    public bool TryParse<TContent>(ReadOnlySequence<byte> bytes, out TContent value)
-    {
-        if (typeof(TContent) == typeof(string))
-        {
-            if (this.ParseInternal(bytes) is TContent result)
-            {
-                value = result;
-                return true;
-            }
-        }
-
-        value = default;
-        return false;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void FormatInternal(string content, IBufferWriter<byte> writer)
+    public void Format(string content, IBufferWriter<byte> writer)
     {
         if (string.IsNullOrEmpty(content))
         {
@@ -66,8 +38,7 @@ public class StringConverter : IConverter
         }
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private string ParseInternal(ReadOnlySequence<byte> bytes)
+    public string Parse(ReadOnlySequence<byte> bytes)
     {
         if (bytes.IsEmpty)
         {

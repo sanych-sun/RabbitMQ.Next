@@ -1,0 +1,70 @@
+using System;
+using System.Buffers;
+using System.Collections.Generic;
+using RabbitMQ.Next.Serialization.PlainText.Converters;
+using RabbitMQ.Next.Tests.Mocks;
+using Xunit;
+
+namespace RabbitMQ.Next.Tests.Serialization.PlainText.Converters;
+
+public class GuidConverterTests
+{
+    [Theory]
+    [MemberData(nameof(GenericTestCases))]
+    public void CanFormat(string content, byte[] expected)
+    {
+        var guid = Guid.Parse(content);
+        var converter = new GuidConverter();
+        var bufferWriter = new ArrayBufferWriter<byte>(expected.Length);
+
+        converter.Format(guid, bufferWriter);
+
+        Assert.Equal(expected, bufferWriter.WrittenMemory.ToArray());
+    }
+
+    [Theory]
+    [MemberData(nameof(GenericTestCases))]
+    [MemberData(nameof(ParseChunkedTestCases))]
+    public void CanParse(string expected, params byte[][] parts)
+    {
+        var guid = Guid.Parse(expected);
+        var converter = new GuidConverter();
+        var sequence = Helpers.MakeSequence(parts);
+
+        var parsed = converter.Parse(sequence);
+
+        Assert.Equal(guid, parsed);
+    }
+
+    [Theory]
+    [InlineData(new byte[0])]
+    [InlineData(new byte[] { 0x68, 0x65, 0x6C, 0x6C, 0x6F } )]
+    [InlineData(new byte[] { 0x7B, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x2D, 0x30, 0x30, 0x30, 0x30, 0x2D, 0x30, 0x30, 0x30, 0x30, 0x2D, 0x30, 0x30, 0x30, 0x30, 0x2D, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x7D, 0x34, 0x32 } )]
+    public void ParseThrowsOnWrongContent(byte[] content)
+    {
+        var converter = new GuidConverter();
+        var sequence = new ReadOnlySequence<byte>(content);
+
+        Assert.Throws<FormatException>(() => converter.Parse(sequence));
+    }
+
+    [Fact]
+    public void ThrowsOnTooSmallBuffer()
+    {
+        var converter = new GuidConverter();
+        var bufferWriter = new ArrayBufferWriter<byte>(1);
+
+        Assert.Throws<OutOfMemoryException>(() => converter.Format(Guid.Empty, bufferWriter));
+    }
+
+    public static IEnumerable<object[]> GenericTestCases()
+    {
+        yield return new object[] { "{96d21a17-abcd-472d-a684-9fcdd33ae9e2}", new byte[] { 0x7B, 0x39, 0x36, 0x64, 0x32, 0x31, 0x61, 0x31, 0x37, 0x2D, 0x61, 0x62, 0x63, 0x64, 0x2D, 0x34, 0x37, 0x32, 0x64, 0x2D, 0x61, 0x36, 0x38, 0x34, 0x2D, 0x39, 0x66, 0x63, 0x64, 0x64, 0x33, 0x33, 0x61, 0x65, 0x39, 0x65, 0x32, 0x7D } };
+        yield return new object[] { "{00000000-0000-0000-0000-000000000000}", new byte[] { 0x7B, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x2D, 0x30, 0x30, 0x30, 0x30, 0x2D, 0x30, 0x30, 0x30, 0x30, 0x2D, 0x30, 0x30, 0x30, 0x30, 0x2D, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x7D } };
+    }
+
+    public static IEnumerable<object[]> ParseChunkedTestCases()
+    {
+        yield return new object[] { "{96d21a17-abcd-472d-a684-9fcdd33ae9e2}", new byte[] { 0x7B, 0x39, 0x36, 0x64, 0x32, 0x31, 0x61, 0x31, 0x37, 0x2D, 0x61, 0x62, 0x63, 0x64 }, new byte[] { 0x2D, 0x34, 0x37, 0x32, 0x64, 0x2D, 0x61, 0x36, 0x38, 0x34, 0x2D, 0x39, 0x66, 0x63, 0x64, 0x64, 0x33, 0x33, 0x61, 0x65, 0x39, 0x65, 0x32, 0x7D } };
+    }
+}

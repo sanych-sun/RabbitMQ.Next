@@ -2,9 +2,9 @@ using System.Buffers;
 
 namespace RabbitMQ.Next.Serialization.PlainText;
 
-public interface IConverter
+public interface IConverter<TContent>
 {
-    bool TryFormat<TContent>(TContent content, IBufferWriter<byte> writer);
+    void Format(TContent content, IBufferWriter<byte> writer);
 
-    bool TryParse<TContent>(ReadOnlySequence<byte> bytes, out TContent parsed);
+    TContent Parse(ReadOnlySequence<byte> bytes);
 }

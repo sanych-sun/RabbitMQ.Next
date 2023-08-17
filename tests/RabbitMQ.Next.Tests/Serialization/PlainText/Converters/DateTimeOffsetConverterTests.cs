@@ -1,0 +1,72 @@
+using System;
+using System.Buffers;
+using System.Collections.Generic;
+using RabbitMQ.Next.Serialization.PlainText.Converters;
+using RabbitMQ.Next.Tests.Mocks;
+using Xunit;
+
+namespace RabbitMQ.Next.Tests.Serialization.PlainText.Converters;
+
+public class DateTimeOffsetConverterTests
+{
+    [Theory]
+    [MemberData(nameof(GenericTestCases))]
+    public void CanFormat(string dateString, byte[] expected)
+    {
+        var date = DateTimeOffset.Parse(dateString);
+        var converter = new DateTimeOffsetConverter();
+        var bufferWriter = new ArrayBufferWriter<byte>(expected.Length);
+
+        converter.Format(date, bufferWriter);
+
+        Assert.Equal(expected, bufferWriter.WrittenMemory.ToArray());
+    }
+
+    [Theory]
+    [MemberData(nameof(GenericTestCases))]
+    [MemberData(nameof(ParseChunkedTestCases))]
+    public void CanParse(string dateString, params byte[][] parts)
+    {
+        var date = DateTimeOffset.Parse(dateString);
+        var converter = new DateTimeOffsetConverter();
+        var sequence = Helpers.MakeSequence(parts);
+
+        var parsed = converter.Parse(sequence);
+
+        Assert.Equal(date, parsed);
+    }
+
+
+    [Theory]
+    [InlineData(new byte[0])]
+    [InlineData(new byte[] { 0x68, 0x65 } )]
+    [InlineData(new byte[] { 0x32, 0x30, 0x30, 0x39, 0x2D, 0x30, 0x36, 0x2D, 0x31, 0x35, 0x54, 0x31, 0x33, 0x3A, 0x34, 0x35, 0x3A, 0x33, 0x30, 0x2E, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x2D, 0x30, 0x37, 0x3A, 0x30, 0x30, 0x2B, 0x2D })]
+    public void ParseThrowsOnWrongContent(byte[] content)
+    {
+        var converter = new DateTimeOffsetConverter();
+        var sequence = new ReadOnlySequence<byte>(content);
+
+        Assert.Throws<FormatException>(() => converter.Parse(sequence));
+    }
+
+    [Fact]
+    public void ThrowsOnTooSmallBuffer()
+    {
+        var converter = new DateTimeOffsetConverter();
+        var bufferWriter = new ArrayBufferWriter<byte>(1);
+
+        Assert.Throws<OutOfMemoryException>(() => converter.Format(DateTimeOffset.UtcNow, bufferWriter));
+    }
+
+    public static IEnumerable<object[]> GenericTestCases()
+    {
+        yield return new object[] { "2009-06-15T13:45:30-07:00", new byte[] { 0x32, 0x30, 0x30, 0x39, 0x2D, 0x30, 0x36, 0x2D, 0x31, 0x35, 0x54, 0x31, 0x33, 0x3A, 0x34, 0x35, 0x3A, 0x33, 0x30, 0x2E, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x2D, 0x30, 0x37, 0x3A, 0x30, 0x30 } };
+        yield return new object[] { "2009-06-15T13:45:30+00:00", new byte[] { 0x32, 0x30, 0x30, 0x39, 0x2D, 0x30, 0x36, 0x2D, 0x31, 0x35, 0x54, 0x31, 0x33, 0x3A, 0x34, 0x35, 0x3A, 0x33, 0x30, 0x2E, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x2B, 0x30, 0x30, 0x3A, 0x30, 0x30 } };
+    }
+
+    public static IEnumerable<object[]> ParseChunkedTestCases()
+    {
+        yield return new object[] { "2009-06-15T13:45:30-07:00", new byte[] { 0x32, 0x30, 0x30, 0x39, 0x2D, 0x30, 0x36, 0x2D, 0x31, 0x35, 0x54, 0x31, 0x33, 0x3A, 0x34, 0x35, 0x3A, 0x33, 0x30, 0x2E, 0x30, 0x30, 0x30, 0x30 }, new byte[] { 0x30, 0x30, 0x30, 0x2D, 0x30, 0x37, 0x3A, 0x30, 0x30 } };
+        yield return new object[] { "2009-06-15T13:45:30-07:00", new byte[] { 0x32, 0x30, 0x30, 0x39, 0x2D, 0x30, 0x36, 0x2D, 0x31, 0x35, 0x54, 0x31, 0x33, 0x3A, 0x34, 0x35, 0x3A, 0x33, 0x30, 0x2E, 0x30}, new byte[] { 0x30, 0x30, 0x30, 0x30, 0x30, 0x30 }, new byte[] { 0x2D, 0x30, 0x37, 0x3A, 0x30, 0x30 } };
+    }
+}

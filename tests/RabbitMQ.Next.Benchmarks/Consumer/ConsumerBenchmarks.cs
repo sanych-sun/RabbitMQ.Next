@@ -41,8 +41,6 @@ public class ConsumerBenchmarks
             await topology.Queue.PurgeAsync(this.queueName);
         });
         
-        
-            
         var publisher = this.connection.Publisher("amq.fanout", builder => builder.UsePlainTextSerializer());
             
         var payload = Helper.BuildDummyText(1024);

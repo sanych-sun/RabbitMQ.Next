@@ -1,48 +1,46 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
-using System.Linq;
 using RabbitMQ.Next.Messaging;
 
 namespace RabbitMQ.Next.Serialization.PlainText;
 
 internal class PlainTextSerializer : ISerializer
 {
-    private readonly IConverter[] formatters;
+    private readonly IReadOnlyDictionary<Type, object> converters;
 
-    public PlainTextSerializer(IEnumerable<IConverter> converters)
+    public PlainTextSerializer(IReadOnlyDictionary<Type, object> converters)
     {
-        this.formatters = converters?.ToArray();
-
-        if (this.formatters == null || this.formatters.Length == 0)
+        if (converters == null || converters.Count == 0)
         {
             throw new ArgumentNullException(nameof(converters));
         }
+        
+        foreach (var (key, converter) in converters)
+        {
+            var converterInterface = typeof(IConverter<>).MakeGenericType(key);
+            if (!converter.GetType().IsAssignableTo(converterInterface))
+            {
+                throw new ArgumentException($"Wrongly configured converter for {key} type.");
+            }
+        }
+        
+        this.converters = converters;
     }
 
     public void Serialize<TContent>(IMessageProperties message, TContent content, IBufferWriter<byte> writer)
-    {
-        for (var i = 0; i < this.formatters.Length; i++)
-        {
-            if (this.formatters[i].TryFormat(content, writer))
-            {
-                return;
-            }
-        }
-
-        throw new InvalidOperationException($"Cannot resolve formatter for the type: {typeof(TContent).FullName}");
-    }
+        => this.GetConverter<TContent>().Format(content, writer);
 
     public TContent Deserialize<TContent>(IMessageProperties message, ReadOnlySequence<byte> bytes)
+        => this.GetConverter<TContent>().Parse(bytes);
+
+    private IConverter<TContent> GetConverter<TContent>()
     {
-        for (var i = 0; i < this.formatters.Length; i++)
+        if (this.converters.TryGetValue(typeof(TContent), out var converter))
         {
-            if (this.formatters[i].TryParse(bytes, out TContent value))
-            {
-                return value;
-            }
+            return (IConverter<TContent>)converter;
         }
 
-        throw new InvalidOperationException($"Cannot resolve formatter for the type: {typeof(TContent).FullName}");
+        throw new NotSupportedException($"Cannot resolve converter for the type: {typeof(TContent).FullName}");
     }
 }
