@@ -25,12 +25,4 @@ internal static partial class Framing
 
         return data[sizeof(uint)..];
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TMethod ParseMethodArgs<TMethod>(this ReadOnlyMemory<byte> payload)
-        where TMethod : struct, IIncomingMethod
-    {
-        var parser = MethodRegistry.GetParser<TMethod>();
-        return parser.Parse(payload.Span);
-    }
 }
