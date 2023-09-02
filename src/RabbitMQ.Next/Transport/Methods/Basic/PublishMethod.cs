@@ -2,7 +2,7 @@ using RabbitMQ.Next.Methods;
 
 namespace RabbitMQ.Next.Transport.Methods.Basic;
 
-public readonly struct PublishMethod : IOutgoingMethod
+public readonly struct PublishMethod : IOutgoingMethod, IHasContentMethod
 {
     public PublishMethod(string exchange, string routingKey, bool mandatory, bool immediate)
         : this(exchange, routingKey, BitConverter.ComposeFlags(mandatory, immediate))

@@ -16,13 +16,4 @@ internal static partial class Framing
         buffer = buffer.Write((uint)method.MethodId);
         return formatter.Write(buffer, method);
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlyMemory<byte> GetMethodId(this ReadOnlyMemory<byte> data, out MethodId methodId)
-    {
-        data.Span.Read(out uint method);
-        methodId = (MethodId) method;
-
-        return data[sizeof(uint)..];
-    }
 }

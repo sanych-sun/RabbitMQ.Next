@@ -2,7 +2,7 @@ using RabbitMQ.Next.Methods;
 
 namespace RabbitMQ.Next.Transport.Methods.Basic;
 
-public readonly struct ReturnMethod : IIncomingMethod
+public readonly struct ReturnMethod : IIncomingMethod, IHasContentMethod
 {
     public ReturnMethod(string exchange, string routingKey, ushort replyCode, string replyText)
     {

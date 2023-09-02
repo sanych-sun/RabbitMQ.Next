@@ -9,19 +9,13 @@ internal static class MethodRegistry
     private static readonly Dictionary<Type, object> Formatters = new();
     private static readonly Dictionary<Type, object> Parsers = new();
     private static readonly Dictionary<Type, MethodId> Map = new();
-    private static readonly HashSet<uint> MethodsWithContent = new();
     
     static MethodRegistry()
     {
-        void Register<TMethod>(MethodId methodId, bool hasContent = false, IMethodFormatter<TMethod> formatter = null, IMethodParser<TMethod> parser = null)
+        void Register<TMethod>(MethodId methodId, IMethodFormatter<TMethod> formatter = null, IMethodParser<TMethod> parser = null)
             where TMethod : struct, IMethod
         {
             Map.Add(typeof(TMethod), methodId);
-            
-            if (hasContent)
-            {
-                MethodsWithContent.Add((uint)methodId);
-            }
 
             if (formatter != null)
             {
@@ -83,9 +77,9 @@ internal static class MethodRegistry
         Register(MethodId.BasicConsumeOk, parser: new Basic.ConsumeOkMethodParser());
         Register(MethodId.BasicCancel, formatter: new Basic.CancelMethodFormatter());
         Register(MethodId.BasicCancelOk, parser: new Basic.CancelOkMethodParser());
-        Register(MethodId.BasicPublish, hasContent: true, formatter: new Basic.PublishMethodFormatter());
-        Register(MethodId.BasicReturn, hasContent: true, parser: new Basic.ReturnMethodParser());
-        Register(MethodId.BasicDeliver, hasContent: true, parser: new Basic.DeliverMethodParser());
+        Register(MethodId.BasicPublish, formatter: new Basic.PublishMethodFormatter());
+        Register(MethodId.BasicReturn, parser: new Basic.ReturnMethodParser());
+        Register(MethodId.BasicDeliver, parser: new Basic.DeliverMethodParser());
         Register(MethodId.BasicGet, formatter: new Basic.GetMethodFormatter());
         Register(MethodId.BasicGetOk, parser: new Basic.GetOkMethodParser());
         Register(MethodId.BasicGetEmpty, parser: new EmptyParser<Basic.GetEmptyMethod>());
@@ -99,8 +93,6 @@ internal static class MethodRegistry
         Register(MethodId.ConfirmSelectOk, parser: new EmptyParser<Confirm.SelectOkMethod>());
     }
     
-    public static bool HasContent(MethodId methodId) => MethodsWithContent.Contains((uint)methodId);
-
     public static IMethodParser<TMethod> GetParser<TMethod>()
         where TMethod : struct, IIncomingMethod
     {

@@ -2,7 +2,7 @@ using RabbitMQ.Next.Methods;
 
 namespace RabbitMQ.Next.Transport.Methods.Basic;
 
-public readonly struct GetOkMethod : IIncomingMethod
+public readonly struct GetOkMethod : IIncomingMethod, IHasContentMethod
 {
     public GetOkMethod(string exchange, string routingKey, ulong deliveryTag, bool redelivered, uint messageCount)
     {
