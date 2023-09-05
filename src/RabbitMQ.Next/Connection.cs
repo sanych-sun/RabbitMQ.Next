@@ -20,12 +20,13 @@ internal class Connection : IConnection
     private readonly ChannelPool channelPool;
     private readonly ConnectionDetails connectionDetails;
     private readonly Channel<MemoryBlock> socketSender;
+    private readonly ObjectPool<byte[]> memoryPool;
 
     private ISocket socket;
     private CancellationTokenSource socketIoCancellation;
     private IChannelInternal connectionChannel;
 
-    public Connection(ConnectionSettings settings, ObjectPool<MemoryBlock> memoryPool)
+    public Connection(ConnectionSettings settings, ObjectPool<MemoryBlock> memoryPool2, ObjectPool<byte[]> memoryPool)
     {
         this.connectionDetails = new ConnectionDetails(settings);
         this.socketSender = System.Threading.Channels.Channel.CreateBounded<MemoryBlock>(new BoundedChannelOptions(100)
@@ -37,13 +38,14 @@ internal class Connection : IConnection
         });
             
         this.State = ConnectionState.Closed;
-        this.MemoryPool = memoryPool;
-        this.channelPool = new ChannelPool(num => new Channel(this.socketSender.Writer, this.MemoryPool, num, this.connectionDetails.Negotiated.FrameMaxSize));
+        this.MemoryPool2 = memoryPool2;
+        this.memoryPool = memoryPool;
+        this.channelPool = new ChannelPool(num => new Channel(this.socketSender.Writer, this.MemoryPool2, num, this.connectionDetails.Negotiated.FrameMaxSize));
     }
 
     public ConnectionState State { get; private set; }
 
-    public ObjectPool<MemoryBlock> MemoryPool { get; }
+    public ObjectPool<MemoryBlock> MemoryPool2 { get; }
 
     public async Task<IChannel> OpenChannelAsync(CancellationToken cancellationToken = default)
     {
@@ -77,7 +79,7 @@ internal class Connection : IConnection
         Task.Factory.StartNew(() => this.ReceiveLoop(this.socketIoCancellation.Token), TaskCreationOptions.LongRunning);
         Task.Factory.StartNew(this.SendLoop, TaskCreationOptions.LongRunning);
 
-        this.connectionChannel = new Channel(this.socketSender.Writer, this.MemoryPool, ProtocolConstants.ConnectionChannel, ProtocolConstants.FrameMinSize);
+        this.connectionChannel = new Channel(this.socketSender.Writer, this.MemoryPool2, ProtocolConstants.ConnectionChannel, ProtocolConstants.FrameMinSize);
         var connectionCloseWait = new WaitMethodMessageHandler<CloseMethod>(default);
         connectionCloseWait.WaitTask.ContinueWith(t =>
         {
@@ -120,7 +122,7 @@ internal class Connection : IConnection
 
     private ValueTask WriteToSocketAsync(ReadOnlyMemory<byte> bytes)
     {
-        var memoryBlock = this.MemoryPool.Get();
+        var memoryBlock = this.MemoryPool2.Get();
         memoryBlock.Write(bytes.Span);
 
         if (this.socketSender.Writer.TryWrite(memoryBlock))
@@ -140,55 +142,80 @@ internal class Connection : IConnection
             while (socketChannel.TryRead(out var memoryBlock))
             {
                 this.socket.Send(memoryBlock);
-                this.MemoryPool.Return(memoryBlock);
+                this.MemoryPool2.Return(memoryBlock);
             }
         }
     }
 
     private void ReceiveLoop(CancellationToken cancellationToken)
     {
-        var headerBuffer = new MemoryBlock(ProtocolConstants.FrameHeaderSize);
-
         try
         {
+            IMemoryAccessor previousChunk = null;
+            var expectedBytes = ProtocolConstants.FrameHeaderSize;
             while (!cancellationToken.IsCancellationRequested)
             {
-                // 1. Read frame header
-                this.socket.Receive(headerBuffer);
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    break;
-                }
-
-                ((ReadOnlySpan<byte>)headerBuffer).ReadFrameHeader(out FrameType frameType, out ushort channel, out uint payloadSize);
-
-                // 2. Get buffer
-                var buffer = this.MemoryPool.Get();
-
-                // 3. Read payload into the buffer, reserve extra byte for FrameEndByte
-                buffer.Slice(0, ((int)payloadSize + 1));
-                this.socket.Receive(buffer);
+                // 1. Obtain next buffer
+                var buffer = this.memoryPool.Get();
+                var bufferOffset = 0;
                 
-                // 4. Ensure there is FrameEnd
-                if (((ReadOnlySpan<byte>)buffer)[(int)payloadSize] != ProtocolConstants.FrameEndByte)
+                // 2. Copy bytes leftover from previous chunk if any
+                if (previousChunk != null)
                 {
-                    // TODO: throw connection exception here
-                    throw new InvalidOperationException();
+                    previousChunk.CopyTo(buffer);
+                    bufferOffset = previousChunk.Size;
+                    previousChunk.Dispose();
+                    previousChunk = null;
+                }
+                
+                // 3. Read data from the socket at least of frame header size
+                var received = this.socket.Receive(buffer, bufferOffset, expectedBytes - bufferOffset);
+                var receivedMemory = new SharedMemory(this.memoryPool, buffer);
+                var bufferSize = bufferOffset + received;
+
+                // 4. Parse received frames
+                var receivedSlice = receivedMemory.Slice(0, bufferSize);
+                while (receivedSlice.Length >= ProtocolConstants.FrameHeaderSize)
+                {
+                    // 4.1. Read frame header
+                    receivedSlice.Span.ReadFrameHeader(out var frameType, out var channel, out var payloadSize);
+                    var totalFrameSize = ProtocolConstants.FrameHeaderSize + (int)payloadSize + ProtocolConstants.FrameEndSize;
+                    
+                    // 4.2. Ensure entire frame was loaded
+                    if (totalFrameSize > receivedSlice.Length)
+                    {
+                        expectedBytes = totalFrameSize - receivedSlice.Length;
+                        break;
+                    }
+                    
+                    // 4.3. Ensure frame end if present
+                    if (receivedSlice.Span[totalFrameSize - 1] != ProtocolConstants.FrameEndByte)
+                    {
+                        // TODO: throw connection exception here
+                        throw new InvalidOperationException();
+                    }
+
+                    // 4.4. Can safely ignore Heartbeat frame
+                    if (frameType != FrameType.Heartbeat)
+                    {
+                        // 4.5. Slice frame payload
+                        var framePayload = receivedSlice.Slice(ProtocolConstants.FrameHeaderSize, (int)payloadSize);
+
+                        // 4.6. Write frame to appropriate channel
+                        var targetChannel = (channel == ProtocolConstants.ConnectionChannel) ? this.connectionChannel : this.channelPool.Get(channel);
+                        targetChannel.PushFrame(frameType, framePayload);
+                    }
+
+                    receivedSlice = receivedSlice.Slice(totalFrameSize);
+                    expectedBytes = ProtocolConstants.FrameHeaderSize;
                 }
 
-                // 5. Doing nothing on heartbeat frame
-                if (frameType == FrameType.Heartbeat)
+                if (receivedSlice.Length > 0)
                 {
-                    this.MemoryPool.Return(buffer);
-                    continue;
+                    previousChunk = receivedSlice.AsRef();
                 }
 
-                // 6. Shrink the buffer to the payload size
-                buffer.Slice(0, (int)payloadSize);
-
-                // 7. Write frame to appropriate channel
-                var targetChannel = (channel == ProtocolConstants.ConnectionChannel) ? this.connectionChannel: this.channelPool.Get(channel);
-                targetChannel.PushFrame(frameType, buffer);
+                receivedMemory.Dispose();
             }
         }
         catch (SocketException ex)

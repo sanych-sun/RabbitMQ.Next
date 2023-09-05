@@ -1,5 +1,6 @@
 // using System.Diagnostics;
 // using System.Text;
+// using System.Threading;
 // using System.Threading.Tasks;
 // using RabbitMQ.Next.Consumer;
 // using RabbitMQ.Next.Publisher;
@@ -34,7 +35,7 @@
 //
 //             var sw = Stopwatch.StartNew();
 //
-//             for (var i = 0; i < 1; i++)
+//             for (var i = 0; i < 100; i++)
 //             {
 //                 await publisher.PublishAsync($"test{i}");
 //             }
@@ -46,43 +47,38 @@
 //             this.output.WriteLine(sw.ElapsedMilliseconds.ToString());
 //         }
 //
-//         // [Fact]
-//         // public async Task TestConsumer()
-//         // {
-//         //     //var connection = new Connection(ConnectionString.Create("amqp://rpeesesf:naQF5gZbGA9GzNHkSKE4QxwBt__Lsmu-@beaver.rmq.cloudamqp.com/rpeesesf"));
-//         //     await using var connection = await ConnectionBuilder.Default
-//         //         .Endpoint("amqp://test1:test1@localhost:5672/")
-//         //         .UseDefaults()
-//         //         .ConnectAsync();
-//         //
-//         //     var num = 0;
-//         //     var tcs = new TaskCompletionSource();
-//         //     var consumer = connection.Consumer(
-//         //         builder => builder
-//         //             .BindToQueue("test-queue")
-//         //             .PrefetchCount(10)
-//         //             .UsePlainTextSerializer()
-//         //             .MessageHandler((message, content) =>
-//         //             {
-//         //                 num++;
-//         //
-//         //                 if (num == 10000)
-//         //                 {
-//         //                     tcs.SetResult();
-//         //                 }
-//         //
-//         //                 var body = content.GetContent<string>();
-//         //
-//         //                 return new ValueTask<bool>(true);
-//         //             })
-//         //     );
-//         //
-//         //     var comsumeTask = consumer.ConsumeAsync();
-//         //
-//         //     await tcs.Task;
-//         //     await consumer.DisposeAsync();
-//         //     await comsumeTask;
-//         // }
+//         [Fact]
+//         public async Task TestConsumer()
+//         {
+//             //var connection = new Connection(ConnectionString.Create("amqp://rpeesesf:naQF5gZbGA9GzNHkSKE4QxwBt__Lsmu-@beaver.rmq.cloudamqp.com/rpeesesf"));
+//             await using var connection = await ConnectionBuilder.Default
+//                 .Endpoint("amqp://test1:test1@localhost:5672/")
+//                 .ConnectAsync();
+//         
+//             var num = 0;
+//             var tcs = new TaskCompletionSource();
+//             var consumer = connection.Consumer(
+//                 builder => builder
+//                     .BindToQueue("my-queue")
+//                     .PrefetchCount(10)
+//                     .UsePlainTextSerializer());
+//
+//             var comsumeTask = consumer.ConsumeAsync(message =>
+//             {
+//                 num++;
+//
+//                 if (num == 100)
+//                 {
+//                     //tcs.SetResult();
+//                 }
+//
+//                 var body = message.Content<string>();
+//             }, CancellationToken.None);
+//         
+//             await tcs.Task;
+//             await consumer.DisposeAsync();
+//             await comsumeTask;
+//         }
 //
 //         [Header("test", "wokrs")]
 //         public class DummyClass

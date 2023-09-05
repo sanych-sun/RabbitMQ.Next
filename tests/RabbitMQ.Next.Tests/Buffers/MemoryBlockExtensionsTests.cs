@@ -1,6 +1,7 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using NSubstitute;
 using RabbitMQ.Next.Buffers;
 using Xunit;
 
@@ -77,27 +78,40 @@ public class MemoryBlockExtensionsTests
         };
     }
 
-    private static MemoryBlock BuildMemory(params byte[][] chunks)
+    private static IMemoryAccessor BuildMemory(params byte[][] chunks)
     {
-        var memory = new MemoryBlock(100);
         if (chunks == null || chunks.Length == 0)
         {
-            memory.Slice(0,0);
-            return memory;
+            return new StaticMemoryAccessor(Array.Empty<byte>());
         }
             
-        var first = memory;
-        first.Write(chunks[0]);
-        var current = first;
+        
+        
+        var first = SubstituteMemoryAccessor(chunks[0]);
+        IMemoryAccessor current = first;
 
         for (var i = 1; i < chunks.Length; i++)
         {
-            var next = new MemoryBlock(100);
-            next.Write(chunks[i]);
-
+            var next = SubstituteMemoryAccessor(chunks[i]);
             current = current.Append(next);
         }
 
         return first;
+    }
+
+    private static IMemoryAccessor SubstituteMemoryAccessor(byte[] memory)
+    {
+        var subject = Substitute.For<IMemoryAccessor>();
+        subject.Memory.Returns(memory);
+        subject.Size.Returns(memory.Length);
+        subject.Next.Returns((IMemoryAccessor)null);
+        subject.Append(Arg.Any<IMemoryAccessor>())
+            .Returns(x => x[0])
+            .AndDoes(x =>
+            {
+                subject.Next.Returns(x[0]);
+            });
+
+        return subject;
     }
 }

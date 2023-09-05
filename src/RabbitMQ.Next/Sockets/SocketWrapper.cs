@@ -45,12 +45,13 @@ internal class SocketWrapper : ISocket
         this.writeStream.Flush();
     }
     
-    public void Receive(MemoryBlock buffer)
+    public int Receive(byte[] buffer, int offset, int minBytes)
     {
         var received = 0;
-        while (received < buffer.Length)
+        while (received < minBytes)
         {
-            var readBytes = this.readStream.Read(buffer.Buffer, received, buffer.Length - received);
+            offset += received;
+            var readBytes = this.readStream.Read(buffer, offset, buffer.Length - offset);
             if (readBytes == 0 && this.IsConnectionClosedByServer())
             {
                 throw new SocketException();
@@ -58,6 +59,8 @@ internal class SocketWrapper : ISocket
             
             received += readBytes;
         }
+
+        return received;
     }
 
     private bool IsConnectionClosedByServer()

@@ -20,7 +20,6 @@ namespace RabbitMQ.Next.Channels;
 internal sealed class Channel : IChannelInternal
 {
     private readonly ChannelWriter<MemoryBlock> socketWriter;
-    private readonly ObjectPool<MemoryBlock> memoryPool;
     private readonly ObjectPool<LazyMessageProperties> messagePropertiesPool;
     private readonly ObjectPool<MessageBuilder> messageBuilderPool;
     private readonly TaskCompletionSource<bool> channelCompletion;
@@ -31,9 +30,8 @@ internal sealed class Channel : IChannelInternal
     public Channel(ChannelWriter<MemoryBlock> socketWriter, ObjectPool<MemoryBlock> memoryPool, ushort channelNumber, int frameMaxSize)
     {
         this.socketWriter = socketWriter;
-        this.memoryPool = memoryPool;
         this.ChannelNumber = channelNumber;
-        this.messageBuilderPool = new DefaultObjectPool<MessageBuilder>(new MessageBuilderPoolPolicy(this.memoryPool, channelNumber, frameMaxSize), 10);
+        this.messageBuilderPool = new DefaultObjectPool<MessageBuilder>(new MessageBuilderPoolPolicy(memoryPool, channelNumber, frameMaxSize), 10);
         this.messagePropertiesPool = new DefaultObjectPool<LazyMessageProperties>(new LazyMessagePropertiesPolicy());
 
         this.channelCompletion = new TaskCompletionSource<bool>();
@@ -60,8 +58,8 @@ internal sealed class Channel : IChannelInternal
         var parser = MethodRegistry.GetParser<TMethod>();
         IFrameHandler frameHandler =  
             typeof(IHasContentMethod).IsAssignableFrom(typeof(TMethod))
-            ? new MethodWithContentFrameHandler<TMethod>(handler, parser, this.memoryPool, this.messagePropertiesPool)
-            : new MethodFrameHandler<TMethod>(handler, parser, this.memoryPool);
+            ? new MethodWithContentFrameHandler<TMethod>(handler, parser, this.messagePropertiesPool)
+            : new MethodFrameHandler<TMethod>(handler, parser);
         
         var methodId = (uint)MethodRegistry.GetMethodId<TMethod>();
         this.methodHandlers.Add(methodId, frameHandler);
@@ -201,13 +199,9 @@ internal sealed class Channel : IChannelInternal
         }
     }
     
-    
-    // Incoming frame processing state
-    // TODO: consider removing to specialized class
     private IFrameHandler currentFrameHandler;
     
-    
-    public void PushFrame(FrameType type, MemoryBlock payload)
+    public void PushFrame(FrameType type, SharedMemory.MemoryAccessor payload)
     {
         if (this.currentFrameHandler == null)
         {
@@ -215,8 +209,9 @@ internal sealed class Channel : IChannelInternal
             {
                 throw new InvalidOperationException($"Unexpected {type} frame, when Method frame was expected");    
             }
-            
-            ((ReadOnlySpan<byte>)payload.Buffer).Read(out uint methodId);
+
+            payload.Span.Read(out uint methodId);
+            payload = payload.Slice(sizeof(uint));
 
             if (!this.methodHandlers.TryGetValue(methodId, out this.currentFrameHandler))
             {

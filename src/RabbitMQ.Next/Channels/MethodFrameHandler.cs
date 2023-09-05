@@ -1,5 +1,4 @@
 using System;
-using Microsoft.Extensions.ObjectPool;
 using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Methods;
 using RabbitMQ.Next.Transport;
@@ -12,13 +11,11 @@ internal class MethodFrameHandler<TMethod> : IFrameHandler
 {
     private readonly IMessageHandler<TMethod> wrapped;
     private readonly IMethodParser<TMethod> parser;
-    private readonly ObjectPool<MemoryBlock> memoryPool;
 
-    public MethodFrameHandler(IMessageHandler<TMethod> wrapped, IMethodParser<TMethod> parser, ObjectPool<MemoryBlock> memoryPool)
+    public MethodFrameHandler(IMessageHandler<TMethod> wrapped, IMethodParser<TMethod> parser)
     {
         this.wrapped = wrapped;
         this.parser = parser;
-        this.memoryPool = memoryPool;
     }
     
     public void Release(Exception ex = null)
@@ -26,18 +23,14 @@ internal class MethodFrameHandler<TMethod> : IFrameHandler
         this.wrapped.Release(ex);
     }
     
-    public FrameType AcceptFrame(FrameType type, MemoryBlock payload)
+    public FrameType AcceptFrame(FrameType type, SharedMemory.MemoryAccessor payload)
     {
         if (type != FrameType.Method)
         {
             throw new InvalidOperationException($"Unexpected {type} frame, when Method frame was expected");
         }
-
-        ReadOnlySpan<byte> data = payload;
-        data = data.Read(out uint _);
         
-        var methodArgs = this.parser.Parse(data);
-        this.memoryPool.Return(payload);
+        var methodArgs = this.parser.Parse(payload.Span);
         this.wrapped.Handle(methodArgs, null);
         
         return FrameType.Method;

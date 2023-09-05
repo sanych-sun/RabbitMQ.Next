@@ -7,5 +7,5 @@ internal interface ISocket : IDisposable
 {
     void Send(MemoryBlock payload);
 
-    void Receive(MemoryBlock buffer);
+    int Receive(byte[] buffer, int offset, int minBytes);
 }

@@ -23,8 +23,6 @@ internal sealed class LazyMessageProperties : IMessageProperties
 
     public void Set(ReadOnlyMemory<byte> data)
     {
-        data = data[(sizeof(uint) + sizeof(ulong))..]; // have to skip content header prefix and contentSize
-        
         data.Span.Read(out ushort fl);
         var flags = (MessageFlags)fl;
 

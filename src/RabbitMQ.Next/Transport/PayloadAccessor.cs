@@ -10,20 +10,18 @@ namespace RabbitMQ.Next.Transport;
 internal class PayloadAccessor: IPayload
 {
     private readonly ObjectPool<LazyMessageProperties> propertiesPool;
-    private readonly ObjectPool<MemoryBlock> memoryPool;
     private LazyMessageProperties properties;
-    private MemoryBlock header;
-    private MemoryBlock body;
+    private IMemoryAccessor header;
+    private IMemoryAccessor body;
 
-    public PayloadAccessor(ObjectPool<LazyMessageProperties> propertiesPool, ObjectPool<MemoryBlock> memoryPool, MemoryBlock header, MemoryBlock body)
+    public PayloadAccessor(ObjectPool<LazyMessageProperties> propertiesPool, IMemoryAccessor header, IMemoryAccessor body)
     {
         this.propertiesPool = propertiesPool;
-        this.memoryPool = memoryPool;
         this.header = header;
         this.body = body;
             
         this.properties = propertiesPool.Get();
-        this.properties.Set(header);
+        this.properties.Set(header.Memory);
     }
 
     public void Dispose()
@@ -36,13 +34,13 @@ internal class PayloadAccessor: IPayload
 
         if (this.header != null)
         {
-            this.memoryPool.Return(this.header);
+            this.header.Dispose();
             this.header = null;
         }
 
         if (this.body != null)
         {
-            this.memoryPool.Return(this.body);
+            this.body.Dispose();
             this.body = null;
         }
     }

@@ -12,21 +12,19 @@ internal class MethodWithContentFrameHandler<TMethod> : IFrameHandler
 {
     private readonly IMessageHandler<TMethod> wrapped;
     private readonly IMethodParser<TMethod> parser;
-    private readonly ObjectPool<MemoryBlock> memoryPool;
     private readonly ObjectPool<LazyMessageProperties> messagePropertiesPool;
 
     private FrameType expectedFrameType = FrameType.Method;
-    private MemoryBlock methodFrame;
-    private MemoryBlock contentHeader;
+    private TMethod methodArgs;
+    private IMemoryAccessor contentHeader;
     private long pendingContentSize;
-    private MemoryBlock contentBodyHead;
-    private MemoryBlock contentBodyTail;
+    private IMemoryAccessor contentBodyHead;
+    private IMemoryAccessor contentBodyTail;
     
-    public MethodWithContentFrameHandler(IMessageHandler<TMethod> wrapped, IMethodParser<TMethod> parser, ObjectPool<MemoryBlock> memoryPool, ObjectPool<LazyMessageProperties> messagePropertiesPool)
+    public MethodWithContentFrameHandler(IMessageHandler<TMethod> wrapped, IMethodParser<TMethod> parser, ObjectPool<LazyMessageProperties> messagePropertiesPool)
     {
         this.wrapped = wrapped;
         this.parser = parser;
-        this.memoryPool = memoryPool;
         this.messagePropertiesPool = messagePropertiesPool;
     }
 
@@ -35,7 +33,7 @@ internal class MethodWithContentFrameHandler<TMethod> : IFrameHandler
         this.wrapped.Release(ex);
     }
 
-    public FrameType AcceptFrame(FrameType type, MemoryBlock payload)
+    public FrameType AcceptFrame(FrameType type, SharedMemory.MemoryAccessor payload)
     {
         if (type != this.expectedFrameType)
         {
@@ -56,18 +54,14 @@ internal class MethodWithContentFrameHandler<TMethod> : IFrameHandler
 
             if (this.contentHeader != null)
             {
-                payloadAccessor = new PayloadAccessor(this.messagePropertiesPool, this.memoryPool, this.contentHeader, this.contentBodyHead);
+                payloadAccessor = new PayloadAccessor(this.messagePropertiesPool, this.contentHeader, this.contentBodyHead);
             }
-
-            var methodArgs = this.parser.Parse(((ReadOnlySpan<byte>)this.methodFrame).Read(out uint _));
             
-            this.wrapped.Handle(methodArgs, payloadAccessor);
-
-            this.memoryPool.Return(this.methodFrame);
+            this.wrapped.Handle(this.methodArgs, payloadAccessor);
             
             // reset state
             this.expectedFrameType = FrameType.Method;
-            this.methodFrame = null;
+            this.methodArgs = default;
             this.contentHeader = null;
             this.pendingContentSize = 0;
             this.contentBodyHead = null;
@@ -77,32 +71,32 @@ internal class MethodWithContentFrameHandler<TMethod> : IFrameHandler
         return this.expectedFrameType;
     }
 
-    private FrameType ParseMethodFrame(MemoryBlock payload)
+    private FrameType ParseMethodFrame(SharedMemory.MemoryAccessor payload)
     {
-        this.methodFrame = payload;
+        this.methodArgs = this.parser.Parse(payload.Span);
         return FrameType.ContentHeader;
     }
 
-    private FrameType ParseContentHeaderFrame(MemoryBlock payload)
+    private FrameType ParseContentHeaderFrame(SharedMemory.MemoryAccessor payload)
     {
-        ((ReadOnlySpan<byte>)payload)[4..] // skip 2 obsolete shorts
+        payload.Span[4..] // skip 2 obsolete shorts
             .Read(out ulong contentSize);
 
         this.pendingContentSize = (long)contentSize;
-        this.contentHeader = payload;
+        this.contentHeader = payload.Slice(4 + sizeof(ulong)).AsRef();
         return FrameType.ContentBody;
     }
 
-    private FrameType ParseContentBodyFrame(MemoryBlock payload)
+    private FrameType ParseContentBodyFrame(SharedMemory.MemoryAccessor payload)
     {
         if (this.contentBodyHead == null)
         {
-            this.contentBodyHead = payload;
-            this.contentBodyTail = payload;
+            this.contentBodyHead = payload.AsRef();
+            this.contentBodyTail = this.contentBodyHead;
         }
         else
         {
-            this.contentBodyTail = this.contentBodyTail.Append(payload);
+            this.contentBodyTail = this.contentBodyTail.Append(payload.AsRef());
         }
 
         this.pendingContentSize -= payload.Length;
