@@ -27,6 +27,7 @@ public class PublisherBenchmarks
             var data = parameters.Messages[i];
             var props = model.CreateBasicProperties();
             props.CorrelationId = data.CorrelationId;
+            props.DeliveryMode = 2; // this is default for RabbitMQ.Next
             model.BasicPublish("amq.topic", "", props, Encoding.UTF8.GetBytes(data.Payload));
             model.WaitForConfirms();
         }

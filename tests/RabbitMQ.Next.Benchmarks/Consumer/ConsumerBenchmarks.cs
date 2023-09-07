@@ -18,7 +18,9 @@ public class ConsumerBenchmarks
     private readonly string queueName = "test-queue";
     private IConnection connection;
     private RabbitMQ.Client.IConnection theirConnection;
-
+    
+    [Params(1024, 10240)]
+    public int PayloadSize;
 
     [GlobalSetup]
     public async Task Setup()
@@ -43,7 +45,7 @@ public class ConsumerBenchmarks
         
         var publisher = this.connection.Publisher("amq.fanout", builder => builder.UsePlainTextSerializer());
             
-        var payload = Helper.BuildDummyText(1024);
+        var payload = Helper.BuildDummyText(this.PayloadSize);
             
         for (int i = 0; i < this.messagesCount * 20; i++) // 15 runs for benchmark
         {

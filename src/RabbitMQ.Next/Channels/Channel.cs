@@ -19,7 +19,7 @@ namespace RabbitMQ.Next.Channels;
 
 internal sealed class Channel : IChannelInternal
 {
-    private readonly ChannelWriter<MemoryBlock> socketWriter;
+    private readonly ChannelWriter<IMemoryAccessor> socketWriter;
     private readonly ObjectPool<LazyMessageProperties> messagePropertiesPool;
     private readonly ObjectPool<MessageBuilder> messageBuilderPool;
     private readonly TaskCompletionSource<bool> channelCompletion;
@@ -27,11 +27,10 @@ internal sealed class Channel : IChannelInternal
 
     private ulong lastDeliveryTag;
     
-    public Channel(ChannelWriter<MemoryBlock> socketWriter, ObjectPool<MemoryBlock> memoryPool, ushort channelNumber, int frameMaxSize)
+    public Channel(ChannelWriter<IMemoryAccessor> socketWriter, ObjectPool<MessageBuilder> messageBuilderPool)
     {
         this.socketWriter = socketWriter;
-        this.ChannelNumber = channelNumber;
-        this.messageBuilderPool = new DefaultObjectPool<MessageBuilder>(new MessageBuilderPoolPolicy(memoryPool, channelNumber, frameMaxSize), 10);
+        this.messageBuilderPool = messageBuilderPool;
         this.messagePropertiesPool = new DefaultObjectPool<LazyMessageProperties>(new LazyMessagePropertiesPolicy());
 
         this.channelCompletion = new TaskCompletionSource<bool>();
@@ -47,9 +46,7 @@ internal sealed class Channel : IChannelInternal
 
         this.WithMessageHandler(channelCloseWait);
     }
-
-    public ushort ChannelNumber { get; }
-
+    
     public Task Completion => this.channelCompletion.Task;
     
     public IDisposable WithMessageHandler<TMethod>(IMessageHandler<TMethod> handler)
@@ -73,7 +70,7 @@ internal sealed class Channel : IChannelInternal
         this.ValidateState();
         
         var messageBuilder = this.messageBuilderPool.Get();
-        MemoryBlock memory;
+        IMemoryAccessor memory;
             
         try
         {
@@ -106,7 +103,7 @@ internal sealed class Channel : IChannelInternal
         var publishMethod = new PublishMethod(exchange, routingKey, (byte)flags);
         
         var messageBuilder = this.messageBuilderPool.Get();
-        MemoryBlock memory;
+        IMemoryAccessor memory;
             
         try
         {
@@ -180,7 +177,7 @@ internal sealed class Channel : IChannelInternal
         this.TryComplete(new ChannelException(statusCode, description, failedMethodId));
     }
     
-    private ValueTask WriteToSocketAsync(MemoryBlock memory, CancellationToken cancellation = default)
+    private ValueTask WriteToSocketAsync(IMemoryAccessor memory, CancellationToken cancellation = default)
     {
         if (this.socketWriter.TryWrite(memory))
         {

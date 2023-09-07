@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using NSubstitute;
@@ -23,26 +24,26 @@ public class ChannelPoolTests
     [Theory]
     [InlineData(1, 2)]
     [InlineData(5, 22)]
-    public void CanResize(int initialSize, int channels)
+    public void CanResize(int initialSize, int num)
     {
         var factory = this.MockFactory();
         var pool = new ChannelPool(factory, initialSize);
 
-        for(var i = 0; i < channels; i++)
-        {
-            pool.Create();
-        }
 
-        for (var i = 1; i < channels + 1; i++)
+        var record = Record.Exception(() =>
         {
-            var ch = pool.Get((ushort)i);
-            Assert.Equal(i, ch.ChannelNumber);
-        }
+            for (var i = 0; i < num; i++)
+            {
+                pool.Create();
+            }
+        });
+        
+        Assert.Null(record);
     }
 
     [Theory]
     [InlineData(10, 1)]
-    [InlineData(10, 10)]
+    [InlineData(100, 10)]
     public async Task CreateTests(int number, int concurrencyLevel)
     {
         var factory = this.MockFactory();
@@ -75,16 +76,17 @@ public class ChannelPoolTests
     {
         var factory = this.MockFactory();
         var pool = new ChannelPool(factory);
+        var channels = new Dictionary<int, IChannel>();
 
-        for (var i = 0; i < num; i++)
+        for (var i = 1; i < num; i++)
         {
-            pool.Create();
+            channels.Add(i, pool.Create());
         }
 
-        for (int i = 1; i < num + 1; i++)
+        foreach(var (key,channel) in channels)
         {
-            var ch = pool.Get((ushort)i);
-            Assert.Equal(i, ch.ChannelNumber);
+            var ch = pool.Get((ushort)key);
+            Assert.Equal(channel, ch);
         }
     }
 
@@ -169,7 +171,6 @@ public class ChannelPoolTests
             var t = new TaskCompletionSource();
             var ch = Substitute.For<IChannelInternal>();
             ch.Completion.Returns(t.Task);
-            ch.ChannelNumber.Returns(args[0]);
             ch.TryComplete(Arg.Any<Exception>()).Returns(args =>
             {
                 var ex = (Exception)args[0];

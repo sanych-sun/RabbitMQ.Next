@@ -2,7 +2,7 @@ namespace RabbitMQ.Next.Transport;
 
 internal static class ProtocolConstants
 {
-    public const int ConnectionChannel = 0;
+    public const ushort ConnectionChannel = 0;
     public const int FrameMinSize = 4096;
 
     public const int FrameHeaderSize = 7;

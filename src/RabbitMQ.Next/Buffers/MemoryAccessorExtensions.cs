@@ -1,9 +1,8 @@
-using System;
 using System.Buffers;
 
 namespace RabbitMQ.Next.Buffers;
 
-internal static class MemoryBlockExtensions
+internal static class MemoryAccessorExtensions
 {
     public static ReadOnlySequence<byte> ToSequence(this IMemoryAccessor source)
     {
@@ -28,20 +27,5 @@ internal static class MemoryBlockExtensions
         }
             
         return new ReadOnlySequence<byte>(first, 0, last, last.Memory.Length);
-    }
-
-    public static void Write(this MemoryBlock memory, ReadOnlySpan<byte> data)
-    {
-        if (data.Length > memory.Buffer.Length)
-        {
-            throw new OutOfMemoryException();
-        }
-
-        if (!data.IsEmpty)
-        {
-            data.CopyTo(memory.Buffer);
-        }
-        
-        memory.Slice(0, data.Length);
     }
 }

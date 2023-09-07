@@ -5,7 +5,7 @@ namespace RabbitMQ.Next.Sockets;
 
 internal interface ISocket : IDisposable
 {
-    void Send(MemoryBlock payload);
+    void Send(IMemoryAccessor payload);
 
     int Receive(byte[] buffer, int offset, int minBytes);
 }

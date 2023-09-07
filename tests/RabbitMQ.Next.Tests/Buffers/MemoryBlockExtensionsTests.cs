@@ -10,24 +10,6 @@ namespace RabbitMQ.Next.Tests.Buffers;
 public class MemoryBlockExtensionsTests
 {
     [Theory]
-    [MemberData(nameof(WriteTestCases))]
-    internal void WriteTests(byte[] data)
-    {
-        var memory = new MemoryBlock(100);
-        memory.Write(data);
-
-        Assert.Equal(data?.Length ?? 0, memory.Length);
-        Assert.Equal(data ?? Array.Empty<byte>(), ((ReadOnlyMemory<byte>)memory).ToArray());
-    }
-        
-    [Fact]
-    internal void WriteThrows()
-    {
-        var memory = new MemoryBlock(2);
-        Assert.Throws<OutOfMemoryException>(() => memory.Write(new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06 }));
-    }
-        
-    [Theory]
     [MemberData(nameof(ToSequenceTestCases))]
     internal void ToSequenceTests(byte[] expected, byte[][] data)
     {
@@ -82,7 +64,7 @@ public class MemoryBlockExtensionsTests
     {
         if (chunks == null || chunks.Length == 0)
         {
-            return new StaticMemoryAccessor(Array.Empty<byte>());
+            return new MemoryAccessor(Array.Empty<byte>());
         }
             
         

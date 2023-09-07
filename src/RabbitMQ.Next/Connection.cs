@@ -19,17 +19,17 @@ internal class Connection : IConnection
 {
     private readonly ChannelPool channelPool;
     private readonly ConnectionDetails connectionDetails;
-    private readonly Channel<MemoryBlock> socketSender;
+    private readonly Channel<IMemoryAccessor> socketSender;
     private readonly ObjectPool<byte[]> memoryPool;
 
     private ISocket socket;
     private CancellationTokenSource socketIoCancellation;
     private IChannelInternal connectionChannel;
 
-    public Connection(ConnectionSettings settings, ObjectPool<MemoryBlock> memoryPool2, ObjectPool<byte[]> memoryPool)
+    public Connection(ConnectionSettings settings, ObjectPool<byte[]> memoryPool)
     {
         this.connectionDetails = new ConnectionDetails(settings);
-        this.socketSender = System.Threading.Channels.Channel.CreateBounded<MemoryBlock>(new BoundedChannelOptions(100)
+        this.socketSender = System.Threading.Channels.Channel.CreateBounded<IMemoryAccessor>(new BoundedChannelOptions(100)
         {
             FullMode = BoundedChannelFullMode.Wait,
             SingleReader = true,
@@ -38,15 +38,12 @@ internal class Connection : IConnection
         });
             
         this.State = ConnectionState.Closed;
-        this.MemoryPool2 = memoryPool2;
         this.memoryPool = memoryPool;
-        this.channelPool = new ChannelPool(num => new Channel(this.socketSender.Writer, this.MemoryPool2, num, this.connectionDetails.Negotiated.FrameMaxSize));
+        this.channelPool = new ChannelPool(this.CreateChannel);
     }
 
     public ConnectionState State { get; private set; }
-
-    public ObjectPool<MemoryBlock> MemoryPool2 { get; }
-
+    
     public async Task<IChannel> OpenChannelAsync(CancellationToken cancellationToken = default)
     {
         // TODO: validate state
@@ -79,7 +76,7 @@ internal class Connection : IConnection
         Task.Factory.StartNew(() => this.ReceiveLoop(this.socketIoCancellation.Token), TaskCreationOptions.LongRunning);
         Task.Factory.StartNew(this.SendLoop, TaskCreationOptions.LongRunning);
 
-        this.connectionChannel = new Channel(this.socketSender.Writer, this.MemoryPool2, ProtocolConstants.ConnectionChannel, ProtocolConstants.FrameMinSize);
+        this.connectionChannel = this.CreateChannel(ProtocolConstants.ConnectionChannel);
         var connectionCloseWait = new WaitMethodMessageHandler<CloseMethod>(default);
         connectionCloseWait.WaitTask.ContinueWith(t =>
         {
@@ -100,7 +97,8 @@ internal class Connection : IConnection
         // TODO: adopt authentication_failure_close capability to handle auth errors
 
         var negotiateTask = NegotiateConnectionAsync(this.connectionChannel, this.connectionDetails.Settings, cancellation);
-        await this.WriteToSocketAsync(ProtocolConstants.AmqpHeader);
+        var amqpHeaderMemory = new MemoryAccessor(ProtocolConstants.AmqpHeader);
+        await this.socketSender.Writer.WriteAsync(amqpHeaderMemory, cancellation);
 
         this.connectionDetails.Negotiated = await negotiateTask;
 
@@ -111,27 +109,23 @@ internal class Connection : IConnection
         this.State = ConnectionState.Open;
     }
 
+    private IChannelInternal CreateChannel(ushort channelNumber)
+    {
+        var maxFrameSize = this.connectionDetails?.Negotiated?.FrameMaxSize ?? ProtocolConstants.FrameMinSize;
+        var policy = new MessageBuilderPoolPolicy(this.memoryPool, channelNumber, maxFrameSize);
+        var messageBuilderPool = new DefaultObjectPool<MessageBuilder>(policy);
+
+        return new Channel(this.socketSender.Writer, messageBuilderPool);
+    }
+
     private async Task HeartbeatLoop(TimeSpan interval, CancellationToken cancellation)
     {
+        var heartbeatMemory = new MemoryAccessor(ProtocolConstants.HeartbeatFrame);
         while (!cancellation.IsCancellationRequested)
         {
             await Task.Delay(interval, cancellation);
-            await this.WriteToSocketAsync(ProtocolConstants.HeartbeatFrame);
+            await this.socketSender.Writer.WriteAsync(heartbeatMemory, cancellation);
         }
-    }
-
-    private ValueTask WriteToSocketAsync(ReadOnlyMemory<byte> bytes)
-    {
-        var memoryBlock = this.MemoryPool2.Get();
-        memoryBlock.Write(bytes.Span);
-
-        if (this.socketSender.Writer.TryWrite(memoryBlock))
-        {
-            return default;
-        }
-        
-        // Should not return memory block here, it will be done in SendLoop
-        return this.socketSender.Writer.WriteAsync(memoryBlock);
     }
 
     private async Task SendLoop()
@@ -139,10 +133,16 @@ internal class Connection : IConnection
         var socketChannel = this.socketSender.Reader;
         while (await socketChannel.WaitToReadAsync())
         {
-            while (socketChannel.TryRead(out var memoryBlock))
+            while (socketChannel.TryRead(out var memory))
             {
-                this.socket.Send(memoryBlock);
-                this.MemoryPool2.Return(memoryBlock);
+                this.socket.Send(memory);
+
+                while(memory != null)
+                {
+                    var next = memory.Next;
+                    memory.Dispose();
+                    memory = next;
+                }
             }
         }
     }
@@ -169,7 +169,7 @@ internal class Connection : IConnection
                 }
                 
                 // 3. Read data from the socket at least of frame header size
-                var received = this.socket.Receive(buffer, bufferOffset, expectedBytes - bufferOffset);
+                var received = this.socket.Receive(buffer, bufferOffset, expectedBytes);
                 var receivedMemory = new SharedMemory(this.memoryPool, buffer);
                 var bufferSize = bufferOffset + received;
 

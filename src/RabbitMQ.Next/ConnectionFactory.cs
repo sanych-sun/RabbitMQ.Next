@@ -16,9 +16,8 @@ internal sealed class ConnectionFactory : IConnectionFactory
         // (frame header + frame payload + frame-end)
         var bufferSize = ProtocolConstants.FrameHeaderSize + settings.MaxFrameSize + ProtocolConstants.FrameEndSize;
         var memoryPool = new DefaultObjectPool<byte[]>(new MemoryPoolPolicy(bufferSize), 100);
-        var memoryPool2 = new MemoryBlockPool(bufferSize, 100);
         
-        var connection = new Connection(settings, memoryPool2, memoryPool);
+        var connection = new Connection(settings, memoryPool);
         await connection.OpenConnectionAsync(cancellation);
         return connection;
     }

@@ -64,7 +64,7 @@ internal sealed class SharedMemory : IDisposable
                 throw new ArgumentOutOfRangeException(nameof(offset));
             }
         
-            if(offset + length >= owner.memory.Length)
+            if(offset + length > owner.memory.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(length));
             }
@@ -139,7 +139,6 @@ internal sealed class SharedMemory : IDisposable
             
             this.owner.Dispose();
             this.owner = null;
-            this.Next?.Dispose();
             this.Next = null;
         }
         

@@ -1,15 +1,14 @@
 using Microsoft.Extensions.ObjectPool;
-using RabbitMQ.Next.Buffers;
 
 namespace RabbitMQ.Next.Transport;
 
 internal class MessageBuilderPoolPolicy : PooledObjectPolicy<MessageBuilder>
 {
-    private readonly ObjectPool<MemoryBlock> memoryPool;
+    private readonly ObjectPool<byte[]> memoryPool;
     private readonly ushort channel;
     private readonly int frameMaxSize;
 
-    public MessageBuilderPoolPolicy(ObjectPool<MemoryBlock> memoryPool, ushort channel, int frameMaxSize)
+    public MessageBuilderPoolPolicy(ObjectPool<byte[]> memoryPool, ushort channel, int frameMaxSize)
     {
         this.memoryPool = memoryPool;
         this.channel = channel;
@@ -20,12 +19,12 @@ internal class MessageBuilderPoolPolicy : PooledObjectPolicy<MessageBuilder>
 
     public override bool Return(MessageBuilder obj)
     {
-        if (this.channel == obj.Channel && this.frameMaxSize == obj.FrameMaxSize)
+        if (this.channel != obj.Channel || this.frameMaxSize != obj.MaxFrameSize)
         {
-            obj.Reset();
-            return true;    
+            return false;
         }
-
-        return false;
+        
+        obj.Reset();
+        return true;
     }
 }

@@ -33,12 +33,12 @@ internal class SocketWrapper : ISocket
         this.writeStream = stream;
     }
 
-    public void Send(MemoryBlock payload)
+    public void Send(IMemoryAccessor payload)
     {
         var current = payload;
         while (current != null)
         {
-            this.writeStream.Write(current.Buffer, current.Start, current.Length);
+            current.WriteTo(this.writeStream);
             current = current.Next;
         }
         
@@ -50,13 +50,13 @@ internal class SocketWrapper : ISocket
         var received = 0;
         while (received < minBytes)
         {
-            offset += received;
             var readBytes = this.readStream.Read(buffer, offset, buffer.Length - offset);
             if (readBytes == 0 && this.IsConnectionClosedByServer())
             {
                 throw new SocketException();
             }
-            
+
+            offset += readBytes;
             received += readBytes;
         }
 
