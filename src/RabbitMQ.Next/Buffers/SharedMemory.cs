@@ -12,13 +12,14 @@ internal sealed class SharedMemory : IDisposable
     private int referencesCount = 1;
     private byte[] memory;
 
-    public SharedMemory(ObjectPool<byte[]> memoryPool, byte[] memory)
+    public SharedMemory(ObjectPool<byte[]> memoryPool, byte[] memory, int size)
     {
         ArgumentNullException.ThrowIfNull(memoryPool);
         ArgumentNullException.ThrowIfNull(memory);
         
         this.memoryPool = memoryPool;
         this.memory = memory;
+        this.Size = size;
     }
 
     public void Dispose()
@@ -33,8 +34,16 @@ internal sealed class SharedMemory : IDisposable
         this.memory = null;
     }
     
+    public int Size { get; }
+
+    public MemoryAccessor Slice(int offset) 
+        => new(this, offset, this.Size - offset);
+    
     public MemoryAccessor Slice(int offset, int size) 
         => new(this, offset, size);
+
+    public static implicit operator MemoryAccessor(SharedMemory memory)
+        => new (memory, 0, memory.Size);
 
     private void DisposeCheck()
     {
@@ -49,7 +58,7 @@ internal sealed class SharedMemory : IDisposable
         private readonly SharedMemory owner;
         private readonly int offset;
 
-        public MemoryAccessor(SharedMemory owner, int offset, int length)
+        public MemoryAccessor(SharedMemory owner, int offset, int size)
         {
             ArgumentNullException.ThrowIfNull(owner);
             owner.DisposeCheck();
@@ -59,60 +68,34 @@ internal sealed class SharedMemory : IDisposable
                 throw new ArgumentOutOfRangeException(nameof(offset));
             }
 
-            if (offset > owner.memory.Length)
+            if (offset > owner.Size)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset));
             }
         
-            if(offset + length > owner.memory.Length)
+            if(offset + size > owner.Size)
             {
-                throw new ArgumentOutOfRangeException(nameof(length));
+                throw new ArgumentOutOfRangeException(nameof(size));
             }
             
             this.owner = owner;
             this.offset = offset;
-            this.Length = length;
+            this.Size = size;
+            this.Span = new (this.owner.memory, offset, size);
         }
 
-        public int Length { get; }
-        
-        public ReadOnlySpan<byte> Span
-        {
-            get
-            {
-                this.owner.DisposeCheck();
-                return new (this.owner.memory, this.offset, this.Length);
-            }
-        }
+        public int Size { get; }
+
+        public ReadOnlySpan<byte> Span { get; }
 
         public MemoryAccessor Slice(int offset)
-            => this.Slice(offset, this.Length - offset);
+            => new(this.owner, this.offset + offset, this.Size - offset);
         
-        public MemoryAccessor Slice(int offset, int length)
-        {
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            
-            if (length < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length));
-            }
-            
-            if (offset + length > this.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length));
-            }
+        public MemoryAccessor Slice(int offset, int size) 
+            => new(this.owner, this.offset + offset, size);
 
-            return new(this.owner, this.offset + offset, length);
-        }
-
-        public IMemoryAccessor AsRef()
-        {
-            this.owner.DisposeCheck();
-            return new SharedMemoryAccessor(this.owner, this.offset, this.Length);
-        }
+        public IMemoryAccessor AsRef() 
+            => new SharedMemoryAccessor(this.owner, this.offset, this.Size);
     }
     
     private sealed class SharedMemoryAccessor : IMemoryAccessor
@@ -122,6 +105,8 @@ internal sealed class SharedMemory : IDisposable
 
         public SharedMemoryAccessor(SharedMemory owner, int offset, int size)
         {
+            owner.DisposeCheck();
+            
             this.owner = owner;
             this.offset = offset;
             this.Size = size;

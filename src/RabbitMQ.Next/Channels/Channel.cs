@@ -200,6 +200,11 @@ internal sealed class Channel : IChannelInternal
     
     public void PushFrame(FrameType type, SharedMemory.MemoryAccessor payload)
     {
+        if (type == FrameType.Heartbeat)
+        {
+            return;
+        }
+        
         if (this.currentFrameHandler == null)
         {
             if (type != FrameType.Method)

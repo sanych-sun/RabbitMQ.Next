@@ -45,11 +45,11 @@ public class StringConverter : IConverter<string>
             return string.Empty;
         }
 
-        if (bytes.IsSingleSegment)
-        {
-            return Encoding.UTF8.GetString(bytes.FirstSpan);
-        }
+        return bytes.IsSingleSegment ? Encoding.UTF8.GetString(bytes.FirstSpan) : ParseChunked(bytes);
+    }
 
+    private static string ParseChunked(ReadOnlySequence<byte> bytes)
+    {
         var decoder = Encoding.UTF8.GetDecoder();
         var chunks = new List<ArraySegment<char>>();
         var totalChars = 0;

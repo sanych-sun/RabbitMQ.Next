@@ -151,71 +151,68 @@ internal class Connection : IConnection
     {
         try
         {
-            IMemoryAccessor previousChunk = null;
-            var expectedBytes = ProtocolConstants.FrameHeaderSize;
+            // 1. Receive next chunk of data.
+            SharedMemory receivedMemory = null;
+
             while (!cancellationToken.IsCancellationRequested)
             {
-                // 1. Obtain next buffer
-                var buffer = this.memoryPool.Get();
-                var bufferOffset = 0;
-                
-                // 2. Copy bytes leftover from previous chunk if any
-                if (previousChunk != null)
+                SharedMemory.MemoryAccessor currentAccessor = default;
+                if (receivedMemory != null)
                 {
-                    previousChunk.CopyTo(buffer);
-                    bufferOffset = previousChunk.Size;
-                    previousChunk.Dispose();
-                    previousChunk = null;
+                    currentAccessor = receivedMemory;
                 }
-                
-                // 3. Read data from the socket at least of frame header size
-                var received = this.socket.Receive(buffer, bufferOffset, expectedBytes);
-                var receivedMemory = new SharedMemory(this.memoryPool, buffer);
-                var bufferSize = bufferOffset + received;
 
-                // 4. Parse received frames
-                var receivedSlice = receivedMemory.Slice(0, bufferSize);
-                while (receivedSlice.Length >= ProtocolConstants.FrameHeaderSize)
+                // 2. Parse received frames
+                while (currentAccessor.Size >= ProtocolConstants.FrameHeaderSize)
                 {
-                    // 4.1. Read frame header
-                    receivedSlice.Span.ReadFrameHeader(out var frameType, out var channel, out var payloadSize);
-                    var totalFrameSize = ProtocolConstants.FrameHeaderSize + (int)payloadSize + ProtocolConstants.FrameEndSize;
-                    
-                    // 4.2. Ensure entire frame was loaded
-                    if (totalFrameSize > receivedSlice.Length)
+                    // 2.1. Read frame header
+                    currentAccessor.Span.ReadFrameHeader(out var frameType, out var channel, out var payloadSize);
+                    currentAccessor = currentAccessor.Slice(ProtocolConstants.FrameHeaderSize);
+
+                    // 2.2. Lookup for the target channel to push the frame
+                    var targetChannel = (channel == ProtocolConstants.ConnectionChannel) ? this.connectionChannel : this.channelPool.Get(channel);
+
+                    // 2.3. Slice frame bytes
+                    SharedMemory.MemoryAccessor frameBytes;
+                    if (currentAccessor.Size >= payloadSize + ProtocolConstants.FrameEndSize)
                     {
-                        expectedBytes = totalFrameSize - receivedSlice.Length;
-                        break;
+                        frameBytes = currentAccessor.Slice(0, (int)payloadSize);
                     }
-                    
-                    // 4.3. Ensure frame end if present
-                    if (receivedSlice.Span[totalFrameSize - 1] != ProtocolConstants.FrameEndByte)
+                    else
+                    {
+                        var missedBytes = (int)payloadSize - currentAccessor.Size;
+
+                        if (frameType == FrameType.ContentBody)
+                        {
+                            // ContentBody frame could be easily processed chunked
+                            targetChannel.PushFrame(frameType, currentAccessor);
+                            currentAccessor = default;
+                        }
+
+                        var previousMemory = receivedMemory;
+                        receivedMemory = ReceiveNext(missedBytes + ProtocolConstants.FrameEndSize, currentAccessor);
+                        previousMemory.Dispose();
+
+                        currentAccessor = receivedMemory;
+                        frameBytes = currentAccessor.Slice(0, frameType == FrameType.ContentBody ? missedBytes : (int)payloadSize);
+                    }
+
+                    // 2.4. Ensure frame end present just after the current frame bytes
+                    if (currentAccessor.Span[frameBytes.Size] != ProtocolConstants.FrameEndByte)
                     {
                         // TODO: throw connection exception here
                         throw new InvalidOperationException();
                     }
 
-                    // 4.4. Can safely ignore Heartbeat frame
-                    if (frameType != FrameType.Heartbeat)
-                    {
-                        // 4.5. Slice frame payload
-                        var framePayload = receivedSlice.Slice(ProtocolConstants.FrameHeaderSize, (int)payloadSize);
-
-                        // 4.6. Write frame to appropriate channel
-                        var targetChannel = (channel == ProtocolConstants.ConnectionChannel) ? this.connectionChannel : this.channelPool.Get(channel);
-                        targetChannel.PushFrame(frameType, framePayload);
-                    }
-
-                    receivedSlice = receivedSlice.Slice(totalFrameSize);
-                    expectedBytes = ProtocolConstants.FrameHeaderSize;
+                    // 2.5. Push frame to the target channel
+                    targetChannel.PushFrame(frameType, frameBytes);
+                    currentAccessor = currentAccessor.Slice(frameBytes.Size + ProtocolConstants.FrameEndSize);
                 }
 
-                if (receivedSlice.Length > 0)
-                {
-                    previousChunk = receivedSlice.AsRef();
-                }
-
-                receivedMemory.Dispose();
+                // 3. Receive next chunk with preserving leftovers of the currently not yet parsed data
+                var nextChunk = ReceiveNext(ProtocolConstants.FrameHeaderSize, currentAccessor);
+                receivedMemory?.Dispose();
+                receivedMemory = nextChunk;
             }
         }
         catch (SocketException ex)
@@ -223,6 +220,32 @@ internal class Connection : IConnection
             // todo: report to diagnostic source
 
             this.ConnectionClose(ex);
+        }
+        catch (Exception ex)
+        {
+            this.ConnectionClose(ex);
+        }
+
+        return;
+        
+        SharedMemory ReceiveNext(int expectedBytes, SharedMemory.MemoryAccessor previousChunk = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            
+            // Obtain next buffer
+            var buffer = this.memoryPool.Get();
+            var bufferOffset = 0;
+                
+            // Copy bytes leftover from previous chunk if any
+            if (previousChunk.Size > 0)
+            {
+                previousChunk.Span.CopyTo(buffer);
+                bufferOffset = previousChunk.Size;
+            }
+                
+            // Read data from the socket at least of requested size
+            var received = this.socket.Receive(buffer, bufferOffset, expectedBytes);
+            return new SharedMemory(this.memoryPool, buffer, bufferOffset + received);
         }
     }
 

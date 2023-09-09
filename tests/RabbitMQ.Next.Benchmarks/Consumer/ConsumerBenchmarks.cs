@@ -14,7 +14,7 @@ namespace RabbitMQ.Next.Benchmarks.Consumer;
 
 public class ConsumerBenchmarks
 {
-    private readonly int messagesCount = 10000;
+    private readonly int messagesCount = 10_000;
     private readonly string queueName = "test-queue";
     private IConnection connection;
     private RabbitMQ.Client.IConnection theirConnection;

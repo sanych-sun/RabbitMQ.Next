@@ -99,7 +99,7 @@ internal class MethodWithContentFrameHandler<TMethod> : IFrameHandler
             this.contentBodyTail = this.contentBodyTail.Append(payload.AsRef());
         }
 
-        this.pendingContentSize -= payload.Length;
+        this.pendingContentSize -= payload.Size;
         return (this.pendingContentSize > 0) ? FrameType.ContentBody : FrameType.None;
     }
 }
