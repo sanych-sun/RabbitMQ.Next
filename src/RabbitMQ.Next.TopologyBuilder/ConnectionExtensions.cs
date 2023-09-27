@@ -13,7 +13,7 @@ public static class ConnectionExtensions
         }
 
         using var topologyBuilder = new TopologyBuilder(connection);
-        await builder.Invoke(topologyBuilder);
+        await builder.Invoke(topologyBuilder).ConfigureAwait(false);
     }
     
     public static async Task ConfigureAsync<TState>(this IConnection connection, TState state, Func<ITopologyBuilder, TState, Task> builder)
@@ -24,6 +24,6 @@ public static class ConnectionExtensions
         }
 
         using var topologyBuilder = new TopologyBuilder(connection);
-        await builder.Invoke(topologyBuilder, state);
+        await builder.Invoke(topologyBuilder, state).ConfigureAwait(false);
     }
 }

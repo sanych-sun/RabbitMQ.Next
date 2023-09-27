@@ -20,7 +20,8 @@ public class PublishNoConfirmBenchmarks
     {
         this.connection = await ConnectionBuilder.Default
             .Endpoint(Helper.RabbitMqConnection)
-            .ConnectAsync();
+            .ConnectAsync()
+            .ConfigureAwait(false);
 
         ConnectionFactory factory = new ConnectionFactory();
         factory.Uri = Helper.RabbitMqConnection;
@@ -63,13 +64,14 @@ public class PublishNoConfirmBenchmarks
                 {
                     var data = parameters.Messages[i];
                     await publisher.PublishAsync(data, data.Payload,
-                        (state, message) => message.SetCorrelationId(state.CorrelationId));
+                        (state, message) => message.SetCorrelationId(state.CorrelationId)).ConfigureAwait(false);
 
                 }
             })
-            .ToArray());
+            .ToArray())
+            .ConfigureAwait(false);
 
-        await publisher.DisposeAsync();
+        await publisher.DisposeAsync().ConfigureAwait(false);
     }
 
     [Benchmark]

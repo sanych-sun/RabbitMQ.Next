@@ -20,7 +20,7 @@ internal static class EndpointResolver
         {
             try
             {
-                return await OpenSocketAsync(endpoint, cancellation);
+                return await OpenSocketAsync(endpoint, cancellation).ConfigureAwait(false);
             }
             catch (Exception e)
             {

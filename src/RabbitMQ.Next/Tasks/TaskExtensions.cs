@@ -71,13 +71,13 @@ public static class TaskExtensions
         var cancellationSource = new TaskCompletionSource<bool>();
         await using var registration = cancellation.Register(tcs => ((TaskCompletionSource<bool>)tcs).TrySetResult(true), cancellationSource);
 
-        await Task.WhenAny(task, cancellationSource.Task);
+        await Task.WhenAny(task, cancellationSource.Task).ConfigureAwait(false);
 
         if (cancellation.IsCancellationRequested)
         {
             throw new TaskCanceledException();
         }
 
-        return await task;
+        return await task.ConfigureAwait(false);
     }
 }

@@ -81,14 +81,6 @@ internal sealed class PooledMemoryAccessor : IMemoryAccessor
         stream.Write(this.memory, this.offset, this.Size);
     }
 
-    public void CopyTo(Span<byte> destination)
-    {
-        if (this.Size > 0)
-        {
-            this.Memory.Span.CopyTo(destination);
-        }
-    }
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void CheckDisposed()
     {

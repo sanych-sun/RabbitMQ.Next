@@ -34,9 +34,4 @@ internal sealed class MemoryAccessor : IMemoryAccessor
         ArgumentNullException.ThrowIfNull(stream);
         stream.Write(this.memory, 0, this.memory.Length);
     }
-    
-    public void CopyTo(Span<byte> destination)
-    {
-        this.memory.CopyTo(destination);
-    }
 }

@@ -50,13 +50,13 @@ internal sealed class ReturnMessageHandler : IMessageHandler<ReturnMethod>
     private async Task ProcessReturnedMessagesAsync()
     {
         var reader = this.returnChannel.Reader;
-        while (await reader.WaitToReadAsync())
+        while (await reader.WaitToReadAsync().ConfigureAwait(false))
         {
             while (reader.TryRead(out var returned))
             {
                 try
                 {
-                    await this.returnPipeline.InvokeAsync(returned, default); 
+                    await this.returnPipeline.InvokeAsync(returned, default).ConfigureAwait(false); 
                 }
                 finally
                 {

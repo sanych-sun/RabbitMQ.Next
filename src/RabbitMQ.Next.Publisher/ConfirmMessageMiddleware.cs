@@ -27,9 +27,9 @@ internal class ConfirmMessageMiddleware : IPublishMiddleware
 
     public async ValueTask<ulong> InvokeAsync<TContent>(TContent content, IMessageBuilder message, CancellationToken cancellation)
     {
-        var deliveryTag = await this.next.InvokeAsync(content, message, cancellation);
+        var deliveryTag = await this.next.InvokeAsync(content, message, cancellation).ConfigureAwait(false);
 
-        var confirmed = await this.confirms.WaitForConfirmAsync(deliveryTag, cancellation);
+        var confirmed = await this.confirms.WaitForConfirmAsync(deliveryTag, cancellation).ConfigureAwait(false);
         if (!confirmed)
         {
             // todo: provide some useful info here

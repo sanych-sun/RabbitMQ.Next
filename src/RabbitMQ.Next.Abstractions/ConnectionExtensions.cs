@@ -9,7 +9,7 @@ public static class ConnectionExtensions
     public static Task UseChannelAsync<TState>(this IConnection connection, TState state, Func<TState, IChannel, Task> fn)
         => connection.UseChannelAsync((state, fn), async (st, ch) =>
         {
-            await st.fn(st.state, ch);
+            await st.fn(st.state, ch).ConfigureAwait(false);
             return true;
         });
 
@@ -23,14 +23,14 @@ public static class ConnectionExtensions
         IChannel channel = null;
         try
         {
-            channel = await connection.OpenChannelAsync();
-            return await fn(state, channel);
+            channel = await connection.OpenChannelAsync().ConfigureAwait(false);
+            return await fn(state, channel).ConfigureAwait(false);
         }
         finally
         {
             if (channel != null && !channel.Completion.IsCompleted)
             {
-                await channel.CloseAsync();
+                await channel.CloseAsync().ConfigureAwait(false);
             }
         }
     }

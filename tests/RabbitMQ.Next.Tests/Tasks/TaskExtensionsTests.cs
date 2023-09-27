@@ -75,7 +75,7 @@ public class TaskExtensionsTests
 
         var wrapped = task.WithCancellation(cancellation.Token);
         cancellation.Cancel();
-        await Task.Yield();
+        await Task.Delay(100);
 
         Assert.True(wrapped.IsCanceled);
         await Assert.ThrowsAsync<TaskCanceledException>(async() => await wrapped);

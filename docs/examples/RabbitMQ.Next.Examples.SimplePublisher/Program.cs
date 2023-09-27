@@ -14,7 +14,8 @@ class Program
 
         var connection = await ConnectionBuilder.Default
             .Endpoint("amqp://test2:test2@localhost:5672/")
-            .ConnectAsync();
+            .ConnectAsync()
+            .ConfigureAwait(false);
 
         Console.WriteLine("Connection opened");
 
@@ -33,7 +34,7 @@ class Program
 
             try
             {
-                await publisher.PublishAsync(input);
+                await publisher.PublishAsync(input).ConfigureAwait(false);
             }
             catch (Exception e)
             {

@@ -14,6 +14,4 @@ internal interface IMemoryAccessor : IDisposable
     IMemoryAccessor Append(IMemoryAccessor next);
 
     void WriteTo(Stream stream);
-
-    void CopyTo(Span<byte> destination);
 }

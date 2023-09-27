@@ -14,7 +14,8 @@ class Program
 
         var connection = await ConnectionBuilder.Default
             .Endpoint("amqp://test2:test2@localhost:5672/")
-            .ConnectAsync();
+            .ConnectAsync()
+            .ConfigureAwait(false);
 
         Console.WriteLine("Connection opened");
 
@@ -33,7 +34,7 @@ class Program
         await consumer.ConsumeAsync(async message =>
         {
             Console.WriteLine($"[{DateTimeOffset.Now.TimeOfDay}] Message received via '{message.Exchange}' exchange: {message.Content<string>()}");
-        } ,cancellation.Token);
+        } ,cancellation.Token).ConfigureAwait(false);
     }
     
     private static Task MonitorKeypressAsync(CancellationTokenSource cancellation)

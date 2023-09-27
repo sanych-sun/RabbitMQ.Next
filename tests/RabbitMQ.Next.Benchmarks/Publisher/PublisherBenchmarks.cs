@@ -54,12 +54,13 @@ public class PublisherBenchmarks
                 {
                     var data = parameters.Messages[i];
                     await publisher.PublishAsync(data, data.Payload,
-                        (state, message) => message.SetCorrelationId(state.CorrelationId));
+                        (state, message) => message.SetCorrelationId(state.CorrelationId)).ConfigureAwait(false);
                 }
             })
-            .ToArray());
+            .ToArray())
+            .ConfigureAwait(false);
 
-        await publisher.DisposeAsync();
+        await publisher.DisposeAsync().ConfigureAwait(false);
     }
 
     [Benchmark]
@@ -76,10 +77,10 @@ public class PublisherBenchmarks
         {
             var data = parameters.Messages[i];
             await publisher.PublishAsync(data, data.Payload,
-                (state, message) => message.SetCorrelationId(state.CorrelationId));
+                (state, message) => message.SetCorrelationId(state.CorrelationId)).ConfigureAwait(false);
         }
 
-        await publisher.DisposeAsync();
+        await publisher.DisposeAsync().ConfigureAwait(false);
     }
 
     [GlobalSetup(Target = nameof(PublishBaseLibrary))]

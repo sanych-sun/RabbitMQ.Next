@@ -52,7 +52,7 @@ internal sealed class Publisher : IPublisher
 
         if (ch != null)
         {
-            await ch.CloseAsync();
+            await ch.CloseAsync().ConfigureAwait(false);
         }
     }
 
@@ -79,8 +79,8 @@ internal sealed class Publisher : IPublisher
         {
             this.CheckDisposed();
             
-            var pipeline = this.publishPipeline ?? await this.InitializeAsync(cancellation);
-            await pipeline.InvokeAsync(content, message, cancellation);
+            var pipeline = this.publishPipeline ?? await this.InitializeAsync(cancellation).ConfigureAwait(false);
+            await pipeline.InvokeAsync(content, message, cancellation).ConfigureAwait(false);
         }
         finally
         {
@@ -104,7 +104,7 @@ internal sealed class Publisher : IPublisher
             throw new InvalidOperationException("Connection should be in Open state to use the API");
         }
 
-        await this.channelOpenSync.WaitAsync(cancellationToken);
+        await this.channelOpenSync.WaitAsync(cancellationToken).ConfigureAwait(false);
 
         try
         {
@@ -113,9 +113,9 @@ internal sealed class Publisher : IPublisher
                 return this.publishPipeline;
             }
 
-            this.channel = await this.connection.OpenChannelAsync(cancellationToken);
+            this.channel = await this.connection.OpenChannelAsync(cancellationToken).ConfigureAwait(false);
             // ensure target exchange exists
-            await this.channel.SendAsync<DeclareMethod, DeclareOkMethod>(new DeclareMethod(this.exchange), cancellationToken);
+            await this.channel.SendAsync<DeclareMethod, DeclareOkMethod>(new DeclareMethod(this.exchange), cancellationToken).ConfigureAwait(false);
 
             IReturnMiddleware returnPipeline = new VoidReturnMiddleware();
             for (var i = 0; i < this.returnMiddlewares.Count; i++)
@@ -126,12 +126,12 @@ internal sealed class Publisher : IPublisher
             this.channel.WithMessageHandler(new ReturnMessageHandler(returnPipeline, this.serializer));
             
             this.publishPipeline = new InternalMessagePublisher(this.exchange, this.serializer);
-            await this.publishPipeline.InitAsync(this.channel, default);
+            await this.publishPipeline.InitAsync(this.channel, default).ConfigureAwait(false);
 
             for (var i = 0; i < this.publishMiddlewares.Count; i++)
             {
                 this.publishPipeline = this.publishMiddlewares[i].Invoke(this.publishPipeline);
-                await this.publishPipeline.InitAsync(this.channel, default);
+                await this.publishPipeline.InitAsync(this.channel, default).ConfigureAwait(false);
             }
 
             return this.publishPipeline;
@@ -140,7 +140,7 @@ internal sealed class Publisher : IPublisher
         {
             if (this.channel != null)
             {
-                await this.channel.CloseAsync();
+                await this.channel.CloseAsync().ConfigureAwait(false);
             }
 
             throw;

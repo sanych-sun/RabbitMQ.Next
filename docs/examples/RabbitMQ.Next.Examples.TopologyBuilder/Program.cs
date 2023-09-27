@@ -15,7 +15,8 @@ class Program
 
             var connection = await ConnectionBuilder.Default
                 .Endpoint("amqp://test:pass@localhost:5672/")
-                .ConnectAsync();
+                .ConnectAsync()
+                .ConfigureAwait(false);
 
             Console.WriteLine("Connection opened");
 

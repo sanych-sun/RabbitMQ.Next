@@ -54,19 +54,19 @@ internal sealed class DeliverMessageHandler : IMessageHandler<DeliverMethod>
     private async Task ProcessDeliveredMessagesAsync()
     {
         var reader = this.deliverChannel.Reader;
-        while (await reader.WaitToReadAsync())
+        while (await reader.WaitToReadAsync().ConfigureAwait(false))
         {
             while (reader.TryRead(out var delivered))
             {
                 var message = new DeliveredMessage(this.serializer, delivered.method, delivered.payload);
                 try
                 {
-                    await this.messageHandler(message);
-                    await this.acknowledgement.AckAsync(delivered.method.DeliveryTag);
+                    await this.messageHandler(message).ConfigureAwait(false);
+                    await this.acknowledgement.AckAsync(delivered.method.DeliveryTag).ConfigureAwait(false);
                 }
                 catch (Exception)
                 {
-                    await this.acknowledgement.NackAsync(delivered.method.DeliveryTag, this.onPoisonMessage == PoisonMessageMode.Requeue);
+                    await this.acknowledgement.NackAsync(delivered.method.DeliveryTag, this.onPoisonMessage == PoisonMessageMode.Requeue).ConfigureAwait(false);
                 }
                 finally
                 {

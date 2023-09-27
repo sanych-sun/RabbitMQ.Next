@@ -18,7 +18,7 @@ internal sealed class ConnectionFactory : IConnectionFactory
         var memoryPool = new DefaultObjectPool<byte[]>(new MemoryPoolPolicy(bufferSize), 100);
         
         var connection = new Connection(settings, memoryPool);
-        await connection.OpenConnectionAsync(cancellation);
+        await connection.OpenConnectionAsync(cancellation).ConfigureAwait(false);
         return connection;
     }
 }

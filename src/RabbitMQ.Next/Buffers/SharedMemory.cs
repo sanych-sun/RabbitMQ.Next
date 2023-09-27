@@ -159,12 +159,6 @@ internal sealed class SharedMemory : IDisposable
             stream.Write(this.owner.memory, this.offset, this.Size);
         }
 
-        public void CopyTo(Span<byte> destination)
-        {
-            this.CheckDisposed();
-            this.Memory.Span.CopyTo(destination);
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void CheckDisposed()
         {

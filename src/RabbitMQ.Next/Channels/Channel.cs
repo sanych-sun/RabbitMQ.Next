@@ -89,8 +89,8 @@ internal sealed class Channel : IChannelInternal
         where TRequest : struct, IOutgoingMethod where TResponse : struct, IIncomingMethod
     {
         var waitTask = this.WaitAsync<TResponse>(cancellation);
-        await this.SendAsync(request, cancellation);
-        return await waitTask;
+        await this.SendAsync(request, cancellation).ConfigureAwait(false);
+        return await waitTask.ConfigureAwait(false);
     }
 
     public async Task<ulong> PublishAsync<TState>(
@@ -116,7 +116,7 @@ internal sealed class Channel : IChannelInternal
             this.messageBuilderPool.Return(messageBuilder);   
         }
         
-        await this.WriteToSocketAsync(memory, cancellation);
+        await this.WriteToSocketAsync(memory, cancellation).ConfigureAwait(false);
         var deliveryTag = Interlocked.Increment(ref this.lastDeliveryTag);
 
         return deliveryTag;
@@ -157,7 +157,7 @@ internal sealed class Channel : IChannelInternal
 
         try
         {
-            return await waitHandler.WaitTask;
+            return await waitHandler.WaitTask.ConfigureAwait(false);
         }
         finally
         {
@@ -167,13 +167,13 @@ internal sealed class Channel : IChannelInternal
 
     public async Task CloseAsync(Exception ex = null)
     {
-        await this.SendAsync<CloseMethod, CloseOkMethod>(new CloseMethod((ushort) ReplyCode.Success, string.Empty, MethodId.Unknown));
+        await this.SendAsync<CloseMethod, CloseOkMethod>(new CloseMethod((ushort) ReplyCode.Success, string.Empty, MethodId.Unknown)).ConfigureAwait(false);
         this.TryComplete(ex);
     }
 
     public async Task CloseAsync(ushort statusCode, string description, MethodId failedMethodId)
     {
-        await this.SendAsync<CloseMethod, CloseOkMethod>(new CloseMethod(statusCode, description, failedMethodId));
+        await this.SendAsync<CloseMethod, CloseOkMethod>(new CloseMethod(statusCode, description, failedMethodId)).ConfigureAwait(false);
         this.TryComplete(new ChannelException(statusCode, description, failedMethodId));
     }
     

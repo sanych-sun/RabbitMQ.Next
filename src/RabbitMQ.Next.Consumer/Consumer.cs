@@ -44,7 +44,7 @@ internal class Consumer : IConsumer
     }
 
     public async ValueTask DisposeAsync()
-        => await this.CancelConsumeAsync();
+        => await this.CancelConsumeAsync().ConfigureAwait(false);
 
     public async Task ConsumeAsync(Func<IDeliveredMessage, ValueTask> handler, CancellationToken cancellation)
     {
@@ -58,15 +58,15 @@ internal class Consumer : IConsumer
             throw new ArgumentNullException(nameof(handler));
         }
 
-        await this.InitConsumerAsync(handler);
+        await this.InitConsumerAsync(handler).ConfigureAwait(false);
         
         try
         {
-            await Task.WhenAny(cancellation.AsTask(), this.channel.Completion);
+            await Task.WhenAny(cancellation.AsTask(), this.channel.Completion).ConfigureAwait(false);
         }
         finally
         {
-            await this.CancelConsumeAsync();   
+            await this.CancelConsumeAsync().ConfigureAwait(false);   
         }
     }
 
@@ -80,15 +80,15 @@ internal class Consumer : IConsumer
         for (var i = 0; i < this.queues.Count; i++)
         {
             var queue = this.queues[i];
-            await this.channel.SendAsync<CancelMethod, CancelOkMethod>(new CancelMethod(queue.ConsumerTag));
+            await this.channel.SendAsync<CancelMethod, CancelOkMethod>(new CancelMethod(queue.ConsumerTag)).ConfigureAwait(false);
         }
 
         if (this.acknowledgement != null)
         {
-            await this.acknowledgement.DisposeAsync();
+            await this.acknowledgement.DisposeAsync().ConfigureAwait(false);
         }
 
-        await this.channel.CloseAsync();
+        await this.channel.CloseAsync().ConfigureAwait(false);
 
         this.acknowledgement = null;
         this.channel = null;
@@ -96,13 +96,13 @@ internal class Consumer : IConsumer
 
     private async Task InitConsumerAsync(Func<IDeliveredMessage, ValueTask> handler)
     {
-        this.channel = await this.connection.OpenChannelAsync();
+        this.channel = await this.connection.OpenChannelAsync().ConfigureAwait(false);
         this.acknowledgement = this.acknowledgementFactory(this.channel);
 
         var deliverHandler = new DeliverMessageHandler(handler, this.acknowledgement, this.serializer, this.onPoisonMessage, this.concurrencyLevel);
         this.channel.WithMessageHandler(deliverHandler);
 
-        await this.channel.SendAsync<QosMethod, QosOkMethod>(new QosMethod(this.prefetchSize, this.prefetchCount, false));
+        await this.channel.SendAsync<QosMethod, QosOkMethod>(new QosMethod(this.prefetchSize, this.prefetchCount, false)).ConfigureAwait(false);
 
         for (var i = 0; i < this.queues.Count; i++)
         {
@@ -110,7 +110,8 @@ internal class Consumer : IConsumer
             var response = await this.channel.SendAsync<ConsumeMethod, ConsumeOkMethod>(
                 new ConsumeMethod(
                     queue.Queue, queue.ConsumerTag, queue.NoLocal, this.acknowledgement == null,
-                    queue.Exclusive, queue.Arguments));
+                    queue.Exclusive, queue.Arguments))
+                .ConfigureAwait(false);
 
             queue.ConsumerTag = response.ConsumerTag;
         }

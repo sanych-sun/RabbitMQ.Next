@@ -16,11 +16,5 @@
   <ItemGroup>
     <ProjectReference Include="..\RabbitMQ.Next.Abstractions\RabbitMQ.Next.Abstractions.csproj" />
   </ItemGroup>
-  
-  <ItemGroup>
-    <Compile Remove="Buffers\MemoryBlock.cs" />
-    <Compile Remove="Buffers\MemoryBlockPool.cs" />
-    <Compile Remove="Buffers\StaticMemoryAccessor.cs" />
-  </ItemGroup>
 
 </Project>
