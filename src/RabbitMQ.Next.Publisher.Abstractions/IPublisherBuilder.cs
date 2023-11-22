@@ -1,11 +1,16 @@
 using System;
-using RabbitMQ.Next.Serialization;
+using System.Threading.Tasks;
+using RabbitMQ.Next.Messaging;
 
 namespace RabbitMQ.Next.Publisher;
 
-public interface IPublisherBuilder: ISerializationBuilder<IPublisherBuilder>
+public interface IPublisherBuilder
 {
-    IPublisherBuilder UsePublishMiddleware(Func<IPublishMiddleware, IPublishMiddleware> middlewareFactory);
+    string Exchange { get; }
+    
+    IPublisherBuilder UsePublishMiddleware(Func<IMessageBuilder,IContentAccessor,Func<IMessageBuilder,IContentAccessor,Task>,Task> middleware);
 
-    IPublisherBuilder UseReturnMiddleware(Func<IReturnMiddleware,IReturnMiddleware> middlewareFactory);
+    IPublisherBuilder UseReturnMiddleware(Func<IReturnedMessage,IContentAccessor,Func<IReturnedMessage,IContentAccessor,Task>,Task> middleware);
+    
+    IPublisherBuilder NoConfirms();
 }

@@ -1,27 +1,27 @@
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using Microsoft.Extensions.ObjectPool;
 using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Messaging;
+using RabbitMQ.Next.Serialization;
+using RabbitMQ.Next.Transport;
 
-namespace RabbitMQ.Next.Transport;
+namespace RabbitMQ.Next.Channels;
 
 internal class PayloadAccessor: IPayload
 {
+    private readonly ISerializer serializer;
     private readonly ObjectPool<LazyMessageProperties> propertiesPool;
     private LazyMessageProperties properties;
     private IMemoryAccessor header;
     private IMemoryAccessor body;
 
-    public PayloadAccessor(ObjectPool<LazyMessageProperties> propertiesPool, IMemoryAccessor header, IMemoryAccessor body)
+    public PayloadAccessor(ISerializer serializer, ObjectPool<LazyMessageProperties> propertiesPool, IMemoryAccessor header, IMemoryAccessor body)
     {
+        this.serializer = serializer;
         this.propertiesPool = propertiesPool;
         this.header = header;
         this.body = body;
-            
-        this.properties = propertiesPool.Get();
-        this.properties.Set(header.Memory);
     }
 
     public void Dispose()
@@ -45,14 +45,14 @@ internal class PayloadAccessor: IPayload
         }
     }
 
-    public ReadOnlySequence<byte> GetBody()
+    public T Get<T>()
     {
         if (this.body == null)
         {
             throw new ObjectDisposedException(nameof(PayloadAccessor));
         }
 
-        return this.body.ToSequence();
+        return this.serializer.Deserialize<T>(this, this.body.ToSequence());
     }
 
     public string ContentType => this.Properties.ContentType;
@@ -73,9 +73,15 @@ internal class PayloadAccessor: IPayload
     {
         get
         {
-            if (this.properties == null)
+            if (this.body == null)
             {
                 throw new ObjectDisposedException(nameof(PayloadAccessor));
+            }
+
+            if (this.properties == null)
+            {
+                this.properties = this.propertiesPool.Get();
+                this.properties.Set(this.header.Memory);
             }
 
             return this.properties;

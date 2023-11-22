@@ -1,50 +1,49 @@
 using System;
 using System.Collections.Generic;
-using RabbitMQ.Next.Serialization;
+using System.Threading.Tasks;
+using RabbitMQ.Next.Messaging;
 
 namespace RabbitMQ.Next.Publisher;
 
 internal sealed class PublisherBuilder : IPublisherBuilder
 {
-    private readonly List<Func<IPublishMiddleware, IPublishMiddleware>> publishMiddlewares = new();
-    private readonly List<Func<IReturnMiddleware, IReturnMiddleware>> returnMiddlewares = new();
+    private readonly List<Func<IMessageBuilder,IContentAccessor,Func<IMessageBuilder,IContentAccessor,Task>,Task>> publishMiddlewares = new();
+    private readonly List<Func<IReturnedMessage,IContentAccessor,Func<IReturnedMessage,IContentAccessor,Task>,Task>> returnMiddlewares = new();
 
-    public IReadOnlyList<Func<IPublishMiddleware, IPublishMiddleware>> PublishMiddlewares => this.publishMiddlewares;
-    
-    public IReadOnlyList<Func<IReturnMiddleware, IReturnMiddleware>> ReturnMiddlewares => this.returnMiddlewares;
-
-    public ISerializer Serializer { get; private set; }
-
-    IPublisherBuilder IPublisherBuilder.UsePublishMiddleware(Func<IPublishMiddleware, IPublishMiddleware> middlewareFactory)
+    public PublisherBuilder(string exchange)
     {
-        if (middlewareFactory == null)
-        {
-            throw new ArgumentNullException(nameof(middlewareFactory));
-        }
+        this.Exchange = exchange;
+    }
+    
+    public bool PublisherConfirms { get; private set; } = true;
+    
+    public IReadOnlyList<Func<IMessageBuilder,IContentAccessor,Func<IMessageBuilder,IContentAccessor,Task>,Task>> PublishMiddlewares
+        => this.publishMiddlewares;
+    
+    public IReadOnlyList<Func<IReturnedMessage,IContentAccessor,Func<IReturnedMessage,IContentAccessor,Task>,Task>> ReturnMiddlewares
+        => this.returnMiddlewares;
 
-        this.publishMiddlewares.Add(middlewareFactory);
+    public string Exchange { get; }
+
+    IPublisherBuilder IPublisherBuilder.UsePublishMiddleware(Func<IMessageBuilder,IContentAccessor,Func<IMessageBuilder,IContentAccessor,Task>,Task> middleware)
+    {
+        ArgumentNullException.ThrowIfNull(middleware);
+
+        this.publishMiddlewares.Add(middleware);
         return this;
     }
     
-    IPublisherBuilder IPublisherBuilder.UseReturnMiddleware(Func<IReturnMiddleware, IReturnMiddleware> middlewareFactory)
+    IPublisherBuilder IPublisherBuilder.UseReturnMiddleware(Func<IReturnedMessage,IContentAccessor,Func<IReturnedMessage,IContentAccessor,Task>,Task> middleware)
     {
-        if (middlewareFactory == null)
-        {
-            throw new ArgumentNullException(nameof(middlewareFactory));
-        }
+        ArgumentNullException.ThrowIfNull(middleware);
 
-        this.returnMiddlewares.Add(middlewareFactory);
+        this.returnMiddlewares.Add(middleware);
         return this;
     }
 
-    IPublisherBuilder ISerializationBuilder<IPublisherBuilder>.UseSerializer(ISerializer serializer)
+    public IPublisherBuilder NoConfirms()
     {
-        if (serializer == null)
-        {
-            throw new ArgumentNullException(nameof(serializer));
-        }
-        
-        this.Serializer = serializer;
+        this.PublisherConfirms = false;
         return this;
     }
 }

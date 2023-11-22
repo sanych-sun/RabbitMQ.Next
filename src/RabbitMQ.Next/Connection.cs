@@ -7,6 +7,7 @@ using Microsoft.Extensions.ObjectPool;
 using RabbitMQ.Next.Exceptions;
 using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Channels;
+using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Sockets;
 using RabbitMQ.Next.Tasks;
 using RabbitMQ.Next.Transport;
@@ -115,7 +116,7 @@ internal class Connection : IConnection
         var policy = new MessageBuilderPoolPolicy(this.memoryPool, channelNumber, maxFrameSize);
         var messageBuilderPool = new DefaultObjectPool<MessageBuilder>(policy);
 
-        return new Channel(this.socketSender.Writer, messageBuilderPool);
+        return new Channel(this.socketSender.Writer, messageBuilderPool, this.connectionDetails.Settings.Serializer);
     }
 
     private async Task HeartbeatLoop(TimeSpan interval, CancellationToken cancellation)

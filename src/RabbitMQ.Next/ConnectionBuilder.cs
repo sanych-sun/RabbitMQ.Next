@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Transport;
 
 namespace RabbitMQ.Next;
@@ -19,6 +20,7 @@ public class ConnectionBuilder : IConnectionBuilder
     private string virtualhost = ProtocolConstants.DefaultVHost;
     private string clientLocale = DefaultLocale;
     private int maxFrameSize = DefaultMaxFrameSize;
+    private ISerializer serializer = null; // TODO: Implement noop serializer as default one
 
     private ConnectionBuilder()
         : this(ConnectionFactory.Default)
@@ -87,6 +89,12 @@ public class ConnectionBuilder : IConnectionBuilder
         this.maxFrameSize = sizeBytes;
         return this;
     }
+    
+    public IConnectionBuilder UseSerializer(ISerializer serializer)
+    {
+        this.serializer = serializer;
+        return this;
+    }
 
     public Task<IConnection> ConnectAsync(CancellationToken cancellation = default)
     {
@@ -97,7 +105,8 @@ public class ConnectionBuilder : IConnectionBuilder
             Auth = this.authMechanism,
             Locale = this.clientLocale,
             ClientProperties = this.clientProperties,
-            MaxFrameSize = this.maxFrameSize
+            MaxFrameSize = this.maxFrameSize,
+            Serializer = this.serializer,
         };
 
         return this.factory.ConnectAsync(settings, cancellation);

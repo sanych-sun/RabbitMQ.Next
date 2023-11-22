@@ -1,15 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using RabbitMQ.Next.Channels;
 using RabbitMQ.Next.Messaging;
-using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Transport.Methods.Basic;
 
 namespace RabbitMQ.Next.Publisher;
 
-internal class ReturnedMessage : IReturnedMessage, IDisposable
+internal class ReturnedMessage : IReturnedMessage, IContentAccessor
 {
-    private readonly ISerializer serializer;
     private readonly IPayload payload;
     private readonly string exchange;
     private readonly string routingKey;
@@ -18,9 +17,8 @@ internal class ReturnedMessage : IReturnedMessage, IDisposable
 
     private bool disposed;
 
-    public ReturnedMessage(ISerializer serializer, ReturnMethod returnMethod, IPayload payload)
+    public ReturnedMessage(ReturnMethod returnMethod, IPayload payload)
     {
-        this.serializer = serializer;
         this.payload = payload;
         this.exchange = returnMethod.Exchange;
         this.routingKey = returnMethod.RoutingKey;
@@ -91,12 +89,10 @@ internal class ReturnedMessage : IReturnedMessage, IDisposable
 
     public string ApplicationId => this.Properties.ApplicationId;
 
-    public T Content<T>()
+    public T Get<T>()
     {
         this.ValidateState();
-        
-        var bytes = this.payload.GetBody();
-        return this.serializer.Deserialize<T>(this.payload, bytes);
+        return this.payload.Get<T>();
     }
 
     public void Dispose()

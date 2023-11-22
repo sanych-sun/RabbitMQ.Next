@@ -39,11 +39,7 @@ public class PublisherBenchmarks
     [ArgumentsSource(nameof(TestCases))]
     public async Task PublishParallelAsync(TestCaseParameters parameters)
     {
-        var publisher = this.connection.Publisher(
-            "amq.topic", 
-            builder => builder
-                .UsePlainTextSerializer()
-                .PublisherConfirms());
+        var publisher = this.connection.Publisher("amq.topic");
 
         await Task.WhenAll(Enumerable.Range(0, 10)
             .Select(async num =>
@@ -67,11 +63,7 @@ public class PublisherBenchmarks
     [ArgumentsSource(nameof(TestCases))]
     public async Task PublishAsync(TestCaseParameters parameters)
     {
-        var publisher = this.connection.Publisher(
-            "amq.topic", 
-            builder => builder
-                .UsePlainTextSerializer()
-                .PublisherConfirms());
+        var publisher = this.connection.Publisher("amq.topic");
 
         for (int i = 0; i < parameters.Messages.Count; i++)
         {
@@ -104,6 +96,7 @@ public class PublisherBenchmarks
     {
         this.connection = await ConnectionBuilder.Default
             .Endpoint(Helper.RabbitMqConnection)
+            .UsePlainTextSerializer()
             .ConnectAsync();
     }
 

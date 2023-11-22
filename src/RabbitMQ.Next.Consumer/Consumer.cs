@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Channels;
-using RabbitMQ.Next.Serialization;
+using RabbitMQ.Next.Messaging;
 using RabbitMQ.Next.Tasks;
 using RabbitMQ.Next.Transport.Methods.Basic;
 
@@ -13,8 +13,8 @@ internal class Consumer : IConsumer
 {
     private readonly IConnection connection;
     private readonly Func<IChannel, IAcknowledgement> acknowledgementFactory;
-    private readonly ISerializer serializer;
     private readonly IReadOnlyList<QueueConsumerBuilder> queues;
+    private readonly IReadOnlyList<Func<IDeliveredMessage, IContentAccessor, Func<IDeliveredMessage, IContentAccessor, Task>, Task>> middlewares;
     private readonly uint prefetchSize;
     private readonly ushort prefetchCount;
     private readonly byte concurrencyLevel;
@@ -26,8 +26,8 @@ internal class Consumer : IConsumer
     public Consumer(
         IConnection connection,
         Func<IChannel, IAcknowledgement> acknowledgementFactory,
-        ISerializer serializer,
         IReadOnlyList<QueueConsumerBuilder> queues,
+        IReadOnlyList<Func<IDeliveredMessage, IContentAccessor, Func<IDeliveredMessage, IContentAccessor, Task>, Task>> middlewares,
         uint prefetchSize,
         ushort prefetchCount,
         byte concurrencyLevel,
@@ -35,8 +35,8 @@ internal class Consumer : IConsumer
     {
         this.connection = connection;
         this.acknowledgementFactory = acknowledgementFactory;
-        this.serializer = serializer;
         this.queues = queues;
+        this.middlewares = middlewares;
         this.prefetchSize = prefetchSize;
         this.prefetchCount = prefetchCount;
         this.concurrencyLevel = concurrencyLevel;
@@ -46,7 +46,7 @@ internal class Consumer : IConsumer
     public async ValueTask DisposeAsync()
         => await this.CancelConsumeAsync().ConfigureAwait(false);
 
-    public async Task ConsumeAsync(Func<IDeliveredMessage, ValueTask> handler, CancellationToken cancellation)
+    public async Task ConsumeAsync(Func<IDeliveredMessage, IContentAccessor, Task> handler, CancellationToken cancellation)
     {
         if (this.channel != null)
         {
@@ -56,6 +56,17 @@ internal class Consumer : IConsumer
         if (handler == null)
         {
             throw new ArgumentNullException(nameof(handler));
+        }
+        
+        var pipeline = handler;
+        if (this.middlewares?.Count > 0)
+        {
+            for (var i = this.middlewares.Count - 1; i >= 0; i--)
+            {
+                var next = pipeline;
+                var middleware = this.middlewares[i];
+                pipeline = (m, c) => middleware.Invoke(m, c, next);
+            }
         }
 
         await this.InitConsumerAsync(handler).ConfigureAwait(false);
@@ -94,12 +105,12 @@ internal class Consumer : IConsumer
         this.channel = null;
     }
 
-    private async Task InitConsumerAsync(Func<IDeliveredMessage, ValueTask> handler)
+    private async Task InitConsumerAsync(Func<IDeliveredMessage, IContentAccessor, Task> handler)
     {
         this.channel = await this.connection.OpenChannelAsync().ConfigureAwait(false);
         this.acknowledgement = this.acknowledgementFactory(this.channel);
 
-        var deliverHandler = new DeliverMessageHandler(handler, this.acknowledgement, this.serializer, this.onPoisonMessage, this.concurrencyLevel);
+        var deliverHandler = new DeliverMessageHandler(handler, this.acknowledgement, this.onPoisonMessage, this.concurrencyLevel);
         this.channel.WithMessageHandler(deliverHandler);
 
         await this.channel.SendAsync<QosMethod, QosOkMethod>(new QosMethod(this.prefetchSize, this.prefetchCount, false)).ConfigureAwait(false);

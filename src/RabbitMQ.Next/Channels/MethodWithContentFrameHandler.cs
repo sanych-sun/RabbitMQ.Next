@@ -2,6 +2,7 @@ using System;
 using Microsoft.Extensions.ObjectPool;
 using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Methods;
+using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Methods;
 
@@ -10,6 +11,7 @@ namespace RabbitMQ.Next.Channels;
 internal class MethodWithContentFrameHandler<TMethod> : IFrameHandler
     where TMethod: struct, IIncomingMethod
 {
+    private readonly ISerializer serializer;
     private readonly IMessageHandler<TMethod> wrapped;
     private readonly IMethodParser<TMethod> parser;
     private readonly ObjectPool<LazyMessageProperties> messagePropertiesPool;
@@ -21,8 +23,9 @@ internal class MethodWithContentFrameHandler<TMethod> : IFrameHandler
     private IMemoryAccessor contentBodyHead;
     private IMemoryAccessor contentBodyTail;
     
-    public MethodWithContentFrameHandler(IMessageHandler<TMethod> wrapped, IMethodParser<TMethod> parser, ObjectPool<LazyMessageProperties> messagePropertiesPool)
+    public MethodWithContentFrameHandler(ISerializer serializer, IMessageHandler<TMethod> wrapped, IMethodParser<TMethod> parser, ObjectPool<LazyMessageProperties> messagePropertiesPool)
     {
+        this.serializer = serializer;
         this.wrapped = wrapped;
         this.parser = parser;
         this.messagePropertiesPool = messagePropertiesPool;
@@ -54,7 +57,7 @@ internal class MethodWithContentFrameHandler<TMethod> : IFrameHandler
 
             if (this.contentHeader != null)
             {
-                payloadAccessor = new PayloadAccessor(this.messagePropertiesPool, this.contentHeader, this.contentBodyHead);
+                payloadAccessor = new PayloadAccessor(this.serializer, this.messagePropertiesPool, this.contentHeader, this.contentBodyHead);
             }
             
             this.wrapped.Handle(this.methodArgs, payloadAccessor);

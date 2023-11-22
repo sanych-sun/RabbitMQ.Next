@@ -1,14 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using RabbitMQ.Next.Channels;
-using RabbitMQ.Next.Serialization;
+using RabbitMQ.Next.Messaging;
 
 namespace RabbitMQ.Next.Consumer;
 
 internal class ConsumerBuilder : IConsumerBuilder
 {
     private readonly List<QueueConsumerBuilder> queues = new();
-    private ISerializer serializer;
+    private readonly List<Func<IDeliveredMessage, IContentAccessor, Func<IDeliveredMessage, IContentAccessor, Task>, Task>> middlewares = new();
 
     public ConsumerBuilder()
     {
@@ -19,7 +21,8 @@ internal class ConsumerBuilder : IConsumerBuilder
         
     public IReadOnlyList<QueueConsumerBuilder> Queues => this.queues;
 
-    public ISerializer Serializer => this.serializer;
+    public IReadOnlyList<Func<IDeliveredMessage, IContentAccessor, Func<IDeliveredMessage, IContentAccessor, Task>, Task>> Middlewares
+        => this.middlewares;
 
     public uint PrefetchSize { get; private set; }
 
@@ -78,15 +81,12 @@ internal class ConsumerBuilder : IConsumerBuilder
         this.OnPoisonMessage = mode;
         return this;
     }
-
-    IConsumerBuilder ISerializationBuilder<IConsumerBuilder>.UseSerializer(ISerializer serializer)
+    
+    public IConsumerBuilder UseConsumerMiddleware(Func<IDeliveredMessage, IContentAccessor, Func<IDeliveredMessage, IContentAccessor, Task>, Task> middleware)
     {
-        if (serializer == null)
-        {
-            throw new ArgumentNullException(nameof(serializer));
-        }
+        ArgumentNullException.ThrowIfNull(middleware);
         
-        this.serializer = serializer;
+        this.middlewares.Add(middleware);
         return this;
     }
 }

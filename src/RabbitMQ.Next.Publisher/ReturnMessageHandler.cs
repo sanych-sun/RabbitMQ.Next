@@ -1,26 +1,30 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Channels;
 using RabbitMQ.Next.Messaging;
-using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Transport.Methods.Basic;
 
 namespace RabbitMQ.Next.Publisher;
 
 internal sealed class ReturnMessageHandler : IMessageHandler<ReturnMethod>
 {
-    private readonly IReturnMiddleware returnPipeline;
-    private readonly ISerializer serializer;
+    private readonly Func<IReturnedMessage, IContentAccessor, Task> pipeline;
     private readonly Channel<ReturnedMessage> returnChannel;
 
-    public ReturnMessageHandler(IReturnMiddleware returnPipeline, ISerializer serializer)
+    public ReturnMessageHandler(IReadOnlyList<Func<IReturnedMessage,IContentAccessor,Func<IReturnedMessage,IContentAccessor,Task>,Task>> middlewares)
     {
-        this.returnPipeline = returnPipeline;
-        this.serializer = serializer;
-
-        if (this.returnPipeline != null)
+        if (middlewares != null && middlewares.Count > 0)
         {
+            this.pipeline = (_, _) => default;
+            for (var i = middlewares.Count - 1; i >= 0; i--)
+            {
+                var next = this.pipeline;
+                var handler = middlewares[i];
+                this.pipeline = (m, c) => handler.Invoke(m, c, next);
+            }
+            
             this.returnChannel = Channel.CreateUnbounded<ReturnedMessage>(new UnboundedChannelOptions
             {
                 SingleReader = true,
@@ -34,17 +38,12 @@ internal sealed class ReturnMessageHandler : IMessageHandler<ReturnMethod>
 
     public void Handle(ReturnMethod method, IPayload payload)
     {
-        if (this.returnPipeline == null)
-        {
-            return;
-        }
-        
-        this.returnChannel.Writer.TryWrite(new ReturnedMessage(this.serializer, method, payload));
+        this.returnChannel?.Writer.TryWrite(new ReturnedMessage(method, payload));
     }
 
     public void Release(Exception ex = null)
     {
-        this.returnChannel?.Writer.TryComplete();
+        this.returnChannel?.Writer.TryComplete(ex);
     }
 
     private async Task ProcessReturnedMessagesAsync()
@@ -52,15 +51,15 @@ internal sealed class ReturnMessageHandler : IMessageHandler<ReturnMethod>
         var reader = this.returnChannel.Reader;
         while (await reader.WaitToReadAsync().ConfigureAwait(false))
         {
-            while (reader.TryRead(out var returned))
+            while (reader.TryRead(out var message))
             {
                 try
                 {
-                    await this.returnPipeline.InvokeAsync(returned, default).ConfigureAwait(false); 
+                    await this.pipeline.Invoke(message, message).ConfigureAwait(false); 
                 }
                 finally
                 {
-                    returned.Dispose();
+                    message.Dispose();
                 }
             }
         }

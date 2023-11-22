@@ -1,5 +1,4 @@
 using System;
-using RabbitMQ.Next.Messaging;
 using RabbitMQ.Next.Methods;
 
 namespace RabbitMQ.Next.Channels;

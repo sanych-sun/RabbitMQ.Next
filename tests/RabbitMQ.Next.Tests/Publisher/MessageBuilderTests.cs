@@ -9,9 +9,24 @@ namespace RabbitMQ.Next.Tests.Publisher;
 public class MessageBuilderTests
 {
     [Fact]
+    public void Exchange()
+    {
+        var messageBuilder = new MessageBuilder("exchange");
+        Assert.Equal("exchange", messageBuilder.Exchange);
+    }
+    
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public void ThrowsOnNullOrEmptyExchange(string exchange)
+    {
+        Assert.Throws<ArgumentNullException>(() => new MessageBuilder(exchange));
+    }
+    
+    [Fact]
     public void RoutingKeyDefaultValue()
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
         Assert.Null(messageBuilder.RoutingKey);
     }
     
@@ -19,7 +34,7 @@ public class MessageBuilderTests
     [InlineData("routing")]
     public void CanSetRoutingKey(string val)
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetRoutingKey(val);
 
@@ -34,7 +49,7 @@ public class MessageBuilderTests
     [InlineData("routing", "")]
     public void CanOverrideRoutingKey(string initialValue, string value)
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetRoutingKey(initialValue);
         ((IMessageBuilder)messageBuilder).SetRoutingKey(value);
@@ -45,7 +60,7 @@ public class MessageBuilderTests
     [Fact]
     public void ResetRoutingKey()
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetRoutingKey("val");
         messageBuilder.Reset();
@@ -56,7 +71,7 @@ public class MessageBuilderTests
     [Fact]
     public void ContentTypeDefaultValue()
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
         Assert.Null(messageBuilder.ContentType);
     }
     
@@ -64,7 +79,7 @@ public class MessageBuilderTests
     [InlineData("content")]
     public void CanSetContentType(string val)
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetContentType(val);
 
@@ -79,7 +94,7 @@ public class MessageBuilderTests
     [InlineData("content", "")]
     public void CanOverrideContentType(string initialValue, string value)
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetContentType(initialValue);
         ((IMessageBuilder)messageBuilder).SetContentType(value);
@@ -90,7 +105,7 @@ public class MessageBuilderTests
     [Fact]
     public void ResetContentType()
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetContentType("val");
         messageBuilder.Reset();
@@ -101,7 +116,7 @@ public class MessageBuilderTests
     [Fact]
     public void ContentEncodingDefaultValue()
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
         Assert.Null(messageBuilder.ContentEncoding);
     }
     
@@ -109,7 +124,7 @@ public class MessageBuilderTests
     [InlineData("encoding")]
     public void CanSetContentEncoding(string val)
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetContentEncoding(val);
 
@@ -124,7 +139,7 @@ public class MessageBuilderTests
     [InlineData("encoding", "")]
     public void CanOverrideContentEncoding(string initialValue, string value)
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetContentEncoding(initialValue);
         ((IMessageBuilder)messageBuilder).SetContentEncoding(value);
@@ -135,7 +150,7 @@ public class MessageBuilderTests
     [Fact]
     public void ResetContentEncoding()
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetContentEncoding("val");
         messageBuilder.Reset();
@@ -146,7 +161,7 @@ public class MessageBuilderTests
     [Fact]
     public void HeadersDefaultValue()
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
         Assert.Null(messageBuilder.Headers);
     }
     
@@ -154,7 +169,7 @@ public class MessageBuilderTests
     [InlineData("key", "value")]
     public void CanSetHeader(string key, string value)
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetHeader(key, value);
 
@@ -167,7 +182,7 @@ public class MessageBuilderTests
     [InlineData("  ")]
     public void CanSetHeaderThrowsOnInvalidKey(string key)
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         Assert.Throws<ArgumentNullException>(() => ((IMessageBuilder)messageBuilder).SetHeader(key, "val"));
 
@@ -177,7 +192,7 @@ public class MessageBuilderTests
     [InlineData("key", "value", "other", "data")]
     public void CanSetMultipleHeader(string key1, string value1, string key2, string value2)
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetHeader(key1, value1);
         ((IMessageBuilder)messageBuilder).SetHeader(key2, value2);
@@ -194,7 +209,7 @@ public class MessageBuilderTests
     [InlineData("value", "")]
     public void CanOverrideHeader(string initialValue, string value)
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetHeader("key", initialValue);
         ((IMessageBuilder)messageBuilder).SetHeader("key", value);
@@ -205,7 +220,7 @@ public class MessageBuilderTests
     [Fact]
     public void ResetHeader()
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetHeader("key", "value");
         messageBuilder.Reset();
@@ -216,7 +231,7 @@ public class MessageBuilderTests
     [Fact]
     public void DeliveryModeDefaultValue()
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
         Assert.Equal(DeliveryMode.Persistent, messageBuilder.DeliveryMode);
     }
     
@@ -225,7 +240,7 @@ public class MessageBuilderTests
     [InlineData(DeliveryMode.Persistent)]
     public void CanSetDeliveryMode(DeliveryMode val)
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetDeliveryMode(val);
 
@@ -239,7 +254,7 @@ public class MessageBuilderTests
     [InlineData(DeliveryMode.Persistent, DeliveryMode.Unset)]
     public void CanOverrideDeliveryMode(DeliveryMode initialValue, DeliveryMode value)
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetDeliveryMode(initialValue);
         ((IMessageBuilder)messageBuilder).SetDeliveryMode(value);
@@ -250,7 +265,7 @@ public class MessageBuilderTests
     [Fact]
     public void ResetDeliveryMode()
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetDeliveryMode(DeliveryMode.NonPersistent);
         messageBuilder.Reset();
@@ -261,7 +276,7 @@ public class MessageBuilderTests
     [Fact]
     public void PriorityDefaultValue()
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
         Assert.Equal(0, messageBuilder.Priority);
     }
     
@@ -269,7 +284,7 @@ public class MessageBuilderTests
     [InlineData(5)]
     public void CanSetPriority(byte val)
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetPriority(val);
 
@@ -282,7 +297,7 @@ public class MessageBuilderTests
     [InlineData((byte)15, (byte)0)]
     public void CanOverridePriority(byte initialValue, byte value)
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetPriority(initialValue);
         ((IMessageBuilder)messageBuilder).SetPriority(value);
@@ -293,7 +308,7 @@ public class MessageBuilderTests
     [Fact]
     public void ResetPriority()
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetPriority(42);
         messageBuilder.Reset();
@@ -304,7 +319,7 @@ public class MessageBuilderTests
     [Fact]
     public void CorrelationIdDefaultValue()
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
         Assert.Null(messageBuilder.CorrelationId);
     }
         
@@ -312,7 +327,7 @@ public class MessageBuilderTests
     [InlineData("correlation")]
     public void CanSetCorrelationId(string val)
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetCorrelationId(val);
 
@@ -327,7 +342,7 @@ public class MessageBuilderTests
     [InlineData("correlation", "")]
     public void CanOverrideCorrelationId(string initialValue, string value)
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetCorrelationId(initialValue);
         ((IMessageBuilder)messageBuilder).SetCorrelationId(value);
@@ -338,7 +353,7 @@ public class MessageBuilderTests
     [Fact]
     public void ResetCorrelationId()
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetCorrelationId("val");
         messageBuilder.Reset();
@@ -349,7 +364,7 @@ public class MessageBuilderTests
     [Fact]
     public void ReplyToDefaultValue()
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
         Assert.Null(messageBuilder.ReplyTo);
     }
         
@@ -357,7 +372,7 @@ public class MessageBuilderTests
     [InlineData("replyTo")]
     public void CanSetReplyTo(string val)
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetReplyTo(val);
 
@@ -372,7 +387,7 @@ public class MessageBuilderTests
     [InlineData("replyTo", "")]
     public void CanOverrideReplyTo(string initialValue, string value)
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetReplyTo(initialValue);
         ((IMessageBuilder)messageBuilder).SetReplyTo(value);
@@ -383,7 +398,7 @@ public class MessageBuilderTests
     [Fact]
     public void ResetReplyTo()
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetReplyTo("val");
         messageBuilder.Reset();
@@ -394,7 +409,7 @@ public class MessageBuilderTests
     [Fact]
     public void ExpirationDefaultValue()
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
         Assert.Null(messageBuilder.Expiration);
     }
         
@@ -402,7 +417,7 @@ public class MessageBuilderTests
     [InlineData("expiration")]
     public void CanSetExpiration(string val)
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetExpiration(val);
 
@@ -417,7 +432,7 @@ public class MessageBuilderTests
     [InlineData("expiration", "")]
     public void CanOverrideExpiration(string initialValue, string value)
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetExpiration(initialValue);
         ((IMessageBuilder)messageBuilder).SetExpiration(value);
@@ -428,7 +443,7 @@ public class MessageBuilderTests
     [Fact]
     public void ResetExpiration()
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetExpiration("val");
         messageBuilder.Reset();
@@ -439,7 +454,7 @@ public class MessageBuilderTests
     [Fact]
     public void MessageIdDefaultValue()
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
         Assert.Null(messageBuilder.MessageId);
     }
         
@@ -447,7 +462,7 @@ public class MessageBuilderTests
     [InlineData("messageId")]
     public void CanSetMessageId(string val)
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetMessageId(val);
 
@@ -462,7 +477,7 @@ public class MessageBuilderTests
     [InlineData("messageId", "")]
     public void CanOverrideMessageId(string initialValue, string value)
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetMessageId(initialValue);
         ((IMessageBuilder)messageBuilder).SetMessageId(value);
@@ -473,7 +488,7 @@ public class MessageBuilderTests
     [Fact]
     public void ResetMessageId()
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetMessageId("val");
         messageBuilder.Reset();
@@ -484,7 +499,7 @@ public class MessageBuilderTests
     [Fact]
     public void TimestampDefaultValue()
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
         Assert.Equal(DateTimeOffset.MinValue,  messageBuilder.Timestamp);
     }
     
@@ -492,7 +507,7 @@ public class MessageBuilderTests
     public void CanSetTimestamp()
     {
         var ts = DateTimeOffset.UtcNow;
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetTimestamp(ts);
 
@@ -503,7 +518,7 @@ public class MessageBuilderTests
     [MemberData(nameof(OverrideTimestampTestCases))]
     public void CanOverrideTimestamp(DateTimeOffset initialValue, DateTimeOffset value)
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetTimestamp(initialValue);
         ((IMessageBuilder)messageBuilder).SetTimestamp(value);
@@ -521,7 +536,7 @@ public class MessageBuilderTests
     [Fact]
     public void ResetTimestamp()
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetTimestamp(DateTimeOffset.UtcNow);
         messageBuilder.Reset();
@@ -532,7 +547,7 @@ public class MessageBuilderTests
     [Fact]
     public void TypeDefaultValue()
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
         Assert.Null(messageBuilder.Type);
     }
     
@@ -540,7 +555,7 @@ public class MessageBuilderTests
     [InlineData("type")]
     public void CanSetType(string val)
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetType(val);
 
@@ -555,7 +570,7 @@ public class MessageBuilderTests
     [InlineData("type", "")]
     public void CanOverrideType(string initialValue, string value)
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetType(initialValue);
         ((IMessageBuilder)messageBuilder).SetType(value);
@@ -566,7 +581,7 @@ public class MessageBuilderTests
     [Fact]
     public void ResetType()
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetType("val");
         messageBuilder.Reset();
@@ -577,7 +592,7 @@ public class MessageBuilderTests
     [Fact]
     public void UserIdDefaultValue()
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
         Assert.Null(messageBuilder.UserId);
     }
     
@@ -585,7 +600,7 @@ public class MessageBuilderTests
     [InlineData("userId")]
     public void CanSetUserId(string val)
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetUserId(val);
 
@@ -600,7 +615,7 @@ public class MessageBuilderTests
     [InlineData("userId", "")]
     public void CanOverrideUserId(string initialValue, string value)
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetUserId(initialValue);
         ((IMessageBuilder)messageBuilder).SetUserId(value);
@@ -611,7 +626,7 @@ public class MessageBuilderTests
     [Fact]
     public void ResetUserId()
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetUserId("val");
         messageBuilder.Reset();
@@ -622,7 +637,7 @@ public class MessageBuilderTests
     [Fact]
     public void ApplicationIdDefaultValue()
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
         Assert.Null(messageBuilder.ApplicationId);
     }
     
@@ -630,7 +645,7 @@ public class MessageBuilderTests
     [InlineData("appId")]
     public void CanSetApplicationId(string val)
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetApplicationId(val);
 
@@ -645,7 +660,7 @@ public class MessageBuilderTests
     [InlineData("appId", "")]
     public void CanOverrideApplicationId(string initialValue, string value)
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetApplicationId(initialValue);
         ((IMessageBuilder)messageBuilder).SetApplicationId(value);
@@ -656,7 +671,7 @@ public class MessageBuilderTests
     [Fact]
     public void ResetApplicationId()
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetApplicationId("val");
         messageBuilder.Reset();
@@ -667,14 +682,14 @@ public class MessageBuilderTests
     [Fact]
     public void MandatoryDefaultValue()
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
         Assert.False(messageBuilder.Mandatory);
     }
     
     [Fact]
     public void CanSetMandatory()
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetMandatory();
 
@@ -684,7 +699,7 @@ public class MessageBuilderTests
     [Fact]
     public void ResetMandatory()
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetMandatory();
         messageBuilder.Reset();
@@ -695,14 +710,14 @@ public class MessageBuilderTests
     [Fact]
     public void ImmediateDefaultValue()
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
         Assert.False(messageBuilder.Immediate);
     }
     
     [Fact]
     public void CanSetImmediate()
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetImmediate();
 
@@ -712,7 +727,7 @@ public class MessageBuilderTests
     [Fact]
     public void ResetImmediate()
     {
-        var messageBuilder = new MessageBuilder();
+        var messageBuilder = new MessageBuilder("test");
 
         ((IMessageBuilder)messageBuilder).SetImmediate();
         messageBuilder.Reset();

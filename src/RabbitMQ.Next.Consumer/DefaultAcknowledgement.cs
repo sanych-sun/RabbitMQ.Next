@@ -21,9 +21,9 @@ internal class DefaultAcknowledgement : IAcknowledgement
 
     public ValueTask DisposeAsync() => default;
 
-    public Task AckAsync(ulong deliveryTag)
+    public ValueTask AckAsync(ulong deliveryTag)
         => this.channel.SendAsync(new AckMethod(deliveryTag, false));
 
-    public Task NackAsync(ulong deliveryTag, bool requeue)
+    public ValueTask NackAsync(ulong deliveryTag, bool requeue)
         => this.channel.SendAsync(new NackMethod(deliveryTag, false, requeue));
 }

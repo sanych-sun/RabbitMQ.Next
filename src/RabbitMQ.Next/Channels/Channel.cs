@@ -1,5 +1,4 @@
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -10,6 +9,7 @@ using RabbitMQ.Next.Exceptions;
 using RabbitMQ.Next.Messaging;
 using RabbitMQ.Next.Methods;
 using RabbitMQ.Next.Buffers;
+using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Methods;
 using RabbitMQ.Next.Transport.Methods.Basic;
@@ -24,13 +24,15 @@ internal sealed class Channel : IChannelInternal
     private readonly ObjectPool<MessageBuilder> messageBuilderPool;
     private readonly TaskCompletionSource<bool> channelCompletion;
     private readonly Dictionary<uint, IFrameHandler> methodHandlers = new();
+    private readonly ISerializer serializer;
 
     private ulong lastDeliveryTag;
     
-    public Channel(ChannelWriter<IMemoryAccessor> socketWriter, ObjectPool<MessageBuilder> messageBuilderPool)
+    public Channel(ChannelWriter<IMemoryAccessor> socketWriter, ObjectPool<MessageBuilder> messageBuilderPool, ISerializer serializer)
     {
         this.socketWriter = socketWriter;
         this.messageBuilderPool = messageBuilderPool;
+        this.serializer = serializer;
         this.messagePropertiesPool = new DefaultObjectPool<LazyMessageProperties>(new LazyMessagePropertiesPolicy());
 
         this.channelCompletion = new TaskCompletionSource<bool>();
@@ -55,7 +57,7 @@ internal sealed class Channel : IChannelInternal
         var parser = MethodRegistry.GetParser<TMethod>();
         IFrameHandler frameHandler =  
             typeof(IHasContentMethod).IsAssignableFrom(typeof(TMethod))
-            ? new MethodWithContentFrameHandler<TMethod>(handler, parser, this.messagePropertiesPool)
+            ? new MethodWithContentFrameHandler<TMethod>(this.serializer, handler, parser, this.messagePropertiesPool)
             : new MethodFrameHandler<TMethod>(handler, parser);
         
         var methodId = (uint)MethodRegistry.GetMethodId<TMethod>();
@@ -64,7 +66,7 @@ internal sealed class Channel : IChannelInternal
         return new Disposer(() => this.methodHandlers.Remove(methodId));
     }
 
-    public Task SendAsync<TRequest>(TRequest request, CancellationToken cancellation = default)
+    public ValueTask SendAsync<TRequest>(TRequest request, CancellationToken cancellation = default)
         where TRequest : struct, IOutgoingMethod
     {
         this.ValidateState();
@@ -82,7 +84,7 @@ internal sealed class Channel : IChannelInternal
             this.messageBuilderPool.Return(messageBuilder);   
         }
         
-        return this.WriteToSocketAsync(memory, cancellation).AsTask();
+        return this.WriteToSocketAsync(memory, cancellation);
     }
 
     public async Task<TResponse> SendAsync<TRequest, TResponse>(TRequest request, CancellationToken cancellation = default)
@@ -93,10 +95,13 @@ internal sealed class Channel : IChannelInternal
         return await waitTask.ConfigureAwait(false);
     }
 
-    public async Task<ulong> PublishAsync<TState>(
-        TState contentBuilderState, string exchange, string routingKey,
-        IMessageProperties properties, Action<TState, IBufferWriter<byte>> contentBuilder,
-        PublishFlags flags = PublishFlags.None, CancellationToken cancellation = default)
+    public async ValueTask<ulong> PublishAsync<TContent>(
+        string exchange, 
+        string routingKey,
+        TContent content, 
+        IMessageProperties properties,
+        PublishFlags flags = PublishFlags.None,
+        CancellationToken cancellation = default)
     {
         this.ValidateState();
         
@@ -108,7 +113,10 @@ internal sealed class Channel : IChannelInternal
         try
         {
             messageBuilder.WriteMethodFrame(publishMethod);
-            messageBuilder.WriteContentFrame(contentBuilderState, properties, contentBuilder);
+            messageBuilder.WriteContentFrame(
+                (properties, content, this.serializer), 
+                properties, 
+                (st, buffer) => st.serializer.Serialize(st.properties, st.content, buffer));
             memory = messageBuilder.Complete();
         }
         finally

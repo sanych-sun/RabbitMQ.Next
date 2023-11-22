@@ -9,18 +9,13 @@ public static class ConnectionExtensions
         var consumerBuilder = new ConsumerBuilder();
         builder?.Invoke(consumerBuilder);
 
-        if (consumerBuilder.Serializer == null)
-        {
-            throw new InvalidOperationException("Cannot create message consumer without configured serializer. Consider to call UseSerializer.");
-        }
-
         if (consumerBuilder.Queues.Count == 0)
         {
             throw new InvalidOperationException("Cannot start consumer without binding to queue. Consider to call BindToQueue.");
         }
 
-        var consumer = new Consumer(connection, consumerBuilder.AcknowledgementFactory, consumerBuilder.Serializer,
-            consumerBuilder.Queues, consumerBuilder.PrefetchSize, consumerBuilder.PrefetchCount,
+        var consumer = new Consumer(connection, consumerBuilder.AcknowledgementFactory,
+            consumerBuilder.Queues, consumerBuilder.Middlewares, consumerBuilder.PrefetchSize, consumerBuilder.PrefetchCount,
             consumerBuilder.ConcurrencyLevel, consumerBuilder.OnPoisonMessage);
 
         return consumer;

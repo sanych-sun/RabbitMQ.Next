@@ -4,12 +4,23 @@ using RabbitMQ.Next.Messaging;
 
 namespace RabbitMQ.Next.Publisher;
 
-public class MessageBuilder : IMessageBuilder
+internal class MessageBuilder : IMessageBuilder
 {
     private readonly Dictionary<string, object> headers = new();
 
+    public MessageBuilder(string exchange)
+    {
+        if (string.IsNullOrEmpty(exchange))
+        {
+            throw new ArgumentNullException(nameof(exchange));
+        }
+        
+        this.Exchange = exchange;
+    }
+    
     public void Reset()
     {
+        this.ClrType = null;
         this.RoutingKey = null;
         this.ContentType = null;
         this.ContentEncoding = null;
@@ -31,6 +42,10 @@ public class MessageBuilder : IMessageBuilder
     public bool Mandatory { get; private set; }
     
     public bool Immediate { get; private set; }
+
+    public Type ClrType { get; private set; }
+    
+    public string Exchange { get; private set; }
 
     public string RoutingKey { get; private set; }
 
@@ -60,7 +75,7 @@ public class MessageBuilder : IMessageBuilder
     public string UserId { get; private set; }
 
     public string ApplicationId { get; private set; }
-
+    
     public IMessageBuilder SetMandatory()
     {
         this.Mandatory = true;
@@ -73,6 +88,11 @@ public class MessageBuilder : IMessageBuilder
         return this;
     }
 
+    public void SetClrType(Type crlType)
+    {
+        this.ClrType = crlType;
+    }
+    
     public IMessageBuilder SetRoutingKey(string value)
     {
         this.RoutingKey = value;

@@ -1,9 +1,10 @@
 using System.Threading;
 using System.Threading.Tasks;
+using RabbitMQ.Next.Serialization;
 
 namespace RabbitMQ.Next;
 
-public interface IConnectionBuilder
+public interface IConnectionBuilder: ISerializationBuilder<IConnectionBuilder>
 {
     IConnectionBuilder Auth(IAuthMechanism mechanism);
 
@@ -16,6 +17,6 @@ public interface IConnectionBuilder
     IConnectionBuilder Locale(string locale);
 
     IConnectionBuilder MaxFrameSize(int sizeBytes);
-
+    
     Task<IConnection> ConnectAsync(CancellationToken cancellation = default);
 }

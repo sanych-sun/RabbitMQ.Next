@@ -15,6 +15,11 @@ class Program
     {
         await using var connection = await ConnectionBuilder.Default
             .Endpoint("amqp://test2:test2@localhost:5672/")
+            .UseDynamicSerializer(serializer => serializer
+                .When(m => "application/json".Equals(m.ContentType, StringComparison.InvariantCultureIgnoreCase)).UseSystemJsonSerializer()
+                .When(m => "application/msgpack".Equals(m.ContentType, StringComparison.InvariantCultureIgnoreCase)).UseMessagePackSerializer()
+                .When(_ => true).UseSystemJsonSerializer()
+            )
             .ConnectAsync();
 
         Console.WriteLine("Connection opened");
@@ -27,15 +32,7 @@ class Program
 
     private static async Task PublishMessagesAsync(IConnection connection)
     {
-        await using var publisher = connection.Publisher(
-            "amq.fanout", 
-            builder => builder
-                .UseDynamicSerializer(serializer => serializer
-                    .When(m => "application/json".Equals(m.ContentType, StringComparison.InvariantCultureIgnoreCase)).UseSystemJsonSerializer()
-                    .When(m => "application/msgpack".Equals(m.ContentType, StringComparison.InvariantCultureIgnoreCase)).UseMessagePackSerializer()
-                    .When(_ => true).UseSystemJsonSerializer()
-                )
-            );
+        await using var publisher = connection.Publisher("amq.fanout");
 
         // The message will be formatted using MessagePackSerializer, because there is corresponding registration
         await publisher.PublishAsync(new DummyDto { SomeProperty = "some message with msgpack content type"}, 
@@ -56,17 +53,12 @@ class Program
         await using var consumer = connection.Consumer(
             builder => builder
                 .BindToQueue("my-queue")
-                .PrefetchCount(10)
-                .UseDynamicSerializer(serializer => serializer
-                    .When(m => "application/json".Equals(m.ContentType, StringComparison.InvariantCultureIgnoreCase)).UseSystemJsonSerializer()
-                    .When(m => "application/msgpack".Equals(m.ContentType, StringComparison.InvariantCultureIgnoreCase)).UseMessagePackSerializer()
-                    .When(_ => true).UseSystemJsonSerializer()
-                ));
+                .PrefetchCount(10));
         
         var cancellation = new CancellationTokenSource(10_000); // simply cancel after 10 seconds
-        await consumer.ConsumeAsync(message =>
+        await consumer.ConsumeAsync((message, content) =>
         {
-            Console.WriteLine($"Message content-type: {message.Properties.ContentType}, {message.Content<DummyDto>().SomeProperty}");
+            Console.WriteLine($"Message content-type: {message.ContentType}, {content.Get<DummyDto>().SomeProperty}");
         } ,cancellation.Token);
     }
 }

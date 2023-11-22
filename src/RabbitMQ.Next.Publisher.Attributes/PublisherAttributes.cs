@@ -2,18 +2,13 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
-using RabbitMQ.Next.Channels;
 
 namespace RabbitMQ.Next.Publisher.Attributes;
 
-internal sealed class AttributePublishMiddleware : IPublishMiddleware
+internal static class PublisherAttributes
 {
     private static readonly ConcurrentDictionary<Assembly, IReadOnlyList<MessageAttributeBase>> AssemblyAttributesMap = new();
     private static readonly ConcurrentDictionary<Type, IReadOnlyList<MessageAttributeBase>> TypeAttributesMap = new();
-    
-    private readonly IPublishMiddleware next;
 
     private static readonly Func<Type, IReadOnlyList<MessageAttributeBase>> TypeAttributesFactory = type =>
     {
@@ -27,11 +22,6 @@ internal sealed class AttributePublishMiddleware : IPublishMiddleware
         return attributes.Length == 0 ? Array.Empty<MessageAttributeBase>() : AsMessageAttributes(attributes);
     };
 
-    public AttributePublishMiddleware(IPublishMiddleware next)
-    {
-        this.next = next;
-    }
-
     private static IReadOnlyList<MessageAttributeBase> AsMessageAttributes(object[] attributes)
     {
         var typed = new MessageAttributeBase[attributes.Length];
@@ -43,19 +33,14 @@ internal sealed class AttributePublishMiddleware : IPublishMiddleware
         return typed;
     }
 
-    public ValueTask InitAsync(IChannel channel, CancellationToken cancellation) => default;
 
-    public ValueTask<ulong> InvokeAsync<TContent>(TContent content, IMessageBuilder message, CancellationToken cancellation)
+    public static void Apply(IMessageBuilder message)
     {
-        var type = typeof(TContent);
-
-        var typeAttributes = TypeAttributesMap.GetOrAdd(type, TypeAttributesFactory);
+        var typeAttributes = TypeAttributesMap.GetOrAdd(message.ClrType, TypeAttributesFactory);
         ApplyAttributes(message, typeAttributes);
 
-        var assemblyAttributes = AssemblyAttributesMap.GetOrAdd(type.Assembly, AssemblyAttributesFactory);
+        var assemblyAttributes = AssemblyAttributesMap.GetOrAdd(message.ClrType.Assembly, AssemblyAttributesFactory);
         ApplyAttributes(message, assemblyAttributes);
-
-        return this.next.InvokeAsync(content, message, cancellation);
     }
 
     private static void ApplyAttributes(IMessageBuilder message, IReadOnlyList<MessageAttributeBase> attributes)

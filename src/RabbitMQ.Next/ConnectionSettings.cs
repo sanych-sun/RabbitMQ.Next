@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using RabbitMQ.Next.Transport;
+using RabbitMQ.Next.Serialization;
 
 namespace RabbitMQ.Next;
 
@@ -16,4 +16,6 @@ internal class ConnectionSettings
     public int MaxFrameSize { get; init; }
 
     public IReadOnlyDictionary<string, object> ClientProperties { get; init; }
+    
+    public ISerializer Serializer { get; init; }
 }

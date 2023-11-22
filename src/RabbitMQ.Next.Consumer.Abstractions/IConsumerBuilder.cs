@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
 using RabbitMQ.Next.Channels;
-using RabbitMQ.Next.Serialization;
+using RabbitMQ.Next.Messaging;
 
 namespace RabbitMQ.Next.Consumer;
 
-public interface IConsumerBuilder : ISerializationBuilder<IConsumerBuilder>
+public interface IConsumerBuilder
 {
     IConsumerBuilder BindToQueue(string queue, Action<IQueueConsumerBuilder> builder = null);
 
@@ -17,4 +19,6 @@ public interface IConsumerBuilder : ISerializationBuilder<IConsumerBuilder>
     IConsumerBuilder SetAcknowledgement(Func<IChannel, IAcknowledgement> acknowledgementFactory);
 
     IConsumerBuilder OnPoisonMessage(PoisonMessageMode mode);
+    
+    IConsumerBuilder UseConsumerMiddleware(Func<IDeliveredMessage,IContentAccessor,Func<IDeliveredMessage,IContentAccessor,Task>,Task> middleware);
 }

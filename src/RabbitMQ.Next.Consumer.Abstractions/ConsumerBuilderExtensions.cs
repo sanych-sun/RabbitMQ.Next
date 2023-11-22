@@ -1,4 +1,6 @@
 using System;
+using System.Threading.Tasks;
+using RabbitMQ.Next.Messaging;
 
 namespace RabbitMQ.Next.Consumer;
 
@@ -40,5 +42,27 @@ public static class ConsumerBuilderExtensions
         });
         
         return consumer;
+    }
+    
+    public static IConsumerBuilder UseConsumerMiddleware(this IConsumerBuilder builder, Func<IMessageProperties, IContentAccessor, Task> middleware)
+    {
+        builder.UseConsumerMiddleware(async (message, content, next) =>
+        {
+            await middleware.Invoke(message, content).ConfigureAwait(false);
+            await next.Invoke(message, content).ConfigureAwait(false);
+        });
+        
+        return builder;
+    }
+    
+    public static IConsumerBuilder UseConsumerMiddleware(this IConsumerBuilder builder, Action<IMessageProperties, IContentAccessor> middleware)
+    {
+        builder.UseConsumerMiddleware((message, content, next) =>
+        {
+            middleware.Invoke(message, content);
+            return next.Invoke(message, content);
+        });
+        
+        return builder;
     }
 }

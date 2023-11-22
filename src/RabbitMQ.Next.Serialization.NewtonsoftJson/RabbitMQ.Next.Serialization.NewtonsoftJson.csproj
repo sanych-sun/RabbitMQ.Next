@@ -7,7 +7,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\RabbitMQ.Next.Abstractions\RabbitMQ.Next.Abstractions.csproj" />
-    <ProjectReference Include="..\RabbitMQ.Next.Serialization\RabbitMQ.Next.Serialization.csproj" />
   </ItemGroup>
   
   <ItemGroup>

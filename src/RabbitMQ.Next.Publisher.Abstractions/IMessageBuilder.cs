@@ -5,11 +5,15 @@ namespace RabbitMQ.Next.Publisher;
 
 public interface IMessageBuilder: IMessageProperties
 {
+    string Exchange { get; }
+    
     string RoutingKey { get; }
     
     bool Mandatory { get; }
     
     bool Immediate { get; }
+    
+    Type ClrType { get; }
     
     IMessageBuilder SetMandatory();
     

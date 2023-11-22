@@ -20,6 +20,7 @@ public class PublishNoConfirmBenchmarks
     {
         this.connection = await ConnectionBuilder.Default
             .Endpoint(Helper.RabbitMqConnection)
+            .UsePlainTextSerializer()
             .ConnectAsync()
             .ConfigureAwait(false);
 
@@ -50,10 +51,7 @@ public class PublishNoConfirmBenchmarks
     [ArgumentsSource(nameof(TestCases))]
     public async Task PublishParallelAsync(TestCaseParameters parameters)
     {
-        var publisher = this.connection.Publisher("amq.topic",
-            builder => builder
-                .UsePlainTextSerializer()
-        );
+        var publisher = this.connection.Publisher("amq.topic", builder => builder.NoConfirms());
 
         await Task.WhenAll(Enumerable.Range(0, 10)
             .Select(async num =>
@@ -78,9 +76,7 @@ public class PublishNoConfirmBenchmarks
     [ArgumentsSource(nameof(TestCases))]
     public async Task PublishAsync(TestCaseParameters parameters)
     {
-        var publisher = this.connection.Publisher("amq.topic",
-            builder => builder
-                .UsePlainTextSerializer());
+        var publisher = this.connection.Publisher("amq.topic", builder => builder.NoConfirms());
 
         for (int i = 0; i < parameters.Messages.Count; i++)
         {

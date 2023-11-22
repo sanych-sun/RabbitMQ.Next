@@ -12,70 +12,57 @@ namespace RabbitMQ.Next.Tests.Publisher.Attributes;
 public class AttributeTransformerTests
 {
     [Fact]
-    public async Task TestAssemblyAttributes()
+    public void TestAssemblyAttributes()
     {
-        var next = Substitute.For<IPublishMiddleware>();
-        var message = Substitute.For<IMessageBuilder>();
-        var content = new AssemblyAttributesData();
+        var message = this.CreateSubjectFor<AssemblyAttributesData>();
         
-        var attributeTransformer = new AttributePublishMiddleware(next);
-
-        await attributeTransformer.InvokeAsync(content, message, default);
-
+        PublisherAttributes.Apply(message);
+        
         message.Received().SetApplicationId("unitTest");
-        await next.Received().InvokeAsync(content, message, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task TestRoutingKeyAttribute()
+    public void TestRoutingKeyAttribute()
     {
-        var next = Substitute.For<IPublishMiddleware>();
-        var message = Substitute.For<IMessageBuilder>();
-        var content = new RoutingKeyAttributeData();
+        var message = this.CreateSubjectFor<RoutingKeyAttributeData>();
         
-        var attributeTransformer = new AttributePublishMiddleware(next);
-
-        await attributeTransformer.InvokeAsync(content, message, default);
+        PublisherAttributes.Apply(message);
 
         message.Received().SetApplicationId("unitTest");
         message.Received().SetRoutingKey("route");
-        await next.Received().InvokeAsync(content, message, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task TestHeaderAttribute()
+    public void TestHeaderAttribute()
     {
-        var next = Substitute.For<IPublishMiddleware>();
-        var message = Substitute.For<IMessageBuilder>();
-        var content = new HeaderAttributeData();
+        var message = this.CreateSubjectFor<HeaderAttributeData>();
         
-        var attributeTransformer = new AttributePublishMiddleware(next);
-
-        await attributeTransformer.InvokeAsync(content, message, default);
+        PublisherAttributes.Apply(message);
 
         message.Received().SetApplicationId("unitTest");
         message.Received().SetHeader("headerA", "value1");
         message.Received().SetHeader("headerB", "value2");
-        await next.Received().InvokeAsync(content, message, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task TestMultipleAttributes()
+    public void TestMultipleAttributes()
     {
-        var next = Substitute.For<IPublishMiddleware>();
-        var message = Substitute.For<IMessageBuilder>();
-        var content = new MultipleAttributesData();
+        var message = this.CreateSubjectFor<MultipleAttributesData>();
         
-        var attributeTransformer = new AttributePublishMiddleware(next);
-
-        await attributeTransformer.InvokeAsync(content, message, default);
+        PublisherAttributes.Apply(message);
 
         message.Received().SetApplicationId("unitTest");
         message.Received().SetRoutingKey("route");
         message.Received().SetPriority(7);
-        await next.Received().InvokeAsync(content, message, Arg.Any<CancellationToken>());
     }
 
+    private IMessageBuilder CreateSubjectFor<TContentType>()
+    {
+        var message = Substitute.For<IMessageBuilder>();
+        message.ClrType.Returns(typeof(TContentType));
+        return message;
+    }
+    
     private class AssemblyAttributesData
     {
 

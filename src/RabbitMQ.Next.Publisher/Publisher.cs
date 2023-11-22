@@ -5,38 +5,44 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.ObjectPool;
 using RabbitMQ.Next.Channels;
-using RabbitMQ.Next.Serialization;
+using RabbitMQ.Next.Messaging;
+using RabbitMQ.Next.Transport.Methods.Basic;
+using RabbitMQ.Next.Transport.Methods.Confirm;
 using RabbitMQ.Next.Transport.Methods.Exchange;
 
 namespace RabbitMQ.Next.Publisher;
 
 internal sealed class Publisher : IPublisher
 {
-    private readonly SemaphoreSlim channelOpenSync = new(1,1);
-    private readonly ObjectPool<MessageBuilder> messagePropsPool;
+    private readonly SemaphoreSlim channelInitSync = new(1, 1);
     private readonly IConnection connection;
     private readonly string exchange;
-    private readonly ISerializer serializer;
-    private readonly IReadOnlyList<Func<IPublishMiddleware, IPublishMiddleware>> publishMiddlewares;
-    private readonly IReadOnlyList<Func<IReturnMiddleware, IReturnMiddleware>> returnMiddlewares;
-    private bool isDisposed;
+    private readonly ObjectPool<MessageBuilder> messagePropsPool;
+    private readonly ConfirmMessageHandler confirms;
+    private readonly ReturnMessageHandler returnMessageHandler;
+    private readonly IReadOnlyList<Func<IMessageBuilder,IContentAccessor,Func<IMessageBuilder,IContentAccessor,Task>,Task>> publishMiddlewares;
     private IChannel channel;
-    private IPublishMiddleware publishPipeline;
+    private bool isDisposed;
 
     public Publisher(
         IConnection connection,
-        ObjectPool<MessageBuilder> messagePropsPool,
-        ISerializer serializer,
         string exchange,
-        IReadOnlyList<Func<IPublishMiddleware, IPublishMiddleware>> publishMiddlewares,
-        IReadOnlyList<Func<IReturnMiddleware, IReturnMiddleware>> returnMiddlewares)
+        bool confirms,
+        IReadOnlyList<Func<IMessageBuilder,IContentAccessor,Func<IMessageBuilder,IContentAccessor,Task>,Task>> publishMiddlewares,
+        IReadOnlyList<Func<IReturnedMessage,IContentAccessor,Func<IReturnedMessage,IContentAccessor,Task>,Task>> returnMiddlewares)
     {
         this.connection = connection;
-        this.serializer = serializer;
-        this.messagePropsPool = messagePropsPool;
         this.exchange = exchange;
+        this.messagePropsPool = new DefaultObjectPool<MessageBuilder>(
+            new MessageBuilderPoolPolicy(exchange),
+            10);
+        if (confirms)
+        {
+            this.confirms = new ConfirmMessageHandler();
+        }
+
         this.publishMiddlewares = publishMiddlewares;
-        this.returnMiddlewares = returnMiddlewares;
+        this.returnMessageHandler = new ReturnMessageHandler(returnMiddlewares);
     }
 
     public async ValueTask DisposeAsync()
@@ -60,33 +66,67 @@ internal sealed class Publisher : IPublisher
     {
         var properties = this.messagePropsPool.Get();
         propertiesBuilder?.Invoke(properties);
-
-        return this.InternalPublishAsync(content, properties, cancellation);
+        
+        return this.PublishAsyncImpl(content, properties, cancellation);
     }
 
     public Task PublishAsync<TState, TContent>(TState state, TContent content, Action<TState, IMessageBuilder> propertiesBuilder = null, CancellationToken cancellation = default)
     {
         var properties = this.messagePropsPool.Get();
         propertiesBuilder?.Invoke(state, properties);
-
-        return this.InternalPublishAsync(content, properties, cancellation);
+        
+        return this.PublishAsyncImpl(content, properties, cancellation);
     }
-
-
-    private async Task InternalPublishAsync<TContent>(TContent content, MessageBuilder message, CancellationToken cancellation)
+    
+    private async Task PublishAsyncImpl<TContent>(TContent content, MessageBuilder message, CancellationToken cancellation)
     {
         try
         {
             this.CheckDisposed();
+            message.SetClrType(typeof(TContent));
+
+            if (this.publishMiddlewares?.Count > 0)
+            {
+                var pipeline = (IMessageBuilder m, IContentAccessor c) => this.InternalPublishAsync(m, c.Get<TContent>());
+                for (var i = this.publishMiddlewares.Count - 1; i >= 0; i--)
+                {
+                    var next = pipeline;
+                    var handler = this.publishMiddlewares[i];
+                    pipeline = (m, c) => handler.Invoke(m, c, next);
+                }
+             
+                var contentAccessor = new ContentWrapper<TContent>(content);
+                await pipeline.Invoke(message, contentAccessor).ConfigureAwait(false);    
+            }
+            else
+            {
+                await this.InternalPublishAsync(message, content).ConfigureAwait(false);
+            }
             
-            var pipeline = this.publishPipeline ?? await this.InitializeAsync(cancellation).ConfigureAwait(false);
-            await pipeline.InvokeAsync(content, message, cancellation).ConfigureAwait(false);
         }
         finally
         {
             this.messagePropsPool.Return(message);
         }
     }
+
+
+    private async Task InternalPublishAsync<TContent>(IMessageBuilder message, TContent content)
+    {
+        var flags = ComposePublishFlags(message);
+        var ch = await this.GetChannelAsync();
+        
+        var deliveryTag = await ch.PublishAsync(this.exchange, message.RoutingKey, content, message, flags);
+        
+        var confirmed = await this.confirms.WaitForConfirmAsync(deliveryTag, default).ConfigureAwait(false);
+        if (!confirmed)
+        {
+            // todo: provide some useful info here
+            throw new DeliveryFailedException();
+        }
+    }
+    
+    
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void CheckDisposed()
@@ -97,57 +137,79 @@ internal sealed class Publisher : IPublisher
         }
     }
 
-    private async ValueTask<IPublishMiddleware> InitializeAsync(CancellationToken cancellationToken = default)
+    private ValueTask<IChannel> GetChannelAsync()
+    {
+        if (this.channel != null && !this.channel.Completion.IsCompleted)
+        {
+            return ValueTask.FromResult(this.channel);
+        }
+
+        return this.InitializeChannelAsync();
+    }
+
+    private async ValueTask<IChannel> InitializeChannelAsync()
     {
         if (this.connection.State != ConnectionState.Open)
         {
-            throw new InvalidOperationException("Connection should be in Open state to use the API");
+            throw new InvalidOperationException("Connection should be in Open state to use the Publisher API");
         }
 
-        await this.channelOpenSync.WaitAsync(cancellationToken).ConfigureAwait(false);
+        await this.channelInitSync.WaitAsync().ConfigureAwait(false);
 
+        IChannel ch = null;
         try
         {
-            if (this.publishPipeline != null)
+            if (this.channel != null && !this.channel.Completion.IsCompleted)
             {
-                return this.publishPipeline;
+                return this.channel;
             }
 
-            this.channel = await this.connection.OpenChannelAsync(cancellationToken).ConfigureAwait(false);
-            // ensure target exchange exists
-            await this.channel.SendAsync<DeclareMethod, DeclareOkMethod>(new DeclareMethod(this.exchange), cancellationToken).ConfigureAwait(false);
-
-            IReturnMiddleware returnPipeline = new VoidReturnMiddleware();
-            for (var i = 0; i < this.returnMiddlewares.Count; i++)
-            {
-                returnPipeline = this.returnMiddlewares[i].Invoke(returnPipeline);
-            }
+            ch = await this.connection.OpenChannelAsync().ConfigureAwait(false);
             
-            this.channel.WithMessageHandler(new ReturnMessageHandler(returnPipeline, this.serializer));
-            
-            this.publishPipeline = new InternalMessagePublisher(this.exchange, this.serializer);
-            await this.publishPipeline.InitAsync(this.channel, default).ConfigureAwait(false);
+            // validate if exchange exists
+            await ch.SendAsync<DeclareMethod, DeclareOkMethod>(new DeclareMethod(this.exchange));
 
-            for (var i = 0; i < this.publishMiddlewares.Count; i++)
+            if (this.confirms != null)
             {
-                this.publishPipeline = this.publishMiddlewares[i].Invoke(this.publishPipeline);
-                await this.publishPipeline.InitAsync(this.channel, default).ConfigureAwait(false);
+                await ch.SendAsync<SelectMethod, SelectOkMethod>(new SelectMethod()).ConfigureAwait(false);
+                
+                ch.WithMessageHandler<AckMethod>(this.confirms);
+                ch.WithMessageHandler<NackMethod>(this.confirms);
             }
 
-            return this.publishPipeline;
+            ch.WithMessageHandler(this.returnMessageHandler);
+
+            this.channel = ch;
+            return ch;
         }
         catch (Exception)
         {
-            if (this.channel != null)
+            if (ch != null)
             {
-                await this.channel.CloseAsync().ConfigureAwait(false);
+                await ch.CloseAsync().ConfigureAwait(false);
             }
 
             throw;
         }
         finally
         {
-            this.channelOpenSync.Release();
+            this.channelInitSync.Release();
         }
+    }
+    
+    private static PublishFlags ComposePublishFlags(IMessageBuilder message)
+    {
+        var flags = PublishFlags.None;
+        if (message.Immediate)
+        {
+            flags |= PublishFlags.Immediate;
+        }
+
+        if (message.Mandatory)
+        {
+            flags |= PublishFlags.Mandatory;
+        }
+
+        return flags;
     }
 }

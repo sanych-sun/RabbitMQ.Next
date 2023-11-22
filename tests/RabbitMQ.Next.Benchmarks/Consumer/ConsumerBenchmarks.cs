@@ -27,6 +27,7 @@ public class ConsumerBenchmarks
     {
         this.connection = await ConnectionBuilder.Default
             .Endpoint(Helper.RabbitMqConnection)
+            .UsePlainTextSerializer()
             .ConnectAsync();
 
         ConnectionFactory factory = new ConnectionFactory()
@@ -43,7 +44,7 @@ public class ConsumerBenchmarks
             await topology.Queue.PurgeAsync(this.queueName);
         });
         
-        var publisher = this.connection.Publisher("amq.fanout", builder => builder.UsePlainTextSerializer());
+        var publisher = this.connection.Publisher("amq.fanout");
             
         var payload = Helper.BuildDummyText(this.PayloadSize);
             
@@ -114,13 +115,12 @@ public class ConsumerBenchmarks
         var consumer = this.connection.Consumer(
             b => b
                 .BindToQueue(this.queueName)
-                .PrefetchCount(10)
-                .UsePlainTextSerializer());
+                .PrefetchCount(10));
 
-        var consumeTask = consumer.ConsumeAsync(message =>
+        var consumeTask = consumer.ConsumeAsync((m,c) =>
         {
-            var data = message.Content<string>();
-            var messageId = message.Properties.MessageId;
+            var data = c.Get<string>();
+            var messageId = m.MessageId;
             num++;
             if (num >= this.messagesCount)
             {

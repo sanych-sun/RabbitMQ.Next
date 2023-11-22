@@ -11,6 +11,4 @@ public interface IReturnedMessage : IMessageProperties
     public ushort ReplyCode { get; }
 
     public string ReplyText { get; }
-    
-    T Content<T>();
 }

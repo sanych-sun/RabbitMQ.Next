@@ -14,14 +14,14 @@ public interface IChannel
         
     Task Completion { get; }
 
-    Task SendAsync<TRequest>(TRequest request, CancellationToken cancellation = default)
+    ValueTask SendAsync<TRequest>(TRequest request, CancellationToken cancellation = default)
         where TRequest : struct, IOutgoingMethod;
 
     Task<TResponse> SendAsync<TRequest, TResponse>(TRequest request, CancellationToken cancellation = default)
         where TRequest : struct, IOutgoingMethod
         where TResponse : struct, IIncomingMethod;
 
-    Task<ulong> PublishAsync<TState>(TState contentBuilderState, string exchange, string routingKey, IMessageProperties properties, Action<TState, IBufferWriter<byte>> payload, PublishFlags flags = PublishFlags.None, CancellationToken cancellation = default);
+    ValueTask<ulong> PublishAsync<TContent>(string exchange, string routingKey, TContent content, IMessageProperties properties, PublishFlags flags = PublishFlags.None, CancellationToken cancellation = default);
 
     Task<TMethod> WaitAsync<TMethod>(CancellationToken cancellation = default)
         where TMethod : struct, IIncomingMethod;
