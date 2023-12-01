@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using RabbitMQ.Next.Methods;
 
@@ -5,7 +6,7 @@ namespace RabbitMQ.Next.Transport.Methods.Connection;
 
 public readonly struct StartOkMethod : IOutgoingMethod
 {
-    public StartOkMethod(string mechanism, string response, string locale, IReadOnlyDictionary<string, object> clientProperties)
+    public StartOkMethod(string mechanism, ReadOnlyMemory<byte> response, string locale, IReadOnlyDictionary<string, object> clientProperties)
     {
         this.Mechanism = mechanism;
         this.Response = response;
@@ -19,7 +20,7 @@ public readonly struct StartOkMethod : IOutgoingMethod
 
     public string Mechanism { get; }
 
-    public string Response { get; }
+    public ReadOnlyMemory<byte> Response { get; }
 
     public string Locale { get; }
 }

@@ -270,17 +270,16 @@ internal class Connection : IConnection
         // connection should be forcibly closed if negotiation phase take more then 10s.
         cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(10)).Token.Combine(cancellation);
 
-        var startMethodTask = channel.WaitAsync<StartMethod>(cancellation);
-
-        var startMethod = await startMethodTask;
-
+        var startMethod = await channel.WaitAsync<StartMethod>(cancellation);
         if (!startMethod.Mechanisms.Contains(settings.Auth.Type))
         {
             throw new NotSupportedException("Provided auth mechanism does not supported by the server");
         }
 
+        var initialChallengeResponse = await settings.Auth.HandleChallengeAsync(Span<byte>.Empty);
+
         var tuneMethodTask = channel.WaitAsync<TuneMethod>(cancellation);
-        await channel.SendAsync(new StartOkMethod(settings.Auth.Type, settings.Auth.ToResponse(), settings.Locale, settings.ClientProperties), cancellation);
+        await channel.SendAsync(new StartOkMethod(settings.Auth.Type, initialChallengeResponse, settings.Locale, settings.ClientProperties), cancellation);
 
         var tuneMethod = await tuneMethodTask;
         var negotiationResult = new NegotiationResults(

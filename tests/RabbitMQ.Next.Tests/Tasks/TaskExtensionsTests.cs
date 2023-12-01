@@ -60,7 +60,7 @@ public class TaskExtensionsTests
 
         var wrapped = task.WithCancellation(cancellation.Token);
         tcs.SetResult(5);
-        await Task.Yield();
+        await Task.Delay(10);
 
         Assert.True(wrapped.IsCompleted);
         Assert.Equal(5, await wrapped);

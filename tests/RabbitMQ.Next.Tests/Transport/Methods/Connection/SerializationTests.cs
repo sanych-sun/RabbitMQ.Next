@@ -49,7 +49,7 @@ public class SerializationTests : SerializationTestBase
                 ["exchange_exchange_bindings"] = true
             }
         };
-        var method = new StartOkMethod("PLAIN", "\0test1\0test1", "en_US", clientProperties);
+        var method = new StartOkMethod("PLAIN",  "\0test1\0test1"u8.ToArray(), "en_US", clientProperties);
 
         this.TestFormatter(method);
     }

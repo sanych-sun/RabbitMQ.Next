@@ -32,7 +32,7 @@ public class ModelTests
     public void StartOkMethod()
     {
         var mechanism = "PLAIN";
-        var response = "test";
+        var response = "ab"u8.ToArray();
         var locale = "en_US";
         var clientProperties = new Dictionary<string, object>()
         {

@@ -1,3 +1,6 @@
+using System;
+using System.Text;
+using System.Threading.Tasks;
 using NSubstitute;
 using RabbitMQ.Next.Auth;
 using Xunit;
@@ -20,14 +23,16 @@ public class PlainAuthMechanismTests
     }
 
     [Fact]
-    public void ToResponse()
+    public async Task HandleChallengeAsync()
     {
         var user = "test";
         var password = "pwd";
+        var expected = "\0test\0pwd"u8.ToArray();
 
         var auth = new PlainAuthMechanism(user, password);
-
-        Assert.Equal($"\0{user}\0{password}", auth.ToResponse());
+        var response = await auth.HandleChallengeAsync(ReadOnlySpan<byte>.Empty);
+        
+        Assert.Equal(expected, response.ToArray());
     }
 
     [Fact]

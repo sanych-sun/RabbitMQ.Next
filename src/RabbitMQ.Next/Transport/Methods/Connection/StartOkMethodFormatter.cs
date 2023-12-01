@@ -8,6 +8,6 @@ internal class StartOkMethodFormatter : IMethodFormatter<StartOkMethod>
         => destination
             .Write(method.ClientProperties)
             .Write(method.Mechanism)
-            .Write(method.Response, true)
+            .Write(method.Response.Span)
             .Write(method.Locale);
 }
