@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using RabbitMQ.Next.Tests.Mocks;
 using RabbitMQ.Next.Transport.Methods.Connection;
@@ -55,6 +56,14 @@ public class SerializationTests : SerializationTestBase
     }
 
     [Fact]
+    public void SecureMethodParser()
+        => this.TestParser(new SecureMethod("ping"u8.ToArray()), new SecureMethodComparer());
+    
+    [Fact]
+    public void SecureOkMethodFormatter()
+        => this.TestFormatter(new SecureOkMethod("pong"u8.ToArray()));
+
+    [Fact]
     public void TuneMethodParser()
         => this.TestParser(new TuneMethod(2047, 131072, 60));
 
@@ -109,5 +118,14 @@ public class SerializationTests : SerializationTestBase
         {
             return HashCode.Combine(obj.VersionMajor, obj.VersionMinor, obj.ServerProperties, obj.Mechanisms, obj.Locales);
         }
+    }
+
+    private class SecureMethodComparer : IEqualityComparer<SecureMethod>
+    {
+        public bool Equals(SecureMethod x, SecureMethod y)
+            => x.Challenge.Span.SequenceEqual(y.Challenge.Span);
+
+        public int GetHashCode(SecureMethod obj)
+            => obj.Challenge.GetHashCode();
     }
 }

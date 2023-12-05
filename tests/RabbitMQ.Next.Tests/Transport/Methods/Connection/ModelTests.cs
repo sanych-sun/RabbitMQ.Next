@@ -47,7 +47,29 @@ public class ModelTests
         Assert.Equal(locale, startOkMethod.Locale);
         Assert.Equal(clientProperties, startOkMethod.ClientProperties);
     }
+    
+    [Fact]
+    public void SecureMethod()
+    {
+        var challenge = "ping"u8.ToArray();
+        
+        var secureMethod = new SecureMethod(challenge);
 
+        Assert.Equal(MethodId.ConnectionSecure, secureMethod.MethodId);
+        Assert.Equal(challenge, secureMethod.Challenge);
+    }
+
+    [Fact]
+    public void SecureOkMethod()
+    {
+        var response = "pong"u8.ToArray();
+        
+        var startOkMethod = new SecureOkMethod(response);
+
+        Assert.Equal(MethodId.ConnectionSecureOk, startOkMethod.MethodId);
+        Assert.Equal(response, startOkMethod.Response);
+    }
+    
     [Fact]
     public void TuneMethod()
     {

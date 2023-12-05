@@ -31,6 +31,8 @@ internal static class MethodRegistry
         // ConnectionMethods
         Register(MethodId.ConnectionStart, parser: new Connection.StartMethodParser());
         Register(MethodId.ConnectionStartOk, formatter: new Connection.StartOkMethodFormatter());
+        Register(MethodId.ConnectionSecure, parser: new Connection.SecureMethodParser());
+        Register(MethodId.ConnectionSecureOk, formatter: new Connection.SecureOkMethodFormatter());
         Register(MethodId.ConnectionTune, parser: new Connection.TuneMethodParser());
         Register(MethodId.ConnectionTuneOk, formatter: new Connection.TuneOkMethodFormatter());
         Register(MethodId.ConnectionOpen, formatter: new Connection.OpenMethodFormatter());

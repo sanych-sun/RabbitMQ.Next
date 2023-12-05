@@ -39,7 +39,7 @@ public abstract class SerializationTestBase
         var payload = Helpers.GetFileContent(payloadResName);
 
         var data = parser.Parse(payload);
-
+        
         Assert.Equal(method, data, comparer);
     }
 }
