@@ -1,12 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Exceptions;
-using RabbitMQ.Next.Transport;
 
 namespace RabbitMQ.Next.Sockets;
 
@@ -44,32 +45,44 @@ internal static class EndpointResolver
         var ipV6Address = FindAddress(addresses, AddressFamily.InterNetworkV6);
         if (ipV6Address != null)
         {
-            var socket = await ConnectAsync(ipV6Address, endpoint.Port, cancellation);
-            if (socket != null)
-            {
-                return new SocketWrapper(socket, endpoint);
-            }
+            return await ConnectAsync(ipV6Address, endpoint, cancellation);
         }
 
         // 2. Try IP v4
         var ipV4Address = FindAddress(addresses, AddressFamily.InterNetwork);
         if (ipV4Address != null)
         {
-            var socket = await ConnectAsync(ipV4Address, endpoint.Port, cancellation);
-            if (socket != null)
-            {
-                return new SocketWrapper(socket, endpoint);
-            }
+            return await ConnectAsync(ipV4Address, endpoint, cancellation);
         }
 
         throw new NotSupportedException("Cannot connect to the endpoint: no supported protocols is available");
     }
 
-    private static async Task<Socket> ConnectAsync(IPAddress address, int port, CancellationToken cancellation)
+    private static async Task<ISocket> ConnectAsync(IPAddress address, Endpoint endpoint, CancellationToken cancellation)
     {
-        var endpoint = new IPEndPoint(address, port);
-        var socket = new Socket(endpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-        await socket.ConnectAsync(endpoint, cancellation);
-        return socket;
+        var ipEndPoint = new IPEndPoint(address, endpoint.Port);
+        var socket = new Socket(ipEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+        await socket.ConnectAsync(ipEndPoint, cancellation);
+        var stream = ConfigureStream(socket, endpoint);
+        return new SocketWrapper(socket, stream);
+    }
+
+    private static Stream ConfigureStream(Socket socket, Endpoint endpoint)
+    {
+        Stream stream = new NetworkStream(socket)
+        {
+            ReadTimeout = 60000,
+            WriteTimeout = 60000,
+        };
+
+        if (endpoint.UseSsl)
+        {
+            var sslStream = new SslStream(stream, false);
+            sslStream.AuthenticateAsClient(endpoint.Host);
+
+            stream = sslStream;
+        }
+
+        return stream;
     }
 }

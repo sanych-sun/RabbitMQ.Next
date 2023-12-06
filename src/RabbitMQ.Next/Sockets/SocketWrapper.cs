@@ -1,5 +1,4 @@
 using System.IO;
-using System.Net.Security;
 using System.Net.Sockets;
 using RabbitMQ.Next.Buffers;
 
@@ -8,29 +7,12 @@ namespace RabbitMQ.Next.Sockets;
 internal class SocketWrapper : ISocket
 {
     private readonly Socket socket;
-    private readonly Stream readStream;
-    private readonly Stream writeStream;
+    private readonly Stream stream;
 
-    public SocketWrapper(Socket socket, Endpoint endpoint)
+    public SocketWrapper(Socket socket, Stream stream)
     {
         this.socket = socket;
-
-        Stream stream = new NetworkStream(socket)
-        {
-            ReadTimeout = 60000,
-            WriteTimeout = 60000,
-        };
-
-        if (endpoint.UseSsl)
-        {
-            var sslStream = new SslStream(stream, false);
-            sslStream.AuthenticateAsClient(endpoint.Host);
-
-            stream = sslStream;
-        }
-
-        this.readStream = stream;
-        this.writeStream = stream;
+        this.stream = stream;
     }
 
     public void Send(IMemoryAccessor payload)
@@ -38,11 +20,11 @@ internal class SocketWrapper : ISocket
         var current = payload;
         while (current != null)
         {
-            current.WriteTo(this.writeStream);
+            current.WriteTo(this.stream);
             current = current.Next;
         }
         
-        this.writeStream.Flush();
+        this.stream.Flush();
     }
     
     public int Receive(byte[] buffer, int offset, int minBytes)
@@ -50,7 +32,7 @@ internal class SocketWrapper : ISocket
         var received = 0;
         while (received < minBytes)
         {
-            var readBytes = this.readStream.Read(buffer, offset, buffer.Length - offset);
+            var readBytes = this.stream.Read(buffer, offset, buffer.Length - offset);
             if (readBytes == 0 && this.IsConnectionClosedByServer())
             {
                 throw new SocketException();
@@ -68,8 +50,7 @@ internal class SocketWrapper : ISocket
 
     public void Dispose()
     {
-        this.readStream?.Dispose();
-        this.writeStream?.Dispose();
+        this.stream.Dispose();
         this.socket?.Dispose();
     }
 }
