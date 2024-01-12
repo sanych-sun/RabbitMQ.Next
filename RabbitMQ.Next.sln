@@ -50,6 +50,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMQ.Next.Serialization
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMQ.Next.Examples.DynamicSerializer", "docs\examples\RabbitMQ.Next.Examples.DynamicSerializer\RabbitMQ.Next.Examples.DynamicSerializer.csproj", "{B93A51A9-0A31-4419-B8E8-C304EF18CFAB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMQ.Next.Examples.DemoSaslAuthMechanism", "docs\examples\RabbitMQ.Next.Examples.DemoSaslAuthMechanism\RabbitMQ.Next.Examples.DemoSaslAuthMechanism.csproj", "{C0440748-9787-4891-874A-054F5E64020B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -136,6 +138,10 @@ Global
 		{B93A51A9-0A31-4419-B8E8-C304EF18CFAB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B93A51A9-0A31-4419-B8E8-C304EF18CFAB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B93A51A9-0A31-4419-B8E8-C304EF18CFAB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C0440748-9787-4891-874A-054F5E64020B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C0440748-9787-4891-874A-054F5E64020B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C0440748-9787-4891-874A-054F5E64020B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C0440748-9787-4891-874A-054F5E64020B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{AB00A6F3-C3E0-4E61-B302-F9CF0288819E} = {C895EE24-13DF-45C3-AF1D-B6B6EE4A10A9}
@@ -160,5 +166,6 @@ Global
 		{6D34D919-0630-40EB-9291-CB28DB2BBA25} = {AD3AF1AA-71EE-4A2C-84DD-5C7DF141C187}
 		{95003EED-4B62-430E-8A4D-1D3B09CAA173} = {AD3AF1AA-71EE-4A2C-84DD-5C7DF141C187}
 		{B93A51A9-0A31-4419-B8E8-C304EF18CFAB} = {750B1D71-E43B-4714-8AA3-AB9B0EC7E931}
+		{C0440748-9787-4891-874A-054F5E64020B} = {750B1D71-E43B-4714-8AA3-AB9B0EC7E931}
 	EndGlobalSection
 EndGlobal

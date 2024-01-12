@@ -6,6 +6,8 @@ namespace RabbitMQ.Next;
 public interface IAuthMechanism
 {
     string Type { get; }
-
+    
+    ValueTask<ReadOnlyMemory<byte>> StartAsync();
+    
     ValueTask<ReadOnlyMemory<byte>> HandleChallengeAsync(ReadOnlySpan<byte> challenge);
 }

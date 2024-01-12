@@ -276,10 +276,28 @@ internal class Connection : IConnection
             throw new NotSupportedException("Provided auth mechanism does not supported by the server");
         }
 
-        var initialChallengeResponse = await settings.Auth.HandleChallengeAsync(Span<byte>.Empty);
+        var saslStartBytes = await settings.Auth.StartAsync();
 
         var tuneMethodTask = channel.WaitAsync<TuneMethod>(cancellation);
-        await channel.SendAsync(new StartOkMethod(settings.Auth.Type, initialChallengeResponse, settings.Locale, settings.ClientProperties), cancellation);
+        var secureMethodTask = channel.WaitAsync<SecureMethod>(cancellation);
+
+        await channel.SendAsync(new StartOkMethod(settings.Auth.Type, saslStartBytes, settings.Locale, settings.ClientProperties), cancellation);
+        
+        do
+        {
+            await Task.WhenAny(tuneMethodTask, secureMethodTask);
+
+            if (secureMethodTask.IsCompleted)
+            {
+                var secureRequest = await secureMethodTask;
+                var secureResponse = await settings.Auth.HandleChallengeAsync(secureRequest.Challenge.Span);
+                
+                // wait for another secure round-trip just in case
+                secureMethodTask = channel.WaitAsync<SecureMethod>(cancellation);
+                await channel.SendAsync(new SecureOkMethod(secureResponse), cancellation);
+            }
+            
+        } while (!tuneMethodTask.IsCompleted);
 
         var tuneMethod = await tuneMethodTask;
         var negotiationResult = new NegotiationResults(

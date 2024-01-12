@@ -23,16 +23,24 @@ public class PlainAuthMechanismTests
     }
 
     [Fact]
-    public async Task HandleChallengeAsync()
+    public async Task StartAsyncTests()
     {
         var user = "test";
         var password = "pwd";
         var expected = "\0test\0pwd"u8.ToArray();
 
         var auth = new PlainAuthMechanism(user, password);
-        var response = await auth.HandleChallengeAsync(ReadOnlySpan<byte>.Empty);
+        var response = await auth.StartAsync();
         
         Assert.Equal(expected, response.ToArray());
+    }
+    
+    [Fact]
+    public async Task HandleChallengeAsyncThrows()
+    {
+        var auth = new PlainAuthMechanism("test", "pwd");
+
+        await Assert.ThrowsAsync<NotSupportedException>(async () => await auth.HandleChallengeAsync(ReadOnlySpan<byte>.Empty));
     }
 
     [Fact]

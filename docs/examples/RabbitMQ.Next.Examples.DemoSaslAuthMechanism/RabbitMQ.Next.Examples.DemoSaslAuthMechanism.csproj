@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net6.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\RabbitMQ.Next.Abstractions\RabbitMQ.Next.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\src\RabbitMQ.Next\RabbitMQ.Next.csproj" />
+  </ItemGroup>
+
+</Project>

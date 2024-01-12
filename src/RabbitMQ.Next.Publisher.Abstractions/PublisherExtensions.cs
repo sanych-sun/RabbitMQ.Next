@@ -13,11 +13,12 @@ public static class PublisherExtensions
         Action<IMessageBuilder> propertiesBuilder = null,
         CancellationToken cancellation = default)
         => publisher.PublishAsync(
-            routingKey,
+            (routingKey,propertiesBuilder),
             content,
             (state, message) =>
             {
-                message.SetRoutingKey(state);
+                message.SetRoutingKey(state.routingKey);
+                state.propertiesBuilder?.Invoke(message);
             },
             cancellation);
 }
