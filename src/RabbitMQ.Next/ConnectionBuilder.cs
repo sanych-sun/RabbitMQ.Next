@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
 using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Transport;
 
@@ -13,7 +11,7 @@ public class ConnectionBuilder : IConnectionBuilder
     private const string DefaultLocale = "en-US";
     private const int DefaultMaxFrameSize = 131_072; // 128kB
 
-    private readonly IConnectionFactory factory;
+    private readonly Func<ConnectionSettings, IConnection> factory;
     private readonly List<Endpoint> endpoints = new();
     private readonly Dictionary<string, object> clientProperties = new();
     private IAuthMechanism authMechanism;
@@ -23,11 +21,11 @@ public class ConnectionBuilder : IConnectionBuilder
     private ISerializer serializer = null; // TODO: Implement noop serializer as default one
 
     private ConnectionBuilder()
-        : this(ConnectionFactory.Default)
+        : this(s => new Connection(s))
     {
     }
 
-    internal ConnectionBuilder(IConnectionFactory factory)
+    internal ConnectionBuilder(Func<ConnectionSettings, IConnection> factory)
     {
         this.factory = factory;
     }
@@ -96,7 +94,7 @@ public class ConnectionBuilder : IConnectionBuilder
         return this;
     }
 
-    public Task<IConnection> ConnectAsync(CancellationToken cancellation = default)
+    public IConnection Build()
     {
         var settings = new ConnectionSettings
         {
@@ -109,6 +107,6 @@ public class ConnectionBuilder : IConnectionBuilder
             Serializer = this.serializer,
         };
 
-        return this.factory.ConnectAsync(settings, cancellation);
+        return this.factory(settings);
     }
 }

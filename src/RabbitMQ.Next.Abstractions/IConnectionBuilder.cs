@@ -18,5 +18,5 @@ public interface IConnectionBuilder: ISerializationBuilder<IConnectionBuilder>
 
     IConnectionBuilder MaxFrameSize(int sizeBytes);
     
-    Task<IConnection> ConnectAsync(CancellationToken cancellation = default);
+    IConnection Build();
 }

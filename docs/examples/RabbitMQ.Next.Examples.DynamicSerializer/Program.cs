@@ -13,14 +13,14 @@ class Program
 {
     static async Task Main()
     {
-        await using var connection = await ConnectionBuilder.Default
+        await using var connection = ConnectionBuilder.Default
             .Endpoint("amqp://test2:test2@localhost:5672/")
             .UseDynamicSerializer(serializer => serializer
                 .When(m => "application/json".Equals(m.ContentType, StringComparison.InvariantCultureIgnoreCase)).UseSystemJsonSerializer()
                 .When(m => "application/msgpack".Equals(m.ContentType, StringComparison.InvariantCultureIgnoreCase)).UseMessagePackSerializer()
                 .When(_ => true).UseSystemJsonSerializer()
             )
-            .ConnectAsync();
+            .Build();
 
         Console.WriteLine("Connection opened");
         await PublishMessagesAsync(connection);

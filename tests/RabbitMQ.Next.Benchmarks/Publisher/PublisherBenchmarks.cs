@@ -12,9 +12,21 @@ namespace RabbitMQ.Next.Benchmarks.Publisher;
 
 public class PublisherBenchmarks
 {
-    private IConnection connection;
-    private RabbitMQ.Client.IConnection theirConnection;
+    private readonly IConnection connection;
+    private readonly RabbitMQ.Client.IConnection theirConnection;
 
+    public PublisherBenchmarks()
+    {
+        ConnectionFactory factory = new ConnectionFactory();
+        factory.Uri = Helper.RabbitMqConnection;
+        this.theirConnection = factory.CreateConnection();
+        
+        this.connection = ConnectionBuilder.Default
+            .Endpoint(Helper.RabbitMqConnection)
+            .UsePlainTextSerializer()
+            .Build();
+    }
+    
     [Benchmark(Baseline = true)]
     [ArgumentsSource(nameof(TestCases))]
     public void PublishBaseLibrary(TestCaseParameters parameters)
@@ -75,34 +87,14 @@ public class PublisherBenchmarks
         await publisher.DisposeAsync().ConfigureAwait(false);
     }
 
-    [GlobalSetup(Target = nameof(PublishBaseLibrary))]
-    public void SetupOfficialLibrary()
-    {
-        ConnectionFactory factory = new ConnectionFactory();
-        factory.Uri = Helper.RabbitMqConnection;
-
-        this.theirConnection = factory.CreateConnection();
-    }
-
-    [GlobalCleanup(Target = nameof(PublishBaseLibrary))]
-    public void CleanUpOfficialLibrary()
+    [GlobalCleanup()]
+    public async ValueTask CleanUpOfficialLibrary()
     {
         this.theirConnection.Close();
         this.theirConnection.Dispose();
+        await this.connection.DisposeAsync();
     }
-
-    [GlobalSetup(Targets = new[] {nameof(PublishParallelAsync), nameof(PublishAsync)})]
-    public async Task Setup()
-    {
-        this.connection = await ConnectionBuilder.Default
-            .Endpoint(Helper.RabbitMqConnection)
-            .UsePlainTextSerializer()
-            .ConnectAsync();
-    }
-
-    [GlobalCleanup(Targets = new[] {nameof(PublishParallelAsync), nameof(PublishAsync)})]
-    public ValueTask CleanUp() => this.connection.DisposeAsync();
-
+    
     public static IEnumerable<TestCaseParameters> TestCases()
     {
         TestCaseParameters GenerateTestCase(int payloadLen, int count, string name)

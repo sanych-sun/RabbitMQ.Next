@@ -25,10 +25,10 @@ public class ConsumerBenchmarks
     [GlobalSetup]
     public async Task Setup()
     {
-        this.connection = await ConnectionBuilder.Default
+        this.connection = ConnectionBuilder.Default
             .Endpoint(Helper.RabbitMqConnection)
             .UsePlainTextSerializer()
-            .ConnectAsync();
+            .Build();
 
         ConnectionFactory factory = new ConnectionFactory()
         {

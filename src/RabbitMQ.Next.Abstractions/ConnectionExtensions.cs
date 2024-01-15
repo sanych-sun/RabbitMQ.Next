@@ -15,11 +15,6 @@ public static class ConnectionExtensions
 
     public static async Task<TResult> UseChannelAsync<TState, TResult>(this IConnection connection, TState state, Func<TState, IChannel, Task<TResult>> fn)
     {
-        if (connection.State != ConnectionState.Open)
-        {
-            throw new InvalidOperationException("Connection should be open.");
-        }
-
         IChannel channel = null;
         try
         {

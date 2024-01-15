@@ -7,7 +7,6 @@ using Microsoft.Extensions.ObjectPool;
 using RabbitMQ.Next.Exceptions;
 using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Channels;
-using RabbitMQ.Next.Serialization;
 using RabbitMQ.Next.Sockets;
 using RabbitMQ.Next.Tasks;
 using RabbitMQ.Next.Transport;
@@ -18,6 +17,7 @@ namespace RabbitMQ.Next;
 
 internal class Connection : IConnection
 {
+    private readonly SemaphoreSlim connectionStateLock = new (1, 1);
     private readonly ChannelPool channelPool;
     private readonly ConnectionDetails connectionDetails;
     private readonly Channel<IMemoryAccessor> socketSender;
@@ -27,8 +27,13 @@ internal class Connection : IConnection
     private CancellationTokenSource socketIoCancellation;
     private IChannelInternal connectionChannel;
 
-    public Connection(ConnectionSettings settings, ObjectPool<byte[]> memoryPool)
+    public Connection(ConnectionSettings settings)
     {
+        // for best performance and code simplification buffer should fit entire frame
+        // (frame header + frame payload + frame-end)
+        var bufferSize = ProtocolConstants.FrameHeaderSize + settings.MaxFrameSize + ProtocolConstants.FrameEndSize;
+        this.memoryPool = new DefaultObjectPool<byte[]>(new MemoryPoolPolicy(bufferSize), 100);
+        
         this.connectionDetails = new ConnectionDetails(settings);
         this.socketSender = System.Threading.Channels.Channel.CreateBounded<IMemoryAccessor>(new BoundedChannelOptions(100)
         {
@@ -39,18 +44,22 @@ internal class Connection : IConnection
         });
             
         this.State = ConnectionState.Closed;
-        this.memoryPool = memoryPool;
         this.channelPool = new ChannelPool(this.CreateChannel);
     }
 
     public ConnectionState State { get; private set; }
-    
-    public async Task<IChannel> OpenChannelAsync(CancellationToken cancellationToken = default)
+
+    public async Task OpenAsync(CancellationToken cancellation = default)
     {
-        // TODO: validate state
+        await this.EnsureConnectionOpenAsync(cancellation).ConfigureAwait(false);
+    }
+    
+    public async Task<IChannel> OpenChannelAsync(CancellationToken cancellation = default)
+    {
+        await this.EnsureConnectionOpenAsync(cancellation).ConfigureAwait(false);
 
         var channel = this.channelPool.Create();
-        await channel.SendAsync<Transport.Methods.Channel.OpenMethod, Transport.Methods.Channel.OpenOkMethod>(new Transport.Methods.Channel.OpenMethod(), cancellationToken);
+        await channel.SendAsync<Transport.Methods.Channel.OpenMethod, Transport.Methods.Channel.OpenOkMethod>(new Transport.Methods.Channel.OpenMethod(), cancellation);
             
         return channel;
     }
@@ -250,6 +259,29 @@ internal class Connection : IConnection
         }
     }
 
+    private async ValueTask EnsureConnectionOpenAsync(CancellationToken cancellation)
+    {
+        if (this.State == ConnectionState.Open)
+        {
+            return;
+        }
+
+        await this.connectionStateLock.WaitAsync(cancellation).ConfigureAwait(false);
+        try
+        {
+            if (this.State == ConnectionState.Open)
+            {
+                return;
+            }
+
+            await this.OpenConnectionAsync(cancellation).ConfigureAwait(false);
+        }
+        finally
+        {
+            this.connectionStateLock.Release();
+        }
+    }
+    
     private void ConnectionClose(Exception ex)
     {
         if (this.socketIoCancellation == null || this.socketIoCancellation.IsCancellationRequested)

@@ -13,10 +13,9 @@ class Program
         {
             Console.WriteLine("Hello World! This is topology builder based on RabbitMQ.Next library.");
 
-            var connection = await ConnectionBuilder.Default
-                .Endpoint("amqp://test:pass@localhost:5672/")
-                .ConnectAsync()
-                .ConfigureAwait(false);
+            var connection = ConnectionBuilder.Default
+                .Endpoint("amqp://guest:guest@localhost:5672/")
+                .Build();
 
             Console.WriteLine("Connection opened");
 

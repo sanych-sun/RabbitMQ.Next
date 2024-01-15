@@ -7,6 +7,8 @@ namespace RabbitMQ.Next;
 
 public interface IConnection : IAsyncDisposable
 {
+    Task OpenAsync(CancellationToken cancellationToken = default);
+    
     Task<IChannel> OpenChannelAsync(CancellationToken cancellationToken = default);
 
     ConnectionState State { get; }

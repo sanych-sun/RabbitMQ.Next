@@ -12,17 +12,15 @@ namespace RabbitMQ.Next.Benchmarks.Publisher;
 
 public class PublishNoConfirmBenchmarks
 {
-    private IConnection connection;
-    private RabbitMQ.Client.IConnection theirConnection;
-
-    [GlobalSetup]
-    public async Task Setup()
+    private readonly IConnection connection;
+    private readonly RabbitMQ.Client.IConnection theirConnection;
+    
+    public PublishNoConfirmBenchmarks()
     {
-        this.connection = await ConnectionBuilder.Default
+        this.connection = ConnectionBuilder.Default
             .Endpoint(Helper.RabbitMqConnection)
             .UsePlainTextSerializer()
-            .ConnectAsync()
-            .ConfigureAwait(false);
+            .Build();
 
         ConnectionFactory factory = new ConnectionFactory();
         factory.Uri = Helper.RabbitMqConnection;

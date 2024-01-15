@@ -12,17 +12,16 @@ class Program
     {
         Console.WriteLine("Hello World! This is consumer based on RabbitMQ.Next library.");
 
-        var connection = await ConnectionBuilder.Default
+        var connection = ConnectionBuilder.Default
             .Endpoint("amqp://guest:guest@localhost:5672/")
             .UsePlainTextSerializer()
-            .ConnectAsync()
-            .ConfigureAwait(false);
+            .Build();
 
         Console.WriteLine("Connection opened");
 
         await using var consumer = connection.Consumer(
             builder => builder
-                .BindToQueue("test-queue")
+                .BindToQueue("my-queue")
                 .PrefetchCount(10));
 
         Console.WriteLine("Consumer created. Press Ctrl+C to exit.");

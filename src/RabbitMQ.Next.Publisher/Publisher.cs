@@ -149,11 +149,6 @@ internal sealed class Publisher : IPublisher
 
     private async ValueTask<IChannel> InitializeChannelAsync()
     {
-        if (this.connection.State != ConnectionState.Open)
-        {
-            throw new InvalidOperationException("Connection should be in Open state to use the Publisher API");
-        }
-
         await this.channelInitSync.WaitAsync().ConfigureAwait(false);
 
         IChannel ch = null;

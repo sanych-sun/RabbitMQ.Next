@@ -13,11 +13,10 @@ class Program
     {
         Console.WriteLine("Hello World! This is publisher based on RabbitMQ.Next library.");
 
-        var connection = await ConnectionBuilder.Default
+        var connection = ConnectionBuilder.Default
             .Endpoint("amqp://guest:guest@localhost:5672/")
             .UsePlainTextSerializer()
-            .ConnectAsync()
-            .ConfigureAwait(false);
+            .Build();
 
         Console.WriteLine("Connection opened");
 
