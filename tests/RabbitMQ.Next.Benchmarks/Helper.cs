@@ -20,5 +20,5 @@ internal static class Helper
     }
 
     // TODO: find a proper way to store the connection in config
-    public static Uri RabbitMqConnection { get; } = new Uri("amqp://guest:guest@localhost:5672/");
+    public static Uri RabbitMqConnection { get; } = new ("amqp://guest:guest@localhost:5672/");
 }

@@ -113,10 +113,7 @@ internal sealed class Channel : IChannelInternal
         try
         {
             messageBuilder.WriteMethodFrame(publishMethod);
-            messageBuilder.WriteContentFrame(
-                (properties, content, this.serializer), 
-                properties, 
-                (st, buffer) => st.serializer.Serialize(st.properties, st.content, buffer));
+            messageBuilder.WriteContentFrame(properties, content, this.serializer);
             memory = messageBuilder.Complete();
         }
         finally

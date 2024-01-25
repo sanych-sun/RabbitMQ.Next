@@ -20,5 +20,5 @@ public enum ReplyCode : ushort
     ResourceError = 506,
     NotAllowed = 530,
     NotImplemented = 540,
-    InternalError = 541
+    InternalError = 541,
 }

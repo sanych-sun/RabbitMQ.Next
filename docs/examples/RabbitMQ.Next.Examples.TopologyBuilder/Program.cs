@@ -5,9 +5,9 @@ using RabbitMQ.Next.TopologyBuilder;
 
 namespace RabbitMQ.Next.Examples.TopologyBuilder;
 
-class Program
+internal static class Program
 {
-    static async Task Main()
+    private static async Task Main()
     {
         try
         {

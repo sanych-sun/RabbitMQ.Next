@@ -1,5 +1,4 @@
 using System;
-using System.Text;
 using System.Threading.Tasks;
 using NSubstitute;
 using RabbitMQ.Next.Auth;
@@ -12,8 +11,8 @@ public class PlainAuthMechanismTests
     [Fact]
     public void CtorTests()
     {
-        var user = "test";
-        var password = "pwd";
+        const string user = "test";
+        const string password = "pwd";
 
         var auth = new PlainAuthMechanism(user, password);
 
@@ -25,8 +24,8 @@ public class PlainAuthMechanismTests
     [Fact]
     public async Task StartAsyncTests()
     {
-        var user = "test";
-        var password = "pwd";
+        const string user = "test";
+        const string password = "pwd";
         var expected = "\0test\0pwd"u8.ToArray();
 
         var auth = new PlainAuthMechanism(user, password);
@@ -46,8 +45,8 @@ public class PlainAuthMechanismTests
     [Fact]
     public void ExtensionTests()
     {
-        var user = "test2";
-        var password = "pwd2";
+        const string user = "test2";
+        const string password = "pwd2";
 
         var builder = Substitute.For<IConnectionBuilder>();
         builder.PlainAuth(user, password);

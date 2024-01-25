@@ -25,7 +25,7 @@ internal class ExchangeExistsCommand : ICommand<bool>
     {
         try
         {
-            await channel.SendAsync<DeclareMethod, DeclareOkMethod>(new DeclareMethod(this.exchange), cancellation);
+            await channel.SendAsync<DeclareMethod, DeclareOkMethod>(new DeclareMethod(this.exchange), cancellation).ConfigureAwait(false);
             return true;
         }
         catch(ChannelException ex) when (ex.FailedMethodId == MethodId.ExchangeDeclare)

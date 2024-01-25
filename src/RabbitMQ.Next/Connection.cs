@@ -59,7 +59,7 @@ internal class Connection : IConnection
         await this.EnsureConnectionOpenAsync(cancellation).ConfigureAwait(false);
 
         var channel = this.channelPool.Create();
-        await channel.SendAsync<Transport.Methods.Channel.OpenMethod, Transport.Methods.Channel.OpenOkMethod>(new Transport.Methods.Channel.OpenMethod(), cancellation);
+        await channel.SendAsync<Transport.Methods.Channel.OpenMethod, Transport.Methods.Channel.OpenOkMethod>(new Transport.Methods.Channel.OpenMethod(), cancellation).ConfigureAwait(false);
             
         return channel;
     }
@@ -71,7 +71,7 @@ internal class Connection : IConnection
             return;
         }
 
-        await this.connectionChannel.SendAsync<CloseMethod, CloseOkMethod>(new CloseMethod((ushort)ReplyCode.Success, "Goodbye", 0));
+        await this.connectionChannel.SendAsync<CloseMethod, CloseOkMethod>(new CloseMethod((ushort)ReplyCode.Success, "Goodbye", 0)).ConfigureAwait(false);
 
         this.ConnectionClose(null);
     }
@@ -80,7 +80,7 @@ internal class Connection : IConnection
     {
         // todo: validate state here
 
-        this.socket = await EndpointResolver.OpenSocketAsync(this.connectionDetails.Settings.Endpoints, cancellation);
+        this.socket = await EndpointResolver.OpenSocketAsync(this.connectionDetails.Settings.Endpoints, cancellation).ConfigureAwait(false);
 
         this.socketIoCancellation = new CancellationTokenSource();
         Task.Factory.StartNew(() => this.ReceiveLoop(this.socketIoCancellation.Token), TaskCreationOptions.LongRunning);
@@ -108,9 +108,9 @@ internal class Connection : IConnection
 
         var negotiateTask = NegotiateConnectionAsync(this.connectionChannel, this.connectionDetails.Settings, cancellation);
         var amqpHeaderMemory = new MemoryAccessor(ProtocolConstants.AmqpHeader);
-        await this.socketSender.Writer.WriteAsync(amqpHeaderMemory, cancellation);
+        await this.socketSender.Writer.WriteAsync(amqpHeaderMemory, cancellation).ConfigureAwait(false);
 
-        this.connectionDetails.Negotiated = await negotiateTask;
+        this.connectionDetails.Negotiated = await negotiateTask.ConfigureAwait(false);
 
         // start heartbeat
         Task.Factory.StartNew(() => this.HeartbeatLoop(this.connectionDetails.Negotiated.HeartbeatInterval, this.socketIoCancellation.Token), TaskCreationOptions.LongRunning);
@@ -133,15 +133,15 @@ internal class Connection : IConnection
         var heartbeatMemory = new MemoryAccessor(ProtocolConstants.HeartbeatFrame);
         while (!cancellation.IsCancellationRequested)
         {
-            await Task.Delay(interval, cancellation);
-            await this.socketSender.Writer.WriteAsync(heartbeatMemory, cancellation);
+            await Task.Delay(interval, cancellation).ConfigureAwait(false);
+            await this.socketSender.Writer.WriteAsync(heartbeatMemory, cancellation).ConfigureAwait(false);
         }
     }
 
-    private async Task SendLoop()
+    private void SendLoop()
     {
         var socketChannel = this.socketSender.Reader;
-        while (await socketChannel.WaitToReadAsync())
+        while (socketChannel.WaitToReadAsync().Wait())
         {
             while (socketChannel.TryRead(out var memory))
             {
@@ -180,7 +180,7 @@ internal class Connection : IConnection
                     currentAccessor = currentAccessor.Slice(ProtocolConstants.FrameHeaderSize);
 
                     // 2.2. Lookup for the target channel to push the frame
-                    var targetChannel = (channel == ProtocolConstants.ConnectionChannel) ? this.connectionChannel : this.channelPool.Get(channel);
+                    var targetChannel = channel == ProtocolConstants.ConnectionChannel ? this.connectionChannel : this.channelPool.Get(channel);
 
                     // 2.3. Slice frame bytes
                     SharedMemory.MemoryAccessor frameBytes;
@@ -251,6 +251,7 @@ internal class Connection : IConnection
             {
                 previousChunk.Span.CopyTo(buffer);
                 bufferOffset = previousChunk.Size;
+                expectedBytes -= bufferOffset;
             }
                 
             // Read data from the socket at least of requested size
@@ -302,46 +303,46 @@ internal class Connection : IConnection
         // connection should be forcibly closed if negotiation phase take more then 10s.
         cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(10)).Token.Combine(cancellation);
 
-        var startMethod = await channel.WaitAsync<StartMethod>(cancellation);
+        var startMethod = await channel.WaitAsync<StartMethod>(cancellation).ConfigureAwait(false);
         if (!startMethod.Mechanisms.Contains(settings.Auth.Type))
         {
             throw new NotSupportedException("Provided auth mechanism does not supported by the server");
         }
 
-        var saslStartBytes = await settings.Auth.StartAsync();
+        var saslStartBytes = await settings.Auth.StartAsync().ConfigureAwait(false);
 
         var tuneMethodTask = channel.WaitAsync<TuneMethod>(cancellation);
         var secureMethodTask = channel.WaitAsync<SecureMethod>(cancellation);
 
-        await channel.SendAsync(new StartOkMethod(settings.Auth.Type, saslStartBytes, settings.Locale, settings.ClientProperties), cancellation);
+        await channel.SendAsync(new StartOkMethod(settings.Auth.Type, saslStartBytes, settings.Locale, settings.ClientProperties), cancellation).ConfigureAwait(false);
         
         do
         {
-            await Task.WhenAny(tuneMethodTask, secureMethodTask);
+            await Task.WhenAny(tuneMethodTask, secureMethodTask).ConfigureAwait(false);
 
             if (secureMethodTask.IsCompleted)
             {
-                var secureRequest = await secureMethodTask;
-                var secureResponse = await settings.Auth.HandleChallengeAsync(secureRequest.Challenge.Span);
+                var secureRequest = await secureMethodTask.ConfigureAwait(false);
+                var secureResponse = await settings.Auth.HandleChallengeAsync(secureRequest.Challenge.Span).ConfigureAwait(false);
                 
                 // wait for another secure round-trip just in case
                 secureMethodTask = channel.WaitAsync<SecureMethod>(cancellation);
-                await channel.SendAsync(new SecureOkMethod(secureResponse), cancellation);
+                await channel.SendAsync(new SecureOkMethod(secureResponse), cancellation).ConfigureAwait(false);
             }
             
         } while (!tuneMethodTask.IsCompleted);
 
-        var tuneMethod = await tuneMethodTask;
+        var tuneMethod = await tuneMethodTask.ConfigureAwait(false);
         var negotiationResult = new NegotiationResults(
             settings.Auth.Type,
             tuneMethod.ChannelMax,
             Math.Min(settings.MaxFrameSize, (int)tuneMethod.MaxFrameSize),
             TimeSpan.FromSeconds(tuneMethod.HeartbeatInterval));
 
-        await channel.SendAsync(new TuneOkMethod(tuneMethod.ChannelMax, (uint)negotiationResult.FrameMaxSize, tuneMethod.HeartbeatInterval), cancellation);
+        await channel.SendAsync(new TuneOkMethod(tuneMethod.ChannelMax, (uint)negotiationResult.FrameMaxSize, tuneMethod.HeartbeatInterval), cancellation).ConfigureAwait(false);
 
         // todo: handle wrong vhost name
-        await channel.SendAsync<OpenMethod, OpenOkMethod>(new OpenMethod(settings.Vhost), cancellation);
+        await channel.SendAsync<OpenMethod, OpenOkMethod>(new OpenMethod(settings.Vhost), cancellation).ConfigureAwait(false);
 
         return negotiationResult;
     }

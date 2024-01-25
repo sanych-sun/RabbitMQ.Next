@@ -81,7 +81,7 @@ internal sealed class SharedMemory : IDisposable
             this.owner = owner;
             this.offset = offset;
             this.Size = size;
-            this.Span = new (this.owner.memory, offset, size);
+            this.Span = new ReadOnlySpan<byte>(this.owner.memory, offset, size);
         }
 
         public int Size { get; }
@@ -134,7 +134,7 @@ internal sealed class SharedMemory : IDisposable
             get
             {
                 this.CheckDisposed();
-                return new(this.owner.memory, this.offset, this.Size);
+                return new ReadOnlyMemory<byte>(this.owner.memory, this.offset, this.Size);
             }
         }
 

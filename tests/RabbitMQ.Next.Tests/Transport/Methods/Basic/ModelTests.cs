@@ -9,16 +9,15 @@ public class ModelTests
     [Fact]
     public void QosMethod()
     {
-        var prefetchSize = (uint)12345;
-        var prefetchCount = (ushort)321;
-        var global = true;
+        const uint prefetchSize = 12345;
+        const ushort prefetchCount = 321;
 
-        var method = new QosMethod(prefetchSize, prefetchCount, global);
+        var method = new QosMethod(prefetchSize, prefetchCount, true);
 
         Assert.Equal(MethodId.BasicQos, method.MethodId);
         Assert.Equal(prefetchSize, method.PrefetchSize);
         Assert.Equal(prefetchCount, method.PrefetchCount);
-        Assert.Equal(global, method.Global);
+        Assert.True(method.Global);
     }
 
     [Fact]
@@ -32,9 +31,9 @@ public class ModelTests
     [Fact]
     public void ConsumeMethod()
     {
-        var queue = "my-queue";
-        var consumerTag = "tag";
-        var flags = (byte)0;
+        const string queue = "my-queue";
+        const string consumerTag = "tag";
+        const byte flags = 0;
         var args = new Dictionary<string, object>();
 
         var method = new ConsumeMethod(queue, consumerTag, flags, args);
@@ -62,7 +61,7 @@ public class ModelTests
     [Fact]
     public void ConsumeOkMethod()
     {
-        var consumerTag = "tag";
+        const string consumerTag = "tag";
 
         var method = new ConsumeOkMethod(consumerTag);
 
@@ -73,7 +72,7 @@ public class ModelTests
     [Fact]
     public void CancelMethod()
     {
-        var consumerTag = "tag";
+        const string consumerTag = "tag";
 
         var method = new CancelMethod(consumerTag);
 
@@ -84,7 +83,7 @@ public class ModelTests
     [Fact]
     public void CancelOkMethod()
     {
-        var consumerTag = "tag";
+        const string consumerTag = "tag";
 
         var method = new CancelOkMethod(consumerTag);
 
@@ -95,9 +94,9 @@ public class ModelTests
     [Fact]
     public void PublishMethod()
     {
-        var exchange = "exchange";
-        var routingKey = "routing";
-        var flags = (byte)0b_00000001;
+        const string exchange = "exchange";
+        const string routingKey = "routing";
+        const byte flags = 0b_00000001;
 
         var method = new PublishMethod(exchange, routingKey, flags);
 
@@ -122,10 +121,10 @@ public class ModelTests
     [Fact]
     public void ReturnMethod()
     {
-        var exchange = "exchange";
-        var routingKey = "routing";
-        var replyCode = (ushort)400;
-        var replyText = "some error";
+        const string exchange = "exchange";
+        const string routingKey = "routing";
+        const ushort replyCode = 400;
+        const string replyText = "some error";
 
         var method = new ReturnMethod(exchange, routingKey, replyCode, replyText);
 
@@ -139,51 +138,48 @@ public class ModelTests
     [Fact]
     public void DeliverMethod()
     {
-        var exchange = "exchange";
-        var routingKey = "routing";
-        var consumerTag = "tag";
-        var deliveryTag = (ulong)42;
-        var redelivered = true;
+        const string exchange = "exchange";
+        const string routingKey = "routing";
+        const string consumerTag = "tag";
+        const ulong deliveryTag = 42;
 
-        var method = new DeliverMethod(exchange, routingKey, consumerTag, deliveryTag, redelivered);
+        var method = new DeliverMethod(exchange, routingKey, consumerTag, deliveryTag, true);
 
         Assert.Equal(MethodId.BasicDeliver, method.MethodId);
         Assert.Equal(exchange, method.Exchange);
         Assert.Equal(routingKey, method.RoutingKey);
         Assert.Equal(consumerTag, method.ConsumerTag);
         Assert.Equal(deliveryTag, method.DeliveryTag);
-        Assert.Equal(redelivered, method.Redelivered);
+        Assert.True(method.Redelivered);
     }
 
     [Fact]
     public void GetMethod()
     {
-        var queue = "queue";
-        var noAck = true;
+        const string queue = "queue";
 
-        var method = new GetMethod(queue, noAck);
+        var method = new GetMethod(queue, true);
 
         Assert.Equal(MethodId.BasicGet, method.MethodId);
         Assert.Equal(queue, method.Queue);
-        Assert.Equal(noAck, method.NoAck);
+        Assert.True(method.NoAck);
     }
 
     [Fact]
     public void GetOkMethod()
     {
-        var exchange = "exchange";
-        var routingKey = "routing";
-        var deliveryTag = (ulong)42;
-        var redelivered = true;
-        var messageCount = (uint)35;
+        const string exchange = "exchange";
+        const string routingKey = "routing";
+        const ulong deliveryTag = 42;
+        const uint messageCount = 35;
 
-        var method = new GetOkMethod(exchange, routingKey, deliveryTag, redelivered, messageCount);
+        var method = new GetOkMethod(exchange, routingKey, deliveryTag, true, messageCount);
 
         Assert.Equal(MethodId.BasicGetOk, method.MethodId);
         Assert.Equal(exchange, method.Exchange);
         Assert.Equal(routingKey, method.RoutingKey);
         Assert.Equal(deliveryTag, method.DeliveryTag);
-        Assert.Equal(redelivered, method.Redelivered);
+        Assert.True(method.Redelivered);
         Assert.Equal(messageCount, method.MessageCount);
     }
 
@@ -198,25 +194,22 @@ public class ModelTests
     [Fact]
     public void AckMethod()
     {
-        var deliveryTag = (ulong)42;
-        var multiple = true;
+        const ulong deliveryTag = 42;
 
-        var method = new AckMethod(deliveryTag, multiple);
+        var method = new AckMethod(deliveryTag, true);
 
         Assert.Equal(MethodId.BasicAck, method.MethodId);
         Assert.Equal(deliveryTag, method.DeliveryTag);
-        Assert.Equal(multiple, method.Multiple);
+        Assert.True(method.Multiple);
     }
 
     [Fact]
     public void RecoverMethod()
     {
-        var requeue = true;
-
-        var method = new RecoverMethod(requeue);
+        var method = new RecoverMethod(true);
 
         Assert.Equal(MethodId.BasicRecover, method.MethodId);
-        Assert.Equal(requeue, method.Requeue);
+        Assert.True(method.Requeue);
     }
 
     [Fact]
@@ -230,15 +223,13 @@ public class ModelTests
     [Fact]
     public void NackMethod()
     {
-        var deliveryTag = (ulong)42;
-        var multiple = false;
-        var requeue = true;
+        const ulong deliveryTag = 42;
 
-        var method = new NackMethod(deliveryTag, multiple, requeue);
+        var method = new NackMethod(deliveryTag, true, false);
 
         Assert.Equal(MethodId.BasicNack, method.MethodId);
         Assert.Equal(deliveryTag, method.DeliveryTag);
-        Assert.Equal(multiple, method.Multiple);
-        Assert.Equal(requeue, method.Requeue);
+        Assert.True(method.Multiple);
+        Assert.False(method.Requeue);
     }
 }

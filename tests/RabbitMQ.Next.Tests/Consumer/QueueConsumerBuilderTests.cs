@@ -8,7 +8,7 @@ public class QueueConsumerBuilderTests
     [Fact]
     public void QueueName()
     {
-        var name = "queue1";
+        const string name = "queue1";
 
         var builder = new QueueConsumerBuilder(name);
 

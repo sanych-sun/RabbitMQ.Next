@@ -11,7 +11,7 @@ internal static partial class Framing
     {
         var flagsBuffer = buffer[..sizeof(ushort)];
         buffer = buffer[sizeof(ushort)..];
-        
+
         var flags = MessageFlags.None;
         if (!string.IsNullOrEmpty(properties.ContentType))
         {
@@ -94,8 +94,8 @@ internal static partial class Framing
         flagsBuffer.Write((ushort)flags);
         return buffer;
     }
-    
-    
+
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static ReadOnlyMemory<byte> SplitStringProperty(this ReadOnlyMemory<byte> source, out ReadOnlyMemory<byte> value, MessageFlags flags, MessageFlags flag)
     {

@@ -48,7 +48,7 @@ public static class ConnectionBuilderExtensions
         if (!string.Equals(endpoint.Scheme, DefaultSchemaName, StringComparison.OrdinalIgnoreCase)
             && !string.Equals(endpoint.Scheme, SslSchemaName, StringComparison.OrdinalIgnoreCase))
         {
-            throw new ArgumentException(@"Endpoint scheme '{endpoint.Scheme}' does not supported.", nameof(endpoint));
+            throw new ArgumentException("Endpoint scheme '{endpoint.Scheme}' does not supported.", nameof(endpoint));
         }
 
         var ssl = endpoint.Scheme == SslSchemaName;

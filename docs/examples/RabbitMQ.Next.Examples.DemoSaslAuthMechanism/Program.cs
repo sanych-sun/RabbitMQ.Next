@@ -3,9 +3,9 @@ using System.Threading.Tasks;
 
 namespace RabbitMQ.Next.Examples.DemoSaslAuthMechanism;
 
-class Program
+internal static class Program
 {
-    static async Task Main()
+    private static async Task Main()
     {
         Console.WriteLine("Hello World! Will try to connect RabbitMQ server with RABBIT-CR-DEMO auth mechanism.");
 

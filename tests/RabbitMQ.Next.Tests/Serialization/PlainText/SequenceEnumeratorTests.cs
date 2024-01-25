@@ -120,22 +120,22 @@ public class SequenceEnumeratorTests
     {
         yield return new object[]
         {
-            new byte[0][]
+            Array.Empty<byte[]>(),
         };
 
         yield return new object[]
         {
-            new [] { new byte[] { 1, 2, 3} }
+            new [] { new byte[] { 1, 2, 3} },
         };
 
         yield return new object[]
         {
-            new [] { new byte[] { 1, 2, 3}, new byte[] { 4, 5, 6} }
+            new [] { new byte[] { 1, 2, 3}, new byte[] { 4, 5, 6} },
         };
 
         yield return new object[]
         {
-            new [] { new byte[] { 1, 2, 3}, new byte[] { 4, 5, 6}, new byte[] { 7, 8, 9, 10} }
+            new [] { new byte[] { 1, 2, 3}, new byte[] { 4, 5, 6}, new byte[] { 7, 8, 9, 10} },
         };
     }
 

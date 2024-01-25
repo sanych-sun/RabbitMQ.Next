@@ -9,10 +9,10 @@ public class ModelTests
     [Fact]
     public void StartMethod()
     {
-        var versionMajor = (byte)0;
-        var versionMinor = (byte)9;
-        var mechanisms = "test";
-        var locales = "en_US";
+        const byte versionMajor = (byte)0;
+        const byte versionMinor = (byte)9;
+        const string mechanisms = "test";
+        const string locales = "en_US";
         var props = new Dictionary<string,object>
         {
             ["key"] = "value",
@@ -31,12 +31,12 @@ public class ModelTests
     [Fact]
     public void StartOkMethod()
     {
-        var mechanism = "PLAIN";
+        const string mechanism = "PLAIN";
         var response = "ab"u8.ToArray();
-        var locale = "en_US";
-        var clientProperties = new Dictionary<string, object>()
+        const string locale = "en_US";
+        var clientProperties = new Dictionary<string, object>
         {
-            ["exchange_exchange_bindings"] = true
+            ["exchange_exchange_bindings"] = true,
         };
 
         var startOkMethod = new StartOkMethod(mechanism, response, locale, clientProperties);
@@ -73,9 +73,9 @@ public class ModelTests
     [Fact]
     public void TuneMethod()
     {
-        ushort channelMax = 256;
-        uint maxFrameSize = 4096;
-        ushort heartbeatInterval = 120;
+        const ushort channelMax = 256;
+        const uint maxFrameSize = 4096;
+        const ushort heartbeatInterval = 120;
 
         var tuneMethod = new TuneMethod(channelMax, maxFrameSize, heartbeatInterval);
 
@@ -88,9 +88,9 @@ public class ModelTests
     [Fact]
     public void TuneOkMethod()
     {
-        ushort channelMax = 256;
-        uint maxFrameSize = 4096;
-        ushort heartbeatInterval = 120;
+        const ushort channelMax = 256;
+        const uint maxFrameSize = 4096;
+        const ushort heartbeatInterval = 120;
 
         var tuneMethod = new TuneOkMethod(channelMax, maxFrameSize, heartbeatInterval);
 
@@ -103,7 +103,7 @@ public class ModelTests
     [Fact]
     public void OpenMethod()
     {
-        var vHost = "/";
+        const string vHost = "/";
 
         var openMethod = new OpenMethod(vHost);
 
@@ -141,7 +141,7 @@ public class ModelTests
     [Fact]
     public void BlockedMethod()
     {
-        var reason = "just because";
+        const string reason = "just because";
         var method = new BlockedMethod(reason);
 
         Assert.Equal(MethodId.ConnectionBlocked, method.MethodId);

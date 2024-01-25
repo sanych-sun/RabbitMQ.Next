@@ -20,7 +20,7 @@ internal class MemorySegment<T>: ReadOnlySequenceSegment<T>
 
         var chunk = new MemorySegment<T>(segment)
         {
-            RunningIndex = this.RunningIndex + this.Memory.Length
+            RunningIndex = this.RunningIndex + this.Memory.Length,
         };
 
         this.Next = chunk;

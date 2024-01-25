@@ -103,6 +103,6 @@ internal class MethodWithContentFrameHandler<TMethod> : IFrameHandler
         }
 
         this.pendingContentSize -= payload.Size;
-        return (this.pendingContentSize > 0) ? FrameType.ContentBody : FrameType.None;
+        return this.pendingContentSize > 0 ? FrameType.ContentBody : FrameType.None;
     }
 }

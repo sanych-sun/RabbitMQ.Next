@@ -10,9 +10,9 @@ using Perfolizer.Horology;
 
 namespace RabbitMQ.Next.Benchmarks;
 
-class Program
+internal static class Program
 {
-    static void Main(string[] args)
+    private static void Main(string[] args)
     {
         BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args,
             DefaultConfig.Instance
@@ -22,7 +22,7 @@ class Program
                     Run =
                     {
                         RunStrategy = RunStrategy.Monitoring, IterationCount = 10, WarmupCount = 5,
-                    }
+                    },
                 })
                 .WithSummaryStyle(new SummaryStyle(CultureInfo.InvariantCulture, true, SizeUnit.KB, TimeUnit.Millisecond, false, true))
                 .AddLogicalGroupRules(BenchmarkLogicalGroupRule.ByCategory)

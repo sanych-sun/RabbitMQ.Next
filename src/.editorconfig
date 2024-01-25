@@ -1,0 +1,3 @@
+[*.{cs,vb}]
+# Rider specific settings
+configure_await_analysis_mode = library

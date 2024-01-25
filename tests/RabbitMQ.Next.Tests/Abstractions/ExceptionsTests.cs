@@ -10,9 +10,9 @@ public class ExceptionsTests
     [Fact]
     public void ChannelException()
     {
-        var errorCode = (ushort) 404;
-        var description = "not found";
-        var failedMethodId = MethodId.BasicDeliver;
+        const ushort errorCode = 404;
+        const string description = "not found";
+        const MethodId failedMethodId = MethodId.BasicDeliver;
 
         var ex = new ChannelException(errorCode, description, failedMethodId);
 
@@ -25,8 +25,8 @@ public class ExceptionsTests
     [Fact]
     public void ConnectionException()
     {
-        var errorCode = (ushort) 404;
-        var description = "not found";
+        const ushort errorCode = 404;
+        const string description = "not found";
 
         var ex = new ConnectionException(errorCode, description);
 

@@ -36,11 +36,11 @@ internal sealed class PublisherChannel
         {
             if (this.channel == null)
             {   
-                var ch = await this.connection.OpenChannelAsync(cancellation);
+                var ch = await this.connection.OpenChannelAsync(cancellation).ConfigureAwait(false);
 
                 for (var i = 0; i < this.initializers.Count; i++)
                 {
-                    await this.initializers[i].Invoke(ch);
+                    await this.initializers[i].Invoke(ch).ConfigureAwait(false);
                 }
 
                 this.channel = ch;

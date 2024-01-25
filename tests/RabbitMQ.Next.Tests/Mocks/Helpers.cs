@@ -11,7 +11,7 @@ namespace RabbitMQ.Next.Tests.Mocks;
 
 internal static class Helpers
 {
-    private static IReadOnlyList<(string Charset, string Text, ReadOnlyMemory<byte> Bytes)> Texts = new []
+    private static readonly IReadOnlyList<(string Charset, string Text, ReadOnlyMemory<byte> Bytes)> Texts = new []
     {
         MakeText("Latin", "Lorem ipsu"),
         MakeText("Latin", "Lorem ipsum dolor sit amet, ne putent ornatus expetendis vix. Ea sed suas accusamus. Possim prodesset maiestatis sea te, graeci "),

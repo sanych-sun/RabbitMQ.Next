@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using RabbitMQ.Next.Tests.Mocks;
 using RabbitMQ.Next.Transport.Methods.Connection;
@@ -32,7 +31,7 @@ public class SerializationTests : SerializationTestBase
                 ["information"] = "Licensed under the MPL 1.1. Website: https://rabbitmq.com",
                 ["platform"] = "Erlang/OTP 22.2.1",
                 ["product"] = "RabbitMQ",
-                ["version"] = "3.8.2"
+                ["version"] = "3.8.2",
             });
 
         this.TestParser(method, new StartMethodComparer());
@@ -41,14 +40,14 @@ public class SerializationTests : SerializationTestBase
     [Fact]
     public void StartOkMethodFormatter()
     {
-        var clientProperties = new Dictionary<string, object>()
+        var clientProperties = new Dictionary<string, object>
         {
             ["product"] = "RabbitMQ.Next",
             ["version"] = "0.1.0",
-            ["capabilities"] = new Dictionary<string, object>()
+            ["capabilities"] = new Dictionary<string, object>
             {
-                ["exchange_exchange_bindings"] = true
-            }
+                ["exchange_exchange_bindings"] = true,
+            }, 
         };
         var method = new StartOkMethod("PLAIN",  "\0test1\0test1"u8.ToArray(), "en_US", clientProperties);
 

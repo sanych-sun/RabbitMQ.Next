@@ -22,8 +22,10 @@ public class PublishNoConfirmBenchmarks
             .UsePlainTextSerializer()
             .Build();
 
-        ConnectionFactory factory = new ConnectionFactory();
-        factory.Uri = Helper.RabbitMqConnection;
+        ConnectionFactory factory = new ConnectionFactory
+        {
+            Uri = Helper.RabbitMqConnection,
+        };
 
         this.theirConnection = factory.CreateConnection();
     }
@@ -56,7 +58,7 @@ public class PublishNoConfirmBenchmarks
             {
                 await Task.Yield();
 
-                for (int i = num; i < parameters.Messages.Count; i = i + 10)
+                for (int i = num; i < parameters.Messages.Count; i += 10)
                 {
                     var data = parameters.Messages[i];
                     await publisher.PublishAsync(data, data.Payload,

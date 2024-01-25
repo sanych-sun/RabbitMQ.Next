@@ -47,7 +47,7 @@ public class StringConverterTests
 
     public static IEnumerable<object[]> ParseTestCases()
     {
-        yield return new object[] { string.Empty, new byte[0] };
+        yield return new object[] { string.Empty, Array.Empty<byte>() };
 
         var texts = Helpers.GetDummyTexts(0, 128);
 

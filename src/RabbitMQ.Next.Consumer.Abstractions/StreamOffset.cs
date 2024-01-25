@@ -41,5 +41,5 @@ public enum OffsetType
     Day,
     Hour,
     Minute,
-    Second
+    Second,
 }

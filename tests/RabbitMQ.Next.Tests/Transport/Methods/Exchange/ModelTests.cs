@@ -29,7 +29,7 @@ public class ModelTests
         yield return new object[] { "exchangeName", "type", false, true, false, null};
         yield return new object[] { "exchangeName", "type", false, false, true, null};
         yield return new object[] { "exchangeName", "type", true, true, true, null};
-        yield return new object[] { "exchangeName", "type", true, true, true, new Dictionary<string, object>()
+        yield return new object[] { "exchangeName", "type", true, true, true, new Dictionary<string, object>
         {
             ["a"] = "a",
         }};
@@ -38,7 +38,7 @@ public class ModelTests
     [Fact]
     public void DeclarePassiveMethod()
     {
-        var name = "exchangeName";
+        const string name = "exchangeName";
 
         var method = new DeclareMethod(name);
 
@@ -63,10 +63,10 @@ public class ModelTests
     [Fact]
     public void BindMethod()
     {
-        var destination = "destination";
-        var source = "source";
-        var routingKey = "routingKey";
-        var arguments = new Dictionary<string, object>()
+        const string destination = "destination";
+        const string source = "source";
+        const string routingKey = "routingKey";
+        var arguments = new Dictionary<string, object>
         {
             ["a"] = "a",
         };
@@ -91,10 +91,10 @@ public class ModelTests
     [Fact]
     public void UnbindMethod()
     {
-        var destination = "destination";
-        var source = "source";
-        var routingKey = "routingKey";
-        var arguments = new Dictionary<string, object>()
+        const string destination = "destination";
+        const string source = "source";
+        const string routingKey = "routingKey";
+        var arguments = new Dictionary<string, object>
         {
             ["a"] = "a",
         };
@@ -119,14 +119,13 @@ public class ModelTests
     [Fact]
     public void DeleteMethod()
     {
-        var name = "exchangeName";
-        var unusedOnly = true;
+        const string name = "exchangeName";
 
-        var method = new DeleteMethod(name, unusedOnly);
+        var method = new DeleteMethod(name, true);
 
         Assert.Equal(MethodId.ExchangeDelete, method.MethodId);
         Assert.Equal(name, method.Exchange);
-        Assert.Equal(unusedOnly, method.UnusedOnly);
+        Assert.True(method.UnusedOnly);
     }
 
     [Fact]

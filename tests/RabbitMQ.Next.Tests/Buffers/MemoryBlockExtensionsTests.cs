@@ -32,31 +32,31 @@ public class MemoryBlockExtensionsTests
         yield return new object[]
         {
             Array.Empty<byte>(),
-            null
+            null,
         };
             
         yield return new object[]
         {
             Array.Empty<byte>(),
-            new[] { Array.Empty<byte>()}
+            new[] { Array.Empty<byte>()},
         };
 
         yield return new object[]
         {
             new byte[] { 0x01 },
-            new[] { new byte[] { 0x01 }}
+            new[] { new byte[] { 0x01 }},
         };
 
         yield return new object[]
         {
             new byte[] { 0x01, 0x02, 0x03 },
-            new[] { new byte[] { 0x01 }, new byte[] { 0x02, 0x03 } }
+            new[] { new byte[] { 0x01 }, new byte[] { 0x02, 0x03 } },
         };
 
         yield return new object[]
         {
             new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05 },
-            new[] { new byte[] { 0x01 }, new byte[] { 0x02, 0x03 }, new byte[] { 0x04, 0x05 } }
+            new[] { new byte[] { 0x01 }, new byte[] { 0x02, 0x03 }, new byte[] { 0x04, 0x05 } },
         };
     }
 

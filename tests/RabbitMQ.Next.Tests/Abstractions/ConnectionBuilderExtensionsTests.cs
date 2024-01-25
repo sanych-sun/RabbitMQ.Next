@@ -11,8 +11,8 @@ public class ConnectionBuilderExtensionsTests
     [Fact]
     public void AuthPlain()
     {
-        var user = "test1";
-        var password = "pwd";
+        const string user = "test1";
+        const string password = "pwd";
         var builder = Substitute.For<IConnectionBuilder>();
 
         builder.PlainAuth(user, password);

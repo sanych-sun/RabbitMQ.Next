@@ -14,8 +14,8 @@ namespace RabbitMQ.Next.Benchmarks.Consumer;
 
 public class ConsumerBenchmarks
 {
-    private readonly int messagesCount = 10_000;
-    private readonly string queueName = "test-queue";
+    private const int MessagesCount = 10_000;
+    private const string QueueName = "test-queue";
     private IConnection connection;
     private RabbitMQ.Client.IConnection theirConnection;
     
@@ -30,7 +30,7 @@ public class ConsumerBenchmarks
             .UsePlainTextSerializer()
             .Build();
 
-        ConnectionFactory factory = new ConnectionFactory()
+        ConnectionFactory factory = new ConnectionFactory
         {
             Uri = Helper.RabbitMqConnection,
             DispatchConsumersAsync = true,
@@ -39,16 +39,16 @@ public class ConsumerBenchmarks
 
         await this.connection.ConfigureAsync(async topology =>
         {
-            await topology.Queue.DeclareClassicAsync(this.queueName);
-            await topology.Queue.BindAsync(this.queueName, "amq.fanout");
-            await topology.Queue.PurgeAsync(this.queueName);
+            await topology.Queue.DeclareClassicAsync(QueueName);
+            await topology.Queue.BindAsync(QueueName, "amq.fanout");
+            await topology.Queue.PurgeAsync(QueueName);
         });
         
         var publisher = this.connection.Publisher("amq.fanout");
             
         var payload = Helper.BuildDummyText(this.PayloadSize);
             
-        for (int i = 0; i < this.messagesCount * 20; i++) // 15 runs for benchmark
+        for (int i = 0; i < MessagesCount * 20; i++) // 15 runs for benchmark
         {
             await publisher.PublishAsync(payload,
                 message => message
@@ -81,7 +81,7 @@ public class ConsumerBenchmarks
             num++;
             model.BasicAck(ea.DeliveryTag, false);
         
-            if (num >= this.messagesCount)
+            if (num >= MessagesCount)
             {
                 manualResetEvent.Set();
             }
@@ -92,7 +92,7 @@ public class ConsumerBenchmarks
         model.BasicQos(0, 10, false);
         
         var tag = model.BasicConsume(
-            queue: this.queueName,
+            queue: QueueName,
             autoAck: false,
             consumer: consumer,
             consumerTag: string.Empty,
@@ -114,7 +114,7 @@ public class ConsumerBenchmarks
         var cs = new CancellationTokenSource();
         var consumer = this.connection.Consumer(
             b => b
-                .BindToQueue(this.queueName)
+                .BindToQueue(QueueName)
                 .PrefetchCount(10));
 
         var consumeTask = consumer.ConsumeAsync((m,c) =>
@@ -122,7 +122,7 @@ public class ConsumerBenchmarks
             var data = c.Get<string>();
             var messageId = m.MessageId;
             num++;
-            if (num >= this.messagesCount)
+            if (num >= MessagesCount)
             {
                 cs.Cancel();
             }

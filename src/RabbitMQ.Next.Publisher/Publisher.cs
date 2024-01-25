@@ -83,10 +83,11 @@ internal sealed class Publisher : IPublisher
         try
         {
             this.CheckDisposed();
-            message.SetClrType(typeof(TContent));
 
             if (this.publishMiddlewares?.Count > 0)
             {
+                message.SetClrType(typeof(TContent));
+                
                 var pipeline = (IMessageBuilder m, IContentAccessor c) => this.InternalPublishAsync(m, c.Get<TContent>());
                 for (var i = this.publishMiddlewares.Count - 1; i >= 0; i--)
                 {
@@ -114,10 +115,11 @@ internal sealed class Publisher : IPublisher
     private async Task InternalPublishAsync<TContent>(IMessageBuilder message, TContent content)
     {
         var flags = ComposePublishFlags(message);
-        var ch = await this.GetChannelAsync();
-        
-        var deliveryTag = await ch.PublishAsync(this.exchange, message.RoutingKey, content, message, flags);
-        
+        var ch = await this.GetChannelAsync().ConfigureAwait(false);
+
+        var deliveryTag = await ch.PublishAsync(this.exchange, message.RoutingKey, content, message, flags)
+            .ConfigureAwait(false);
+
         var confirmed = await this.confirms.WaitForConfirmAsync(deliveryTag, default).ConfigureAwait(false);
         if (!confirmed)
         {
@@ -125,8 +127,8 @@ internal sealed class Publisher : IPublisher
             throw new DeliveryFailedException();
         }
     }
-    
-    
+
+
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void CheckDisposed()
@@ -162,7 +164,7 @@ internal sealed class Publisher : IPublisher
             ch = await this.connection.OpenChannelAsync().ConfigureAwait(false);
             
             // validate if exchange exists
-            await ch.SendAsync<DeclareMethod, DeclareOkMethod>(new DeclareMethod(this.exchange));
+            await ch.SendAsync<DeclareMethod, DeclareOkMethod>(new DeclareMethod(this.exchange)).ConfigureAwait(false);
 
             if (this.confirms != null)
             {

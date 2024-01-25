@@ -13,7 +13,14 @@ public class ChannelPoolTests
     [Fact]
     public void PoolStartsWithOne()
     {
+
+/* Unmerged change from project 'RabbitMQ.Next.Tests'
+Before:
         var factory = this.MockFactory();
+After:
+        var factory = ChannelPoolTests.MockFactory();
+*/
+        var factory = MockFactory();
         var pool = new ChannelPool(factory);
 
         pool.Create();
@@ -26,7 +33,14 @@ public class ChannelPoolTests
     [InlineData(5, 22)]
     public void CanResize(int initialSize, int num)
     {
+
+/* Unmerged change from project 'RabbitMQ.Next.Tests'
+Before:
         var factory = this.MockFactory();
+After:
+        var factory = ChannelPoolTests.MockFactory();
+*/
+        var factory = MockFactory();
         var pool = new ChannelPool(factory, initialSize);
 
 
@@ -46,7 +60,14 @@ public class ChannelPoolTests
     [InlineData(100, 10)]
     public async Task CreateTests(int number, int concurrencyLevel)
     {
+
+/* Unmerged change from project 'RabbitMQ.Next.Tests'
+Before:
         var factory = this.MockFactory();
+After:
+        var factory = ChannelPoolTests.MockFactory();
+*/
+        var factory = MockFactory();
         var pool = new ChannelPool(factory);
 
         var createTasks = Enumerable.Range(0, number)
@@ -74,7 +95,14 @@ public class ChannelPoolTests
     [InlineData(10)]
     public void CanGet(int num)
     {
+
+/* Unmerged change from project 'RabbitMQ.Next.Tests'
+Before:
         var factory = this.MockFactory();
+After:
+        var factory = ChannelPoolTests.MockFactory();
+*/
+        var factory = MockFactory();
         var pool = new ChannelPool(factory);
         var channels = new Dictionary<int, IChannel>();
 
@@ -98,7 +126,14 @@ public class ChannelPoolTests
     [InlineData(10, 100)]
     public void GetThrowsOnUnknownChannel(int channels, ushort ch)
     {
+
+/* Unmerged change from project 'RabbitMQ.Next.Tests'
+Before:
         var factory = this.MockFactory();
+After:
+        var factory = ChannelPoolTests.MockFactory();
+*/
+        var factory = MockFactory();
         var pool = new ChannelPool(factory);
 
         for (var i = 0; i < channels; i++)
@@ -115,7 +150,14 @@ public class ChannelPoolTests
     [InlineData(10, 5, 2)]
     public async Task CanReuseChannelAfterCompletion(int channels, params int[] chToComplete)
     {
+
+/* Unmerged change from project 'RabbitMQ.Next.Tests'
+Before:
         var factory = this.MockFactory();
+After:
+        var factory = ChannelPoolTests.MockFactory();
+*/
+        var factory = MockFactory();
         var pool = new ChannelPool(factory);
 
         for (var i = 0; i < channels; i++)
@@ -146,7 +188,14 @@ public class ChannelPoolTests
     [Fact]
     public async Task CanReleaseAll()
     {
+
+/* Unmerged change from project 'RabbitMQ.Next.Tests'
+Before:
         var factory = this.MockFactory();
+After:
+        var factory = ChannelPoolTests.MockFactory();
+*/
+        var factory = MockFactory();
         var pool = new ChannelPool(factory);
 
         for (var i = 0; i < 10; i++)
@@ -163,7 +212,7 @@ public class ChannelPoolTests
         factory.Received(1)(Arg.Is<ushort>(u => u > 0 && u <= 10));
     }
 
-    private Func<ushort, IChannelInternal> MockFactory()
+    private static Func<ushort, IChannelInternal> MockFactory()
     {
         var factory = Substitute.For<Func<ushort, IChannelInternal>>();
         factory(Arg.Any<ushort>()).Returns(args =>

@@ -7,9 +7,9 @@ using RabbitMQ.Next.Serialization.PlainText;
 
 namespace RabbitMQ.Next.Examples.SimplePublisher;
 
-class Program
+internal static class Program
 {
-    static async Task Main()
+    private static async Task Main()
     {
         Console.WriteLine("Hello World! This is publisher based on RabbitMQ.Next library.");
 
@@ -33,10 +33,9 @@ class Program
 
         Console.WriteLine("Publisher created. Type any text to send it to the 'amq.fanout' exchange. Enter empty string to exit");
 
-        string input;
         while(true)
         {
-            input = Console.ReadLine();
+            var input = Console.ReadLine();
             if (string.IsNullOrEmpty(input))
             {
                 break;

@@ -290,8 +290,8 @@ public class BinaryReadExtensionsTests
         yield return new object[] {new byte[] {83, 0, 0, 0, 5, 72, 101, 108, 108, 111, 1}, "Hello", new byte[] {1}};
         yield return new object[] {new byte[] {65, 0, 0, 0, 17, 66, 42, 102, 195, 245, 72, 64, 83, 0, 0, 0, 5, 72, 101, 108, 108, 111}, new object[] {(byte) 42, (float) 3.14, "Hello"}, new byte[] { }};
         yield return new object[] {new byte[] {65, 0, 0, 0, 17, 66, 42, 102, 195, 245, 72, 64, 83, 0, 0, 0, 5, 72, 101, 108, 108, 111, 1}, new object[] {(byte) 42, (float) 3.14, "Hello"}, new byte[] {1}};
-        yield return new object[] {new byte[] {70, 0, 0, 0, 14, 3, 107, 101, 121, 83, 0, 0, 0, 5, 118, 97, 108, 117, 101}, new Dictionary<string, object>() {["key"] = "value"}, new byte[] { }};
-        yield return new object[] {new byte[] {70, 0, 0, 0, 14, 3, 107, 101, 121, 83, 0, 0, 0, 5, 118, 97, 108, 117, 101, 1}, new Dictionary<string, object>() {["key"] = "value"}, new byte[] {1}};
+        yield return new object[] {new byte[] {70, 0, 0, 0, 14, 3, 107, 101, 121, 83, 0, 0, 0, 5, 118, 97, 108, 117, 101}, new Dictionary<string, object> {["key"] = "value"}, new byte[] { }};
+        yield return new object[] {new byte[] {70, 0, 0, 0, 14, 3, 107, 101, 121, 83, 0, 0, 0, 5, 118, 97, 108, 117, 101, 1}, new Dictionary<string, object> {["key"] = "value"}, new byte[] {1}};
         yield return new object[] {new byte[] {120, 0, 0, 0, 5, 0, 1, 2, 3, 4}, new byte[] {0, 1, 2, 3, 4}, new byte[] { }};
         yield return new object[] {new byte[] {120, 0, 0, 0, 5, 0, 1, 2, 3, 4, 1}, new byte[] {0, 1, 2, 3, 4}, new byte[] {1}};
         yield return new object[] {new byte[] {86}, null, new byte[] { }};

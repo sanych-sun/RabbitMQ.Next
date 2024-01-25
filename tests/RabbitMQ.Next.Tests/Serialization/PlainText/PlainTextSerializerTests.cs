@@ -22,7 +22,7 @@ public class PlainTextSerializerTests
     {
         var converters = new Dictionary<Type, object>
         {
-            [typeof(string)] = Substitute.For<IConverter<int>>()
+            [typeof(string)] = Substitute.For<IConverter<int>>(),
         };
         
         Assert.Throws<ArgumentException>(() => new PlainTextSerializer(converters));
@@ -34,7 +34,7 @@ public class PlainTextSerializerTests
         var message = Substitute.For<IMessageProperties>();
         var converters = new Dictionary<Type, object>
         {
-            [typeof(string)] = Substitute.For<IConverter<string>>()
+            [typeof(string)] = Substitute.For<IConverter<string>>(),
         };
         var serializer = new PlainTextSerializer(converters);
         
@@ -47,7 +47,7 @@ public class PlainTextSerializerTests
         var message = Substitute.For<IMessageProperties>();
         var converters = new Dictionary<Type, object>
         {
-            [typeof(string)] = Substitute.For<IConverter<string>>()
+            [typeof(string)] = Substitute.For<IConverter<string>>(),
         };
         var serializer = new PlainTextSerializer(converters);
         

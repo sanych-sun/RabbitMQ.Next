@@ -5,24 +5,24 @@ using Microsoft.Extensions.ObjectPool;
 using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Messaging;
 using RabbitMQ.Next.Methods;
+using RabbitMQ.Next.Serialization;
 
 namespace RabbitMQ.Next.Transport;
 
 internal class MessageBuilder
 {
     private readonly InnerBufferWriter writer;
-    private readonly int maxFrameSize;
 
     public MessageBuilder(ObjectPool<byte[]> memoryPool, ushort channel, int maxFrameSize)
     {
         this.Channel = channel;
-        this.maxFrameSize = maxFrameSize;
+        this.MaxFrameSize = maxFrameSize;
         this.writer = new InnerBufferWriter(memoryPool, channel, maxFrameSize);
     }
     
     public ushort Channel { get; }
     
-    public int MaxFrameSize => this.maxFrameSize;
+    public int MaxFrameSize { get; }
 
     public void WriteMethodFrame<TMethod>(TMethod method)
         where TMethod : struct, IOutgoingMethod
@@ -38,7 +38,7 @@ internal class MessageBuilder
 
     private const uint ContentHeaderPrefix = (ushort)ClassId.Basic << 16;
     
-    public void WriteContentFrame<TState>(TState state, IMessageProperties properties, Action<TState, IBufferWriter<byte>> contentBuilder)
+    public void WriteContentFrame<TContent>(IMessageProperties properties, TContent content, ISerializer serializer)
     {
         this.writer.BeginFrame(FrameType.ContentHeader);
         var headerStartBuffer = this.writer.GetSpan();
@@ -55,7 +55,7 @@ internal class MessageBuilder
         var beforeContentSize = this.writer.TotalPayloadBytes;
         
         this.writer.BeginFrame(FrameType.ContentBody);
-        contentBuilder.Invoke(state, this.writer);
+        serializer.Serialize(properties, content, this.writer);
         this.writer.EndFrame();
         var contentSize = this.writer.TotalPayloadBytes - beforeContentSize;
         
@@ -82,7 +82,6 @@ internal class MessageBuilder
         private int bufferOffset;
         private FrameType frameType;
         private int frameHeaderOffset;
-        private long totalPayloadSize;
 
         public InnerBufferWriter(ObjectPool<byte[]> memoryPool, ushort channel, int frameMaxSize)
         {
@@ -91,8 +90,8 @@ internal class MessageBuilder
             this.frameMaxSize = frameMaxSize;
         }
 
-        public long TotalPayloadBytes => this.totalPayloadSize;
-        
+        public long TotalPayloadBytes { get; private set; }
+
         public void BeginFrame(FrameType type)
         {
             if(this.frameType != FrameType.None)
@@ -126,7 +125,7 @@ internal class MessageBuilder
             this.bufferOffset = 0;
             this.frameType = FrameType.None;
             this.frameHeaderOffset = 0;
-            this.totalPayloadSize = 0;
+            this.TotalPayloadBytes = 0;
         }
 
         public void EndFrame()
@@ -157,7 +156,7 @@ internal class MessageBuilder
             endBuffer.WriteFrameEnd();
             this.bufferOffset += ProtocolConstants.FrameEndSize;
 
-            this.totalPayloadSize += frameSize;
+            this.TotalPayloadBytes += frameSize;
             this.frameType = FrameType.None;
         }
 

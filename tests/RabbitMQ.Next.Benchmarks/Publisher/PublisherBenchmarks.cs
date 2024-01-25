@@ -17,8 +17,10 @@ public class PublisherBenchmarks
 
     public PublisherBenchmarks()
     {
-        ConnectionFactory factory = new ConnectionFactory();
-        factory.Uri = Helper.RabbitMqConnection;
+        ConnectionFactory factory = new ConnectionFactory
+        {
+            Uri = Helper.RabbitMqConnection,
+        };
         this.theirConnection = factory.CreateConnection();
         
         this.connection = ConnectionBuilder.Default
@@ -87,7 +89,7 @@ public class PublisherBenchmarks
         await publisher.DisposeAsync().ConfigureAwait(false);
     }
 
-    [GlobalCleanup()]
+    [GlobalCleanup]
     public async ValueTask CleanUpOfficialLibrary()
     {
         this.theirConnection.Close();

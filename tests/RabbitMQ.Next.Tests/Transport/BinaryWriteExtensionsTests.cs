@@ -241,7 +241,7 @@ public class BinaryWriteExtensionsTests
         Assert.Throws<ArgumentException>(() =>
         {
             Span<byte> buffer = stackalloc byte[1000];
-            buffer.Write(text, false);
+            buffer.Write(text);
         });
     }
 
@@ -280,7 +280,7 @@ public class BinaryWriteExtensionsTests
         yield return new object[] { new DateTimeOffset(1983, 09,28, 0, 0, 0, TimeSpan.Zero), new byte[] { 84, 0, 0, 0, 0, 25, 215, 135, 0 }};
         yield return new object[] { "Hello", new byte[] { 83, 0, 0, 0, 5, 72, 101, 108, 108, 111 } };
         yield return new object[] { new object[] {(byte)42, (float)3.14, "Hello"}, new byte[] { 65, 0, 0, 0, 17, 66, 42, 102, 195, 245, 72, 64, 83, 0, 0, 0, 5, 72, 101, 108, 108, 111 }};
-        yield return new object[] { new Dictionary<string, object>() { ["key"] = "value" }, new byte[] { 70, 0, 0, 0, 14, 3, 107, 101, 121, 83, 0, 0, 0, 5, 118, 97, 108, 117, 101 } };
+        yield return new object[] { new Dictionary<string, object> { ["key"] = "value" }, new byte[] { 70, 0, 0, 0, 14, 3, 107, 101, 121, 83, 0, 0, 0, 5, 118, 97, 108, 117, 101 } };
         yield return new object[] { new byte[] { 0, 1, 2, 3, 4}, new byte[] { 120, 0, 0, 0, 5, 0, 1, 2, 3, 4 } };
         yield return new object[] { null, new byte[] { 86 }};
     }
@@ -289,13 +289,13 @@ public class BinaryWriteExtensionsTests
     {
         yield return new object[] { null, new byte[] { 0, 0, 0, 0 }};
         yield return new object[] { new Dictionary<string, object>(), new byte[] { 0, 0, 0, 0 }};
-        yield return new object[] { new Dictionary<string, object>() { ["key"] = "value" }, new byte[] { 0, 0, 0, 14, 3, 107, 101, 121, 83, 0, 0, 0, 5, 118, 97, 108, 117, 101 }};
+        yield return new object[] { new Dictionary<string, object> { ["key"] = "value" }, new byte[] { 0, 0, 0, 14, 3, 107, 101, 121, 83, 0, 0, 0, 5, 118, 97, 108, 117, 101 }};
     }
 
     public static IEnumerable<object[]> WriteArrayTestCases()
     {
         yield return new object[] { null, new byte[] { 0, 0, 0, 0 }};
-        yield return new object[] { new object[0], new byte[] { 0, 0, 0, 0 }};
+        yield return new object[] { Array.Empty<object>(), new byte[] { 0, 0, 0, 0 }};
         yield return new object[] { new object[] {(byte)42, (float)3.14, "Hello"}, new byte[] { 0, 0, 0, 17, 66, 42, 102, 195, 245, 72, 64, 83, 0, 0, 0, 5, 72, 101, 108, 108, 111 }};
     }
 }

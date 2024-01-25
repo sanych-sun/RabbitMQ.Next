@@ -12,7 +12,7 @@ public class ConsumerBuilderTests
     public void PrefetchSize()
     {
         var consumerBuilder = new ConsumerBuilder();
-        uint size = 12345;
+        const uint size = 12345;
 
         ((IConsumerBuilder) consumerBuilder).PrefetchSize(size);
 
@@ -23,7 +23,7 @@ public class ConsumerBuilderTests
     public void PrefetchCount()
     {
         var consumerBuilder = new ConsumerBuilder();
-        ushort count = 42;
+        const ushort count = 42;
 
         ((IConsumerBuilder) consumerBuilder).PrefetchCount(count);
 
@@ -34,7 +34,7 @@ public class ConsumerBuilderTests
     public void ConcurrencyLevel()
     {
         var consumerBuilder = new ConsumerBuilder();
-        byte level = 7;
+        const byte level = 7;
 
         ((IConsumerBuilder) consumerBuilder).ConcurrencyLevel(level);
 
@@ -45,7 +45,7 @@ public class ConsumerBuilderTests
     public void ThrowsOnIncorrectConcurrencyLevel()
     {
         var consumerBuilder = new ConsumerBuilder();
-        byte level = 0;
+        const byte level = 0;
 
         Assert.Throws<ArgumentOutOfRangeException>(() => ((IConsumerBuilder) consumerBuilder).ConcurrencyLevel(level));
     }
@@ -73,7 +73,7 @@ public class ConsumerBuilderTests
     public void OnPoisonMessage()
     {
         var consumerBuilder = new ConsumerBuilder();
-        var val = PoisonMessageMode.Drop;
+        const PoisonMessageMode val = PoisonMessageMode.Drop;
 
         ((IConsumerBuilder) consumerBuilder).OnPoisonMessage(val);
 
@@ -83,7 +83,7 @@ public class ConsumerBuilderTests
     [Fact]
     public void DefaultBindToQueue()
     {
-        var queueName = "q1";
+        const string queueName = "q1";
         var builder = new ConsumerBuilder();
 
         ((IConsumerBuilder)builder).BindToQueue(queueName);
@@ -94,7 +94,7 @@ public class ConsumerBuilderTests
     [Fact]
     public void CanBindToQueue()
     {
-        var queueName = "q1";
+        const string queueName = "q1";
         var consumerBuilder = Substitute.For<Action<IQueueConsumerBuilder>>();
         var builder = new ConsumerBuilder();
 

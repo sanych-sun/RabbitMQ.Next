@@ -56,7 +56,7 @@ internal sealed class PooledMemoryAccessor : IMemoryAccessor
         get
         {
             this.CheckDisposed();
-            return new(this.memory, this.offset, this.Size);
+            return new ReadOnlyMemory<byte>(this.memory, this.offset, this.Size);
         }
     }
 

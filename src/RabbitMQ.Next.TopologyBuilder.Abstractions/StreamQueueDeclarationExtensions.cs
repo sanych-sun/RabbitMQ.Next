@@ -30,7 +30,7 @@ public static class StreamQueueDeclarationExtensions
             AgeUnit.Hour => "h",
             AgeUnit.Minute => "m",
             AgeUnit.Second => "s",
-            _ => throw new ArgumentOutOfRangeException(nameof(unit), unit, null)
+            _ => throw new ArgumentOutOfRangeException(nameof(unit), unit, null),
         };
 
         declaration.Argument("max-age", string.Concat(duration.ToString(), unitSuffix));
@@ -58,5 +58,5 @@ public enum AgeUnit
     Day,
     Hour,
     Minute,
-    Second
+    Second,
 }

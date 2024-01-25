@@ -2,5 +2,5 @@
 
 public class DummyDto
 {
-    public string SomeProperty { get; set; }
+    public string SomeProperty { get; init; }
 }

@@ -32,7 +32,7 @@ public static class ConsumerBuilderExtensions
             OffsetType.Hour => $"{offset.Argument}h",
             OffsetType.Minute => $"{offset.Argument}m",
             OffsetType.Second => $"{offset.Argument}s",
-            _ => throw new ArgumentOutOfRangeException()
+            _ => throw new ArgumentOutOfRangeException(),
         };
 
         consumer.BindToQueue(stream, s =>

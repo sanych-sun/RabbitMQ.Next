@@ -16,9 +16,9 @@ public class SerializationTests : SerializationTestBase
 
     [Fact]
     public void ConsumeMethodFormatter()
-        => this.TestFormatter(new ConsumeMethod("my-queue", "ctag", 0, new Dictionary<string, object>()
+        => this.TestFormatter(new ConsumeMethod("my-queue", "ctag", 0, new Dictionary<string, object>
         {
-            ["x-priority"] = 2
+            ["x-priority"] = 2,
         }));
 
     [Fact]

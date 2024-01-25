@@ -25,7 +25,7 @@ internal class QueueExistsCommand : ICommand<bool>
     {
         try
         {
-            await channel.SendAsync<DeclareMethod, DeclareOkMethod>(new DeclareMethod(this.queue), cancellation);
+            await channel.SendAsync<DeclareMethod, DeclareOkMethod>(new DeclareMethod(this.queue), cancellation).ConfigureAwait(false);
             return true;
         }
         catch(ChannelException ex) when (ex.FailedMethodId == MethodId.QueueDeclare)

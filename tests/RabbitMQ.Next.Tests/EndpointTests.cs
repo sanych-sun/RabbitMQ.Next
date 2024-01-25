@@ -1,21 +1,20 @@
 using Xunit;
 
-namespace RabbitMQ.Next.Tests.Transport;
+namespace RabbitMQ.Next.Tests;
 
 public class EndpointTests
 {
     [Fact]
     public void EndpointCtor()
     {
-        var host = "testhost";
-        var port = 12345;
-        var ssl = true;
+        const string host = "testhost";
+        const int port = 12345;
 
-        var endpoint = new Endpoint(host, port, ssl);
+        var endpoint = new Endpoint(host, port, true);
 
         Assert.Equal(host, endpoint.Host);
         Assert.Equal(port, endpoint.Port);
-        Assert.Equal(ssl, endpoint.UseSsl);
+        Assert.True(endpoint.UseSsl);
     }
 
     [Theory]

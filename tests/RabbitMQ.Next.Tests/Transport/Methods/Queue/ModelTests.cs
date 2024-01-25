@@ -28,7 +28,7 @@ public class ModelTests
         yield return new object[] { "queue", false, true, false, null};
         yield return new object[] { "queue", false, false, true, null};
         yield return new object[] { "queue", true, true, true, null};
-        yield return new object[] { "queue", true, true, true, new Dictionary<string, object>()
+        yield return new object[] { "queue", true, true, true, new Dictionary<string, object>
         {
             ["a"] = "a",
         }};
@@ -37,7 +37,7 @@ public class ModelTests
     [Fact]
     public void DeclarePassiveMethod()
     {
-        var name = "queue";
+        const string name = "queue";
 
         var method = new DeclareMethod(name);
 
@@ -53,9 +53,9 @@ public class ModelTests
     [Fact]
     public void DeclareOkMethod()
     {
-        var name = "queueName";
-        uint messageCount = 10;
-        uint consumerCount = 20;
+        const string name = "queueName";
+        const uint messageCount = 10;
+        const uint consumerCount = 20;
 
         var method = new DeclareOkMethod(name, messageCount, consumerCount);
 
@@ -68,10 +68,10 @@ public class ModelTests
     [Fact]
     public void BindMethod()
     {
-        var queue = "destination";
-        var exchange = "source";
-        var routingKey = "routingKey";
-        var arguments = new Dictionary<string, object>()
+        const string queue = "destination";
+        const string exchange = "source";
+        const string routingKey = "routingKey";
+        var arguments = new Dictionary<string, object>
         {
             ["a"] = "a",
         };
@@ -96,10 +96,10 @@ public class ModelTests
     [Fact]
     public void UnbindMethod()
     {
-        var queue = "destination";
-        var exchange = "source";
-        var routingKey = "routingKey";
-        var arguments = new Dictionary<string, object>()
+        const string queue = "destination";
+        const string exchange = "source";
+        const string routingKey = "routingKey";
+        var arguments = new Dictionary<string, object>
         {
             ["a"] = "a",
         };
@@ -124,7 +124,7 @@ public class ModelTests
     [Fact]
     public void PurgeMethod()
     {
-        var queue = "destination";
+        const string queue = "destination";
 
         var method = new PurgeMethod(queue);
 
@@ -135,7 +135,7 @@ public class ModelTests
     [Fact]
     public void PurgeOkMethod()
     {
-        uint messageCount = 10;
+        const uint messageCount = 10;
 
         var method = new PurgeOkMethod(messageCount);
 
@@ -146,22 +146,20 @@ public class ModelTests
     [Fact]
     public void DeleteMethod()
     {
-        var queue = "destination";
-        var unusedOnly = true;
-        var emptyOnly = true;
+        const string queue = "destination";
 
-        var method = new DeleteMethod(queue, unusedOnly, emptyOnly);
+        var method = new DeleteMethod(queue, true, false);
 
         Assert.Equal(MethodId.QueueDelete, method.MethodId);
         Assert.Equal(queue, method.Queue);
-        Assert.Equal(unusedOnly, method.UnusedOnly);
-        Assert.Equal(emptyOnly, method.EmptyOnly);
+        Assert.True(method.UnusedOnly);
+        Assert.False(method.EmptyOnly);
     }
 
     [Fact]
     public void DeleteOkMethod()
     {
-        uint messageCount = 10;
+        const uint messageCount = 10;
 
         var method = new DeleteOkMethod(messageCount);
 

@@ -39,20 +39,20 @@ internal static class EndpointResolver
         IPAddress FindAddress(IReadOnlyList<IPAddress> address, AddressFamily family)
             => address.FirstOrDefault(a => a.AddressFamily == family);
 
-        var addresses = await Dns.GetHostAddressesAsync(endpoint.Host, cancellation);
+        var addresses = await Dns.GetHostAddressesAsync(endpoint.Host, cancellation).ConfigureAwait(false);
 
         // 1. Try IP v6
         var ipV6Address = FindAddress(addresses, AddressFamily.InterNetworkV6);
         if (ipV6Address != null)
         {
-            return await ConnectAsync(ipV6Address, endpoint, cancellation);
+            return await ConnectAsync(ipV6Address, endpoint, cancellation).ConfigureAwait(false);
         }
 
         // 2. Try IP v4
         var ipV4Address = FindAddress(addresses, AddressFamily.InterNetwork);
         if (ipV4Address != null)
         {
-            return await ConnectAsync(ipV4Address, endpoint, cancellation);
+            return await ConnectAsync(ipV4Address, endpoint, cancellation).ConfigureAwait(false);
         }
 
         throw new NotSupportedException("Cannot connect to the endpoint: no supported protocols is available");
@@ -62,7 +62,7 @@ internal static class EndpointResolver
     {
         var ipEndPoint = new IPEndPoint(address, endpoint.Port);
         var socket = new Socket(ipEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-        await socket.ConnectAsync(ipEndPoint, cancellation);
+        await socket.ConnectAsync(ipEndPoint, cancellation).ConfigureAwait(false);
         var stream = ConfigureStream(socket, endpoint);
         return new SocketWrapper(socket, stream);
     }

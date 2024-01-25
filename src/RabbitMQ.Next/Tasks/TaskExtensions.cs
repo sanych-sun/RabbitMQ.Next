@@ -17,6 +17,17 @@ public static class TaskExtensions
         return tcs.Task;
     }
 
+    public static T Wait<T>(this ValueTask<T> valueTask)
+    {
+        if (valueTask.IsCompleted)
+        {
+            return valueTask.Result;
+        }
+
+        var task = valueTask.AsTask();
+        return task.GetAwaiter().GetResult();
+    }
+
     public static Task<TResult> WithCancellation<TResult>(this Task<TResult> task, CancellationToken cancellation)
     {
         if (task.IsCompleted)

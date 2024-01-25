@@ -39,7 +39,7 @@ internal sealed class DeliverMessageHandler : IMessageHandler<DeliverMethod>
     }
 
     public void Handle(DeliverMethod method, IPayload payload) 
-        => this.deliverChannel.Writer.TryWrite(new (method, payload));
+        => this.deliverChannel.Writer.TryWrite(new DeliveredMessage(method, payload));
 
 
     public void Release(Exception ex = null)
@@ -59,7 +59,7 @@ internal sealed class DeliverMessageHandler : IMessageHandler<DeliverMethod>
                     await this.messageHandler(message, message).ConfigureAwait(false);
                     await this.acknowledgement.AckAsync(message.DeliveryTag).ConfigureAwait(false);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
                     await this.acknowledgement.NackAsync(message.DeliveryTag, this.onPoisonMessage == PoisonMessageMode.Requeue).ConfigureAwait(false);
                 }

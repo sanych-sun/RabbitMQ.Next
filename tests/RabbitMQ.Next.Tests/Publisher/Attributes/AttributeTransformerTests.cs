@@ -1,5 +1,3 @@
-using System.Threading;
-using System.Threading.Tasks;
 using NSubstitute;
 using RabbitMQ.Next.Publisher;
 using RabbitMQ.Next.Publisher.Attributes;
@@ -14,7 +12,14 @@ public class AttributeTransformerTests
     [Fact]
     public void TestAssemblyAttributes()
     {
+
+/* Unmerged change from project 'RabbitMQ.Next.Tests'
+Before:
         var message = this.CreateSubjectFor<AssemblyAttributesData>();
+After:
+        var message = AttributeTransformerTests.CreateSubjectFor<AssemblyAttributesData>();
+*/
+        var message = CreateSubjectFor<AssemblyAttributesData>();
         
         PublisherAttributes.Apply(message);
         
@@ -24,7 +29,14 @@ public class AttributeTransformerTests
     [Fact]
     public void TestRoutingKeyAttribute()
     {
+
+/* Unmerged change from project 'RabbitMQ.Next.Tests'
+Before:
         var message = this.CreateSubjectFor<RoutingKeyAttributeData>();
+After:
+        var message = AttributeTransformerTests.CreateSubjectFor<RoutingKeyAttributeData>();
+*/
+        var message = CreateSubjectFor<RoutingKeyAttributeData>();
         
         PublisherAttributes.Apply(message);
 
@@ -35,7 +47,14 @@ public class AttributeTransformerTests
     [Fact]
     public void TestHeaderAttribute()
     {
+
+/* Unmerged change from project 'RabbitMQ.Next.Tests'
+Before:
         var message = this.CreateSubjectFor<HeaderAttributeData>();
+After:
+        var message = AttributeTransformerTests.CreateSubjectFor<HeaderAttributeData>();
+*/
+        var message = CreateSubjectFor<HeaderAttributeData>();
         
         PublisherAttributes.Apply(message);
 
@@ -47,7 +66,14 @@ public class AttributeTransformerTests
     [Fact]
     public void TestMultipleAttributes()
     {
+
+/* Unmerged change from project 'RabbitMQ.Next.Tests'
+Before:
         var message = this.CreateSubjectFor<MultipleAttributesData>();
+After:
+        var message = AttributeTransformerTests.CreateSubjectFor<MultipleAttributesData>();
+*/
+        var message = CreateSubjectFor<MultipleAttributesData>();
         
         PublisherAttributes.Apply(message);
 
@@ -56,7 +82,7 @@ public class AttributeTransformerTests
         message.Received().SetPriority(7);
     }
 
-    private IMessageBuilder CreateSubjectFor<TContentType>()
+    private static IMessageBuilder CreateSubjectFor<TContentType>()
     {
         var message = Substitute.For<IMessageBuilder>();
         message.ClrType.Returns(typeof(TContentType));

@@ -9,9 +9,9 @@ using RabbitMQ.Next.Serialization.SystemJson;
 
 namespace RabbitMQ.Next.Examples.DynamicSerializer;
 
-class Program
+internal static class Program
 {
-    static async Task Main()
+    private static async Task Main()
     {
         await using var connection = ConnectionBuilder.Default
             .Endpoint("amqp://test2:test2@localhost:5672/")

@@ -18,7 +18,7 @@ public class ConnectionBuilder : IConnectionBuilder
     private string virtualhost = ProtocolConstants.DefaultVHost;
     private string clientLocale = DefaultLocale;
     private int maxFrameSize = DefaultMaxFrameSize;
-    private ISerializer serializer = null; // TODO: Implement noop serializer as default one
+    private ISerializer serializer;
 
     private ConnectionBuilder()
         : this(s => new Connection(s))

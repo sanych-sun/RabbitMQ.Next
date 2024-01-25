@@ -6,9 +6,9 @@ using RabbitMQ.Next.Serialization.PlainText;
 
 namespace RabbitMQ.Next.Examples.SimpleConsumer;
 
-class Program
+internal static class Program
 {
-    static async Task Main()
+    private static async Task Main()
     {
         Console.WriteLine("Hello World! This is consumer based on RabbitMQ.Next library.");
 
@@ -30,7 +30,7 @@ class Program
 
         MonitorKeypressAsync(cancellation);
 
-        await consumer.ConsumeAsync(async (message, content) =>
+        await consumer.ConsumeAsync((message, content) =>
         {
             Console.WriteLine($"[{DateTimeOffset.Now.TimeOfDay}] Message received via '{message.Exchange}' exchange: {content.Get<string>()}");
         } ,cancellation.Token);
