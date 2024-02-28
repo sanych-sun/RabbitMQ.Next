@@ -110,8 +110,7 @@ internal sealed class Publisher : IPublisher
             this.messagePropsPool.Return(message);
         }
     }
-
-
+    
     private async Task InternalPublishAsync<TContent>(IMessageBuilder message, TContent content)
     {
         var flags = ComposePublishFlags(message);
@@ -120,11 +119,14 @@ internal sealed class Publisher : IPublisher
         var deliveryTag = await ch.PublishAsync(this.exchange, message.RoutingKey, content, message, flags)
             .ConfigureAwait(false);
 
-        var confirmed = await this.confirms.WaitForConfirmAsync(deliveryTag, default).ConfigureAwait(false);
-        if (!confirmed)
+        if (this.confirms != null)
         {
-            // todo: provide some useful info here
-            throw new DeliveryFailedException();
+            var confirmed = await this.confirms.WaitForConfirmAsync(deliveryTag, default).ConfigureAwait(false);
+            if (!confirmed)
+            {
+                // todo: provide some useful info here
+                throw new DeliveryFailedException();
+            }
         }
     }
 

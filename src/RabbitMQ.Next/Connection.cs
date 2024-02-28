@@ -83,8 +83,8 @@ internal class Connection : IConnection
         this.socket = await EndpointResolver.OpenSocketAsync(this.connectionDetails.Settings.Endpoints, cancellation).ConfigureAwait(false);
 
         this.socketIoCancellation = new CancellationTokenSource();
-        Task.Factory.StartNew(() => this.ReceiveLoop(this.socketIoCancellation.Token), TaskCreationOptions.LongRunning);
-        Task.Factory.StartNew(this.SendLoop, TaskCreationOptions.LongRunning);
+        StartThread(() => this.ReceiveLoop(this.socketIoCancellation.Token), "RabbitMQ.Next-Receive loop");
+        StartThread(this.SendLoop, "RabbitMQ.Next-Send loop");
 
         this.connectionChannel = this.CreateChannel(ProtocolConstants.ConnectionChannel);
         var connectionCloseWait = new WaitMethodMessageHandler<CloseMethod>(default);
@@ -110,38 +110,27 @@ internal class Connection : IConnection
         var amqpHeaderMemory = new MemoryAccessor(ProtocolConstants.AmqpHeader);
         await this.socketSender.Writer.WriteAsync(amqpHeaderMemory, cancellation).ConfigureAwait(false);
 
-        this.connectionDetails.Negotiated = await negotiateTask.ConfigureAwait(false);
-
-        // start heartbeat
-        Task.Factory.StartNew(() => this.HeartbeatLoop(this.connectionDetails.Negotiated.HeartbeatInterval, this.socketIoCancellation.Token), TaskCreationOptions.LongRunning);
-
+        var negotiationResults = await negotiateTask.ConfigureAwait(false);
+        this.connectionDetails.PopulateWithNegotiationResults(negotiationResults);
+        
         this.State = ConnectionState.Configuring;
         this.State = ConnectionState.Open;
     }
 
     private IChannelInternal CreateChannel(ushort channelNumber)
     {
-        var maxFrameSize = this.connectionDetails?.Negotiated?.FrameMaxSize ?? ProtocolConstants.FrameMinSize;
+        var maxFrameSize = this.connectionDetails.FrameMaxSize ?? ProtocolConstants.FrameMinSize;
         var policy = new MessageBuilderPoolPolicy(this.memoryPool, channelNumber, maxFrameSize);
         var messageBuilderPool = new DefaultObjectPool<MessageBuilder>(policy);
 
         return new Channel(this.socketSender.Writer, messageBuilderPool, this.connectionDetails.Settings.Serializer);
     }
 
-    private async Task HeartbeatLoop(TimeSpan interval, CancellationToken cancellation)
-    {
-        var heartbeatMemory = new MemoryAccessor(ProtocolConstants.HeartbeatFrame);
-        while (!cancellation.IsCancellationRequested)
-        {
-            await Task.Delay(interval, cancellation).ConfigureAwait(false);
-            await this.socketSender.Writer.WriteAsync(heartbeatMemory, cancellation).ConfigureAwait(false);
-        }
-    }
-
     private void SendLoop()
     {
+        var heartbeatMemory = new MemoryAccessor(ProtocolConstants.HeartbeatFrame);
         var socketChannel = this.socketSender.Reader;
-        while (socketChannel.WaitToReadAsync().Wait())
+        do
         {
             while (socketChannel.TryRead(out var memory))
             {
@@ -154,7 +143,21 @@ internal class Connection : IConnection
                     memory = next;
                 }
             }
-        }
+
+            var waitResult = socketChannel.WaitToReadAsync().Wait(this.connectionDetails.HeartbeatInterval);
+            if (waitResult.IsCompleted)
+            {
+                if (waitResult.Result)
+                {
+                    continue;
+                }
+                
+                break;
+            }
+            
+            // wait long enough and nothing was sent, need to send heartbeat frame
+            this.socket.Send(heartbeatMemory);
+        } while (true);
     }
 
     private void ReceiveLoop(CancellationToken cancellationToken)
@@ -298,6 +301,15 @@ internal class Connection : IConnection
         this.connectionChannel.TryComplete(ex);
     }
 
+    private static void StartThread(Action threadStart, string threadName)
+    {
+        var thread = new Thread(new ThreadStart(threadStart))
+        {
+            Name = threadName,
+        };
+        thread.Start();
+    }
+
     private static async Task<NegotiationResults> NegotiateConnectionAsync(IChannel channel, ConnectionSettings settings, CancellationToken cancellation)
     {
         // connection should be forcibly closed if negotiation phase take more then 10s.
@@ -334,7 +346,6 @@ internal class Connection : IConnection
 
         var tuneMethod = await tuneMethodTask.ConfigureAwait(false);
         var negotiationResult = new NegotiationResults(
-            settings.Auth.Type,
             tuneMethod.ChannelMax,
             Math.Min(settings.MaxFrameSize, (int)tuneMethod.MaxFrameSize),
             TimeSpan.FromSeconds(tuneMethod.HeartbeatInterval));

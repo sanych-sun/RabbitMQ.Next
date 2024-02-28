@@ -1,3 +1,5 @@
+using System;
+
 namespace RabbitMQ.Next;
 
 internal class ConnectionDetails
@@ -8,14 +10,19 @@ internal class ConnectionDetails
     }
 
     public ConnectionSettings Settings { get; }
+    
+    public int? ChannelMax { get; private set; }
 
-    public NegotiationResults Negotiated { get; set; }
+    public int? FrameMaxSize { get; private set; }
 
-    public string RemoteHost { get; set; }
-
-    public string RemotePort { get; set; }
-
-    public bool IsSsl { get; set; }
-
-    public string VirtualHost { get; set; }
+    public TimeSpan? HeartbeatInterval { get; private set; }
+    
+    public void PopulateWithNegotiationResults(NegotiationResults negotiationResults)
+    {
+        ArgumentNullException.ThrowIfNull(negotiationResults);
+        
+        this.ChannelMax = negotiationResults.ChannelMax;
+        this.FrameMaxSize = negotiationResults.FrameMaxSize;
+        this.HeartbeatInterval = negotiationResults.HeartbeatInterval;
+    }
 }

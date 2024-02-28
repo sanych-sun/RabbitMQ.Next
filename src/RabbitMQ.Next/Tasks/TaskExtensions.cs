@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -17,15 +18,26 @@ public static class TaskExtensions
         return tcs.Task;
     }
 
-    public static T Wait<T>(this ValueTask<T> valueTask)
+    public static (bool IsCompleted, T Result) Wait<T>(this ValueTask<T> valueTask, TimeSpan? timeout)
     {
         if (valueTask.IsCompleted)
         {
-            return valueTask.Result;
+            return (true, valueTask.Result);
+        }
+        
+        var task = valueTask.AsTask();
+        var timeoutMs = -1; // -1 means infinite
+        if (timeout.HasValue)
+        {
+            timeoutMs = (int)timeout.Value.TotalMilliseconds;
+        }
+        
+        if (task.Wait(timeoutMs))
+        {
+            return (true, task.Result);
         }
 
-        var task = valueTask.AsTask();
-        return task.GetAwaiter().GetResult();
+        return (false, default);
     }
 
     public static Task<TResult> WithCancellation<TResult>(this Task<TResult> task, CancellationToken cancellation)

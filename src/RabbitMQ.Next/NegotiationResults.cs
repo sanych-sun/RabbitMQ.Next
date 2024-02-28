@@ -4,9 +4,8 @@ namespace RabbitMQ.Next;
 
 internal class NegotiationResults
 {
-    public NegotiationResults(string authMechanism, int channelMax, int frameMaxSize, TimeSpan heartbeatInterval)
+    public NegotiationResults(int channelMax, int frameMaxSize, TimeSpan heartbeatInterval)
     {
-        this.AuthMechanism = authMechanism;
         this.ChannelMax = channelMax;
         this.FrameMaxSize = frameMaxSize;
         this.HeartbeatInterval = heartbeatInterval;
@@ -17,6 +16,4 @@ internal class NegotiationResults
     public int FrameMaxSize { get; }
 
     public TimeSpan HeartbeatInterval { get; }
-
-    public string AuthMechanism { get; }
 }
