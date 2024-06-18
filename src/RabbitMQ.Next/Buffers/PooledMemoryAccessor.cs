@@ -37,7 +37,15 @@ internal sealed class PooledMemoryAccessor : IMemoryAccessor
         this.Size = size;
     }
 
+    ~PooledMemoryAccessor() => this.ReleaseMemory();
+
     public void Dispose()
+    {
+        GC.SuppressFinalize(this);
+        this.ReleaseMemory();
+    }
+
+    private void ReleaseMemory()
     {
         if (this.memory == null)
         {

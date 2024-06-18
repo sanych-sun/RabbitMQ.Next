@@ -22,7 +22,15 @@ internal sealed class SharedMemory : IDisposable
         this.Size = size;
     }
 
+    ~SharedMemory() => this.ReleaseMemory();
+
     public void Dispose()
+    {
+        GC.SuppressFinalize(this);
+        this.ReleaseMemory();
+    }
+
+    private void ReleaseMemory()
     {
         var refsCount = Interlocked.Decrement(ref this.referencesCount);
         if (refsCount != 0)
@@ -114,8 +122,15 @@ internal sealed class SharedMemory : IDisposable
             Interlocked.Increment(ref this.owner.referencesCount);
         }
 
+        ~SharedMemoryAccessor() => this.ReleaseMemory();
 
         public void Dispose()
+        {
+            GC.SuppressFinalize(this);
+            this.ReleaseMemory();
+        }
+
+        private void ReleaseMemory()
         {
             if (this.owner == null)
             {
