@@ -1,5 +1,4 @@
-﻿using System;
-using RabbitMQ.Next;
+﻿using RabbitMQ.Next;
 using RabbitMQ.Next.Publisher;
 using RabbitMQ.Next.Serialization.PlainText;
 
@@ -10,7 +9,11 @@ var connection = ConnectionBuilder.Default
     .UsePlainTextSerializer()
     .Build();
 
-await using var publisher = connection.Publisher("amq.fanout");
+await using var publisher = connection.Publisher("amq.fanout", 
+    builder => builder.UsePublishMiddleware((message, content) =>
+    {
+        message.SetType(message.ClrType.Name);
+    }));
 
 Console.WriteLine("Publisher created. Type any text to send it to the 'amq.fanout' exchange. Enter empty string to exit");
 
