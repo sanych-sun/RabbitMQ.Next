@@ -1,18 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net6.0;net7.0</TargetFrameworks>
     <PackageId>RabbitMQ.Next</PackageId>
   </PropertyGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net6.0'">
+  <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="6.0.*" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net7.0'">
-    <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="7.0.*" />
-  </ItemGroup>
-  
   <ItemGroup>
     <ProjectReference Include="..\RabbitMQ.Next.Abstractions\RabbitMQ.Next.Abstractions.csproj" />
   </ItemGroup>

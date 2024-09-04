@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
     <RootNamespace>RabbitMQ.Next.Publisher</RootNamespace>
     <PackageId>RabbitMQ.Next.Publisher.Abstractions</PackageId>
   </PropertyGroup>

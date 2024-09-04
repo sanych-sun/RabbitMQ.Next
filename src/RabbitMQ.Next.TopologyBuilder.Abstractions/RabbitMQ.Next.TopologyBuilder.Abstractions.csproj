@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
     <PackageId>RabbitMQ.Next.TopologyBuilder.Abstractions</PackageId>
     <RootNamespace>RabbitMQ.Next.TopologyBuilder</RootNamespace>
   </PropertyGroup>

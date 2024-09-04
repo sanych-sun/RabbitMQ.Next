@@ -1,12 +1,14 @@
 <Project>
   <PropertyGroup>
     <Version>0.4.0</Version>
+    <TargetFramework>net6.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <Authors>Oleksandr Poliakov</Authors>
     <PackageTags>RabbitMQ;Messaging</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryType>git</RepositoryType>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <Description>An experimental low-level RabbitMQ client for .Net with number of high-level APIs</Description>
   </PropertyGroup>
 

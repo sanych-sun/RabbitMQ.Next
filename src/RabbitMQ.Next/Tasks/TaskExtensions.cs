@@ -5,11 +5,12 @@ namespace RabbitMQ.Next.Tasks;
 
 public static class TaskExtensions
 {
-    public static (bool IsCompleted, T Result) Wait<T>(this ValueTask<T> valueTask, TimeSpan? timeout)
+    public static bool Wait<T>(this ValueTask<T> valueTask, TimeSpan? timeout, out T result)
     {
         if (valueTask.IsCompleted)
         {
-            return (true, valueTask.Result);
+            result = valueTask.Result;
+            return true;
         }
         
         var task = valueTask.AsTask();
@@ -21,9 +22,11 @@ public static class TaskExtensions
         
         if (task.Wait(timeoutMs))
         {
-            return (true, task.Result);
+            result = task.Result;
+            return true;
         }
 
-        return (false, default);
+        result = default;
+        return false;
     }
 }

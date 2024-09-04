@@ -132,6 +132,7 @@ internal class Connection : IConnection
     {
         var heartbeatMemory = new MemoryAccessor(ProtocolConstants.HeartbeatFrame);
         var socketChannel = this.socketSender.Reader;
+        
         do
         {
             while (socketChannel.TryRead(out var memory))
@@ -146,19 +147,19 @@ internal class Connection : IConnection
                 }
             }
 
-            var waitResult = socketChannel.WaitToReadAsync().Wait(this.connectionDetails.HeartbeatInterval);
-            if (waitResult.IsCompleted)
+            if (socketChannel.WaitToReadAsync().Wait(this.connectionDetails.HeartbeatInterval, out var canRead))
             {
-                if (waitResult.Result)
+                if (!canRead)
                 {
-                    continue;
+                    return;
                 }
-                
-                break;
+            }
+            else
+            {
+                // wait long enough and nothing was sent, need to send heartbeat frame
+                this.socket.Send(heartbeatMemory);    
             }
             
-            // wait long enough and nothing was sent, need to send heartbeat frame
-            this.socket.Send(heartbeatMemory);
         } while (true);
     }
 
