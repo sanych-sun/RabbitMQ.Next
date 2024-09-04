@@ -66,6 +66,8 @@ internal class Connection : IConnection
 
     public async ValueTask DisposeAsync()
     {
+        this.socketIoCancellation?.Dispose();
+        
         if (this.State != ConnectionState.Open)
         {
             return;
@@ -312,8 +314,10 @@ internal class Connection : IConnection
 
     private static async Task<NegotiationResults> NegotiateConnectionAsync(IChannel channel, ConnectionSettings settings, CancellationToken cancellation)
     {
-        // connection should be forcibly closed if negotiation phase take more then 10s.
-        cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(10)).Token.Combine(cancellation);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
+        // connection should be forcibly closed if negotiation phase take more than 10s.
+        cts.CancelAfter(TimeSpan.FromSeconds(10));
+        cancellation = cts.Token;
 
         var startMethod = await channel.WaitAsync<StartMethod>(cancellation).ConfigureAwait(false);
         if (!startMethod.Mechanisms.Contains(settings.Auth.Type))

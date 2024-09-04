@@ -26,7 +26,7 @@ internal static class Program
 
         Console.WriteLine("Consumer created. Press Ctrl+C to exit.");
 
-        var cancellation = new CancellationTokenSource();
+        using var cancellation = new CancellationTokenSource();
 
         MonitorKeypressAsync(cancellation);
 

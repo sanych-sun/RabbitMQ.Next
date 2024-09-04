@@ -73,7 +73,7 @@ internal class Consumer : IConsumer
         
         try
         {
-            await Task.WhenAny(cancellation.AsTask(), this.channel.Completion).ConfigureAwait(false);
+            await this.channel.Completion.WaitAsync(cancellation).ConfigureAwait(false);
         }
         finally
         {

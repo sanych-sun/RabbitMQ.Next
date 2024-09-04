@@ -34,7 +34,7 @@ internal class ConfirmMessageHandler : IMessageHandler<AckMethod>, IMessageHandl
             this.pendingConfirms.TryRemove(deliveryTag, out _);
         }
 
-        return tcs.Task.WithCancellation(cancellation);
+        return tcs.Task.WaitAsync(cancellation);
     }
 
     public void Handle(AckMethod method, IPayload payload)

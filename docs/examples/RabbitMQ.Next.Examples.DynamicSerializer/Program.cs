@@ -55,7 +55,7 @@ internal static class Program
                 .BindToQueue("my-queue")
                 .PrefetchCount(10));
         
-        var cancellation = new CancellationTokenSource(10_000); // simply cancel after 10 seconds
+        using var cancellation = new CancellationTokenSource(10_000); // simply cancel after 10 seconds
         await consumer.ConsumeAsync((message, content) =>
         {
             Console.WriteLine($"Message content-type: {message.ContentType}, {content.Get<DummyDto>().SomeProperty}");

@@ -8,7 +8,6 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Exceptions;
-using RabbitMQ.Next.Tasks;
 
 namespace RabbitMQ.Next.Sockets;
 
@@ -16,7 +15,10 @@ internal static class EndpointResolver
 {
     public static async Task<ISocket> OpenSocketAsync(IReadOnlyList<Endpoint> endpoints, CancellationToken cancellation)
     {
-        cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(10)).Token.Combine(cancellation);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
+        cts.CancelAfter(TimeSpan.FromSeconds(10));
+        
+        cancellation = cts.Token;
         Dictionary<Uri, Exception> exceptions = null;
 
         foreach (var endpoint in endpoints)
