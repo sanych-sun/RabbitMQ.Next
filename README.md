@@ -49,7 +49,7 @@ using RabbitMQ.Next;
 
 var connection = await ConnectionBuilder.Default
     .Endpoint("amqp://guest:password@localhost:5672/")
-    .ConnectAsync();
+    .Build();
 ```
 
 And basically that's it. Now all ready to make some useful stuff.
@@ -93,21 +93,23 @@ Message publisher and consumer require to use serializer, so library know how to
 1. RabbitMQ.Next.Serialization.PlainText
 2. RabbitMQ.Next.Serialization.SystemJson
 3. RabbitMQ.Next.Serialization.MessagePack
+4. RabbitMQ.Next.Serialization.NewtonsoftJson
+5. RabbitMQ.Next.Serialization.Dynamic (the one allow to choose serializer type basic on the message properties)
 
-However there is no rocket-science to implement other popular formats integration. Please post an issue in the [issue tracker](https://github.com/sanych-sun/RabbitMQ.Next/issues) and I'll consider implementation of provide some code examples for you.
+Serializer should be defined on the connection level, by using `builder.UseSerializer` method, or via convenient extension methods. In case when different exchanges should use different type of serialization - use DynamicSerializer. 
+
+However, there is no rocket-science to implement other popular formats integration. Please post an issue in the [issue tracker](https://github.com/sanych-sun/RabbitMQ.Next/issues) and I'll consider implementation of provide some code examples for you.
 
 ### Message consumer
 RabbitMQ.Next.Consumer library let client code to consume messages. Complete example is [here](https://github.com/sanych-sun/RabbitMQ.Next/tree/master/docs/examples/RabbitMQ.Next.Examples.SimpleConsumer)
 ```c#
 using RabbitMQ.Next.Consumer;
-using RabbitMQ.Next.Serialization.PlainText;
 ...
 
 await using var consumer = connection.Consumer( // IConsumer implements IAsyncDisposable, do not forget to dispose it 
   builder => builder
     .BindToQueue("test-queue")  // It's possible to bind to multiple queues
-    .PrefetchCount(10)          // there are some more tweacks could be applied to consumer
-    .UsePlainTextSerializer()); // and we need serializer
+    .PrefetchCount(10));        // there are some more tweacks could be applied to consumer
 
 // and start message consumption by providing handler and cancellation token
 await consumer.ConsumeAsync(async message =>
@@ -121,12 +123,9 @@ RabbitMQ.Next.Publisher library let client application to publish messages. Comp
 
 ```c#
 using RabbitMQ.Next.Publisher;
-using RabbitMQ.Next.Serialization.PlainText;
 ...
 
-await using var publisher = connection.Publisher("amq.fanout", // IPublisher implements IAsyncDisposable, do not forget to dispose it
-  builder => builder
-    .UsePlainTextSerializer()); // It's required to specify the serializer, so library know how to format payload.
+await using var publisher = connection.Publisher("amq.fanout"); // IPublisher implements IAsyncDisposable, do not forget to dispose it
 
 // And that's it, publisher is ready. There also some more tweaks could be applied to the publisher via publisher builder 
 // (for example disable Publisher confirms)
@@ -145,13 +144,12 @@ This is how the last message looks like on the server:
 
 
 ### Message publisher declarative message attributes
-RabbitMQ.Next.Publisher.Attributes let client code to initialize message properties from declarative attributes assigned to the DTO class or onto the assembly. This is not replacement for the RabbitMQ.Next.Publisher library, but convinient extension:
+RabbitMQ.Next.Publisher.Attributes let client code to initialize message properties from declarative attributes assigned to the DTO class or onto the assembly. This is not replacement for the RabbitMQ.Next.Publisher library, but convenient extension:
 
 This example require to use some serializer that supports objects serialization, for example RabbitMQ.Next.Serialization.SystemJson
 ```c#
 using RabbitMQ.Next.Publisher;
 using RabbitMQ.Next.Publisher.Attributes;
-using RabbitMQ.Next.Serialization.SystemJson; 
 ...
 
 // have to define DTO, and assign attributes on it
@@ -165,8 +163,7 @@ public class SampleDto
 ...
 // Small ammendments needed to publisher builder:
 await using var publisher = connection.Publisher("amq.fanout",
-  message => message
-    .UseSystemJsonSerializer()
+  builder => builder
     .UseAttributesInitializer());  
 
 // and now it's ready for use
