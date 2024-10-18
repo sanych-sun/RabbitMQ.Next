@@ -26,6 +26,7 @@ The library was created with idea of the minimal possible allocation. Here is pe
 ## Packages
 Too much packages instead of a single... explained:
 - [RabbitMQ.Next](https://www.nuget.org/packages/RabbitMQ.Next), [RabbitMQ.Next.Abstractions](https://www.nuget.org/packages/RabbitMQ.Next.Abstractions) – core library, contains most of the protocol-level implementations
+- [RabbitMQ.Next.DependencyInjection](https://www.nuget.org/packages/RabbitMQ.Next.DependencyInjection) - helper library for convenient registration of IConnection in DI container.
 - [RabbitMQ.Next.TopologyBuilder](https://www.nuget.org/packages/RabbitMQ.Next.TopologyBuilder), [RabbitMQ.Next.TopologyBuilder.Abstractions](https://www.nuget.org/packages/RabbitMQ.Next.TopologyBuilder.Abstractions) – library contains methods to manage exchanges, queues and bindings
 - [RabbitMQ.Next.Consumer](https://www.nuget.org/packages/RabbitMQ.Next.Consumer), [RabbitMQ.Next.Consumer.Abstractions](https://www.nuget.org/packages/RabbitMQ.Next.Consumer.Abstractions) – library provides high-level message consumption API
 - [RabbitMQ.Next.Publisher](https://www.nuget.org/packages/RabbitMQ.Next.Publisher), [RabbitMQ.Next.Publisher.Abstractions](https://www.nuget.org/packages/RabbitMQ.Next.Publisher.Abstractions) – provides high-level message publishing API
@@ -47,8 +48,8 @@ First of all have to open the connection to RabbitMQ server:
 using RabbitMQ.Next;
 ...
 
-var connection = await ConnectionBuilder.Default
-    .Endpoint("amqp://guest:password@localhost:5672/")
+var connection = ConnectionBuilder.Default
+    .UseConnectionString("amqp://guest:password@localhost:5672/")
     .Build();
 ```
 

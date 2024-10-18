@@ -5,7 +5,7 @@ using RabbitMQ.Next.TopologyBuilder;
 Console.WriteLine("Hello World! This is topology builder based on RabbitMQ.Next library.");
 
 var connection = ConnectionBuilder.Default
-    .Endpoint("amqp://guest:guest@localhost:5672/")
+    .UseConnectionString("amqp://guest:guest@localhost:5672/")
     .Build();
 
 await connection.ConfigureAsync(async topology =>

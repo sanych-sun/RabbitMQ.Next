@@ -54,6 +54,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMQ.Next.Examples.Demo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMQ.Next.Examples.PublisherMiddleware", "docs\examples\RabbitMQ.Next.Examples.PublisherMiddleware\RabbitMQ.Next.Examples.PublisherMiddleware.csproj", "{23340CFA-F105-4F7F-B2C5-16693A8626F9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMQ.Next.DependencyInjection", "src\RabbitMQ.Next.DependencyInjection\RabbitMQ.Next.DependencyInjection.csproj", "{B4DC5006-903A-4E4F-A819-47CE0DDC3CF7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMQ.Next.Examples.DependencyInjection", "docs\examples\RabbitMQ.Next.Examples.DependencyInjection\RabbitMQ.Next.Examples.DependencyInjection.csproj", "{5841CCA0-850A-483D-841C-940967D619AD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -148,6 +152,14 @@ Global
 		{23340CFA-F105-4F7F-B2C5-16693A8626F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{23340CFA-F105-4F7F-B2C5-16693A8626F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{23340CFA-F105-4F7F-B2C5-16693A8626F9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B4DC5006-903A-4E4F-A819-47CE0DDC3CF7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B4DC5006-903A-4E4F-A819-47CE0DDC3CF7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B4DC5006-903A-4E4F-A819-47CE0DDC3CF7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B4DC5006-903A-4E4F-A819-47CE0DDC3CF7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5841CCA0-850A-483D-841C-940967D619AD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5841CCA0-850A-483D-841C-940967D619AD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5841CCA0-850A-483D-841C-940967D619AD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5841CCA0-850A-483D-841C-940967D619AD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{AB00A6F3-C3E0-4E61-B302-F9CF0288819E} = {C895EE24-13DF-45C3-AF1D-B6B6EE4A10A9}
@@ -174,5 +186,7 @@ Global
 		{B93A51A9-0A31-4419-B8E8-C304EF18CFAB} = {750B1D71-E43B-4714-8AA3-AB9B0EC7E931}
 		{C0440748-9787-4891-874A-054F5E64020B} = {750B1D71-E43B-4714-8AA3-AB9B0EC7E931}
 		{23340CFA-F105-4F7F-B2C5-16693A8626F9} = {750B1D71-E43B-4714-8AA3-AB9B0EC7E931}
+		{B4DC5006-903A-4E4F-A819-47CE0DDC3CF7} = {C895EE24-13DF-45C3-AF1D-B6B6EE4A10A9}
+		{5841CCA0-850A-483D-841C-940967D619AD} = {750B1D71-E43B-4714-8AA3-AB9B0EC7E931}
 	EndGlobalSection
 EndGlobal

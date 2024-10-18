@@ -26,7 +26,7 @@ public class ConsumerBenchmarks
     public async Task Setup()
     {
         this.connection = ConnectionBuilder.Default
-            .Endpoint(Helper.RabbitMqConnection)
+            .UseConnectionString(Helper.RabbitMqConnection)
             .UsePlainTextSerializer()
             .Build();
 

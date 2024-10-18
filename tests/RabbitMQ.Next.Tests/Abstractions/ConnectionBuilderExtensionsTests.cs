@@ -25,7 +25,7 @@ public class ConnectionBuilderExtensionsTests
     {
         var builder = Substitute.For<IConnectionBuilder>();
 
-        Assert.Throws<ArgumentException>(() => builder.Endpoint("some random text"));
+        Assert.Throws<ArgumentException>(() => builder.UseConnectionString("some random text"));
     }
 
     [Fact]
@@ -33,7 +33,7 @@ public class ConnectionBuilderExtensionsTests
     {
         var builder = Substitute.For<IConnectionBuilder>();
 
-        Assert.Throws<ArgumentException>(() => builder.Endpoint("http://rabbitmq.com"));
+        Assert.Throws<ArgumentException>(() => builder.UseConnectionString("http://rabbitmq.com"));
     }
 
     [Fact]
@@ -41,7 +41,7 @@ public class ConnectionBuilderExtensionsTests
     {
         var builder = Substitute.For<IConnectionBuilder>();
 
-        Assert.Throws<ArgumentException>(() => builder.Endpoint(new Uri("http://rabbitmq.com")));
+        Assert.Throws<ArgumentException>(() => builder.UseConnectionString(new Uri("http://rabbitmq.com")));
     }
 
     [Theory]
@@ -50,7 +50,7 @@ public class ConnectionBuilderExtensionsTests
     {
         var builder = Substitute.For<IConnectionBuilder>();
 
-        builder.Endpoint(endpoint);
+        builder.UseConnectionString(endpoint);
 
         builder.Received().Endpoint(host, port, ssl);
         builder.Received().VirtualHost(vhost);

@@ -5,7 +5,7 @@ using RabbitMQ.Next.Examples.DemoSaslAuthMechanism;
 Console.WriteLine("Hello World! Will try to connect RabbitMQ server with RABBIT-CR-DEMO auth mechanism.");
 
 await using var connection = ConnectionBuilder.Default
-    .Endpoint("amqp://localhost:5672/")
+    .UseConnectionString("amqp://localhost:5672/")
     .WithRabbitCrDemoAuth("guest", "guest")
     .Build();
 

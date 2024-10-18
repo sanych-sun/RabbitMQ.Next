@@ -9,7 +9,7 @@ using RabbitMQ.Next.Serialization.PlainText;
 Console.WriteLine("Hello World! This is consumer based on RabbitMQ.Next library.");
 
 var connection = ConnectionBuilder.Default
-    .Endpoint("amqp://guest:guest@localhost:5672/")
+    .UseConnectionString("amqp://guest:guest@localhost:5672/")
     .UsePlainTextSerializer()
     .Build();
 

@@ -24,7 +24,7 @@ public class PublisherBenchmarks
         this.theirConnection = factory.CreateConnection();
         
         this.connection = ConnectionBuilder.Default
-            .Endpoint(Helper.RabbitMqConnection)
+            .UseConnectionString(Helper.RabbitMqConnection)
             .UsePlainTextSerializer()
             .Build();
     }

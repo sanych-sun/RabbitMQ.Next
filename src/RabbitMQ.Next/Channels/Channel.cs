@@ -104,6 +104,11 @@ internal sealed class Channel : IChannelInternal
         CancellationToken cancellation = default)
     {
         this.ValidateState();
+
+        if (this.serializer == null)
+        {
+            throw new InvalidOperationException("Cannot publish content when serializer was not set. Make sure serializer is configured correctly.");
+        }
         
         var publishMethod = new PublishMethod(exchange, routingKey, (byte)flags);
         

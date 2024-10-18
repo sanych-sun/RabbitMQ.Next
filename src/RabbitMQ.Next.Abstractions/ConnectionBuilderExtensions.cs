@@ -18,18 +18,18 @@ public static class ConnectionBuilderExtensions
         return builder;
     }
 
-    public static IConnectionBuilder Endpoint(this IConnectionBuilder builder, string endpoint)
+    public static IConnectionBuilder UseConnectionString(this IConnectionBuilder builder, string endpoint)
     {
         endpoint = WebUtility.UrlDecode(endpoint);
         if (Uri.TryCreate(endpoint, UriKind.Absolute, out var uri))
         {
-            return builder.Endpoint(uri);
+            return builder.UseConnectionString(uri);
         }
 
         throw new ArgumentException("Cannot parse endpoint as Uri.",nameof(endpoint));
     }
 
-    public static IConnectionBuilder Endpoint(this IConnectionBuilder builder, Uri endpoint)
+    public static IConnectionBuilder UseConnectionString(this IConnectionBuilder builder, Uri endpoint)
     {
         var parsed = ParseAmqpUri(endpoint);
 

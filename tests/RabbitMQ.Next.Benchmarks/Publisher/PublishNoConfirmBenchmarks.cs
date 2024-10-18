@@ -18,7 +18,7 @@ public class PublishNoConfirmBenchmarks
     public PublishNoConfirmBenchmarks()
     {
         this.connection = ConnectionBuilder.Default
-            .Endpoint(Helper.RabbitMqConnection)
+            .UseConnectionString(Helper.RabbitMqConnection)
             .UsePlainTextSerializer()
             .Build();
 

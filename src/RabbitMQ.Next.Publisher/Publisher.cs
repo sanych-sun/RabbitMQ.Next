@@ -130,8 +130,6 @@ internal sealed class Publisher : IPublisher
         }
     }
 
-
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void CheckDisposed()
     {
@@ -185,7 +183,13 @@ internal sealed class Publisher : IPublisher
         {
             if (ch != null)
             {
-                await ch.CloseAsync().ConfigureAwait(false);
+                try
+                {
+                    await ch.CloseAsync().ConfigureAwait(false);
+                }
+                catch (Exception e)
+                {
+                }
             }
 
             throw;
