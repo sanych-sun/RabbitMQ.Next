@@ -4,7 +4,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Next.Channels;
 using RabbitMQ.Next.Messaging;
-using RabbitMQ.Next.Tasks;
 using RabbitMQ.Next.Transport.Methods.Basic;
 
 namespace RabbitMQ.Next.Consumer;

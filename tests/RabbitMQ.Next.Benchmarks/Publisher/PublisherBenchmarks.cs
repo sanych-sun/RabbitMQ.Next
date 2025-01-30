@@ -12,48 +12,84 @@ namespace RabbitMQ.Next.Benchmarks.Publisher;
 
 public class PublisherBenchmarks
 {
-    private readonly IConnection connection;
-    private readonly RabbitMQ.Client.IConnection theirConnection;
-
-    public PublisherBenchmarks()
+    [Benchmark(Baseline = true)]
+    [ArgumentsSource(nameof(TestCases))]
+    public async Task PublishBaseLibrary(TestCaseParameters parameters)
     {
         ConnectionFactory factory = new ConnectionFactory
         {
             Uri = Helper.RabbitMqConnection,
         };
-        this.theirConnection = factory.CreateConnection();
         
-        this.connection = ConnectionBuilder.Default
-            .UseConnectionString(Helper.RabbitMqConnection)
-            .UsePlainTextSerializer()
-            .Build();
-    }
-    
-    [Benchmark(Baseline = true)]
-    [ArgumentsSource(nameof(TestCases))]
-    public void PublishBaseLibrary(TestCaseParameters parameters)
-    {
-        var model = this.theirConnection.CreateModel();
-        model.ConfirmSelect();
+        var connection = await factory.CreateConnectionAsync().ConfigureAwait(false);
+        var channelOpts = new CreateChannelOptions(
+            publisherConfirmationsEnabled: true,
+            publisherConfirmationTrackingEnabled: true,
+            outstandingPublisherConfirmationsRateLimiter: new ThrottlingRateLimiter(1000)
+        );
+        var channel = await connection.CreateChannelAsync(channelOpts).ConfigureAwait(false);
 
         for (var i = 0; i < parameters.Messages.Count; i++)
         {
             var data = parameters.Messages[i];
-            var props = model.CreateBasicProperties();
+            var props = new BasicProperties();
             props.CorrelationId = data.CorrelationId;
-            props.DeliveryMode = 2; // this is default for RabbitMQ.Next
-            model.BasicPublish("amq.topic", "", props, Encoding.UTF8.GetBytes(data.Payload));
-            model.WaitForConfirms();
+            props.DeliveryMode = DeliveryModes.Persistent; // this is default for RabbitMQ.Next
+            await channel.BasicPublishAsync("amq.topic", "", false, props, Encoding.UTF8.GetBytes(data.Payload)).ConfigureAwait(false);
         }
 
-        model.Close();
+        await channel.CloseAsync().ConfigureAwait(false);
+        await connection.CloseAsync().ConfigureAwait(false);
+    }
+    
+    [Benchmark]
+    [ArgumentsSource(nameof(TestCases))]
+    public async Task PublishBaseLibraryParallel(TestCaseParameters parameters)
+    {
+        ConnectionFactory factory = new ConnectionFactory
+        {
+            Uri = Helper.RabbitMqConnection,
+        };
+        
+        var connection = await factory.CreateConnectionAsync().ConfigureAwait(false);
+        var channelOpts = new CreateChannelOptions(
+            publisherConfirmationsEnabled: true,
+            publisherConfirmationTrackingEnabled: true,
+            outstandingPublisherConfirmationsRateLimiter: new ThrottlingRateLimiter(1000)
+        );
+        var channel = await connection.CreateChannelAsync(channelOpts).ConfigureAwait(false);
+
+        await Task.WhenAll(Enumerable.Range(0, 10)
+                .Select(async num =>
+                {
+                    await Task.Yield();
+
+                    for (int i = num; i < parameters.Messages.Count; i += 10)
+                    {
+                        var data = parameters.Messages[i];
+                        var props = new BasicProperties();
+                        props.CorrelationId = data.CorrelationId;
+                        props.DeliveryMode = DeliveryModes.Persistent; // this is default for RabbitMQ.Next
+                        await channel.BasicPublishAsync("amq.topic", "", false, props, Encoding.UTF8.GetBytes(data.Payload)).ConfigureAwait(false);
+                    }
+                })
+                .ToArray())
+            .ConfigureAwait(false);
+        
+        await channel.CloseAsync().ConfigureAwait(false);
+        await connection.CloseAsync().ConfigureAwait(false);
     }
 
     [Benchmark]
     [ArgumentsSource(nameof(TestCases))]
     public async Task PublishParallelAsync(TestCaseParameters parameters)
     {
-        var publisher = this.connection.Publisher("amq.topic");
+        await using var connection = ConnectionBuilder.Default
+            .UseConnectionString(Helper.RabbitMqConnection)
+            .UsePlainTextSerializer()
+            .Build();
+        
+        await using var publisher = connection.Publisher("amq.topic");
 
         await Task.WhenAll(Enumerable.Range(0, 10)
             .Select(async num =>
@@ -69,15 +105,18 @@ public class PublisherBenchmarks
             })
             .ToArray())
             .ConfigureAwait(false);
-
-        await publisher.DisposeAsync().ConfigureAwait(false);
     }
 
     [Benchmark]
     [ArgumentsSource(nameof(TestCases))]
     public async Task PublishAsync(TestCaseParameters parameters)
     {
-        var publisher = this.connection.Publisher("amq.topic");
+        await using var connection = ConnectionBuilder.Default
+            .UseConnectionString(Helper.RabbitMqConnection)
+            .UsePlainTextSerializer()
+            .Build();
+        
+        await using var publisher = connection.Publisher("amq.topic");
 
         for (int i = 0; i < parameters.Messages.Count; i++)
         {
@@ -85,16 +124,6 @@ public class PublisherBenchmarks
             await publisher.PublishAsync(data, data.Payload,
                 (state, message) => message.SetCorrelationId(state.CorrelationId)).ConfigureAwait(false);
         }
-
-        await publisher.DisposeAsync().ConfigureAwait(false);
-    }
-
-    [GlobalCleanup]
-    public async ValueTask CleanUpOfficialLibrary()
-    {
-        this.theirConnection.Close();
-        this.theirConnection.Dispose();
-        await this.connection.DisposeAsync();
     }
     
     public static IEnumerable<TestCaseParameters> TestCases()

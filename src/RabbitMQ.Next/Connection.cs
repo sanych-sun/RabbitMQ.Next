@@ -8,7 +8,6 @@ using RabbitMQ.Next.Exceptions;
 using RabbitMQ.Next.Buffers;
 using RabbitMQ.Next.Channels;
 using RabbitMQ.Next.Sockets;
-using RabbitMQ.Next.Tasks;
 using RabbitMQ.Next.Transport;
 using RabbitMQ.Next.Transport.Methods.Connection;
 using Channel = RabbitMQ.Next.Channels.Channel;
@@ -66,16 +65,14 @@ internal class Connection : IConnection
 
     public async ValueTask DisposeAsync()
     {
-        this.socketIoCancellation?.Dispose();
-        
-        if (this.State != ConnectionState.Open)
+        if (this.State == ConnectionState.Open)
         {
-            return;
+            await this.connectionChannel.SendAsync<CloseMethod, CloseOkMethod>(new CloseMethod((ushort)ReplyCode.Success, "Goodbye", 0)).ConfigureAwait(false);
+
+            this.ConnectionClose(null);
         }
 
-        await this.connectionChannel.SendAsync<CloseMethod, CloseOkMethod>(new CloseMethod((ushort)ReplyCode.Success, "Goodbye", 0)).ConfigureAwait(false);
-
-        this.ConnectionClose(null);
+        this.socketIoCancellation?.Dispose();   
     }
         
     public async Task OpenConnectionAsync(CancellationToken cancellation)
@@ -92,7 +89,7 @@ internal class Connection : IConnection
         var connectionCloseWait = new WaitMethodMessageHandler<CloseMethod>(default);
         connectionCloseWait.WaitTask.ContinueWith(t =>
         {
-            if (t.IsCompleted)
+            if (t.IsCompleted && !this.connectionChannel.Completion.IsCompleted)
             {
                 this.connectionChannel.TryComplete(new ConnectionException(t.Result.StatusCode, t.Result.Description));
             }
@@ -147,9 +144,10 @@ internal class Connection : IConnection
                 }
             }
 
-            if (socketChannel.WaitToReadAsync().Wait(this.connectionDetails.HeartbeatInterval, out var canRead))
+            var waitTask = socketChannel.WaitToReadAsync().AsTask();
+            if (waitTask.Wait(this.connectionDetails.HeartbeatInterval ?? TimeSpan.FromMilliseconds(-1)))
             {
-                if (!canRead)
+                if (!waitTask.Result)
                 {
                     return;
                 }
@@ -159,7 +157,6 @@ internal class Connection : IConnection
                 // wait long enough and nothing was sent, need to send heartbeat frame
                 this.socket.Send(heartbeatMemory);    
             }
-            
         } while (true);
     }
 
@@ -302,6 +299,8 @@ internal class Connection : IConnection
 
         this.channelPool.ReleaseAll(ex);
         this.connectionChannel.TryComplete(ex);
+        
+        this.socket.Dispose();
     }
 
     private static void StartThread(Action threadStart, string threadName)
