@@ -1,11 +1,14 @@
 using System;
+using System.Threading.Tasks;
 using RabbitMQ.Next.Buffers;
 
 namespace RabbitMQ.Next.Sockets;
 
 internal interface ISocket : IDisposable
 {
-    void Send(IMemoryAccessor payload);
+    Task FlushAsync();
+    
+    ValueTask SendAsync(ReadOnlyMemory<byte> payload);
 
-    int Receive(byte[] buffer, int offset, int minBytes);
+    ValueTask<int> ReceiveAsync(Memory<byte> buffer, int minBytes);
 }

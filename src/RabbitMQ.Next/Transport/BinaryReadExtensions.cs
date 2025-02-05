@@ -6,34 +6,34 @@ using System.Runtime.InteropServices;
 
 namespace RabbitMQ.Next.Transport;
 
-public static class BinaryReadExtensions
+internal static class BinaryReadExtensions
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<byte> Read(this ReadOnlySpan<byte> source, out byte result)
     {
         result = source[0];
-        return source[sizeof(byte)..];
+        return source.Slice(sizeof(byte));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<byte> Read(this ReadOnlySpan<byte> source, out sbyte result)
     {
         result = (sbyte)source[0];
-        return source[sizeof(sbyte)..];
+        return source.Slice(sizeof(sbyte));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<byte> Read(this ReadOnlySpan<byte> source, out bool result)
     {
         result = source[0] != 0;
-        return source[sizeof(byte)..];
+        return source.Slice(sizeof(byte));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<byte> Read(this ReadOnlySpan<byte> source, out ushort result)
     {
         result = BinaryPrimitives.ReadUInt16BigEndian(source);
-        return source[sizeof(ushort)..];
+        return source.Slice(sizeof(ushort));
     }
 
 
@@ -41,56 +41,56 @@ public static class BinaryReadExtensions
     public static ReadOnlySpan<byte> Read(this ReadOnlySpan<byte> source, out short result)
     {
         result = BinaryPrimitives.ReadInt16BigEndian(source);
-        return source[sizeof(short)..];
+        return source.Slice(sizeof(short));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<byte> Read(this ReadOnlySpan<byte> source, out uint result)
     {
         result = BinaryPrimitives.ReadUInt32BigEndian(source);
-        return source[sizeof(uint)..];
+        return source.Slice(sizeof(uint));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<byte> Read(this ReadOnlySpan<byte> source, out int result)
     {
         result = BinaryPrimitives.ReadInt32BigEndian(source);
-        return source[sizeof(int)..];
+        return source.Slice(sizeof(int));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<byte> Read(this ReadOnlySpan<byte> source, out ulong result)
     {
         result = BinaryPrimitives.ReadUInt64BigEndian(source);
-        return source[sizeof(ulong)..];
+        return source.Slice(sizeof(ulong));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<byte> Read(this ReadOnlySpan<byte> source, out long result)
     {
         result = BinaryPrimitives.ReadInt64BigEndian(source);
-        return source[sizeof(long)..];
+        return source.Slice(sizeof(long));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<byte> Read(this ReadOnlySpan<byte> source, out float result)
     {
         result = MemoryMarshal.Read<float>(source);
-        return source[sizeof(float)..];
+        return source.Slice(sizeof(float));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<byte> Read(this ReadOnlySpan<byte> source, out decimal result)
     {
         result = MemoryMarshal.Read<decimal>(source);
-        return source[sizeof(decimal)..];
+        return source.Slice(sizeof(decimal));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<byte> Read(this ReadOnlySpan<byte> source, out double result)
     {
         result = MemoryMarshal.Read<double>(source);
-        return source[sizeof(double)..];
+        return source.Slice(sizeof(double));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -118,7 +118,7 @@ public static class BinaryReadExtensions
             result = TextEncoding.GetString(data);
         }
 
-        return source[len..];
+        return source.Slice(len);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -133,8 +133,8 @@ public static class BinaryReadExtensions
     public static ReadOnlySpan<byte> Read(this ReadOnlySpan<byte> source, out byte[] result)
     {
         source = source.Read(out uint size);
-        result = source[..(int)size].ToArray();
-        return source[(int)size..];
+        result = source.Slice(0, (int)size).ToArray();
+        return source.Slice((int)size);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -224,7 +224,7 @@ public static class BinaryReadExtensions
             return source;
         }
 
-        var tableData = source[..(int)tableLen];
+        var tableData = source.Slice(0, (int)tableLen);
 
         var data = new Dictionary<string, object>();
         while (tableData.Length > 0)
@@ -235,7 +235,7 @@ public static class BinaryReadExtensions
         }
 
         result = data;
-        return source[(int)tableLen..];
+        return source.Slice((int)tableLen);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -248,7 +248,7 @@ public static class BinaryReadExtensions
             return source;
         }
 
-        var arrayData = source[..(int)size];
+        var arrayData = source.Slice(0, (int)size);
 
         var list = new List<object>();
 
@@ -259,6 +259,6 @@ public static class BinaryReadExtensions
         }
 
         result = list.ToArray();
-        return source[(int)size..];
+        return source.Slice((int)size);
     }
 }

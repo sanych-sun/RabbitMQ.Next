@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 
 namespace RabbitMQ.Next.Buffers;
 
@@ -12,6 +11,4 @@ internal interface IMemoryAccessor : IDisposable
     IMemoryAccessor Next { get; }
 
     IMemoryAccessor Append(IMemoryAccessor next);
-
-    void WriteTo(Stream stream);
 }

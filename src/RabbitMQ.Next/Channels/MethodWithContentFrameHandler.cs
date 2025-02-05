@@ -76,13 +76,13 @@ internal class MethodWithContentFrameHandler<TMethod> : IFrameHandler
 
     private FrameType ParseMethodFrame(SharedMemory.MemoryAccessor payload)
     {
-        this.methodArgs = this.parser.Parse(payload.Span);
+        this.methodArgs = this.parser.Parse(payload.Memory.Span);
         return FrameType.ContentHeader;
     }
 
     private FrameType ParseContentHeaderFrame(SharedMemory.MemoryAccessor payload)
     {
-        payload.Span[4..] // skip 2 obsolete shorts
+        payload.Memory.Span[4..] // skip 2 obsolete shorts
             .Read(out ulong contentSize);
 
         this.pendingContentSize = (long)contentSize;

@@ -22,6 +22,7 @@ internal class Connection : IConnection
     private readonly Channel<IMemoryAccessor> socketSender;
     private readonly ObjectPool<byte[]> memoryPool;
 
+    private DateTimeOffset lastMessageSentTs;
     private ISocket socket;
     private CancellationTokenSource socketIoCancellation;
     private IChannelInternal connectionChannel;
@@ -72,9 +73,9 @@ internal class Connection : IConnection
             this.ConnectionClose(null);
         }
 
-        this.socketIoCancellation?.Dispose();   
+        this.socketIoCancellation?.Dispose();
     }
-        
+
     public async Task OpenConnectionAsync(CancellationToken cancellation)
     {
         // todo: validate state here
@@ -82,8 +83,8 @@ internal class Connection : IConnection
         this.socket = await EndpointResolver.OpenSocketAsync(this.connectionDetails.Settings.Endpoints, cancellation).ConfigureAwait(false);
 
         this.socketIoCancellation = new CancellationTokenSource();
-        StartThread(() => this.ReceiveLoop(this.socketIoCancellation.Token), "RabbitMQ.Next-Receive loop");
-        StartThread(this.SendLoop, "RabbitMQ.Next-Send loop");
+        Task.Factory.StartNew(() => this.ReceiveLoop(this.socketIoCancellation.Token), TaskCreationOptions.LongRunning);
+        Task.Factory.StartNew(this.SendLoop, TaskCreationOptions.LongRunning);
 
         this.connectionChannel = this.CreateChannel(ProtocolConstants.ConnectionChannel);
         var connectionCloseWait = new WaitMethodMessageHandler<CloseMethod>(default);
@@ -112,6 +113,8 @@ internal class Connection : IConnection
         var negotiationResults = await negotiateTask.ConfigureAwait(false);
         this.connectionDetails.PopulateWithNegotiationResults(negotiationResults);
         
+        //Task.Factory.StartNew(() => this.HeartbeatLoop(this.socketIoCancellation.Token));
+        
         this.State = ConnectionState.Configuring;
         this.State = ConnectionState.Open;
     }
@@ -125,42 +128,54 @@ internal class Connection : IConnection
         return new Channel(this.socketSender.Writer, messageBuilderPool, this.connectionDetails.Settings.Serializer);
     }
 
-    private void SendLoop()
+    private async Task HeartbeatLoop(CancellationToken cancellationToken)
     {
         var heartbeatMemory = new MemoryAccessor(ProtocolConstants.HeartbeatFrame);
-        var socketChannel = this.socketSender.Reader;
-        
-        do
+        while (!cancellationToken.IsCancellationRequested)
         {
-            while (socketChannel.TryRead(out var memory))
+            var delay = (this.lastMessageSentTs + this.connectionDetails.HeartbeatInterval.Value) - DateTimeOffset.UtcNow;
+            if (delay > TimeSpan.Zero)
             {
-                this.socket.Send(memory);
-
-                while(memory != null)
-                {
-                    var next = memory.Next;
-                    memory.Dispose();
-                    memory = next;
-                }
+                await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+                continue;
             }
-
-            var waitTask = socketChannel.WaitToReadAsync().AsTask();
-            if (waitTask.Wait(this.connectionDetails.HeartbeatInterval ?? TimeSpan.FromMilliseconds(-1)))
-            {
-                if (!waitTask.Result)
-                {
-                    return;
-                }
-            }
-            else
-            {
-                // wait long enough and nothing was sent, need to send heartbeat frame
-                this.socket.Send(heartbeatMemory);    
-            }
-        } while (true);
+            
+            await this.socketSender.Writer.WriteAsync(heartbeatMemory, cancellationToken).ConfigureAwait(false);
+        }
     }
 
-    private void ReceiveLoop(CancellationToken cancellationToken)
+    private async Task SendLoop()
+    {
+        var socketChannel = this.socketSender.Reader;
+        
+        while(await socketChannel.WaitToReadAsync().ConfigureAwait(false))
+        {
+            while (socketChannel.TryRead(out var memoryAccessor))
+            {
+                var current = memoryAccessor;
+                do
+                {
+                    await this.socket.SendAsync(current.Memory).ConfigureAwait(false);
+                    current = current.Next;
+                }
+                while(current != null);
+                
+                await this.socket.FlushAsync().ConfigureAwait(false);
+                this.lastMessageSentTs = DateTimeOffset.UtcNow;
+
+                current = memoryAccessor;
+                do
+                {
+                    var next = current.Next;
+                    current.Dispose();
+                    current = next;
+
+                } while (current != null);
+            }
+        }
+    }
+
+    private async Task ReceiveLoop(CancellationToken cancellationToken)
     {
         try
         {
@@ -179,7 +194,7 @@ internal class Connection : IConnection
                 while (currentAccessor.Size >= ProtocolConstants.FrameHeaderSize)
                 {
                     // 2.1. Read frame header
-                    currentAccessor.Span.ReadFrameHeader(out var frameType, out var channel, out var payloadSize);
+                    currentAccessor.Memory.Span.ReadFrameHeader(out var frameType, out var channel, out var payloadSize);
                     currentAccessor = currentAccessor.Slice(ProtocolConstants.FrameHeaderSize);
 
                     // 2.2. Lookup for the target channel to push the frame
@@ -202,16 +217,16 @@ internal class Connection : IConnection
                             currentAccessor = default;
                         }
 
-                        var previousMemory = receivedMemory;
-                        receivedMemory = ReceiveNext(missedBytes + ProtocolConstants.FrameEndSize, currentAccessor);
-                        previousMemory.Dispose();
+                        var next = await ReceiveNextAsync(missedBytes + ProtocolConstants.FrameEndSize, currentAccessor).ConfigureAwait(false);
+                        receivedMemory.Dispose();
+                        receivedMemory = next;
 
                         currentAccessor = receivedMemory;
                         frameBytes = currentAccessor.Slice(0, frameType == FrameType.ContentBody ? missedBytes : (int)payloadSize);
                     }
 
                     // 2.4. Ensure frame end present just after the current frame bytes
-                    if (currentAccessor.Span[frameBytes.Size] != ProtocolConstants.FrameEndByte)
+                    if (currentAccessor.Memory.Span[frameBytes.Size] != ProtocolConstants.FrameEndByte)
                     {
                         // TODO: throw connection exception here
                         throw new InvalidOperationException();
@@ -223,7 +238,7 @@ internal class Connection : IConnection
                 }
 
                 // 3. Receive next chunk with preserving leftovers of the currently not yet parsed data
-                var nextChunk = ReceiveNext(ProtocolConstants.FrameHeaderSize, currentAccessor);
+                var nextChunk = await ReceiveNextAsync(ProtocolConstants.FrameHeaderSize, currentAccessor).ConfigureAwait(false);
                 receivedMemory?.Dispose();
                 receivedMemory = nextChunk;
             }
@@ -241,7 +256,7 @@ internal class Connection : IConnection
 
         return;
         
-        SharedMemory ReceiveNext(int expectedBytes, SharedMemory.MemoryAccessor previousChunk = default)
+        async ValueTask<SharedMemory> ReceiveNextAsync(int minBytes, SharedMemory.MemoryAccessor previousChunk = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
             
@@ -252,13 +267,15 @@ internal class Connection : IConnection
             // Copy bytes leftover from previous chunk if any
             if (previousChunk.Size > 0)
             {
-                previousChunk.Span.CopyTo(buffer);
+                previousChunk.Memory.CopyTo(buffer);
                 bufferOffset = previousChunk.Size;
-                expectedBytes -= bufferOffset;
+                minBytes -= bufferOffset;
             }
                 
             // Read data from the socket at least of requested size
-            var received = this.socket.Receive(buffer, bufferOffset, expectedBytes);
+            var memory = new Memory<byte>(buffer, bufferOffset, buffer.Length - bufferOffset);
+            
+            var received = await this.socket.ReceiveAsync(memory, minBytes).ConfigureAwait(false);
             return new SharedMemory(this.memoryPool, buffer, bufferOffset + received);
         }
     }
@@ -301,15 +318,6 @@ internal class Connection : IConnection
         this.connectionChannel.TryComplete(ex);
         
         this.socket.Dispose();
-    }
-
-    private static void StartThread(Action threadStart, string threadName)
-    {
-        var thread = new Thread(new ThreadStart(threadStart))
-        {
-            Name = threadName,
-        };
-        thread.Start();
     }
 
     private static async Task<NegotiationResults> NegotiateConnectionAsync(IChannel channel, ConnectionSettings settings, CancellationToken cancellation)
@@ -358,7 +366,7 @@ internal class Connection : IConnection
 
         // todo: handle wrong vhost name
         await channel.SendAsync<OpenMethod, OpenOkMethod>(new OpenMethod(settings.Vhost), cancellation).ConfigureAwait(false);
-
+        
         return negotiationResult;
     }
 }

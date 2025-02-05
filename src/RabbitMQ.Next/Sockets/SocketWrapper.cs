@@ -1,6 +1,7 @@
+using System;
 using System.IO;
 using System.Net.Sockets;
-using RabbitMQ.Next.Buffers;
+using System.Threading.Tasks;
 
 namespace RabbitMQ.Next.Sockets;
 
@@ -14,31 +15,25 @@ internal class SocketWrapper : ISocket
         this.socket = socket;
         this.stream = stream;
     }
-
-    public void Send(IMemoryAccessor payload)
-    {
-        var current = payload;
-        while (current != null)
-        {
-            current.WriteTo(this.stream);
-            current = current.Next;
-        }
-        
-        this.stream.Flush();
-    }
     
-    public int Receive(byte[] buffer, int offset, int minBytes)
+    public Task FlushAsync()
+        => this.stream.FlushAsync();
+
+    public ValueTask SendAsync(ReadOnlyMemory<byte> payload)
+        => this.stream.WriteAsync(payload);
+    
+    public async ValueTask<int> ReceiveAsync(Memory<byte> buffer, int minBytes)
     {
         var received = 0;
         while (received < minBytes)
         {
-            var readBytes = this.stream.Read(buffer, offset, buffer.Length - offset);
+            var readBytes = await this.stream.ReadAsync(buffer).ConfigureAwait(false);
             if (readBytes == 0 && this.IsConnectionClosedByServer())
             {
                 throw new SocketException();
             }
 
-            offset += readBytes;
+            buffer = buffer[readBytes..];
             received += readBytes;
         }
 

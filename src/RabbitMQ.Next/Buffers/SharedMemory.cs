@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using Microsoft.Extensions.ObjectPool;
@@ -61,7 +60,7 @@ internal sealed class SharedMemory : IDisposable
         }
     }
 
-    public readonly ref struct MemoryAccessor
+    public readonly struct MemoryAccessor
     {
         private readonly SharedMemory owner;
         private readonly int offset;
@@ -89,12 +88,12 @@ internal sealed class SharedMemory : IDisposable
             this.owner = owner;
             this.offset = offset;
             this.Size = size;
-            this.Span = new ReadOnlySpan<byte>(this.owner.memory, offset, size);
+            this.Memory = new ReadOnlyMemory<byte>(this.owner.memory, offset, size);
         }
 
         public int Size { get; }
 
-        public ReadOnlySpan<byte> Span { get; }
+        public ReadOnlyMemory<byte> Memory { get; }
 
         public MemoryAccessor Slice(int offset)
             => new(this.owner, this.offset + offset, this.Size - offset);
@@ -164,14 +163,6 @@ internal sealed class SharedMemory : IDisposable
 
             this.Next = next;
             return next;
-        }
-        
-        public void WriteTo(Stream stream)
-        {
-            ArgumentNullException.ThrowIfNull(stream);
-            this.CheckDisposed();
-        
-            stream.Write(this.owner.memory, this.offset, this.Size);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

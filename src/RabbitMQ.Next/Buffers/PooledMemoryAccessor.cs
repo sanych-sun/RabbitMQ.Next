@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.ObjectPool;
 
@@ -79,14 +78,6 @@ internal sealed class PooledMemoryAccessor : IMemoryAccessor
 
         this.Next = next;
         return next;
-    }
-
-    public void WriteTo(Stream stream)
-    {
-        ArgumentNullException.ThrowIfNull(stream);
-        this.CheckDisposed();
-        
-        stream.Write(this.memory, this.offset, this.Size);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

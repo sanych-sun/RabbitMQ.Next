@@ -222,7 +222,7 @@ internal sealed class Channel : IChannelInternal
                 throw new InvalidOperationException($"Unexpected {type} frame, when Method frame was expected");    
             }
 
-            payload.Span.Read(out uint methodId);
+            payload.Memory.Span.Read(out uint methodId);
             payload = payload.Slice(sizeof(uint));
 
             if (!this.methodHandlers.TryGetValue(methodId, out this.currentFrameHandler))

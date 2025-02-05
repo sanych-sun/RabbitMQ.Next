@@ -6,27 +6,27 @@ using System.Runtime.InteropServices;
 
 namespace RabbitMQ.Next.Transport;
 
-public static class BinaryWriteExtensions
+internal static class BinaryWriteExtensions
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<byte> Write(this Span<byte> target, byte data)
     {
         target[0] = data;
-        return target[sizeof(byte)..];
+        return target.Slice(sizeof(byte));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<byte> Write(this Span<byte> target, sbyte data)
     {
         target[0] = (byte)data;
-        return target[sizeof(sbyte)..];
+        return target.Slice(sizeof(sbyte));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<byte> Write(this Span<byte> target, bool data)
     {
         target[0] = data ? (byte) 1 : (byte) 0;
-        return target[sizeof(byte)..];
+        return target.Slice(sizeof(byte));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -40,56 +40,56 @@ public static class BinaryWriteExtensions
     public static Span<byte> Write(this Span<byte> target, short data)
     {
         BinaryPrimitives.WriteInt16BigEndian(target, data);
-        return target[sizeof(short)..];
+        return target.Slice(sizeof(short));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<byte> Write(this Span<byte> target, uint data)
     {
         BinaryPrimitives.WriteUInt32BigEndian(target, data);
-        return target[sizeof(uint)..];
+        return target.Slice(sizeof(uint));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<byte> Write(this Span<byte> target, int data)
     {
         BinaryPrimitives.WriteInt32BigEndian(target, data);
-        return target[sizeof(int)..];
+        return target.Slice(sizeof(int));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<byte> Write(this Span<byte> target, ulong data)
     {
         BinaryPrimitives.WriteUInt64BigEndian(target, data);
-        return target[sizeof(ulong)..];
+        return target.Slice(sizeof(ulong));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<byte> Write(this Span<byte> target, long data)
     {
         BinaryPrimitives.WriteInt64BigEndian(target, data);
-        return target[sizeof(long)..];
+        return target.Slice(sizeof(long));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<byte> Write(this Span<byte> target, float data)
     {
         MemoryMarshal.Write(target, ref data);
-        return target[sizeof(float)..];
+        return target.Slice(sizeof(float));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<byte> Write(this Span<byte> target, decimal data)
     {
         MemoryMarshal.Write(target, ref data);
-        return target[sizeof(decimal)..];
+        return target.Slice(sizeof(decimal));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Span<byte> Write(this Span<byte> target, double data)
     {
         MemoryMarshal.Write(target, ref data);
-        return target[sizeof(double)..];
+        return target.Slice(sizeof(double));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -97,7 +97,7 @@ public static class BinaryWriteExtensions
     {
         target = target.Write((uint)data.Length);
         data.CopyTo(target);
-        return target[data.Length..];
+        return target.Slice(data.Length);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -243,7 +243,7 @@ public static class BinaryWriteExtensions
 
         var lenPosition = target;
 
-        target = target[sizeof(uint)..];
+        target = target.Slice(sizeof(uint));
         var before = target.Length;
 
         for (var i = 0; i < value.Length; i++)

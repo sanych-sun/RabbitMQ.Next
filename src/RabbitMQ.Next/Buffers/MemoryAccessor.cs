@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 
 namespace RabbitMQ.Next.Buffers;
 
@@ -28,10 +27,4 @@ internal sealed class MemoryAccessor : IMemoryAccessor
 
     public IMemoryAccessor Append(IMemoryAccessor next) 
         => throw new NotSupportedException();
-
-    public void WriteTo(Stream stream)
-    {
-        ArgumentNullException.ThrowIfNull(stream);
-        stream.Write(this.memory, 0, this.memory.Length);
-    }
 }

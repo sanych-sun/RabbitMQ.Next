@@ -99,6 +99,7 @@ internal class MessageBuilder
                 throw new InvalidOperationException();
             }
 
+            this.buffer ??= this.memoryPool.Get();
             this.frameHeaderOffset = this.bufferOffset;
             this.frameType = type;
             this.bufferOffset += ProtocolConstants.FrameHeaderSize;
@@ -180,20 +181,14 @@ internal class MessageBuilder
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int EnsureBufferSize(int requestedSize)
         {
-            // current buffer available space: capacity - offset - frame end
-            int BufferAvailable()
-                => this.buffer.Length - this.bufferOffset - ProtocolConstants.FrameEndSize;
-
             // todo: implement workaround for too big chunks by allocating some extra array with merging the data back into buffer on Advance
             if (requestedSize > this.frameMaxSize)
             {
                 throw new OutOfMemoryException();
             }
 
-            this.buffer ??= this.memoryPool.Get();
-
             var size = Math.Min(this.frameMaxSize, BufferAvailable());
-            if (size > 0 && (requestedSize == 0 || size > requestedSize))
+            if (size > requestedSize)
             {
                 return size;
             }
@@ -205,10 +200,13 @@ internal class MessageBuilder
             
             this.EndFrame();
             this.FinalizeBuffer();
-            this.EnsureBufferSize(requestedSize + ProtocolConstants.FrameHeaderSize);
             this.BeginFrame(FrameType.ContentBody);
             
             return Math.Min(this.frameMaxSize, BufferAvailable());
+
+            // current buffer available space: capacity - offset - frame end
+            int BufferAvailable()
+                => this.buffer.Length - this.bufferOffset - ProtocolConstants.FrameEndSize;
         }
 
         private void FinalizeBuffer()

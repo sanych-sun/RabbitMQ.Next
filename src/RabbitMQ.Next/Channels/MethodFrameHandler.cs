@@ -30,7 +30,7 @@ internal class MethodFrameHandler<TMethod> : IFrameHandler
             throw new InvalidOperationException($"Unexpected {type} frame, when Method frame was expected");
         }
         
-        var methodArgs = this.parser.Parse(payload.Span);
+        var methodArgs = this.parser.Parse(payload.Memory.Span);
         this.wrapped.Handle(methodArgs, null);
         
         return FrameType.Method;
