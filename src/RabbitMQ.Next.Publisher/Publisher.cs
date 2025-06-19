@@ -62,53 +62,58 @@ internal sealed class Publisher : IPublisher
         }
     }
 
-    public Task PublishAsync<TContent>(TContent content, Action<IMessageBuilder> propertiesBuilder = null, CancellationToken cancellation = default)
+    public async Task PublishAsync<TContent>(TContent content, Action<IMessageBuilder> propertiesBuilder = null, CancellationToken cancellation = default)
     {
+        this.CheckDisposed();
         var properties = this.messagePropsPool.Get();
-        propertiesBuilder?.Invoke(properties);
-        
-        return this.PublishAsyncImpl(content, properties, cancellation);
-    }
 
-    public Task PublishAsync<TState, TContent>(TState state, TContent content, Action<TState, IMessageBuilder> propertiesBuilder = null, CancellationToken cancellation = default)
-    {
-        var properties = this.messagePropsPool.Get();
-        propertiesBuilder?.Invoke(state, properties);
-        
-        return this.PublishAsyncImpl(content, properties, cancellation);
-    }
-    
-    private async Task PublishAsyncImpl<TContent>(TContent content, MessageBuilder message, CancellationToken cancellation)
-    {
         try
         {
-            this.CheckDisposed();
-
-            if (this.publishMiddlewares?.Count > 0)
-            {
-                message.SetClrType(typeof(TContent));
-                
-                var pipeline = (IMessageBuilder m, IContentAccessor c) => this.InternalPublishAsync(m, c.Get<TContent>());
-                for (var i = this.publishMiddlewares.Count - 1; i >= 0; i--)
-                {
-                    var next = pipeline;
-                    var handler = this.publishMiddlewares[i];
-                    pipeline = (m, c) => handler.Invoke(m, c, next);
-                }
-             
-                var contentAccessor = new ContentWrapper<TContent>(content);
-                await pipeline.Invoke(message, contentAccessor).ConfigureAwait(false);    
-            }
-            else
-            {
-                await this.InternalPublishAsync(message, content).ConfigureAwait(false);
-            }
-            
+            propertiesBuilder?.Invoke(properties);
+            await this.PublishAsyncImpl(content, properties, cancellation).ConfigureAwait(false);
         }
         finally
         {
-            this.messagePropsPool.Return(message);
+            this.messagePropsPool.Return(properties);
         }
+    }
+
+    public async Task PublishAsync<TState, TContent>(TState state, TContent content, Action<TState, IMessageBuilder> propertiesBuilder = null, CancellationToken cancellation = default)
+    {
+        this.CheckDisposed();
+        var properties = this.messagePropsPool.Get();
+
+        try
+        {
+            propertiesBuilder?.Invoke(state, properties);
+            await this.PublishAsyncImpl(content, properties, cancellation).ConfigureAwait(false);
+        }
+        finally
+        {
+            this.messagePropsPool.Return(properties);
+        }
+    }
+    
+    private Task PublishAsyncImpl<TContent>(TContent content, MessageBuilder message, CancellationToken cancellation)
+    {
+        if (!(this.publishMiddlewares?.Count > 0))
+        {
+            return this.InternalPublishAsync(message, content);
+        }
+
+        message.SetClrType(typeof(TContent));
+            
+        var pipeline = (IMessageBuilder m, IContentAccessor c) => this.InternalPublishAsync(m, c.Get<TContent>());
+        for (var i = this.publishMiddlewares.Count - 1; i >= 0; i--)
+        {
+            var next = pipeline;
+            var handler = this.publishMiddlewares[i];
+            pipeline = (m, c) => handler.Invoke(m, c, next);
+        }
+         
+        var contentAccessor = new ContentWrapper<TContent>(content);
+        return pipeline.Invoke(message, contentAccessor);
+
     }
     
     private async Task InternalPublishAsync<TContent>(IMessageBuilder message, TContent content)
@@ -187,7 +192,7 @@ internal sealed class Publisher : IPublisher
                 {
                     await ch.CloseAsync().ConfigureAwait(false);
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                 }
             }
