@@ -22,7 +22,6 @@ internal class Connection : IConnection
     private readonly Channel<IMemoryAccessor> socketSender;
     private readonly ObjectPool<byte[]> memoryPool;
 
-    private DateTimeOffset lastMessageSentTs;
     private ISocket socket;
     private CancellationTokenSource socketIoCancellation;
     private IChannelInternal connectionChannel;
@@ -113,8 +112,6 @@ internal class Connection : IConnection
         var negotiationResults = await negotiateTask.ConfigureAwait(false);
         this.connectionDetails.PopulateWithNegotiationResults(negotiationResults);
         
-        //Task.Factory.StartNew(() => this.HeartbeatLoop(this.socketIoCancellation.Token));
-        
         this.State = ConnectionState.Configuring;
         this.State = ConnectionState.Open;
     }
@@ -128,28 +125,25 @@ internal class Connection : IConnection
         return new Channel(this.socketSender.Writer, messageBuilderPool, this.connectionDetails.Settings.Serializer);
     }
 
-    private async Task HeartbeatLoop(CancellationToken cancellationToken)
-    {
-        var heartbeatMemory = new MemoryAccessor(ProtocolConstants.HeartbeatFrame);
-        while (!cancellationToken.IsCancellationRequested)
-        {
-            var delay = (this.lastMessageSentTs + this.connectionDetails.HeartbeatInterval.Value) - DateTimeOffset.UtcNow;
-            if (delay > TimeSpan.Zero)
-            {
-                await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
-                continue;
-            }
-            
-            await this.socketSender.Writer.WriteAsync(heartbeatMemory, cancellationToken).ConfigureAwait(false);
-        }
-    }
-
     private async Task SendLoop()
     {
         var socketChannel = this.socketSender.Reader;
         
-        while(await socketChannel.WaitToReadAsync().ConfigureAwait(false))
+        while(true)
         {
+            try
+            {
+                if (!await socketChannel.WaitToReadAsync().AsTask().WaitAsync(this.connectionDetails.HeartbeatInterval).ConfigureAwait(false))
+                {
+                    return;
+                }
+            }
+            catch (TimeoutException)
+            {
+                await this.socket.SendAsync(ProtocolConstants.HeartbeatFrame).ConfigureAwait(false);
+                continue;
+            }            
+            
             while (socketChannel.TryRead(out var memoryAccessor))
             {
                 var current = memoryAccessor;
@@ -161,8 +155,6 @@ internal class Connection : IConnection
                 while(current != null);
                 
                 await this.socket.FlushAsync().ConfigureAwait(false);
-                this.lastMessageSentTs = DateTimeOffset.UtcNow;
-
                 current = memoryAccessor;
                 do
                 {

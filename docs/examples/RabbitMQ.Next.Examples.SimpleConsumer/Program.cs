@@ -27,7 +27,7 @@ MonitorKeypressAsync(cancellation);
 await consumer.ConsumeAsync((message, content) =>
 {
     Console.WriteLine($"[{DateTimeOffset.Now.TimeOfDay}] Message received via '{message.Exchange}' exchange: {content.Get<string>()}");
-} ,cancellation.Token);
+}, cancellation.Token);
 
 
 static Task MonitorKeypressAsync(CancellationTokenSource cancellation)
