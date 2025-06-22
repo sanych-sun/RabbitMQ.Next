@@ -128,12 +128,14 @@ internal class Connection : IConnection
     private async Task SendLoop()
     {
         var socketChannel = this.socketSender.Reader;
-        
+        Task<bool> waitToReadTask = null;
+
         while(true)
         {
+            waitToReadTask ??= socketChannel.WaitToReadAsync().AsTask(); 
             try
             {
-                if (!await socketChannel.WaitToReadAsync().AsTask().WaitAsync(this.connectionDetails.HeartbeatInterval).ConfigureAwait(false))
+                if (!await waitToReadTask.WaitAsync(this.connectionDetails.HeartbeatInterval).ConfigureAwait(false))
                 {
                     return;
                 }
@@ -142,8 +144,10 @@ internal class Connection : IConnection
             {
                 await this.socket.SendAsync(ProtocolConstants.HeartbeatFrame).ConfigureAwait(false);
                 continue;
-            }            
-            
+            }
+
+            waitToReadTask = null;
+
             while (socketChannel.TryRead(out var memoryAccessor))
             {
                 var current = memoryAccessor;
